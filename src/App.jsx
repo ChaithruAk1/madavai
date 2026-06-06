@@ -11,6 +11,7 @@ import Skills from "./components/Skills.jsx";
 import ProjectsBrowser from "./components/ProjectsBrowser.jsx";
 import Dispatch from "./components/Dispatch.jsx";
 import Consumption from "./components/Consumption.jsx";
+import ModelsOverview from "./components/ModelsOverview.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
@@ -30,9 +31,15 @@ export default function App() {
   const [projectCtx, setProjectCtx] = useState(null);
   const [online, setOnline] = useState(null);
   const [artifact, setArtifact] = useState(null);
+  const [activeConvId, setActiveConvId] = useState(null);
+  const [histRefresh, setHistRefresh] = useState(0);
+  const [chatMode, setChatMode] = useState("chat"); // last primary mode → drives the Recents list
   const sessionRef = useRef(null);
   const chatRef = useRef(null);
   const streamOpen = useRef(false);
+  const modeCacheRef = useRef({}); // per-mode {convId, timeline} so navigating away/back restores
+
+  const PRIMARY = ["chat", "cowork", "code"];
 
   async function loadModelsFor(cfg) {
     if (!cfg) return;
@@ -101,6 +108,7 @@ export default function App() {
         break;
       case "result":
         streamOpen.current = false; setStreaming(false); setBusy(false);
+        setHistRefresh((n) => n + 1); // refresh the saved-chat list (new title / new convo)
         break;
       case "error":
         streamOpen.current = false; setStreaming(false); setBusy(false);
@@ -121,12 +129,32 @@ export default function App() {
     if (!sessionRef.current) {
       const req = projectCtx
         ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId }
-        : { mode, prompt: text, cwd, permissionMode };
-      const { sessionId } = await bridge.start(req);
+        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId };
+      const { sessionId, conversationId } = await bridge.start(req);
       sessionRef.current = sessionId;
+      if (!projectCtx && conversationId) setActiveConvId(conversationId);
     } else {
       bridge.sendInput(sessionRef.current, text);
     }
+  };
+
+  // ---- persisted chat history (Talk / Collaborate / Build) ----
+  const openSession = async (id) => {
+    const conv = await bridge.getSession(id);
+    if (!conv) return;
+    const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
+    setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
+    setProjectCtx(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+  };
+  // Start a fresh chat — also returns to the chat surface if we're in a tool/settings view.
+  const newSession = () => {
+    if (!PRIMARY.includes(mode)) setMode(chatMode);
+    setProjectCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+  };
+  const removeSession = async (id) => {
+    await bridge.deleteSession(id);
+    if (id === activeConvId) newSession();
+    setHistRefresh((n) => n + 1);
   };
 
   // Open a saved project conversation into the chat surface.
@@ -146,7 +174,7 @@ export default function App() {
 
   const pickFolder = async () => {
     const dir = await bridge.chooseFolder();
-    if (dir) { setCwd(dir); sessionRef.current = null; setTimeline([]); }
+    if (dir) { setCwd(dir); sessionRef.current = null; setTimeline([]); setActiveConvId(null); }
   };
 
   const stop = () => { if (sessionRef.current) bridge.interrupt(sessionRef.current); setBusy(false); };
@@ -161,8 +189,22 @@ export default function App() {
   };
 
   const switchMode = (m) => {
-    setMode(m); setTimeline([]); sessionRef.current = null; streamOpen.current = false; setBusy(false);
-    setProjectCtx(null); // entering Projects shows the browser
+    // Snapshot the conversation of the mode we're leaving so we can restore it.
+    if (PRIMARY.includes(mode)) modeCacheRef.current[mode] = { convId: activeConvId, timeline };
+    setMode(m); streamOpen.current = false; setBusy(false); setPerm(null);
+    if (PRIMARY.includes(m)) setChatMode(m);
+    if (PRIMARY.includes(m)) {
+      // Returning to a chat mode: restore its last conversation (or start fresh).
+      const c = modeCacheRef.current[m];
+      setProjectCtx(null);
+      setTimeline(c ? c.timeline : []);
+      setActiveConvId(c ? c.convId : null);
+      sessionRef.current = null;
+    } else if (m === "project") {
+      setProjectCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null;
+    }
+    // Secondary views (settings/skills/connectors/dispatch/consumption): leave the
+    // current conversation untouched so coming back restores it.
   };
 
   // Live models per provider → one picker, grouped by provider. All providers are always
@@ -216,6 +258,7 @@ export default function App() {
   const isSkills = mode === "skills";
   const isDispatch = mode === "dispatch";
   const isConsumption = mode === "consumption";
+  const isModels = mode === "models";
 
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   const controlsRow = (
@@ -223,10 +266,6 @@ export default function App() {
       {isAgentMode && <button className="chip" onClick={pickFolder}><FolderOpen size={13} /> {cwd || "Choose folder"}</button>}
       {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
       <ModelPicker value={activeValue} groups={pickerGroups} onChange={selectModel} onRefresh={refreshModels} />
-      <span className="chip" title={`Active model is ${online === null ? "checking…" : online ? "online" : "offline"}`} style={{ gap: 7 }}>
-        <span style={{ width: 7, height: 7, borderRadius: 9, background: statusDot, boxShadow: online ? "0 0 7px var(--ok)" : "none" }} />
-        {activeLoc || (online ? "online" : "offline")}
-      </span>
     </div>
   );
 
@@ -245,7 +284,9 @@ export default function App() {
         loc={activeLoc}
       />
       <div className="app-body">
-      <Sidebar active={mode} onSelect={switchMode} />
+      <Sidebar active={mode} onSelect={switchMode}
+        historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
+        onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession} />
       <div className="main">
         {isSettings ? (
           <Settings onChanged={setSettings} />
@@ -257,6 +298,8 @@ export default function App() {
           <Dispatch />
         ) : isConsumption ? (
           <Consumption />
+        ) : isModels ? (
+          <ModelsOverview activeModel={activeProfile && activeProfile.model} />
         ) : (mode === "project" && !projectCtx) ? (
           <ProjectsBrowser onOpen={openConversation} />
         ) : (

@@ -35,7 +35,7 @@
  */
 
 export const MODES = [
-  { id: "chat",    label: "Let's Talk",        sub: "Conversation" },
+  { id: "chat",    label: "Let's Chat",        sub: "Conversation" },
   { id: "code",    label: "Let's Build",       sub: "Code in a repo" },
   { id: "cowork",  label: "Let's Collaborate", sub: "Work on a folder" },
   { id: "project", label: "Projects",          sub: "Saved workspaces" },

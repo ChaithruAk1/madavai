@@ -7,6 +7,7 @@ const { runAgentTurn } = require("./agent-transport.cjs");
 const { runOpenAIAgentTurn } = require("./agent-openai.cjs");
 const settings = require("./settings.cjs");
 const store = require("./projects-store.cjs");
+const sstore = require("./sessions-store.cjs");
 const usage = require("./usage-store.cjs");
 
 let seq = 0;
@@ -22,11 +23,27 @@ class SessionManager {
 
   _send(sessionId, kind, data) {
     if (this._curTurn) {
-      if (kind === "assistant_delta") this._curTurn.replyChars += ((data && data.text) || "").length;
-      else if (kind === "result") { usage.append({ ...this._curTurn, at: Date.now() }); this._curTurn = null; }
-      else if (kind === "error") { this._curTurn = null; }
+      if (kind === "assistant_delta") { this._curTurn.replyChars += ((data && data.text) || "").length; this._curTurn.replyText += (data && data.text) || ""; }
+      else if (kind === "result") { usage.append({ ...this._curTurn, at: Date.now() }); this._persistTurn(sessionId); this._curTurn = null; }
+      else if (kind === "error") { this._persistTurn(sessionId); this._curTurn = null; }
     }
     this.rawEmit({ sessionId, seq: seq++, kind, data });
+  }
+
+  // Persist one completed turn (user + assistant text) to the chat-history store.
+  // Project mode persists separately (projects-store), so it has no chatConvId here.
+  _persistTurn(sessionId) {
+    const s = this.sessions.get(sessionId);
+    if (!s || !s.chatConvId || !this._curTurn) return;
+    const conv = sstore.getSession(s.chatConvId);
+    if (!conv) return;
+    const u = (this._curTurn.userText || "").trim();
+    const a = (this._curTurn.replyText || "").trim();
+    if (u) conv.messages.push({ role: "user", content: u });
+    if (a) conv.messages.push({ role: "assistant", content: a });
+    if ((!conv.title || conv.title === "New task") && u) conv.title = u.slice(0, 60);
+    conv.cwd = s.cwd || conv.cwd;
+    try { sstore.saveSession(conv); } catch {}
   }
 
   async start(req) {
@@ -37,10 +54,17 @@ class SessionManager {
       s.conversationId = req.conversationId;
       const conv = store.getConversation(req.conversationId);
       s.history = [{ role: "system", content: "" }, ...((conv && conv.messages) || [])]; // index 0 reserved for project system
+    } else {
+      // Persisted chat history for Let's Talk / Collaborate / Build.
+      let conv = req.conversationId ? sstore.getSession(req.conversationId) : null;
+      if (!conv) conv = sstore.createSession(req.mode, req.cwd);
+      s.chatConvId = conv.id;
+      // Seed the model context from saved messages so reopened chats continue coherently.
+      if (conv.messages && conv.messages.length) s.history = conv.messages.map((m) => ({ role: m.role, content: m.content }));
     }
     this.sessions.set(sessionId, s);
     await this._turn(sessionId, req.prompt);
-    return { sessionId };
+    return { sessionId, conversationId: s.chatConvId || s.conversationId || null };
   }
 
   async sendInput(sessionId, text) {
@@ -62,7 +86,7 @@ class SessionManager {
 
     // Diagnostic: shows in the [ELECTRON] terminal exactly which profile is active.
     const keyLen = (profile.apiKey || "").length;
-    console.log(`[chai] turn → provider="${profile.name}" kind=${profile.kind} model="${profile.model}" baseUrl=${profile.baseUrl} keyLen=${keyLen} sub=${subMode}`);
+    console.log(`[thinkflux] turn → provider="${profile.name}" kind=${profile.kind} model="${profile.model}" baseUrl=${profile.baseUrl} keyLen=${keyLen} sub=${subMode}`);
 
     // Clear guard instead of a cryptic upstream 401.
     const isLocal = /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(profile.baseUrl || "");
@@ -74,7 +98,7 @@ class SessionManager {
       return;
     }
 
-    this._curTurn = { sessionId, model: profile.model, provider: profile.name, mode: s.mode, promptChars: (userText || "").length, replyChars: 0 };
+    this._curTurn = { sessionId, model: profile.model, provider: profile.name, mode: s.mode, promptChars: (userText || "").length, replyChars: 0, replyText: "", userText: userText || "" };
 
     // Subscription mode forces the SDK for chat/project too (raw /v1/messages
     // can't use plan creds). Agent modes already use the SDK for anthropic.

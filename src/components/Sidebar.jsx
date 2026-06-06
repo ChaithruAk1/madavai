@@ -1,17 +1,30 @@
-import { Puzzle, Plug, Send, BarChart3, FolderKanban, Settings as SettingsIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Settings as SettingsIcon } from "lucide-react";
+import { bridge } from "../bridge/index.js";
 
 const TOOLS = [
   { id: "project", label: "Projects", icon: FolderKanban },
   { id: "skills", label: "Skills", icon: Puzzle },
   { id: "connectors", label: "Connectors", icon: Plug },
+  { id: "models", label: "Models", icon: Cpu },
   { id: "dispatch", label: "Dispatch", icon: Send },
   { id: "consumption", label: "Consumption", icon: BarChart3 },
 ];
 
-export default function Sidebar({ active, onSelect }) {
+export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession }) {
+  const [recents, setRecents] = useState([]);
+  useEffect(() => {
+    let live = true;
+    bridge.listSessions(historyMode).then((l) => { if (live) setRecents(l || []); }).catch(() => {});
+    return () => { live = false; };
+  }, [historyMode, refreshKey]);
+
+  const newLabel = historyMode === "chat" ? "New chat" : "New task";
+
   return (
-    <aside className="sidebar glass slim">
-      <div className="nav-label">Tools</div>
+    <aside className="sidebar glass">
+      <button className="sb-new" onClick={onNew}><Plus size={16} /> {newLabel}</button>
+
       {TOOLS.map((t) => {
         const I = t.icon;
         return (
@@ -21,7 +34,16 @@ export default function Sidebar({ active, onSelect }) {
         );
       })}
 
-      <div className="sidebar-spacer" />
+      <div className="nav-label" style={{ marginTop: 12 }}>Recents</div>
+      <div className="sb-recents scroll">
+        {recents.length === 0 && <div className="sb-empty">No saved chats yet.</div>}
+        {recents.map((it) => (
+          <div key={it.id} className={`sb-rec ${it.id === activeConvId ? "active" : ""}`} onClick={() => onOpenSession(it.id)} title={it.title}>
+            <span className="sb-rec-title">{it.title || "Untitled"}</span>
+            <button className="sb-rec-del" title="Delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(it.id); }}><Trash2 size={12} /></button>
+          </div>
+        ))}
+      </div>
 
       <button className={`nav-item ${active === "settings" ? "active" : ""}`} onClick={() => onSelect("settings")}>
         <SettingsIcon size={16} /> Settings

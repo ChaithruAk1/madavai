@@ -31,6 +31,11 @@ contextBridge.exposeInMainWorld("thinkflux", {
   // --- agent ---
   chooseFolder: () => ipcRenderer.invoke("thinkflux:chooseFolder"),
 
+  // --- persisted chat history (Talk / Collaborate / Build) ---
+  listSessions: (mode) => ipcRenderer.invoke("thinkflux:listSessions", mode),
+  getSession: (id) => ipcRenderer.invoke("thinkflux:getSession", id),
+  deleteSession: (id) => ipcRenderer.invoke("thinkflux:deleteSession", id),
+
   // --- connectors (MCP) ---
   testConnector: (server) => ipcRenderer.invoke("thinkflux:testConnector", server),
 
@@ -39,6 +44,7 @@ contextBridge.exposeInMainWorld("thinkflux", {
   createSkill: (name) => ipcRenderer.invoke("thinkflux:createSkill", name),
   importSkillFolder: () => ipcRenderer.invoke("thinkflux:importSkillFolder"),
   importSkillZip: () => ipcRenderer.invoke("thinkflux:importSkillZip"),
+  readSkill: (dir) => ipcRenderer.invoke("thinkflux:readSkill", dir),
   setSkillEnabled: (dir, enabled) => ipcRenderer.invoke("thinkflux:setSkillEnabled", { dir, enabled }),
   deleteSkill: (dir) => ipcRenderer.invoke("thinkflux:deleteSkill", dir),
 

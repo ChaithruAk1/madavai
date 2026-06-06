@@ -111,6 +111,9 @@ export const mockBridge = {
   async chooseFolder() {
     return "/Users/demo/projects/sample"; // mock path in browser
   },
+  async listSessions() { return []; },
+  async getSession() { return null; },
+  async deleteSession() { return true; },
   async pingProvider() { return true; },
   async saveAccount(a) { _mockSettings.account = { ...(_mockSettings.account || {}), ...a }; return _mockSettings.account; },
   async signOut() { _mockSettings.account = { name: "", email: "", avatar: "", googleLinked: false, anthropicLinked: false }; return true; },
@@ -124,6 +127,7 @@ export const mockBridge = {
   async createSkill() { return { error: "Skills run only in the desktop app." }; },
   async importSkillFolder() { return { error: "Desktop app only." }; },
   async importSkillZip() { return { error: "Desktop app only." }; },
+  async readSkill() { return null; },
   async setSkillEnabled() { return true; },
   async deleteSkill() { return { ok: true }; },
 

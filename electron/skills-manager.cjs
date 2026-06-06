@@ -30,8 +30,10 @@ function walk(root, depth, acc) {
   for (const e of entries) {
     if (e.isFile() && e.name === "SKILL.md") {
       try {
-        const { meta } = parse(fs.readFileSync(path.join(root, "SKILL.md"), "utf8"));
-        acc.push({ name: meta.name || path.basename(root), description: meta.description || "", dir: root, file: path.join(root, "SKILL.md") });
+        const file = path.join(root, "SKILL.md");
+        const { meta } = parse(fs.readFileSync(file, "utf8"));
+        let updated = 0; try { updated = fs.statSync(file).mtimeMs; } catch {}
+        acc.push({ name: meta.name || path.basename(root), description: meta.description || "", dir: root, file, updated });
       } catch {}
     }
   }
@@ -70,6 +72,17 @@ function loadSkill(dirs, name) {
   return { dir: s.dir, body };
 }
 
+// Read one skill's full content for the detail view.
+function readSkill(dir) {
+  const file = path.join(dir, "SKILL.md");
+  try {
+    const raw = fs.readFileSync(file, "utf8");
+    const { meta, body } = parse(raw);
+    let updated = 0; try { updated = fs.statSync(file).mtimeMs; } catch {}
+    return { dir, file, meta, body, updated };
+  } catch { return null; }
+}
+
 function createStarter(dir, name) {
   const safe = String(name || "new-skill").replace(/[^a-zA-Z0-9_-]/g, "-").toLowerCase() || "new-skill";
   const d = path.join(dir, safe);
@@ -84,4 +97,4 @@ function createStarter(dir, name) {
   return { dir: d, file };
 }
 
-module.exports = { discover, indexText, loadSkill, createStarter };
+module.exports = { discover, indexText, loadSkill, readSkill, createStarter };

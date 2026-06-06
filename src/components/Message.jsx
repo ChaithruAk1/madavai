@@ -19,7 +19,7 @@ export default function Message({ item, streaming, onOpenArtifact }) {
   const artifacts = isUser || streaming ? [] : extractArtifacts(item.text);
   return (
     <div className={`msg ${isUser ? "user" : "assistant"}`}>
-      <div className="avatar">{isUser ? "Y" : <ThinkLogo size={17} />}</div>
+      <div className="avatar">{isUser ? "Y" : <ThinkLogo size={28} />}</div>
       <div className="body">
         <div className="who">{isUser ? "You" : "Thinkflux"}</div>
         <div className="content">

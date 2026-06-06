@@ -1,114 +1,164 @@
-import { useEffect, useState } from "react";
-import { FolderPlus, FolderUp, Upload, Plus, Puzzle, RefreshCw, X, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { useEffect, useState, createElement } from "react";
+import { FolderPlus, FolderUp, Upload, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+
+// --- tiny markdown renderer (headings, bold, inline code, bullets, fenced code) ---
+function inline(t, k0 = 0) {
+  const parts = []; let key = k0, last = 0, m;
+  const re = /(\*\*([^*]+)\*\*|`([^`]+)`)/g;
+  while ((m = re.exec(t))) {
+    if (m.index > last) parts.push(t.slice(last, m.index));
+    if (m[2] != null) parts.push(<b key={key++}>{m[2]}</b>);
+    else parts.push(<code key={key++} className="sk-ic">{m[3]}</code>);
+    last = re.lastIndex;
+  }
+  if (last < t.length) parts.push(t.slice(last));
+  return parts;
+}
+function renderMd(md) {
+  const lines = (md || "").split(/\r?\n/);
+  const out = []; let key = 0, inCode = false, code = [], list = null;
+  const flushList = () => { if (list) { out.push(<ul key={key++} className="sk-ul">{list}</ul>); list = null; } };
+  const flushCode = () => { out.push(<pre key={key++} className="sk-code">{code.join("\n")}</pre>); code = []; };
+  for (const line of lines) {
+    if (line.trim().startsWith("```")) { if (inCode) { flushCode(); inCode = false; } else { flushList(); inCode = true; } continue; }
+    if (inCode) { code.push(line); continue; }
+    if (/^#{1,6}\s/.test(line)) { flushList(); const lvl = Math.min(line.match(/^#+/)[0].length + 1, 4); out.push(createElement("h" + lvl, { key: key++, className: "sk-h" }, inline(line.replace(/^#+\s/, "")))); continue; }
+    if (/^\s*[-*]\s+/.test(line)) { list = list || []; list.push(<li key={key++}>{inline(line.replace(/^\s*[-*]\s+/, ""))}</li>); continue; }
+    if (line.trim() === "") { flushList(); continue; }
+    flushList(); out.push(<p key={key++} className="sk-p">{inline(line)}</p>);
+  }
+  flushList(); if (inCode) flushCode();
+  return out;
+}
 
 export default function Skills() {
   const [dirs, setDirs] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [sel, setSel] = useState(null);
+  const [detail, setDetail] = useState(null);
   const [newName, setNewName] = useState("");
   const [status, setStatus] = useState("");
+  const [showFolders, setShowFolders] = useState(false);
 
   const refresh = async () => {
     const cfg = await bridge.getSettings();
     setDirs(cfg.skillsDirs || []);
-    setSkills(await bridge.listSkills());
+    const list = await bridge.listSkills();
+    setSkills(list);
+    return list;
   };
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh().then((l) => { if (l && l[0]) select(l[0]); }); }, []);
+
+  const select = async (s) => {
+    setSel(s); setDetail(null);
+    const d = await bridge.readSkill(s.dir);
+    setDetail(d);
+  };
 
   const saveDirs = async (next) => {
     const cfg = await bridge.getSettings();
     await bridge.saveSettings({ ...cfg, skillsDirs: next });
-    setDirs(next);
-    setSkills(await bridge.listSkills());
+    setDirs(next); await refresh();
   };
-
-  const addFolder = async () => {
-    const dir = await bridge.chooseFolder();
-    if (!dir || dirs.includes(dir)) return;
-    await saveDirs([...dirs, dir]);
-    setStatus(`Added ${dir}`);
-  };
+  const addFolder = async () => { const dir = await bridge.chooseFolder(); if (!dir || dirs.includes(dir)) return; await saveDirs([...dirs, dir]); setStatus(`Added ${dir}`); };
   const removeFolder = async (d) => saveDirs(dirs.filter((x) => x !== d));
 
   const after = async (r, label) => {
     if (r?.canceled) return;
     if (r?.error) { setStatus(r.error); return; }
-    setStatus(`${label}: ${r.dir}`);
-    setSkills(await bridge.listSkills());
+    setStatus(`${label}${r.count ? ` (${r.count})` : ""}`);
+    const l = await refresh(); if (l && l[0] && !sel) select(l[0]);
   };
   const create = async () => after(await bridge.createSkill(newName || "new-skill"), "Created");
   const importFolder = async () => after(await bridge.importSkillFolder(), "Imported");
   const importZip = async () => after(await bridge.importSkillZip(), "Imported");
 
-  const toggleSkill = async (s) => { await bridge.setSkillEnabled(s.dir, !s.enabled); setSkills(await bridge.listSkills()); };
+  const toggleSkill = async (s) => { await bridge.setSkillEnabled(s.dir, s.enabled === false); await refresh(); };
   const deleteSkill = async (s) => {
-    if (!window.confirm(`Delete skill "${s.name}"? This removes the folder:\n${s.dir}`)) return;
+    if (!window.confirm(`Delete skill "${s.name}"?\n${s.dir}`)) return;
     const r = await bridge.deleteSkill(s.dir);
-    if (r?.error) setStatus(r.error); else setStatus(`Deleted ${s.name}`);
-    setSkills(await bridge.listSkills());
+    setStatus(r?.error || `Deleted ${s.name}`);
+    const l = await refresh(); setSel(null); setDetail(null); if (l && l[0]) select(l[0]);
   };
 
+  const on = sel && sel.enabled !== false;
+  const trigger = sel ? "/" + (sel.dir.split(/[\\/]/).pop()) : "";
+  const updated = detail && detail.updated ? new Date(detail.updated).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
+
   return (
-    <div className="settings scroll" style={{ padding: 24, overflow: "auto", maxWidth: 760 }}>
-      <h2 style={{ margin: "0 0 4px", fontSize: 17 }}>Skills</h2>
-      <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 0 }}>
-        Thinkflux reads SKILL.md folders from every folder below — your own and, if you add it, the folder where Claude
-        stores skills. The list is re-scanned on every message, so adds/edits show up in real time. New and imported
-        skills go into the <b>first</b> folder.
-      </p>
-
-      <div className="nav-label" style={{ paddingLeft: 0 }}>Skill folders</div>
-      {dirs.length === 0 && <div style={{ color: "var(--text-2)", fontSize: 13, margin: "6px 0" }}>No folders yet.</div>}
-      {dirs.map((d, i) => (
-        <div key={d} className="folder-bar" style={{ borderRadius: 10, border: "1px solid var(--line)", marginBottom: 6 }}>
-          {i === 0 && <span className="badge">primary</span>}
-          <span className="path">{d}</span>
-          <button className="btn ghost" onClick={() => removeFolder(d)} style={{ marginLeft: "auto", padding: "4px 8px" }}><X size={14} /></button>
+    <div className="skills2">
+      <aside className="sk-list">
+        <div className="sk-list-head">
+          <span className="sk-list-title">Skills</span>
+          <button className="icon-btn" title="Reload" onClick={() => refresh()}><RefreshCw size={14} /></button>
         </div>
-      ))}
+        <div className="nav-label" style={{ paddingLeft: 8 }}>Personal skills</div>
+        <div className="sk-items scroll">
+          {skills.length === 0 && <div className="sk-empty" style={{ padding: "8px 10px" }}>No skills found.</div>}
+          {skills.map((s) => (
+            <button key={s.dir} className={`sk-item ${sel && sel.dir === s.dir ? "active" : ""} ${s.enabled === false ? "off" : ""}`} onClick={() => select(s)}>
+              {s.name}
+            </button>
+          ))}
+        </div>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0 18px" }}>
-        <button className="btn" onClick={addFolder}><FolderPlus size={14} /> Add folder</button>
-        <button className="btn" onClick={importFolder}><FolderUp size={14} /> Import skill folder</button>
-        <button className="btn" onClick={importZip}><Upload size={14} /> Import .zip / .skill</button>
-        <button className="btn" onClick={refresh}><RefreshCw size={14} /> Reload</button>
-      </div>
-
-      <div className="nav-label" style={{ paddingLeft: 0 }}>Create a new skill (in the primary folder)</div>
-      <div style={{ display: "flex", gap: 8, margin: "8px 0 4px" }}>
-        <input className="model-search" style={{ flex: 1, marginBottom: 0 }} placeholder="new-skill-name"
-          value={newName} onChange={(e) => setNewName(e.target.value)} />
-        <button className="btn primary" onClick={create}><Plus size={14} /> Create</button>
-      </div>
-      {status && <div style={{ color: status.toLowerCase().includes("error") || status.includes("first") ? "var(--danger)" : "var(--text-2)", fontSize: 12, margin: "8px 0" }}>{status}</div>}
-
-      <div className="nav-label" style={{ paddingLeft: 0, marginTop: 16 }}>Discovered skills ({skills.length})</div>
-      {skills.length === 0 ? (
-        <div style={{ color: "var(--text-2)", fontSize: 13, padding: "10px 0" }}>None found in the folders above.</div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
-          {skills.map((s) => {
-            const on = s.enabled !== false;
-            return (
-              <div key={s.dir} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px", background: "var(--bg-1)", opacity: on ? 1 : 0.55 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Puzzle size={15} style={{ color: on ? "var(--accent)" : "var(--text-2)" }} />
-                  <span style={{ fontWeight: 500 }}>{s.name}</span>
-                  <span style={{ flex: 1 }} />
-                  <button className="btn ghost" title={on ? "Disable" : "Enable"} onClick={() => toggleSkill(s)} style={{ padding: "3px 7px", color: on ? "var(--ok)" : "var(--text-2)" }}>
-                    {on ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-                  </button>
-                  <button className="btn ghost danger" title="Delete skill" onClick={() => deleteSkill(s)} style={{ padding: "3px 7px" }}>
-                    <Trash2 size={14} />
-                  </button>
+        <div className="sk-foot">
+          <div className="sk-create">
+            <input className="model-search" style={{ marginBottom: 0 }} placeholder="new-skill-name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <button className="btn primary" onClick={create}><Plus size={14} /></button>
+          </div>
+          <div className="sk-foot-btns">
+            <button className="btn" onClick={importFolder}><FolderUp size={13} /> Import folder</button>
+            <button className="btn" onClick={importZip}><Upload size={13} /> .zip</button>
+            <button className="btn" onClick={() => setShowFolders((v) => !v)}><FolderPlus size={13} /> Folders</button>
+          </div>
+          {showFolders && (
+            <div className="sk-folders">
+              {dirs.map((d, i) => (
+                <div key={d} className="sk-folder">
+                  {i === 0 && <span className="badge">primary</span>}
+                  <span className="sk-folder-path" title={d}>{d}</span>
+                  <button className="icon-btn" onClick={() => removeFolder(d)}><X size={12} /></button>
                 </div>
-                <div style={{ color: "var(--text-1)", fontSize: 13, marginTop: 4 }}>{s.description || "(no description)"}</div>
-                <div style={{ color: "var(--text-2)", fontSize: 11, marginTop: 4, fontFamily: "var(--mono)" }}>{s.dir}</div>
-              </div>
-            );
-          })}
+              ))}
+              <button className="btn" onClick={addFolder} style={{ marginTop: 4 }}><FolderPlus size={13} /> Add folder</button>
+            </div>
+          )}
+          {status && <div className="sk-status">{status}</div>}
         </div>
-      )}
+      </aside>
+
+      <section className="sk-detail scroll">
+        {!sel ? (
+          <div className="sk-empty" style={{ marginTop: 60, textAlign: "center" }}>Select a skill to view its details.</div>
+        ) : (
+          <div className="sk-detail-inner">
+            <div className="sk-detail-head">
+              <h2>{sel.name}</h2>
+              <span style={{ flex: 1 }} />
+              <button className="btn ghost" title={on ? "Disable" : "Enable"} onClick={() => toggleSkill(sel)} style={{ color: on ? "var(--ok)" : "var(--text-2)" }}>
+                {on ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+              </button>
+              <button className="btn ghost danger" title="Delete" onClick={() => deleteSkill(sel)}><Trash2 size={15} /></button>
+            </div>
+
+            <div className="sk-meta">
+              <div><label>Added by</label><span>You</span></div>
+              <div><label>Last updated</label><span>{updated}</span></div>
+              <div><label>Trigger</label><span>{trigger} + auto</span></div>
+            </div>
+
+            <div className="sk-meta-label">Description</div>
+            <div className="sk-meta-desc">{sel.description || "(no description)"}</div>
+
+            <div className="sk-card">
+              {detail ? renderMd(detail.body) : <div className="sk-empty">Loading…</div>}
+            </div>
+            <div className="sk-dir">{sel.dir}</div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

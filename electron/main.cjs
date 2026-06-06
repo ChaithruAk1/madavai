@@ -90,6 +90,12 @@ ipcMain.handle("thinkflux:interrupt", (_e, { sessionId }) => sm.interrupt(sessio
 ipcMain.handle("thinkflux:setPermissionMode", (_e, { sessionId, mode }) => sm.setPermissionMode(sessionId, mode));
 ipcMain.on("thinkflux:resolvePermission", (_e, { requestId, result }) => sm.resolvePermission(requestId, result));
 
+// ---- IPC: persisted chat history (Let's Talk / Collaborate / Build) ----
+const sstore = require("./sessions-store.cjs");
+ipcMain.handle("thinkflux:listSessions", (_e, mode) => sstore.listSessions(mode));
+ipcMain.handle("thinkflux:getSession", (_e, id) => sstore.getSession(id));
+ipcMain.handle("thinkflux:deleteSession", (_e, id) => sstore.deleteSession(id));
+
 // ---- IPC: settings + models ----
 ipcMain.handle("thinkflux:getSettings", () => settings.load());
 ipcMain.handle("thinkflux:saveSettings", (_e, next) => settings.save(next));
@@ -119,6 +125,7 @@ ipcMain.handle("thinkflux:listSkills", () => {
   const disabled = new Set(cfg.disabledSkills || []);
   return skillsMgr.discover(cfg.skillsDirs).map((s) => ({ ...s, enabled: !disabled.has(s.dir) }));
 });
+ipcMain.handle("thinkflux:readSkill", (_e, dir) => skillsMgr.readSkill(dir));
 ipcMain.handle("thinkflux:setSkillEnabled", (_e, { dir, enabled }) => {
   const cfg = settings.load();
   const set = new Set(cfg.disabledSkills || []);
@@ -140,17 +147,42 @@ ipcMain.handle("thinkflux:createSkill", (_e, name) => {
   try { return skillsMgr.createStarter(dir, name); } catch (e) { return { error: String(e.message || e) }; }
 });
 
-// Import a skill by copying a folder (must contain SKILL.md somewhere) into the first skills folder.
+// Import a skill by copying a folder into the first skills folder.
+//  - if the folder itself has SKILL.md → import it as one skill
+//  - if it's a parent of several skill subfolders → import each
+//  - guards against copying a folder into itself / one already in the skills path
 ipcMain.handle("thinkflux:importSkillFolder", async () => {
   const dest = (settings.load().skillsDirs || [])[0];
   if (!dest) return { error: "Add a skills folder first." };
-  const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"], title: "Select a skill folder (contains SKILL.md)" });
+  const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"], title: "Select a skill folder (or a folder of skills)" });
   if (r.canceled) return { canceled: true };
-  const src = r.filePaths[0];
+
+  const src = path.resolve(r.filePaths[0]);
+  const destN = path.resolve(dest);
+  const inside = (parent, child) => { const rel = path.relative(parent, child); return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel)); };
+  const hasSkill = (d) => { try { return fs.existsSync(path.join(d, "SKILL.md")); } catch { return false; } };
+
+  if (src === destN) return { error: "That IS your primary skills folder — its sub-skills are already loaded. Click Reload. (Each skill should be its own subfolder with a SKILL.md.)" };
+  if (inside(destN, src)) return { error: "That folder is already inside your skills folder — it's already available. Click Reload." };
+  if (inside(src, destN)) return { error: "Can't import a folder that contains your skills folder. Pick a single skill's folder instead." };
+
   try {
-    const target = path.join(dest, path.basename(src));
-    fs.cpSync(src, target, { recursive: true });
-    return { dir: target };
+    let sources = [];
+    if (hasSkill(src)) sources = [src];
+    else {
+      for (const e of fs.readdirSync(src, { withFileTypes: true })) {
+        if (e.isDirectory() && hasSkill(path.join(src, e.name))) sources.push(path.join(src, e.name));
+      }
+    }
+    if (!sources.length) return { error: "No SKILL.md found in that folder or its immediate subfolders." };
+    const imported = [];
+    for (const s of sources) {
+      const target = path.join(destN, path.basename(s));
+      if (path.resolve(target) === s) continue; // already there
+      fs.cpSync(s, target, { recursive: true });
+      imported.push(path.basename(s));
+    }
+    return { dir: destN, imported, count: imported.length };
   } catch (e) { return { error: String(e.message || e) }; }
 });
 
