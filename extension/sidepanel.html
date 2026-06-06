@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  :root { --bg:#0a0c10; --surface:#12151d; --line:#222838; --line2:#2c3346; --text:#e7ebf5; --text2:#8893ad; --accent:#6e7bff; --accent2:#38e8d0; --ok:#34d399; --danger:#ff6b6b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); font-size:13px; height:100vh; display:flex; flex-direction:column; }
+  header { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); }
+  header .name { font-weight:600; font-size:14px; }
+  header .gear { margin-left:auto; cursor:pointer; color:var(--text2); background:none; border:none; font-size:16px; }
+  .modelbar { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--line); }
+  .modelbar label { color:var(--text2); font-size:11px; }
+  select.model { flex:1; background:var(--surface); border:1px solid var(--line2); border-radius:8px; color:var(--text); padding:7px 9px; font:inherit; outline:none; }
+  select.model:focus { border-color:var(--accent); }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--text2); }
+  .dot.on { background:var(--ok); }
+  .log { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .step { border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--surface); }
+  .step .a { color:var(--accent2); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .step .t { color:var(--text2); margin-top:3px; word-break:break-word; }
+  .step.answer { border-color:var(--accent); }
+  .step.err { border-color:var(--danger); }
+  .composer { padding:10px 12px; border-top:1px solid var(--line); display:flex; gap:8px; }
+  textarea { flex:1; resize:none; background:var(--surface); border:1px solid var(--line); border-radius:9px; color:var(--text); padding:9px 11px; font:inherit; min-height:42px; max-height:120px; outline:none; }
+  textarea:focus { border-color:var(--accent); }
+  button.go { width:42px; border:none; border-radius:9px; background:linear-gradient(135deg,var(--accent),#5a67f0); color:#fff; font-size:16px; cursor:pointer; }
+  button.go:disabled { opacity:.5; cursor:default; }
+
+  .settings { display:none; padding:14px; border-bottom:1px solid var(--line); background:var(--surface); max-height:60vh; overflow-y:auto; }
+  .settings.open { display:block; }
+  .settings h4 { margin:0 0 8px; font-size:12px; color:var(--text2); text-transform:uppercase; letter-spacing:.05em; }
+  .settings label { display:block; font-size:11px; color:var(--text2); margin:8px 0 3px; }
+  .settings input, .settings select { width:100%; background:var(--bg); border:1px solid var(--line2); border-radius:7px; color:var(--text); padding:7px 9px; font:inherit; outline:none; }
+  .row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .btn { padding:7px 12px; border:1px solid var(--line2); border-radius:7px; background:var(--bg); color:var(--text); cursor:pointer; font:inherit; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.danger { color:var(--danger); border-color:#5a2a2a; }
+  .status { font-size:11px; color:var(--text2); margin-top:8px; min-height:14px; }
+  .empty { color:var(--text2); text-align:center; margin-top:40px; padding:0 20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <header>
+    <span class="name">Thinkflux</span>
+    <button class="gear" id="gear" title="Providers & keys">⚙</button>
+  </header>
+
+  <div class="modelbar">
+    <span class="dot" id="dot"></span>
+    <select class="model" id="modelSelect" title="Active model"></select>
+  </div>
+
+  <div class="settings" id="settings">
+    <h4>Providers</h4>
+    <label>Edit provider</label>
+    <select id="provSelect"></select>
+    <label>Name</label>
+    <input id="pName" placeholder="My provider" />
+    <label>Base URL (OpenAI-compatible)</label>
+    <input id="pBase" placeholder="https://…/v1" />
+    <label>API key</label>
+    <input id="pKey" type="password" placeholder="sk-… (blank for local)" />
+    <label>Default model</label>
+    <input id="pModel" placeholder="model id" />
+    <div class="row">
+      <button class="btn" id="loadModels">Load models</button>
+      <button class="btn primary" id="saveProv">Save</button>
+      <button class="btn" id="addProv">+ Add</button>
+      <button class="btn danger" id="delProv">Delete</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="log" id="log">
+    <div class="empty">Pick a provider &amp; model above, then give me a goal for <b>this tab</b> — e.g. "find the pricing page and tell me the cheapest plan". I read the page and click / type / navigate step by step.</div>
+  </div>
+
+  <div class="composer">
+    <textarea id="goal" placeholder="What should I do on this page?"></textarea>
+    <button class="go" id="run" title="Run">▶</button>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
