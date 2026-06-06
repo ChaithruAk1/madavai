@@ -17,6 +17,8 @@ const DEFAULTS = {
   googleClientId: "",
   googleClientSecret: "",
   globalInstructions: "", // applied to every conversation, like Claude's custom instructions
+  defaultModel: "", // "profileId::model" — applied on every app start
+  messaging: { enabled: false, platform: "telegram", telegramToken: "", telegramAllowedUserIds: "", target: "chat", folder: "" },
   profiles: {
     p_local: {
       id: "p_local",

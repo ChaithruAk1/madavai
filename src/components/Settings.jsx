@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save } from "lucide-react";
+import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput } from "lucide-react";
+import ModelPicker from "./ModelPicker.jsx";
 import { bridge } from "../bridge/index.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
@@ -7,6 +8,7 @@ const SECTIONS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "account", label: "Account & sign-in", icon: ShieldCheck },
   { id: "model", label: "Model configuration", icon: Cpu },
+  { id: "messaging", label: "Messaging", icon: Send },
 ];
 
 export default function Settings({ onChanged }) {
@@ -16,18 +18,35 @@ export default function Settings({ onChanged }) {
   const [status, setStatus] = useState("");
   const [section, setSection] = useState("profile");
   const [busy, setBusy] = useState("");
+  const [msgStatus, setMsgStatus] = useState(null);
+  const [anthStatus, setAnthStatus] = useState("");
 
   useEffect(() => { bridge.getSettings().then((cfg) => { setS(cfg); setSelId(cfg.activeProfileId); }); }, []);
+  useEffect(() => {
+    if (section !== "messaging") return;
+    let alive = true;
+    const t = () => bridge.messagingStatus().then((r) => alive && setMsgStatus(r));
+    t(); const iv = setInterval(t, 4000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [section]);
   if (!s || !selId) return <div className="empty"><div>Loading settings…</div></div>;
 
   const account = s.account || {};
   const profiles = Object.values(s.profiles);
   const sel = s.profiles[selId];
+  const modelGroups = profiles.map((p) => {
+    const ids = (p.cachedModels && p.cachedModels.length) ? p.cachedModels : (p.model ? [p.model] : []);
+    return { group: p.name, items: ids.map((mid) => ({ id: `${p.id}::${mid}`, name: mid, prov: p.name, badge: p.kind })) };
+  }).filter((g) => g.items.length);
 
   const persist = async (next) => { setS(next); await bridge.saveSettings(next); onChanged?.(next); };
   const patch = (field, val) => persist({ ...s, profiles: { ...s.profiles, [selId]: { ...sel, [field]: val } } });
   const setAccount = (a) => persist({ ...s, account: { ...account, ...a } });
   const setField = (k, v) => persist({ ...s, [k]: v });
+  const msg = s.messaging || {};
+  const setMsg = (k, v) => persist({ ...s, messaging: { ...msg, [k]: v } });
+  const applyMsg = async () => { await bridge.saveSettings(s); const r = await bridge.applyMessaging(); setMsgStatus(r); };
+  const pickMsgFolder = async () => { const d = await bridge.chooseFolder(); if (d) setMsg("folder", d); };
 
   const addProfile = () => { const id = "p_" + Math.random().toString(36).slice(2, 7); persist({ ...s, profiles: { ...s.profiles, [id]: BLANK(id) } }); setSelId(id); };
   const delProfile = () => {
@@ -55,7 +74,16 @@ export default function Settings({ onChanged }) {
     if (r?.error) { setStatus(r.error); return; }
     if (r?.account) { const next = await bridge.getSettings(); setS(next); }
   };
-  const linkAnthropic = async () => { const r = await bridge.linkAnthropic(); setAccount({ anthropicLinked: true }); if (r?.note) setStatus(r.note); };
+  const setAnthKey = (v) => {
+    const base = s.profiles.p_anthropic || { id: "p_anthropic", name: "Anthropic", kind: "anthropic", baseUrl: "https://api.anthropic.com", model: "claude-sonnet-4-6" };
+    persist({ ...s, profiles: { ...s.profiles, p_anthropic: { ...base, apiKey: v } } });
+  };
+  const verifyAnthropic = async () => {
+    setAnthStatus("Authenticating…");
+    const models = await bridge.listModels("p_anthropic");
+    if (models && models.length) { setAnthStatus(`Authenticated ✓ · ${models.length} models available to this key`); setAccount({ anthropicLinked: true }); }
+    else { setAnthStatus("Could not authenticate — check the API key (a 401 means the key is wrong)."); setAccount({ anthropicLinked: false }); }
+  };
   const signOut = async () => { await bridge.signOut(); const next = await bridge.getSettings(); setS(next); };
 
   const initials = (account.name || account.email || "Y").slice(0, 1).toUpperCase();
@@ -119,14 +147,19 @@ export default function Settings({ onChanged }) {
 
             <div className="acc-card">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <strong>Anthropic account</strong>
-                {account.anthropicLinked && <span className="chip" style={{ color: "var(--ok)" }}><Check size={12} /> linked</span>}
-                <span style={{ flex: 1 }} />
-                <button className="btn" onClick={linkAnthropic}>Link Anthropic account</button>
+                <strong>Anthropic</strong>
+                {account.anthropicLinked && <span className="chip" style={{ color: "var(--ok)" }}><Check size={12} /> authenticated</span>}
               </div>
-              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 0" }}>
-                Bills usage to your Anthropic subscription instead of an API key. After linking, run <code>claude login</code> once in a terminal to authorize; the agent (Anthropic) path then uses your account automatically.
+              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 10px" }}>
+                Anthropic has <b>no "Sign in with Anthropic"</b> for third‑party apps (unlike Google), and no public endpoint that returns account name/email/usage. The real credential is your <b>API key</b> — Chai authenticates by validating it against the API. (Subscription/account billing only works through the bundled Claude Code via <code>claude login</code>.)
               </p>
+              <Field label="Anthropic API key">
+                <input className="model-search" type="password" value={(s.profiles.p_anthropic && s.profiles.p_anthropic.apiKey) || ""} onChange={(e) => setAnthKey(e.target.value)} placeholder="sk-ant-…" />
+              </Field>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button className="btn primary" onClick={verifyAnthropic}>Authenticate &amp; show details</button>
+                <span style={{ color: anthStatus.startsWith("Authenticated") ? "var(--ok)" : "var(--text-2)", fontSize: 12 }}>{anthStatus}</span>
+              </div>
             </div>
 
             {(account.googleLinked || account.name || account.email) && (
@@ -137,7 +170,17 @@ export default function Settings({ onChanged }) {
         )}
 
         {section === "model" && (
-          <div style={{ display: "grid", gridTemplateColumns: "210px 1fr", gap: 24 }}>
+          <div>
+            <div style={{ maxWidth: 520, marginBottom: 18 }}>
+              <div className="nav-label" style={{ paddingLeft: 0 }}>Default model</div>
+              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
+                Applied every time the app starts. You can still switch models live in the top bar during a session — it resets to this on next launch.
+              </p>
+              <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
+              {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
+            </div>
+            <div className="nav-label" style={{ paddingLeft: 0 }}>Providers &amp; models</div>
+            <div style={{ display: "grid", gridTemplateColumns: "210px 1fr", gap: 24, marginTop: 6 }}>
             <div>
               <div className="nav-label" style={{ paddingLeft: 0 }}>Providers</div>
               {profiles.map((p) => (
@@ -172,9 +215,50 @@ export default function Settings({ onChanged }) {
                 <span style={{ color: status.startsWith("Saved") ? "var(--ok)" : "var(--text-2)", fontSize: 12 }}>{status}</span>
               </div>
               <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 18 }}>
-                Every provider is always available — the model you pick in the top-bar selector decides which one runs. No need to mark one "active".
+                Every provider is always available — the model you pick in the top-bar selector decides which one runs.
               </p>
             </div>
+            </div>
+          </div>
+        )}
+
+        {section === "messaging" && (
+          <div style={{ maxWidth: 560 }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Messaging — Telegram bot</h2>
+            <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 0 }}>
+              Drive Chai from Telegram. Message your bot and it runs the active model and replies. ⚠ This is remote control of this machine — only your allowed user id can use it.
+            </p>
+            <div className="acc-card">
+              <label className="chip" style={{ cursor: "pointer", marginBottom: 12 }}>
+                <input type="checkbox" checked={!!msg.enabled} onChange={(e) => setMsg("enabled", e.target.checked)} style={{ marginRight: 6 }} /> Enable Telegram bot
+              </label>
+              <Field label="Bot token (from @BotFather)"><input className="model-search" type="password" value={msg.telegramToken || ""} onChange={(e) => setMsg("telegramToken", e.target.value)} placeholder="123456:ABC-..." /></Field>
+              <Field label="Allowed Telegram user id(s) — comma separated (find yours via @userinfobot)"><input className="model-search" value={msg.telegramAllowedUserIds || ""} onChange={(e) => setMsg("telegramAllowedUserIds", e.target.value)} placeholder="1442423552" /></Field>
+              <Field label="Run target">
+                <select className="model-search" value={msg.target || "chat"} onChange={(e) => setMsg("target", e.target.value)}>
+                  <option value="chat">Chat (no file/shell access — safest)</option>
+                  <option value="folder">A folder (agent can edit files & run commands)</option>
+                </select>
+              </Field>
+              {msg.target === "folder" && (
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+                  <button className="btn" onClick={pickMsgFolder}><FolderInput size={14} /> Choose folder</button>
+                  {msg.folder && <span style={{ fontFamily: "var(--mono)", fontSize: 12 }}>{msg.folder}</span>}
+                </div>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button className="btn primary" onClick={applyMsg}>Apply</button>
+                {msgStatus && (
+                  <span className="chip" style={{ color: msgStatus.running ? "var(--ok)" : "var(--text-2)" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 9, background: msgStatus.running ? "var(--ok)" : "var(--text-2)", marginRight: 6 }} />
+                    {msgStatus.status}
+                  </span>
+                )}
+              </div>
+            </div>
+            <p style={{ color: "var(--text-2)", fontSize: 12 }}>
+              Scheduled/unattended, so it auto-approves tools. Uses the active provider. Send /start to your bot to test.
+            </p>
           </div>
         )}
       </div>

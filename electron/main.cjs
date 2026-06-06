@@ -17,6 +17,16 @@ const store = require("./projects-store.cjs");
 const dispatch = require("./dispatch-store.cjs");
 const runner = require("./dispatch-runner.cjs");
 const usage = require("./usage-store.cjs");
+const tgbot = require("./telegram-bot.cjs");
+
+function reconcileMessaging() {
+  const m = settings.load().messaging || {};
+  if (m.enabled && m.platform === "telegram" && m.telegramToken) {
+    tgbot.start({ token: m.telegramToken, allowed: m.telegramAllowedUserIds, target: m.target, folder: m.folder });
+  } else {
+    tgbot.stop();
+  }
+}
 
 const isDev = process.env.NODE_ENV === "development";
 let win = null;
@@ -209,6 +219,10 @@ ipcMain.handle("chai:updateTask", (_e, { id, patch }) => dispatch.updateTask(id,
 ipcMain.handle("chai:deleteTask", (_e, id) => dispatch.deleteTask(id));
 ipcMain.handle("chai:getRuns", (_e, id) => dispatch.getRuns(id));
 ipcMain.handle("chai:getUsage", (_e, days) => usage.summary(days));
+
+// ---- IPC: messaging (Telegram) ----
+ipcMain.handle("chai:applyMessaging", () => { reconcileMessaging(); return tgbot.getStatus(); });
+ipcMain.handle("chai:messagingStatus", () => tgbot.getStatus());
 ipcMain.handle("chai:runTaskNow", async (_e, id) => {
   const t = dispatch.getTask(id);
   if (!t) return { status: "error", output: "Task not found." };
@@ -300,6 +314,6 @@ ipcMain.handle("chai:googleSignIn", async () => {
 
 app.on("before-quit", () => { mcp.disconnectAll(); });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => { createWindow(); reconcileMessaging(); });
 app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

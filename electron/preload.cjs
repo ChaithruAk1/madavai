@@ -69,4 +69,8 @@ contextBridge.exposeInMainWorld("chai", {
 
   // --- usage ---
   getUsage: (days) => ipcRenderer.invoke("chai:getUsage", days),
+
+  // --- messaging (Telegram) ---
+  applyMessaging: () => ipcRenderer.invoke("chai:applyMessaging"),
+  messagingStatus: () => ipcRenderer.invoke("chai:messagingStatus"),
 });

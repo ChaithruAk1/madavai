@@ -44,7 +44,21 @@ export default function App() {
     setModelsByProfile(Object.fromEntries(entries));
   }
 
-  useEffect(() => { bridge.getSettings().then((cfg) => { setSettings(cfg); loadModelsFor(cfg); }); }, []);
+  useEffect(() => {
+    bridge.getSettings().then(async (cfg) => {
+      // On every launch, snap the active model to the saved Default Model.
+      if (cfg.defaultModel && cfg.defaultModel.includes("::")) {
+        const i = cfg.defaultModel.indexOf("::");
+        const pid = cfg.defaultModel.slice(0, i), mid = cfg.defaultModel.slice(i + 2);
+        if (cfg.profiles[pid]) {
+          cfg = { ...cfg, activeProfileId: pid, profiles: { ...cfg.profiles, [pid]: { ...cfg.profiles[pid], model: mid } } };
+          await bridge.saveSettings(cfg);
+        }
+      }
+      setSettings(cfg);
+      loadModelsFor(cfg);
+    });
+  }, []);
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [timeline, streaming]);
