@@ -159,7 +159,8 @@ export default function App() {
   const pickerGroups = profiles
     .map((p) => {
       const live = modelsByProfile[p.id] || [];
-      const ids = live.length ? live : (p.model ? [p.model] : []);
+      const cached = p.cachedModels || [];
+      const ids = live.length ? live : (cached.length ? cached : (p.model ? [p.model] : []));
       const loc = isLocal(p.baseUrl) ? "local" : "cloud";
       return { group: `${p.name} · ${loc}`, items: ids.slice(0, 500).map((mid) => ({ id: `${p.id}::${mid}`, name: mid, prov: p.name, badge: loc })) };
     })

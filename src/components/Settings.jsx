@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut } from "lucide-react";
+import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
@@ -37,6 +37,16 @@ export default function Settings({ onChanged }) {
     setSelId(Object.keys(rest)[0]);
   };
   const test = async () => { setStatus("Fetching models…"); const list = await bridge.listModels(selId); setModels(list); setStatus(list.length ? `${list.length} models found` : "No /v1/models — enter the model id manually"); };
+  // Save the provider AND cache its discovered models so the top-bar picker always has them.
+  const saveProvider = async () => {
+    setStatus("Saving & validating…");
+    let list = [];
+    try { list = await bridge.listModels(selId); } catch {}
+    const next = { ...s, profiles: { ...s.profiles, [selId]: { ...sel, cachedModels: list } } };
+    setS(next); await bridge.saveSettings(next); onChanged?.(next);
+    setModels(list);
+    setStatus(list.length ? `Saved ✓ · ${list.length} models available in the picker` : "Saved ✓ · couldn't load models — enter the model id manually");
+  };
 
   const googleSignIn = async () => {
     setBusy("google");
@@ -156,9 +166,10 @@ export default function Settings({ onChanged }) {
                 <input className="model-search" value={sel.model} onChange={(e) => patch("model", e.target.value)} list="model-list" />
                 <datalist id="model-list">{models.map((m) => <option key={m} value={m} />)}</datalist>
               </Field>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-                <button className="btn" onClick={test}><RefreshCw size={14} /> Test connection / load models</button>
-                <span style={{ color: "var(--text-2)", fontSize: 12 }}>{status}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                <button className="btn primary" onClick={saveProvider}><Save size={14} /> Save &amp; load models</button>
+                <button className="btn" onClick={test}><RefreshCw size={14} /> Test only</button>
+                <span style={{ color: status.startsWith("Saved") ? "var(--ok)" : "var(--text-2)", fontSize: 12 }}>{status}</span>
               </div>
               <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 18 }}>
                 Every provider is always available — the model you pick in the top-bar selector decides which one runs. No need to mark one "active".
