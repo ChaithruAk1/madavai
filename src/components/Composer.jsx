@@ -66,11 +66,11 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate }) {
   };
 
   const placeholder = {
-    chat: "Message Thinkflux…",
+    chat: "Message BrainEdge…",
     code: "Describe a change to the repo…",
-    cowork: "Ask Thinkflux to work on your folder…",
+    cowork: "Ask BrainEdge to work on your folder…",
     project: "Continue this project…",
-  }[mode] || "Message Thinkflux…";
+  }[mode] || "Message BrainEdge…";
   const canSend = !!text.trim() || files.length > 0;
 
   return (

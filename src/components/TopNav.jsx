@@ -1,7 +1,9 @@
 import ThinkLogo from "./ThinkLogo.jsx";
+import { MessageCircle, Users, Hammer } from "lucide-react";
 import { MODES } from "../bridge/contract.js";
 
 const ORDER = ["chat", "cowork", "code"];
+const ICONS = { chat: MessageCircle, cowork: Users, code: Hammer };
 
 export default function TopNav({ mode, onSelect, online, loc }) {
   const tabs = ORDER.map((id) => MODES.find((m) => m.id === id)).filter(Boolean);
@@ -9,17 +11,22 @@ export default function TopNav({ mode, onSelect, online, loc }) {
   return (
     <header className="topnav glass">
       <div className="tn-brand">
-        <ThinkLogo size={46} />
+        <ThinkLogo size={50} />
         <div className="tn-brandtext">
-          <span className="tn-name">Thinkflux</span>
+          <span className="tn-name">BrainEdge</span>
           <span className="tn-by">by Chaithrodaya Sukruth</span>
         </div>
       </div>
 
       <nav className="tn-tabs">
-        {tabs.map((m) => (
-          <button key={m.id} className={`tn-tab ${mode === m.id ? "active" : ""}`} onClick={() => onSelect(m.id)}>{m.label}</button>
-        ))}
+        {tabs.map((m) => {
+          const I = ICONS[m.id];
+          return (
+            <button key={m.id} className={`tn-tab ${mode === m.id ? "active" : ""}`} onClick={() => onSelect(m.id)}>
+              {I && <I size={15} className="tn-tabicon" />}<span>{m.label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <div className="tn-right">

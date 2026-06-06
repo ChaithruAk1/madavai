@@ -1,7 +1,7 @@
 // Mock implementation of the Bridge contract. Streams fake UiEvents so the
 // renderer layout is fully exercised — including a tool call that pauses on a
 // permission_request until the UI calls resolvePermission(). Swap this for the
-// real `window.chai` (Electron preload → SessionManager) with no UI changes.
+// real `window.brainedge` (Electron preload → SessionManager) with no UI changes.
 
 let seq = 0;
 const listeners = new Set();
@@ -25,7 +25,7 @@ async function streamText(sessionId, text, chunk = 3, delay = 18) {
 // Canned "turn" that shows off every event kind.
 async function runDemoTurn(sessionId, mode, prompt) {
   emit(sessionId, "init", {
-    model: "deepseek/deepseek-v3", cwd: "~/projects/chai",
+    model: "deepseek/deepseek-v3", cwd: "~/projects/brainedge",
     permissionMode: mode === "cowork" ? "acceptEdits" : "default",
     tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
   });
@@ -174,5 +174,5 @@ let _mockSettings = {
   },
 };
 
-// In the real app: export const bridge = window.chai ?? mockBridge;
+// In the real app: export const bridge = window.brainedge ?? mockBridge;
 export const bridge = mockBridge;

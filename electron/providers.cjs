@@ -57,7 +57,7 @@ async function streamOpenAI(profile, messages, { onDelta, signal }) {
     signal,
     headers: {
       "Content-Type": "application/json",
-      ...(profile.apiKey ? { Authorization: `Bearer ${profile.apiKey}` } : {}),
+      ...(profile.apiKey ? { Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
     body: JSON.stringify({ model: profile.model, messages, stream: true }),
   });
@@ -90,7 +90,7 @@ async function streamAnthropic(profile, messages, { onDelta, signal }) {
     headers: {
       "Content-Type": "application/json",
       "anthropic-version": "2023-06-01",
-      ...(profile.apiKey ? { "x-api-key": profile.apiKey, Authorization: `Bearer ${profile.apiKey}` } : {}),
+      ...(profile.apiKey ? { "x-api-key": (profile.apiKey || "").trim(), Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
     body: JSON.stringify({ model: profile.model, max_tokens: 4096, system, messages: turns, stream: true }),
   });
@@ -120,9 +120,9 @@ async function listModels(profile) {
   const headers = {};
   if (profile.kind === "anthropic") {
     headers["anthropic-version"] = "2023-06-01";
-    if (profile.apiKey) headers["x-api-key"] = profile.apiKey;
+    if (profile.apiKey) headers["x-api-key"] = (profile.apiKey || "").trim();
   } else if (profile.apiKey) {
-    headers["Authorization"] = `Bearer ${profile.apiKey}`;
+    headers["Authorization"] = `Bearer ${(profile.apiKey || "").trim()}`;
   }
   const res = await fetch(url, { headers });
   if (!res.ok) return [];
@@ -142,7 +142,7 @@ async function streamChatTools(profile, messages, tools, { onDelta, signal }) {
     signal,
     headers: {
       "Content-Type": "application/json",
-      ...(profile.apiKey ? { Authorization: `Bearer ${profile.apiKey}` } : {}),
+      ...(profile.apiKey ? { Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
     body: JSON.stringify({ model: profile.model, messages, tools, tool_choice: "auto", stream: true }),
   });
@@ -179,8 +179,8 @@ async function ping(profile) {
   const t = setTimeout(() => ctrl.abort(), 3500);
   try {
     const headers = {};
-    if (profile.kind === "anthropic") { headers["anthropic-version"] = "2023-06-01"; if (profile.apiKey) headers["x-api-key"] = profile.apiKey; }
-    else if (profile.apiKey) headers["Authorization"] = `Bearer ${profile.apiKey}`;
+    if (profile.kind === "anthropic") { headers["anthropic-version"] = "2023-06-01"; if (profile.apiKey) headers["x-api-key"] = (profile.apiKey || "").trim(); }
+    else if (profile.apiKey) headers["Authorization"] = `Bearer ${(profile.apiKey || "").trim()}`;
     await fetch(url, { headers, signal: ctrl.signal });
     clearTimeout(t);
     return true;

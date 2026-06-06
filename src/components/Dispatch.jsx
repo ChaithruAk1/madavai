@@ -68,7 +68,7 @@ export default function Dispatch() {
 
             <div className="nav-label" style={{ paddingLeft: 0 }}>Prompt / instructions</div>
             <textarea className="model-search" rows={4} style={{ resize: "vertical", fontFamily: "inherit" }}
-              placeholder="What should Thinkflux do each run? e.g. 'Summarize new files in the linked folder.'"
+              placeholder="What should BrainEdge do each run? e.g. 'Summarize new files in the linked folder.'"
               value={task.prompt} onChange={(e) => setTask({ ...task, prompt: e.target.value })} onBlur={(e) => save({ prompt: e.target.value })} />
 
             <div className="nav-label" style={{ paddingLeft: 0, marginTop: 12 }}>Run against</div>

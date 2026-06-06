@@ -1,11 +1,11 @@
-# Chakra — Project Memory
+# BrainEdge — Project Memory
 
 > Resume file. If the chat is lost, read this first to pick up exactly where we left off.
 > Last updated: end of Phase 3 Skills (multi-folder + import).
 
 ---
 
-## 1. What Chakra is
+## 1. What BrainEdge is
 
 A desktop app (Electron + React + Vite) that **replicates Claude Desktop's functionality — Chat,
 Cowork, Code, Projects, Skills, Connectors — but runs on ANY LLM** (Anthropic, external cloud like
@@ -15,14 +15,14 @@ Two guiding principles:
 1. Match Claude Cowork's features.
 2. Simple, efficient, flexible use of Anthropic + external + local models — **no proxy required**.
 
-Origin: inspired by `free-claude-code` (a CLI proxy). We deliberately did NOT use a proxy — Chakra
+Origin: inspired by `free-claude-code` (a CLI proxy). We deliberately did NOT use a proxy — BrainEdge
 talks to providers directly and runs its own agent loop.
 
 ## 2. Locations / run / commit
 
-- Repo (local): `C:\Projects\ClaudeCodeUI\Chakra`
-- GitHub remote: `https://github.com/chaithruak/chakra.git` (branch `main`)
-- Settings file at runtime: `%APPDATA%\chakra\chai-settings.json`
+- Repo (local): `C:\Projects\ClaudeCodeUI\BrainEdge`
+- GitHub remote: `https://github.com/chaithruak/brainedge.git` (branch `main`)
+- Settings file at runtime: `%APPDATA%\brainedge\chai-settings.json`
 - Run (browser UI, mock data): `npm install` then `npm run dev` (http://localhost:5174)
 - Run (full desktop app): `npm run electron:dev`
 - **Main-process changes (electron/*.cjs) require a FULL restart** (Ctrl+C then `npm run electron:dev`);
@@ -53,7 +53,7 @@ React UI (src/) ──IPC── Electron main (electron/) ── providers / age
     openai-kind, routed through the tool loop (skills + connectors, no file/shell, streaming on).
   - `code` / `cowork` / `project` → agent loop with file/shell tools.
 - **Two agent transports**, routed by profile kind in session-manager `_agentTurn`:
-  - openai-kind → `electron/agent-openai.cjs` (Chakra's OWN tool-calling loop — this is the main path
+  - openai-kind → `electron/agent-openai.cjs` (BrainEdge's OWN tool-calling loop — this is the main path
     for external models, the user's objective).
   - anthropic-kind → `electron/agent-transport.cjs` (Claude Agent SDK, for Anthropic or a proxy).
 - **Permission modes** (user-selectable in top bar): `default` (ask before changes), `acceptEdits`
@@ -147,15 +147,15 @@ src/ (renderer, React):
 - Sidebar.jsx redesigned (glossy mode tiles + tool rail). Topbar shows online dot + cloud/local tag.
 - `styles.css` — dark terracotta theme.
 
-Docs: `ARCHITECTURE.md` (Session Manager spec — note it predates Chakra rename, still says "Chai" in
+Docs: `ARCHITECTURE.md` (Session Manager spec — note it predates BrainEdge rename, still says "Chai" in
 places), `ROADMAP.md` (3-phase plan), `README.md`, this `MEMORY.md`.
 
 ## 6. Key decisions & gotchas
 
 - App display name = **Chai** (tea theme; boiling tea-cup logo in Sidebar brand). IMPORTANT: the
-  *visible* name is Chai but the internal package id / userData folder stays **chakra** (package.json
+  *visible* name is Chai but the internal package id / userData folder stays **brainedge** (package.json
   name + build.appId unchanged) so settings/projects/conversations are NOT orphaned. Do not change
-  package.json "name" or you'll move %APPDATA%\chakra and lose data.
+  package.json "name" or you'll move %APPDATA%\brainedge and lose data.
 - Settings is now 3 sections: Profile, Account & sign-in (Google PKCE OAuth via main.cjs chai:googleSignIn
   — needs a user-supplied Google Client ID; Anthropic account link = flag + `claude login`), Model
   configuration (the providers). account/{name,email,avatar,googleLinked,anthropicLinked} + googleClientId/
@@ -199,7 +199,7 @@ places), `ROADMAP.md` (3-phase plan), `README.md`, this `MEMORY.md`.
 
 ## 9. Commit checkpoints so far
 
-- "Chakra: chat + Cowork on external models, permission modes, Cowork-style UI"
+- "BrainEdge: chat + Cowork on external models, permission modes, Cowork-style UI"
 - "Phase 3: MCP connectors working"
 - "Phase 3: Skills across chat, code, cowork, projects"
 - (pending push) multi-folder skills + import + toggle/delete + real-time index refresh

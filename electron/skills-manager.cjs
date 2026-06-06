@@ -91,7 +91,7 @@ function createStarter(dir, name) {
   if (!fs.existsSync(file)) {
     fs.writeFileSync(
       file,
-      `---\nname: ${safe}\ndescription: One sentence on when Thinkflux should use this skill.\n---\n\n# ${safe}\n\nDescribe the steps Thinkflux should follow when this skill applies.\n\nYou can include helper scripts in this folder and run them with the run_bash tool,\ne.g. \`python "${d}/script.py"\`. List any inputs the skill needs.\n`
+      `---\nname: ${safe}\ndescription: One sentence on when BrainEdge should use this skill.\n---\n\n# ${safe}\n\nDescribe the steps BrainEdge should follow when this skill applies.\n\nYou can include helper scripts in this folder and run them with the run_bash tool,\ne.g. \`python "${d}/script.py"\`. List any inputs the skill needs.\n`
     );
   }
   return { dir: d, file };

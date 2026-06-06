@@ -1,5 +1,5 @@
 // Self-built agent loop for OpenAI-compatible providers (NIM, OpenRouter, local).
-// No proxy, no Anthropic dependency — Chai runs the tool-calling loop itself,
+// No proxy, no Anthropic dependency — BrainEdge runs the tool-calling loop itself,
 // in-process, against the active external model. Emits the same UiEvents as the SDK path.
 const fs = require("fs");
 const path = require("path");
@@ -54,13 +54,13 @@ function isBlocked(permMode, name) {
 
 const SYSTEM = (mode) =>
   mode === "chat"
-    ? `You are Thinkflux, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
+    ? `You are BrainEdge, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
       `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.`
     : mode === "code"
-    ? `You are Thinkflux, an expert software engineer working in the user's repository. ` +
+    ? `You are BrainEdge, an expert software engineer working in the user's repository. ` +
       `Always explore before editing: use find_files and search_text to locate code, read_file to understand it, then make minimal, correct edits with edit_file/write_file. ` +
       `Prefer surgical edits over rewrites. After changes, you may run tests/build via run_bash. Explain what you changed in one short paragraph; show diffs or key snippets when useful, but never paste raw tool JSON.`
-    : `You are Thinkflux, an AI assistant working inside the user's "${mode}" folder. ` +
+    : `You are BrainEdge, an AI assistant working inside the user's "${mode}" folder. ` +
       `Use the provided tools (files, shell, skills, and connectors) to take real actions rather than describing them. Use relative paths. ` +
       `Reply to the user in clear, natural language. When they ask to SEE something — a file list, file contents, search results — ` +
       `actually present it readably (a short bullet or comma-separated list, or a brief excerpt). Don't just say "here are the files" without showing them. ` +

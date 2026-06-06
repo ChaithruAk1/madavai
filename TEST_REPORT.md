@@ -1,4 +1,4 @@
-# Thinkflux — Autonomous Test Report
+# BrainEdge — Autonomous Test Report
 
 **Date:** 2026-06-06
 **Tester:** automated static/build/unit pass (no GUI execution — see Scope)
@@ -36,7 +36,7 @@ settings, skills-manager, telegram-bot, usage-store.
 
 **1b. Renderer parse — `@babel/parser` (jsx) on all of `src/`**
 Result: **23 / 23 files parsed OK, 0 failed.** (Catches broken JSX / imports from the
-Chai→Thinkflux rename and the logo swap.)
+Chai→BrainEdge rename and the logo swap.)
 
 **1c. Extension JS — `node --check extension/*.js`**
 Result: **OK** for `background.js` and `sidepanel.js`.
@@ -63,7 +63,7 @@ Real inputs → expected outputs, all asserted and green:
 | `plain answer` | `plain answer` | ✅ |
 | `<think>only open no close` | `` (empty) | ✅ |
 | `A<think>x</think>B` | `AB` | ✅ |
-| `format... </think> Greetings, friend. Welcome to Thinkflux.` | `Greetings, friend. Welcome to Thinkflux.` | ✅ |
+| `format... </think> Greetings, friend. Welcome to BrainEdge.` | `Greetings, friend. Welcome to BrainEdge.` | ✅ |
 | `` (empty) | `` | ✅ |
 
 The orphan-`</think>` case (row 2/6) is exactly the bug from your screenshot — confirmed handled.
@@ -148,11 +148,11 @@ The orphan-`</think>` case (row 2/6) is exactly the bug from your screenshot —
 
 **Applied during the build (earlier in the session):** reasoning stripper, date injection,
 URL resolver in the extension, dismissable permission modal, Telegram diagnostics, proxy
-support, full Thinkflux rename, app icon.
+support, full BrainEdge rename, app icon.
 
 **Cleanups I could NOT do (sandbox is read-only for deletes) — please run on your host:**
 ```powershell
-cd C:\Projects\ClaudeCodeUI\Thinkflux
+cd C:\Projects\ClaudeCodeUI\BrainEdge
 git rm src/components/TeaLogo.jsx     # dead file, nothing imports it
 git rm electron/err.tmp               # stray old error log
 ```

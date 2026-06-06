@@ -36,9 +36,9 @@ const tgbot = require("./telegram-bot.cjs");
   try {
     const undici = require("undici");
     undici.setGlobalDispatcher(undici.EnvHttpProxyAgent ? new undici.EnvHttpProxyAgent() : new undici.ProxyAgent(px));
-    console.log(`[thinkflux] proxy enabled → ${px} (NO_PROXY=${process.env.NO_PROXY})`);
+    console.log(`[brainedge] proxy enabled → ${px} (NO_PROXY=${process.env.NO_PROXY})`);
   } catch (e) {
-    console.log("[thinkflux] proxy requested but undici not available — run `npm install undici`. Direct connection. " + (e && e.message));
+    console.log("[brainedge] proxy requested but undici not available — run `npm install undici`. Direct connection. " + (e && e.message));
   }
 })();
 
@@ -80,60 +80,60 @@ function createWindow() {
 
 // One SessionManager; it pushes UiEvents to the focused renderer.
 const sm = new SessionManager((uiEvent) => {
-  if (win && !win.isDestroyed()) win.webContents.send("thinkflux:event", uiEvent);
+  if (win && !win.isDestroyed()) win.webContents.send("brainedge:event", uiEvent);
 });
 
 // ---- IPC: commands (renderer → main) ----
-ipcMain.handle("thinkflux:start", (_e, req) => sm.start(req));
-ipcMain.handle("thinkflux:sendInput", (_e, { sessionId, text }) => sm.sendInput(sessionId, text));
-ipcMain.handle("thinkflux:interrupt", (_e, { sessionId }) => sm.interrupt(sessionId));
-ipcMain.handle("thinkflux:setPermissionMode", (_e, { sessionId, mode }) => sm.setPermissionMode(sessionId, mode));
-ipcMain.on("thinkflux:resolvePermission", (_e, { requestId, result }) => sm.resolvePermission(requestId, result));
+ipcMain.handle("brainedge:start", (_e, req) => sm.start(req));
+ipcMain.handle("brainedge:sendInput", (_e, { sessionId, text }) => sm.sendInput(sessionId, text));
+ipcMain.handle("brainedge:interrupt", (_e, { sessionId }) => sm.interrupt(sessionId));
+ipcMain.handle("brainedge:setPermissionMode", (_e, { sessionId, mode }) => sm.setPermissionMode(sessionId, mode));
+ipcMain.on("brainedge:resolvePermission", (_e, { requestId, result }) => sm.resolvePermission(requestId, result));
 
 // ---- IPC: persisted chat history (Let's Talk / Collaborate / Build) ----
 const sstore = require("./sessions-store.cjs");
-ipcMain.handle("thinkflux:listSessions", (_e, mode) => sstore.listSessions(mode));
-ipcMain.handle("thinkflux:getSession", (_e, id) => sstore.getSession(id));
-ipcMain.handle("thinkflux:deleteSession", (_e, id) => sstore.deleteSession(id));
+ipcMain.handle("brainedge:listSessions", (_e, mode) => sstore.listSessions(mode));
+ipcMain.handle("brainedge:getSession", (_e, id) => sstore.getSession(id));
+ipcMain.handle("brainedge:deleteSession", (_e, id) => sstore.deleteSession(id));
 
 // ---- IPC: settings + models ----
-ipcMain.handle("thinkflux:getSettings", () => settings.load());
-ipcMain.handle("thinkflux:saveSettings", (_e, next) => settings.save(next));
-ipcMain.handle("thinkflux:listModels", async (_e, profileId) => {
+ipcMain.handle("brainedge:getSettings", () => settings.load());
+ipcMain.handle("brainedge:saveSettings", (_e, next) => settings.save(next));
+ipcMain.handle("brainedge:listModels", async (_e, profileId) => {
   const s = settings.load();
   const p = profileId ? s.profiles[profileId] : settings.activeProfile(s);
   try { return await listModels(p); } catch { return []; }
 });
-ipcMain.handle("thinkflux:pingProvider", async (_e, profileId) => {
+ipcMain.handle("brainedge:pingProvider", async (_e, profileId) => {
   const s = settings.load();
   const p = profileId ? s.profiles[profileId] : settings.activeProfile(s);
   try { return await ping(p); } catch { return false; }
 });
 
 // ---- IPC: folder picker (for Cowork/Code working directory) ----
-ipcMain.handle("thinkflux:chooseFolder", async () => {
+ipcMain.handle("brainedge:chooseFolder", async () => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"] });
   return r.canceled ? null : r.filePaths[0];
 });
 
 // ---- IPC: connectors (MCP) ----
-ipcMain.handle("thinkflux:testConnector", (_e, server) => mcp.testServer(server));
+ipcMain.handle("brainedge:testConnector", (_e, server) => mcp.testServer(server));
 
 // ---- IPC: skills ----
-ipcMain.handle("thinkflux:listSkills", () => {
+ipcMain.handle("brainedge:listSkills", () => {
   const cfg = settings.load();
   const disabled = new Set(cfg.disabledSkills || []);
   return skillsMgr.discover(cfg.skillsDirs).map((s) => ({ ...s, enabled: !disabled.has(s.dir) }));
 });
-ipcMain.handle("thinkflux:readSkill", (_e, dir) => skillsMgr.readSkill(dir));
-ipcMain.handle("thinkflux:setSkillEnabled", (_e, { dir, enabled }) => {
+ipcMain.handle("brainedge:readSkill", (_e, dir) => skillsMgr.readSkill(dir));
+ipcMain.handle("brainedge:setSkillEnabled", (_e, { dir, enabled }) => {
   const cfg = settings.load();
   const set = new Set(cfg.disabledSkills || []);
   if (enabled) set.delete(dir); else set.add(dir);
   settings.save({ ...cfg, disabledSkills: [...set] });
   return true;
 });
-ipcMain.handle("thinkflux:deleteSkill", (_e, dir) => {
+ipcMain.handle("brainedge:deleteSkill", (_e, dir) => {
   try {
     fs.rmSync(dir, { recursive: true, force: true });
     const cfg = settings.load();
@@ -141,7 +141,7 @@ ipcMain.handle("thinkflux:deleteSkill", (_e, dir) => {
     return { ok: true };
   } catch (e) { return { error: String(e.message || e) }; }
 });
-ipcMain.handle("thinkflux:createSkill", (_e, name) => {
+ipcMain.handle("brainedge:createSkill", (_e, name) => {
   const dir = (settings.load().skillsDirs || [])[0];
   if (!dir) return { error: "Add a skills folder first." };
   try { return skillsMgr.createStarter(dir, name); } catch (e) { return { error: String(e.message || e) }; }
@@ -151,7 +151,7 @@ ipcMain.handle("thinkflux:createSkill", (_e, name) => {
 //  - if the folder itself has SKILL.md → import it as one skill
 //  - if it's a parent of several skill subfolders → import each
 //  - guards against copying a folder into itself / one already in the skills path
-ipcMain.handle("thinkflux:importSkillFolder", async () => {
+ipcMain.handle("brainedge:importSkillFolder", async () => {
   const dest = (settings.load().skillsDirs || [])[0];
   if (!dest) return { error: "Add a skills folder first." };
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"], title: "Select a skill folder (or a folder of skills)" });
@@ -187,7 +187,7 @@ ipcMain.handle("thinkflux:importSkillFolder", async () => {
 });
 
 // Import a skill from a .zip or .skill archive (extract into the first skills folder).
-ipcMain.handle("thinkflux:importSkillZip", async () => {
+ipcMain.handle("brainedge:importSkillZip", async () => {
   const dest = (settings.load().skillsDirs || [])[0];
   if (!dest) return { error: "Add a skills folder first." };
   const r = await dialog.showOpenDialog(win, { properties: ["openFile"], filters: [{ name: "Skill archive", extensions: ["zip", "skill"] }] });
@@ -210,14 +210,14 @@ ipcMain.handle("thinkflux:importSkillZip", async () => {
 });
 
 // ---- IPC: projects + conversations ----
-ipcMain.handle("thinkflux:listProjects", () => store.listProjects());
-ipcMain.handle("thinkflux:getProject", (_e, id) => store.getProject(id));
-ipcMain.handle("thinkflux:createProject", (_e, name) => store.createProject(name));
-ipcMain.handle("thinkflux:updateProject", (_e, { id, patch }) => store.updateProject(id, patch));
-ipcMain.handle("thinkflux:deleteProject", (_e, id) => store.deleteProject(id));
+ipcMain.handle("brainedge:listProjects", () => store.listProjects());
+ipcMain.handle("brainedge:getProject", (_e, id) => store.getProject(id));
+ipcMain.handle("brainedge:createProject", (_e, name) => store.createProject(name));
+ipcMain.handle("brainedge:updateProject", (_e, { id, patch }) => store.updateProject(id, patch));
+ipcMain.handle("brainedge:deleteProject", (_e, id) => store.deleteProject(id));
 
-ipcMain.handle("thinkflux:addKnowledgeText", (_e, { projectId, name, content }) => store.addKnowledge(projectId, { name, type: "text", content }));
-ipcMain.handle("thinkflux:addKnowledgeFile", async (_e, projectId) => {
+ipcMain.handle("brainedge:addKnowledgeText", (_e, { projectId, name, content }) => store.addKnowledge(projectId, { name, type: "text", content }));
+ipcMain.handle("brainedge:addKnowledgeFile", async (_e, projectId) => {
   const r = await dialog.showOpenDialog(win, {
     properties: ["openFile", "multiSelections"],
     filters: [{ name: "Text/Docs", extensions: ["txt", "md", "markdown", "json", "csv", "log", "yml", "yaml", "js", "ts", "py", "html", "xml"] }],
@@ -233,16 +233,16 @@ ipcMain.handle("thinkflux:addKnowledgeFile", async (_e, projectId) => {
   }
   return { added, project: store.getProject(projectId) };
 });
-ipcMain.handle("thinkflux:removeKnowledge", (_e, { projectId, knId }) => store.removeKnowledge(projectId, knId));
+ipcMain.handle("brainedge:removeKnowledge", (_e, { projectId, knId }) => store.removeKnowledge(projectId, knId));
 
 // Link a project to a source folder or a GitHub repo (gives its conversations file access).
-ipcMain.handle("thinkflux:linkProjectFolder", async (_e, projectId) => {
+ipcMain.handle("brainedge:linkProjectFolder", async (_e, projectId) => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"], title: "Link a folder to this project" });
   if (r.canceled) return { canceled: true };
   store.updateProject(projectId, { folder: r.filePaths[0], githubUrl: "" });
   return { folder: r.filePaths[0] };
 });
-ipcMain.handle("thinkflux:linkGithub", async (_e, { projectId, url }) => {
+ipcMain.handle("brainedge:linkGithub", async (_e, { projectId, url }) => {
   if (!url) return { error: "Enter a repository URL." };
   const repoName = (url.split("/").pop() || "repo").replace(/\.git$/, "");
   const dest = path.join(app.getPath("userData"), "projects-data", "repos", projectId);
@@ -255,31 +255,31 @@ ipcMain.handle("thinkflux:linkGithub", async (_e, { projectId, url }) => {
     return { folder: target };
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
-ipcMain.handle("thinkflux:pullGithub", async (_e, projectId) => {
+ipcMain.handle("brainedge:pullGithub", async (_e, projectId) => {
   const p = store.getProject(projectId);
   if (!p || !p.folder) return { error: "No linked repo." };
   try { await pExecFile("git", ["-C", p.folder, "pull"], { timeout: 180000 }); return { ok: true }; }
   catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
-ipcMain.handle("thinkflux:unlinkProjectSource", (_e, projectId) => store.updateProject(projectId, { folder: "", githubUrl: "" }));
+ipcMain.handle("brainedge:unlinkProjectSource", (_e, projectId) => store.updateProject(projectId, { folder: "", githubUrl: "" }));
 
-ipcMain.handle("thinkflux:listConversations", (_e, projectId) => store.listConversations(projectId));
-ipcMain.handle("thinkflux:getConversation", (_e, id) => store.getConversation(id));
-ipcMain.handle("thinkflux:createConversation", (_e, projectId) => store.createConversation(projectId));
-ipcMain.handle("thinkflux:deleteConversation", (_e, id) => store.deleteConversation(id));
+ipcMain.handle("brainedge:listConversations", (_e, projectId) => store.listConversations(projectId));
+ipcMain.handle("brainedge:getConversation", (_e, id) => store.getConversation(id));
+ipcMain.handle("brainedge:createConversation", (_e, projectId) => store.createConversation(projectId));
+ipcMain.handle("brainedge:deleteConversation", (_e, id) => store.deleteConversation(id));
 
 // ---- IPC: dispatch (background + scheduled tasks) ----
-ipcMain.handle("thinkflux:listTasks", () => dispatch.listTasks());
-ipcMain.handle("thinkflux:createTask", () => dispatch.createTask());
-ipcMain.handle("thinkflux:updateTask", (_e, { id, patch }) => dispatch.updateTask(id, patch));
-ipcMain.handle("thinkflux:deleteTask", (_e, id) => dispatch.deleteTask(id));
-ipcMain.handle("thinkflux:getRuns", (_e, id) => dispatch.getRuns(id));
-ipcMain.handle("thinkflux:getUsage", (_e, days) => usage.summary(days));
+ipcMain.handle("brainedge:listTasks", () => dispatch.listTasks());
+ipcMain.handle("brainedge:createTask", () => dispatch.createTask());
+ipcMain.handle("brainedge:updateTask", (_e, { id, patch }) => dispatch.updateTask(id, patch));
+ipcMain.handle("brainedge:deleteTask", (_e, id) => dispatch.deleteTask(id));
+ipcMain.handle("brainedge:getRuns", (_e, id) => dispatch.getRuns(id));
+ipcMain.handle("brainedge:getUsage", (_e, days) => usage.summary(days));
 
 // ---- IPC: messaging (Telegram) ----
-ipcMain.handle("thinkflux:applyMessaging", async () => { await reconcileMessaging(); return tgbot.getStatus(); });
-ipcMain.handle("thinkflux:messagingStatus", () => tgbot.getStatus());
-ipcMain.handle("thinkflux:runTaskNow", async (_e, id) => {
+ipcMain.handle("brainedge:applyMessaging", async () => { await reconcileMessaging(); return tgbot.getStatus(); });
+ipcMain.handle("brainedge:messagingStatus", () => tgbot.getStatus());
+ipcMain.handle("brainedge:runTaskNow", async (_e, id) => {
   const t = dispatch.getTask(id);
   if (!t) return { status: "error", output: "Task not found." };
   const run = await runner.runTask(t);
@@ -306,29 +306,29 @@ async function schedulerTick() {
     try {
       const run = await runner.runTask(t);
       dispatch.addRun(t.id, run);
-      if (win && !win.isDestroyed()) win.webContents.send("thinkflux:dispatchRun", { taskId: t.id, run });
+      if (win && !win.isDestroyed()) win.webContents.send("brainedge:dispatchRun", { taskId: t.id, run });
     } catch {}
   }
 }
 setInterval(schedulerTick, 60000);
 
 // ---- IPC: account / sign-in ----
-ipcMain.handle("thinkflux:saveAccount", (_e, account) => {
+ipcMain.handle("brainedge:saveAccount", (_e, account) => {
   const cfg = settings.load();
   settings.save({ ...cfg, account: { ...(cfg.account || {}), ...account } });
   return settings.load().account;
 });
-ipcMain.handle("thinkflux:signOut", () => {
+ipcMain.handle("brainedge:signOut", () => {
   const cfg = settings.load();
   settings.save({ ...cfg, account: { name: "", email: "", avatar: "", googleLinked: false, anthropicLinked: false } });
   return true;
 });
-ipcMain.handle("thinkflux:linkAnthropic", () => {
+ipcMain.handle("brainedge:linkAnthropic", () => {
   const cfg = settings.load();
   settings.save({ ...cfg, account: { ...(cfg.account || {}), anthropicLinked: true } });
   return { ok: true, note: "Run `claude login` once in a terminal to authorize your Anthropic account; the agent (SDK) path will then bill usage to your account instead of an API key." };
 });
-ipcMain.handle("thinkflux:googleSignIn", async () => {
+ipcMain.handle("brainedge:googleSignIn", async () => {
   const cfg = settings.load();
   const clientId = cfg.googleClientId;
   if (!clientId) return { error: "Add a Google OAuth Client ID (Account settings) first. Create one at console.cloud.google.com → Credentials → OAuth client → Desktop app." };
@@ -343,7 +343,7 @@ ipcMain.handle("thinkflux:googleSignIn", async () => {
         const u = new URL(req.url, "http://127.0.0.1");
         const code = u.searchParams.get("code");
         res.writeHead(200, { "Content-Type": "text/html" });
-        res.end("<html><body style='font-family:system-ui;background:#0b0d12;color:#eef;display:grid;place-items:center;height:100vh'><h2>Thinkflux — signed in. You can close this window.</h2></body></html>");
+        res.end("<html><body style='font-family:system-ui;background:#0b0d12;color:#eef;display:grid;place-items:center;height:100vh'><h2>BrainEdge — signed in. You can close this window.</h2></body></html>");
         if (!code) return finish({ error: "No authorization code returned." });
         const body = new URLSearchParams({ code, client_id: clientId, redirect_uri: redirectUri, grant_type: "authorization_code", code_verifier: verifier });
         if (cfg.googleClientSecret) body.set("client_secret", cfg.googleClientSecret);
@@ -369,7 +369,7 @@ ipcMain.handle("thinkflux:googleSignIn", async () => {
 });
 
 // GitHub sign-in via device flow (no secret needed; enable Device Flow on your OAuth app).
-ipcMain.handle("thinkflux:githubSignIn", async () => {
+ipcMain.handle("brainedge:githubSignIn", async () => {
   const cfg = settings.load();
   const clientId = cfg.githubClientId;
   if (!clientId) return { error: "Add a GitHub OAuth Client ID in Profile first (github.com → Settings → Developer settings → OAuth Apps → enable Device Flow)." };
@@ -390,7 +390,7 @@ ipcMain.handle("thinkflux:githubSignIn", async () => {
         body: JSON.stringify({ client_id: clientId, device_code: dc.device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code" }),
       })).json();
       if (tk.access_token) {
-        const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tk.access_token, "User-Agent": "Chai", Accept: "application/vnd.github+json" } })).json();
+        const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tk.access_token, "User-Agent": "BrainEdge", Accept: "application/vnd.github+json" } })).json();
         const account = { ...(cfg.account || {}), name: u.name || u.login || "", email: u.email || "", avatar: u.avatar_url || "", githubLinked: true };
         settings.save({ ...settings.load(), account });
         return { account };

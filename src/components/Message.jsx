@@ -21,7 +21,7 @@ export default function Message({ item, streaming, onOpenArtifact }) {
     <div className={`msg ${isUser ? "user" : "assistant"}`}>
       <div className="avatar">{isUser ? "Y" : <ThinkLogo size={28} />}</div>
       <div className="body">
-        <div className="who">{isUser ? "You" : "Thinkflux"}</div>
+        <div className="who">{isUser ? "You" : "BrainEdge"}</div>
         <div className="content">
           {text}
           {streaming && <span className="cursor" />}

@@ -40,12 +40,13 @@ const TOP = new Set(["Qwen2.5-Coder 32B", "Qwen3 32B", "Claude Sonnet"]);
 
 function tagsFor(m) {
   const t = [m.cat];
-  if (m.tools) t.push("Agentic");
+  if (m.agentic) t.push("Agentic");
   if (m.thinking) t.push("Thinking");
   if (m.vision) t.push("Vision");
   return t;
 }
 function blurbFor(m) {
+  if (m.sparse) return `Live model from ${m.maker}. It isn't in the curated catalog yet, so detailed specs (context, VRAM, license, capabilities) aren't available — only that it's offered by ${m.maker}.`;
   const where = m.host === "local" ? `Runs locally in ~${m.vram} GB VRAM (≈Q4)` : `Served via the ${m.host} API`;
   const think = m.thinking === "toggle" ? ", hybrid thinking mode" : m.thinking ? ", step-by-step reasoning" : "";
   return `${m.bestFor}. ${where}, ${fmtCtx(m.ctx)} context${think}. ${m.size !== "—" ? m.size + " parameters, " : ""}licensed ${m.license}.`;
@@ -76,7 +77,7 @@ export default function ModelsOverview({ activeModel }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("All");
   const [hostFilter, setHostFilter] = useState("All"); // All | local | cloud
-  const [caps, setCaps] = useState({ tools: false, vision: false, thinking: false });
+  const [caps, setCaps] = useState({ tools: false, vision: false, thinking: false, agentic: false });
   const [freeOnly, setFreeOnly] = useState(false);
   const [sortKey, setSortKey] = useState("ctx");
   const [dir, setDir] = useState("desc");
@@ -95,6 +96,7 @@ export default function ModelsOverview({ activeModel }) {
       if (caps.tools && !m.tools) return false;
       if (caps.vision && !m.vision) return false;
       if (caps.thinking && !m.thinking) return false;
+      if (caps.agentic && !m.agentic) return false;
       if (freeOnly && !freeInfo(m).has) return false;
       if (q) { const t = (m.name + " " + m.maker + " " + m.bestFor + " " + m.run).toLowerCase(); if (!t.includes(q.toLowerCase())) return false; }
       return true;
@@ -129,20 +131,17 @@ export default function ModelsOverview({ activeModel }) {
         </div>
         <div className="mo-chips">
           {["All", ...CATEGORIES].map((c) => (
-            <button key={c} className={`mo-chip ${cat === c ? "on" : ""}`} onClick={() => setCat(c)}>{c}</button>
-          ))}
-        </div>
-      </div>
-      <div className="mo-filters">
-        <div className="mo-chips">
-          {["All", "local", "cloud"].map((h) => (
-            <button key={h} className={`mo-chip ${hostFilter === h ? "on" : ""}`} onClick={() => setHostFilter(h)}>{h === "All" ? "All hosts" : h === "local" ? "Local" : "Cloud"}</button>
+            <button key={c} className={`mo-chip ${cat === c ? "on" : ""}`} onClick={() => setCat(cat === c ? "All" : c)}>{c}</button>
           ))}
           <span className="mo-sep" />
+          {["All", "local", "cloud"].map((h) => (
+            <button key={h} className={`mo-chip ${hostFilter === h ? "on" : ""}`} onClick={() => setHostFilter(hostFilter === h ? "All" : h)}>{h === "All" ? "All hosts" : h === "local" ? "Local" : "Cloud"}</button>
+          ))}
+          <span className="mo-sep" />
+          <button className={`mo-chip ${caps.agentic ? "on" : ""}`} onClick={() => toggleCap("agentic")}>Agentic</button>
           <button className={`mo-chip ${caps.tools ? "on" : ""}`} onClick={() => toggleCap("tools")}>Tools</button>
           <button className={`mo-chip ${caps.vision ? "on" : ""}`} onClick={() => toggleCap("vision")}>Vision</button>
           <button className={`mo-chip ${caps.thinking ? "on" : ""}`} onClick={() => toggleCap("thinking")}>Thinking</button>
-          <span className="mo-sep" />
           <button className={`mo-chip ${freeOnly ? "on" : ""}`} onClick={() => setFreeOnly((v) => !v)}>Free endpoint</button>
         </div>
       </div>
@@ -164,7 +163,7 @@ export default function ModelsOverview({ activeModel }) {
               <tr key={m.name} className={isActive(m) ? "active" : ""} onClick={() => setDetail(m)} style={{ cursor: "pointer" }}>
                 <td><div className="mo-name">{m.name}{isActive(m) && <span className="mo-activebadge">active</span>}</div><div className="mo-sub">{m.maker} · {m.year}</div></td>
                 <td><Stars value={m.rating} /></td>
-                <td><span className="mo-best">{m.bestFor}</span></td>
+                <td><span className="mo-best">{m.bestFor}</span>{m.agentic && <span className="mo-agentic" title="Strong for agentic / tool-use workflows">⚡ agentic</span>}</td>
                 <td className="mo-num">{fmtCtx(m.ctx)}</td>
                 <td>{m.host === "local" ? <span className="mo-pill local">Local · {m.vram}GB</span> : <span className="mo-pill cloud">Cloud · {m.host}</span>}</td>
                 <td><span className={`mo-cost ${costRank(m) === 0 ? "free" : costRank(m) === 1 ? "tier" : "paid"}`}>{freeInfo(m).cost}</span></td>
@@ -185,19 +184,19 @@ export default function ModelsOverview({ activeModel }) {
             <div className="mo-card-head">
               <div>
                 <div className="mo-card-title">{detail.name}{TOP.has(detail.name) && <span className="mo-pick">Top pick</span>}</div>
-                <div className="mo-sub">{detail.maker} · {detail.year}</div>
-                <div className="mo-rating-row"><Stars value={detail.rating} /> <span className="mo-rating-num">{detail.rating.toFixed(1)}</span> <span className="mo-sub">· approx. reputation</span></div>
+                <div className="mo-sub">{detail.maker}{detail.year ? " · " + detail.year : ""}</div>
+                {detail.rating ? <div className="mo-rating-row"><Stars value={detail.rating} /> <span className="mo-rating-num">{detail.rating.toFixed(1)}</span> <span className="mo-sub">· approx. reputation</span></div> : null}
               </div>
               <button className="icon-btn" onClick={() => setDetail(null)}><X size={16} /></button>
             </div>
 
             <div className="mo-badges">
-              {detail.host === "local"
+              {detail.host === "local" && detail.vram
                 ? <span className="mo-badge green">{detail.vram} GB VRAM ✓</span>
-                : <span className="mo-badge blue">{detail.host} API</span>}
-              <span className="mo-badge">{fmtCtx(detail.ctx)} context</span>
+                : <span className="mo-badge blue">{detail.host === "local" ? "Local" : detail.host} {detail.host === "local" ? "" : "API"}</span>}
+              {detail.ctx ? <span className="mo-badge">{fmtCtx(detail.ctx)} context</span> : null}
               {detail.size !== "—" && <span className="mo-badge">{detail.size}</span>}
-              <span className="mo-badge gray">{detail.license}</span>
+              {detail.license !== "—" && <span className="mo-badge gray">{detail.license}</span>}
             </div>
             <div className="mo-badges">
               {tagsFor(detail).map((t) => <span key={t} className="mo-badge tag">{t}</span>)}
@@ -217,16 +216,18 @@ export default function ModelsOverview({ activeModel }) {
               </div>
             </div>
 
-            <div className="mo-wm">
-              <div className="mo-wmcol">
-                <div className="mo-wmhead">Wins</div>
-                <ul>{winsFor(detail).map((w, i) => <li key={i}>{w}</li>)}</ul>
+            {!detail.sparse && (
+              <div className="mo-wm">
+                <div className="mo-wmcol">
+                  <div className="mo-wmhead">Wins</div>
+                  <ul>{winsFor(detail).map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </div>
+                <div className="mo-wmcol">
+                  <div className="mo-wmhead">Misses</div>
+                  <ul>{missesFor(detail).map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </div>
               </div>
-              <div className="mo-wmcol">
-                <div className="mo-wmhead">Misses</div>
-                <ul>{missesFor(detail).map((w, i) => <li key={i}>{w}</li>)}</ul>
-              </div>
-            </div>
+            )}
 
             <div className="mo-dl">
               {detail.host === "local" ? (

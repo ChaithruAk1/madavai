@@ -86,7 +86,7 @@ class SessionManager {
 
     // Diagnostic: shows in the [ELECTRON] terminal exactly which profile is active.
     const keyLen = (profile.apiKey || "").length;
-    console.log(`[thinkflux] turn → provider="${profile.name}" kind=${profile.kind} model="${profile.model}" baseUrl=${profile.baseUrl} keyLen=${keyLen} sub=${subMode}`);
+    console.log(`[brainedge] turn → provider="${profile.name}" kind=${profile.kind} model="${profile.model}" baseUrl=${profile.baseUrl} keyLen=${keyLen} sub=${subMode}`);
 
     // Clear guard instead of a cryptic upstream 401.
     const isLocal = /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(profile.baseUrl || "");
@@ -156,7 +156,7 @@ class SessionManager {
     const gi = settings.load().globalInstructions;
     const now = new Date();
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Use this whenever a date is needed; never say you don't know it.`;
-    const sysChat = "You are Thinkflux, a helpful assistant. " + dateLine +
+    const sysChat = "You are BrainEdge, a helpful assistant. " + dateLine +
       " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence." +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const messages = [{ role: "system", content: sysChat }, ...s.history];
@@ -249,7 +249,7 @@ class SessionManager {
         resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds,
       });
     } else {
-      // External OpenAI-compatible model (NIM/OpenRouter/local): Chai's own loop.
+      // External OpenAI-compatible model (NIM/OpenRouter/local): BrainEdge's own loop.
       const controller = new AbortController();
       s.controller = controller;
       try {

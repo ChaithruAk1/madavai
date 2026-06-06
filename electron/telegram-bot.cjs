@@ -1,4 +1,4 @@
-// Telegram bot — drives Chai's agent remotely via the Bot API (long polling, no server).
+// Telegram bot — drives BrainEdge's agent remotely via the Bot API (long polling, no server).
 // Reuses the dispatch runner so it inherits providers/skills/connectors. Single poll loop
 // that reads the latest config each iteration, so re-applying settings reconfigures it live.
 const runner = require("./dispatch-runner.cjs");
@@ -26,11 +26,11 @@ async function handle(c, u) {
   if (!msg || !msg.text) return;
   const from = String(msg.from && msg.from.id);
   const allowed = (c.allowed || "").split(/[,\s]+/).filter(Boolean);
-  if (!allowed.length) { await send(c.token, msg.chat.id, "🔒 Thinkflux bot is locked — no allowed user is configured in Settings → Messaging."); return; }
+  if (!allowed.length) { await send(c.token, msg.chat.id, "🔒 BrainEdge bot is locked — no allowed user is configured in Settings → Messaging."); return; }
   if (!allowed.includes(from)) { await send(c.token, msg.chat.id, `Not authorized. Your Telegram user id is ${from}.`); return; }
 
   const text = msg.text.trim();
-  if (text === "/start" || text === "/help") { await send(c.token, msg.chat.id, "Thinkflux is connected 🧠. Send a prompt and I'll run it. Target: " + (c.target || "chat") + "."); return; }
+  if (text === "/start" || text === "/help") { await send(c.token, msg.chat.id, "BrainEdge is connected 🧠. Send a prompt and I'll run it. Target: " + (c.target || "chat") + "."); return; }
 
   try { await tg(c.token, "sendChatAction", { chat_id: msg.chat.id, action: "typing" }); } catch {}
   const target = c.target === "folder" && c.folder ? { type: "folder", folder: c.folder } : { type: "chat" };

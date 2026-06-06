@@ -1,83 +1,83 @@
-// Exposes window.thinkflux — the real Bridge (mirrors src/bridge/contract.js).
+// Exposes window.brainedge — the real Bridge (mirrors src/bridge/contract.js).
 const { contextBridge, ipcRenderer } = require("electron");
 
 const listeners = new Set();
-ipcRenderer.on("thinkflux:event", (_e, uiEvent) => {
+ipcRenderer.on("brainedge:event", (_e, uiEvent) => {
   listeners.forEach((cb) => cb(uiEvent));
 });
 
-contextBridge.exposeInMainWorld("thinkflux", {
+contextBridge.exposeInMainWorld("brainedge", {
   // --- Bridge contract ---
-  start: (req) => ipcRenderer.invoke("thinkflux:start", req),
-  sendInput: (sessionId, text) => ipcRenderer.invoke("thinkflux:sendInput", { sessionId, text }),
-  interrupt: (sessionId) => ipcRenderer.invoke("thinkflux:interrupt", { sessionId }),
-  setPermissionMode: (sessionId, mode) => ipcRenderer.invoke("thinkflux:setPermissionMode", { sessionId, mode }),
-  resolvePermission: (requestId, result) => ipcRenderer.send("thinkflux:resolvePermission", { requestId, result }),
+  start: (req) => ipcRenderer.invoke("brainedge:start", req),
+  sendInput: (sessionId, text) => ipcRenderer.invoke("brainedge:sendInput", { sessionId, text }),
+  interrupt: (sessionId) => ipcRenderer.invoke("brainedge:interrupt", { sessionId }),
+  setPermissionMode: (sessionId, mode) => ipcRenderer.invoke("brainedge:setPermissionMode", { sessionId, mode }),
+  resolvePermission: (requestId, result) => ipcRenderer.send("brainedge:resolvePermission", { requestId, result }),
   onEvent: (cb) => { listeners.add(cb); return () => listeners.delete(cb); },
 
   // --- settings / models ---
-  getSettings: () => ipcRenderer.invoke("thinkflux:getSettings"),
-  saveSettings: (next) => ipcRenderer.invoke("thinkflux:saveSettings", next),
-  listModels: (profileId) => ipcRenderer.invoke("thinkflux:listModels", profileId),
-  pingProvider: (profileId) => ipcRenderer.invoke("thinkflux:pingProvider", profileId),
+  getSettings: () => ipcRenderer.invoke("brainedge:getSettings"),
+  saveSettings: (next) => ipcRenderer.invoke("brainedge:saveSettings", next),
+  listModels: (profileId) => ipcRenderer.invoke("brainedge:listModels", profileId),
+  pingProvider: (profileId) => ipcRenderer.invoke("brainedge:pingProvider", profileId),
 
   // --- account / sign-in ---
-  saveAccount: (account) => ipcRenderer.invoke("thinkflux:saveAccount", account),
-  signOut: () => ipcRenderer.invoke("thinkflux:signOut"),
-  googleSignIn: () => ipcRenderer.invoke("thinkflux:googleSignIn"),
-  githubSignIn: () => ipcRenderer.invoke("thinkflux:githubSignIn"),
-  linkAnthropic: () => ipcRenderer.invoke("thinkflux:linkAnthropic"),
+  saveAccount: (account) => ipcRenderer.invoke("brainedge:saveAccount", account),
+  signOut: () => ipcRenderer.invoke("brainedge:signOut"),
+  googleSignIn: () => ipcRenderer.invoke("brainedge:googleSignIn"),
+  githubSignIn: () => ipcRenderer.invoke("brainedge:githubSignIn"),
+  linkAnthropic: () => ipcRenderer.invoke("brainedge:linkAnthropic"),
 
   // --- agent ---
-  chooseFolder: () => ipcRenderer.invoke("thinkflux:chooseFolder"),
+  chooseFolder: () => ipcRenderer.invoke("brainedge:chooseFolder"),
 
   // --- persisted chat history (Talk / Collaborate / Build) ---
-  listSessions: (mode) => ipcRenderer.invoke("thinkflux:listSessions", mode),
-  getSession: (id) => ipcRenderer.invoke("thinkflux:getSession", id),
-  deleteSession: (id) => ipcRenderer.invoke("thinkflux:deleteSession", id),
+  listSessions: (mode) => ipcRenderer.invoke("brainedge:listSessions", mode),
+  getSession: (id) => ipcRenderer.invoke("brainedge:getSession", id),
+  deleteSession: (id) => ipcRenderer.invoke("brainedge:deleteSession", id),
 
   // --- connectors (MCP) ---
-  testConnector: (server) => ipcRenderer.invoke("thinkflux:testConnector", server),
+  testConnector: (server) => ipcRenderer.invoke("brainedge:testConnector", server),
 
   // --- skills ---
-  listSkills: () => ipcRenderer.invoke("thinkflux:listSkills"),
-  createSkill: (name) => ipcRenderer.invoke("thinkflux:createSkill", name),
-  importSkillFolder: () => ipcRenderer.invoke("thinkflux:importSkillFolder"),
-  importSkillZip: () => ipcRenderer.invoke("thinkflux:importSkillZip"),
-  readSkill: (dir) => ipcRenderer.invoke("thinkflux:readSkill", dir),
-  setSkillEnabled: (dir, enabled) => ipcRenderer.invoke("thinkflux:setSkillEnabled", { dir, enabled }),
-  deleteSkill: (dir) => ipcRenderer.invoke("thinkflux:deleteSkill", dir),
+  listSkills: () => ipcRenderer.invoke("brainedge:listSkills"),
+  createSkill: (name) => ipcRenderer.invoke("brainedge:createSkill", name),
+  importSkillFolder: () => ipcRenderer.invoke("brainedge:importSkillFolder"),
+  importSkillZip: () => ipcRenderer.invoke("brainedge:importSkillZip"),
+  readSkill: (dir) => ipcRenderer.invoke("brainedge:readSkill", dir),
+  setSkillEnabled: (dir, enabled) => ipcRenderer.invoke("brainedge:setSkillEnabled", { dir, enabled }),
+  deleteSkill: (dir) => ipcRenderer.invoke("brainedge:deleteSkill", dir),
 
   // --- projects ---
-  listProjects: () => ipcRenderer.invoke("thinkflux:listProjects"),
-  getProject: (id) => ipcRenderer.invoke("thinkflux:getProject", id),
-  createProject: (name) => ipcRenderer.invoke("thinkflux:createProject", name),
-  updateProject: (id, patch) => ipcRenderer.invoke("thinkflux:updateProject", { id, patch }),
-  deleteProject: (id) => ipcRenderer.invoke("thinkflux:deleteProject", id),
-  addKnowledgeText: (projectId, name, content) => ipcRenderer.invoke("thinkflux:addKnowledgeText", { projectId, name, content }),
-  addKnowledgeFile: (projectId) => ipcRenderer.invoke("thinkflux:addKnowledgeFile", projectId),
-  removeKnowledge: (projectId, knId) => ipcRenderer.invoke("thinkflux:removeKnowledge", { projectId, knId }),
-  linkProjectFolder: (projectId) => ipcRenderer.invoke("thinkflux:linkProjectFolder", projectId),
-  linkGithub: (projectId, url) => ipcRenderer.invoke("thinkflux:linkGithub", { projectId, url }),
-  pullGithub: (projectId) => ipcRenderer.invoke("thinkflux:pullGithub", projectId),
-  unlinkProjectSource: (projectId) => ipcRenderer.invoke("thinkflux:unlinkProjectSource", projectId),
-  listConversations: (projectId) => ipcRenderer.invoke("thinkflux:listConversations", projectId),
-  getConversation: (id) => ipcRenderer.invoke("thinkflux:getConversation", id),
-  createConversation: (projectId) => ipcRenderer.invoke("thinkflux:createConversation", projectId),
-  deleteConversation: (id) => ipcRenderer.invoke("thinkflux:deleteConversation", id),
+  listProjects: () => ipcRenderer.invoke("brainedge:listProjects"),
+  getProject: (id) => ipcRenderer.invoke("brainedge:getProject", id),
+  createProject: (name) => ipcRenderer.invoke("brainedge:createProject", name),
+  updateProject: (id, patch) => ipcRenderer.invoke("brainedge:updateProject", { id, patch }),
+  deleteProject: (id) => ipcRenderer.invoke("brainedge:deleteProject", id),
+  addKnowledgeText: (projectId, name, content) => ipcRenderer.invoke("brainedge:addKnowledgeText", { projectId, name, content }),
+  addKnowledgeFile: (projectId) => ipcRenderer.invoke("brainedge:addKnowledgeFile", projectId),
+  removeKnowledge: (projectId, knId) => ipcRenderer.invoke("brainedge:removeKnowledge", { projectId, knId }),
+  linkProjectFolder: (projectId) => ipcRenderer.invoke("brainedge:linkProjectFolder", projectId),
+  linkGithub: (projectId, url) => ipcRenderer.invoke("brainedge:linkGithub", { projectId, url }),
+  pullGithub: (projectId) => ipcRenderer.invoke("brainedge:pullGithub", projectId),
+  unlinkProjectSource: (projectId) => ipcRenderer.invoke("brainedge:unlinkProjectSource", projectId),
+  listConversations: (projectId) => ipcRenderer.invoke("brainedge:listConversations", projectId),
+  getConversation: (id) => ipcRenderer.invoke("brainedge:getConversation", id),
+  createConversation: (projectId) => ipcRenderer.invoke("brainedge:createConversation", projectId),
+  deleteConversation: (id) => ipcRenderer.invoke("brainedge:deleteConversation", id),
 
   // --- dispatch (background + scheduled tasks) ---
-  listTasks: () => ipcRenderer.invoke("thinkflux:listTasks"),
-  createTask: () => ipcRenderer.invoke("thinkflux:createTask"),
-  updateTask: (id, patch) => ipcRenderer.invoke("thinkflux:updateTask", { id, patch }),
-  deleteTask: (id) => ipcRenderer.invoke("thinkflux:deleteTask", id),
-  getRuns: (id) => ipcRenderer.invoke("thinkflux:getRuns", id),
-  runTaskNow: (id) => ipcRenderer.invoke("thinkflux:runTaskNow", id),
+  listTasks: () => ipcRenderer.invoke("brainedge:listTasks"),
+  createTask: () => ipcRenderer.invoke("brainedge:createTask"),
+  updateTask: (id, patch) => ipcRenderer.invoke("brainedge:updateTask", { id, patch }),
+  deleteTask: (id) => ipcRenderer.invoke("brainedge:deleteTask", id),
+  getRuns: (id) => ipcRenderer.invoke("brainedge:getRuns", id),
+  runTaskNow: (id) => ipcRenderer.invoke("brainedge:runTaskNow", id),
 
   // --- usage ---
-  getUsage: (days) => ipcRenderer.invoke("thinkflux:getUsage", days),
+  getUsage: (days) => ipcRenderer.invoke("brainedge:getUsage", days),
 
   // --- messaging (Telegram) ---
-  applyMessaging: () => ipcRenderer.invoke("thinkflux:applyMessaging"),
-  messagingStatus: () => ipcRenderer.invoke("thinkflux:messagingStatus"),
+  applyMessaging: () => ipcRenderer.invoke("brainedge:applyMessaging"),
+  messagingStatus: () => ipcRenderer.invoke("brainedge:messagingStatus"),
 });

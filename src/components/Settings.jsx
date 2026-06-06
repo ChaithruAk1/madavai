@@ -132,7 +132,7 @@ export default function Settings({ onChanged }) {
             <Field label="GitHub OAuth Client ID (enable Device Flow)"><input className="model-search" value={s.githubClientId || ""} onChange={(e) => setField("githubClientId", e.target.value)} placeholder="Iv1.xxxxxxxx" /></Field>
             {status && !status.startsWith("Default") && <div style={{ color: "var(--text-2)", fontSize: 12, marginBottom: 8 }}>{status}</div>}
 
-            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Instructions for Thinkflux</div>
+            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Instructions for BrainEdge</div>
             <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
               Applied to <b>every</b> conversation across the app (Chat, Code, Cowork, Projects) — like Claude's custom instructions. Tone, role, rules, things to always remember.
             </p>
@@ -157,7 +157,7 @@ export default function Settings({ onChanged }) {
                   <strong>Use my Claude subscription</strong>
                   {s.anthropicUseSubscription && <span className="chip" style={{ color: "var(--ok)", marginLeft: 8 }}><Check size={12} /> on</span>}
                   <div style={{ color: "var(--text-2)", fontSize: 12, marginTop: 6 }}>
-                    Bills Anthropic models to your plan's <b>Agent‑SDK credit pool</b> (e.g. $200/mo on Max‑20×) instead of pay‑as‑you‑go API credits. Thinkflux sends <b>no API key</b> — it uses the credentials from <code>claude login</code>. Applies to Chat, Cowork &amp; Code on the Anthropic provider.
+                    Bills Anthropic models to your plan's <b>Agent‑SDK credit pool</b> (e.g. $200/mo on Max‑20×) instead of pay‑as‑you‑go API credits. BrainEdge sends <b>no API key</b> — it uses the credentials from <code>claude login</code>. Applies to Chat, Cowork &amp; Code on the Anthropic provider.
                   </div>
                 </span>
               </label>
@@ -247,7 +247,7 @@ export default function Settings({ onChanged }) {
           <div style={{ maxWidth: 560 }}>
             <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Messaging — Telegram bot</h2>
             <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 0 }}>
-              Drive Thinkflux from Telegram. Message your bot and it runs the active model and replies. ⚠ This is remote control of this machine — only your allowed user id can use it.
+              Drive BrainEdge from Telegram. Message your bot and it runs the active model and replies. ⚠ This is remote control of this machine — only your allowed user id can use it.
             </p>
             <div className="acc-card">
               <label className="chip" style={{ cursor: "pointer", marginBottom: 12 }}>

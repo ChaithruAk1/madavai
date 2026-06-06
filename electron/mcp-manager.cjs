@@ -26,7 +26,7 @@ async function connect(server) {
     args: server.args || [],
     env: { ...process.env, ...(server.env || {}) },
   });
-  const client = new Client({ name: "chai", version: "0.1.0" }, { capabilities: {} });
+  const client = new Client({ name: "brainedge", version: "0.1.0" }, { capabilities: {} });
   await client.connect(transport);
   const listed = await client.listTools();
   const entry = { client, tools: listed.tools || [] };

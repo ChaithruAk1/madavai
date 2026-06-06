@@ -308,7 +308,7 @@ export default function App() {
               {timeline.length === 0 ? (
                 <div className="hero scroll">
                   <div className="hero-inner">
-                    <div className="hero-greet"><ThinkLogo size={44} /><h1 className="greeting">{greeting}</h1></div>
+                    <div className="hero-greet"><ThinkLogo size={52} /><h1 className="greeting">{greeting}</h1></div>
                     <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {controlsRow}
                     {projectCtx && (

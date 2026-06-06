@@ -1,4 +1,4 @@
-// Thinkflux mark — a firing synapse: a central node with radiating spokes to
+// BrainEdge mark — a firing synapse: a central node with radiating spokes to
 // six satellite nodes that pulse in sequence, plus an expanding "firing" ring.
 // Reusable at any size; scales cleanly down to the chat avatar.
 export default function ThinkLogo({ size = 22, color = "#9fb0ff", accent = "#38e8d0" }) {

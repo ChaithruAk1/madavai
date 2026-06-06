@@ -1,8 +1,8 @@
 {
-  "name": "thinkflux",
+  "name": "brainedge",
   "version": "0.1.0",
   "private": true,
-  "description": "Thinkflux — a Claude-Desktop-style app over Anthropic, cloud, and local LLMs",
+  "description": "BrainEdge — a Claude-Desktop-style app over Anthropic, cloud, and local LLMs",
   "author": "Chaithrodaya Sukruth <chaithru@gmail.com>",
   "type": "module",
   "main": "electron/main.cjs",
@@ -33,8 +33,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.chaithrodaya.thinkflux",
-    "productName": "Thinkflux",
+    "appId": "com.chaithrodaya.brainedge",
+    "productName": "BrainEdge",
     "directories": {
       "output": "release"
     },
@@ -67,7 +67,7 @@
       ]
     },
     "portable": {
-      "artifactName": "Thinkflux-portable-${version}.exe"
+      "artifactName": "BrainEdge-portable-${version}.exe"
     }
   }
 }

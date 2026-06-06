@@ -1,10 +1,10 @@
-// Persists provider profiles to userData/chai-settings.json.
+// Persists provider profiles to userData/brainedge-settings.json.
 const { app } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
 function file() {
-  return path.join(app.getPath("userData"), "chai-settings.json");
+  return path.join(app.getPath("userData"), "brainedge-settings.json");
 }
 
 const DEFAULTS = {

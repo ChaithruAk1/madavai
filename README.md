@@ -1,4 +1,4 @@
-# Chai — renderer layout mock
+# BrainEdge — renderer layout mock
 
 A runnable React mock of the desktop UI from `../claude-ui/ARCHITECTURE.md`. It renders the full
 layout — tab/mode shell, model picker, streaming message list, tool-call cards, and the permission
@@ -10,7 +10,7 @@ modal — driven entirely by the **`UiEvent`** contract, so wiring it to the rea
 Browser-only UI (mock bridge, fake data):
 
 ```bash
-cd Chai
+cd BrainEdge
 npm install
 npm run dev          # http://localhost:5174
 ```
@@ -32,9 +32,9 @@ agent transport (tools/MCP/skills) is Phase 2.
 ## What's mocked vs real
 
 - **Real:** the UI, and the `Bridge` contract (`src/bridge/contract.js`) — identical to what the
-  Electron preload will expose as `window.chai`.
+  Electron preload will expose as `window.brainedge`.
 - **Mocked:** `src/bridge/mockBridge.js` streams canned `UiEvent`s (including a tool call that pauses
-  on a `permission_request`). Replace with `export const bridge = window.chai ?? mockBridge;`.
+  on a `permission_request`). Replace with `export const bridge = window.brainedge ?? mockBridge;`.
 
 ## Try it
 
@@ -52,4 +52,4 @@ agent transport (tools/MCP/skills) is Phase 2.
 | `src/App.jsx` | §4.2 SDK-event → UI reduction |
 | `src/components/PermissionModal.jsx` | `canUseTool` / `PermissionResult` round-trip |
 
-Next step: build the Electron main process + real `SessionManager` (Agent SDK) and expose `window.chai`.
+Next step: build the Electron main process + real `SessionManager` (Agent SDK) and expose `window.brainedge`.
