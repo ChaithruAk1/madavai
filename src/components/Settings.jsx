@@ -6,8 +6,6 @@ import { bridge } from "../bridge/index.js";
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 const SECTIONS = [
   { id: "profile", label: "Profile", icon: User },
-  { id: "account", label: "Claude Sign in", icon: ShieldCheck },
-  { id: "model", label: "Model configuration", icon: Cpu },
   { id: "messaging", label: "Messaging", icon: Send },
 ];
 
@@ -146,103 +144,6 @@ export default function Settings({ onChanged }) {
           </div>
         )}
 
-        {section === "account" && (
-          <div style={{ maxWidth: 520 }}>
-            <h2 style={{ margin: "0 0 16px", fontSize: 18 }}>Claude Sign in</h2>
-
-            <div className="acc-card">
-              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-                <input type="checkbox" checked={!!s.anthropicUseSubscription} onChange={(e) => setField("anthropicUseSubscription", e.target.checked)} style={{ marginTop: 3 }} />
-                <span>
-                  <strong>Use my Claude subscription</strong>
-                  {s.anthropicUseSubscription && <span className="chip" style={{ color: "var(--ok)", marginLeft: 8 }}><Check size={12} /> on</span>}
-                  <div style={{ color: "var(--text-2)", fontSize: 12, marginTop: 6 }}>
-                    Bills Anthropic models to your plan's <b>Agent‑SDK credit pool</b> (e.g. $200/mo on Max‑20×) instead of pay‑as‑you‑go API credits. BrainEdge sends <b>no API key</b> — it uses the credentials from <code>claude login</code>. Applies to Chat, Cowork &amp; Code on the Anthropic provider.
-                  </div>
-                </span>
-              </label>
-            </div>
-
-            <div style={{ background: "linear-gradient(135deg, rgba(110,123,255,0.16), rgba(56,232,208,0.10))", border: "1px solid var(--accent)", borderRadius: 12, padding: "16px 18px", marginTop: 14 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-1)", marginBottom: 6 }}>⚡ One‑time setup</div>
-              <div style={{ color: "var(--text-2)", fontSize: 13, marginBottom: 10 }}>
-                Run this in a terminal, then sign in with your Max account in the browser:
-              </div>
-              <pre style={{ margin: 0, padding: "12px 14px", background: "rgba(0,0,0,0.45)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 13, lineHeight: 1.7, color: "var(--text-1)", whiteSpace: "pre-wrap", fontFamily: "ui-monospace, monospace" }}>npm i -g @anthropic-ai/claude-code{"\n"}claude login</pre>
-              <div style={{ color: "var(--text-2)", fontSize: 12, marginTop: 10 }}>
-                After <code>claude login</code> succeeds, tick the box above and pick an Anthropic model in the top bar — that's it.
-              </div>
-            </div>
-
-            {(account.googleLinked || account.name || account.email) && (
-              <button className="btn ghost danger" onClick={signOut} style={{ marginTop: 14 }}><LogOut size={14} /> Sign out / clear profile</button>
-            )}
-            {status && <div style={{ color: "var(--text-2)", fontSize: 12, marginTop: 12 }}>{status}</div>}
-          </div>
-        )}
-
-        {section === "model" && (
-          <div>
-            <div style={{ maxWidth: 520, marginBottom: 18 }}>
-              <div className="nav-label" style={{ paddingLeft: 0 }}>Default model</div>
-              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
-                Applied every time the app starts. You can still switch models live in the top bar during a session — it resets to this on next launch.
-              </p>
-              <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
-              {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
-            </div>
-            <div style={{ maxWidth: 520, marginBottom: 18 }}>
-              <div className="nav-label" style={{ paddingLeft: 0 }}>Corporate proxy (optional)</div>
-              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
-                Route all LLM, MCP, and Telegram traffic through your company's approved proxy/gateway. Local models (Ollama/LM Studio) bypass it automatically. <b>Restart the app</b> after changing this.
-              </p>
-              <Field label="Proxy URL"><input className="model-search" value={s.proxyUrl || ""} onChange={(e) => setField("proxyUrl", e.target.value)} placeholder="http://proxy.corp:8080" /></Field>
-              <Field label="Bypass hosts (no-proxy)"><input className="model-search" value={s.noProxy || ""} onChange={(e) => setField("noProxy", e.target.value)} placeholder="localhost,127.0.0.1,.corp.internal" /></Field>
-            </div>
-
-            <div className="nav-label" style={{ paddingLeft: 0 }}>Providers &amp; models</div>
-            <div style={{ display: "grid", gridTemplateColumns: "210px 1fr", gap: 24, marginTop: 6 }}>
-            <div>
-              <div className="nav-label" style={{ paddingLeft: 0 }}>Providers</div>
-              {profiles.map((p) => (
-                <button key={p.id} className={`nav-item ${p.id === selId ? "active" : ""}`} onClick={() => setSelId(p.id)}>
-                  <Plug size={15} /> {p.name}
-                </button>
-              ))}
-              <button className="nav-item" onClick={addProfile} style={{ marginTop: 6 }}><Plus size={15} /> Add provider</button>
-            </div>
-            <div style={{ maxWidth: 520 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontSize: 16 }}>{sel.name}</h3>
-                <span style={{ flex: 1 }} />
-                <button className="btn ghost danger" onClick={delProfile}><Trash2 size={14} /></button>
-              </div>
-              <Field label="Display name"><input className="model-search" value={sel.name} onChange={(e) => patch("name", e.target.value)} /></Field>
-              <Field label="Wire format">
-                <select className="model-search" value={sel.kind} onChange={(e) => patch("kind", e.target.value)}>
-                  <option value="openai">OpenAI-compatible (/v1/chat/completions)</option>
-                  <option value="anthropic">Anthropic-compatible (/v1/messages)</option>
-                </select>
-              </Field>
-              <Field label="Base URL"><input className="model-search" value={sel.baseUrl} onChange={(e) => patch("baseUrl", e.target.value)} placeholder="https://openrouter.ai/api" /></Field>
-              <Field label="API key"><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder="leave blank for local" /></Field>
-              <Field label="Current model (pick any live model from the top-bar selector)">
-                <input className="model-search" value={sel.model} onChange={(e) => patch("model", e.target.value)} list="model-list" />
-                <datalist id="model-list">{models.map((m) => <option key={m} value={m} />)}</datalist>
-              </Field>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                <button className="btn primary" onClick={saveProvider}><Save size={14} /> Save &amp; load models</button>
-                <button className="btn" onClick={test}><RefreshCw size={14} /> Test only</button>
-                <span style={{ color: status.startsWith("Saved") ? "var(--ok)" : "var(--text-2)", fontSize: 12 }}>{status}</span>
-              </div>
-              <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 18 }}>
-                Every provider is always available — the model you pick in the top-bar selector decides which one runs.
-              </p>
-            </div>
-            </div>
-          </div>
-        )}
-
         {section === "messaging" && (
           <div style={{ maxWidth: 560 }}>
             <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Messaging — Telegram bot</h2>
@@ -295,3 +196,4 @@ function Field({ label, children }) {
     </label>
   );
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             

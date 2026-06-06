@@ -9,7 +9,7 @@ ipcRenderer.on("brainedge:event", (_e, uiEvent) => {
 contextBridge.exposeInMainWorld("brainedge", {
   // --- Bridge contract ---
   start: (req) => ipcRenderer.invoke("brainedge:start", req),
-  sendInput: (sessionId, text) => ipcRenderer.invoke("brainedge:sendInput", { sessionId, text }),
+  sendInput: (sessionId, text, images) => ipcRenderer.invoke("brainedge:sendInput", { sessionId, text, images }),
   interrupt: (sessionId) => ipcRenderer.invoke("brainedge:interrupt", { sessionId }),
   setPermissionMode: (sessionId, mode) => ipcRenderer.invoke("brainedge:setPermissionMode", { sessionId, mode }),
   resolvePermission: (requestId, result) => ipcRenderer.send("brainedge:resolvePermission", { requestId, result }),
@@ -30,11 +30,24 @@ contextBridge.exposeInMainWorld("brainedge", {
 
   // --- agent ---
   chooseFolder: () => ipcRenderer.invoke("brainedge:chooseFolder"),
+  listDir: (dir) => ipcRenderer.invoke("brainedge:listDir", dir),
+  openExternal: (url) => ipcRenderer.invoke("brainedge:openExternal", url),
+
+  // --- model speed check ---
+  runSpeedTest: (args) => ipcRenderer.invoke("brainedge:runSpeedTest", args),
+  cancelSpeedTest: () => ipcRenderer.invoke("brainedge:cancelSpeedTest"),
+  getSpeedTestLast: () => ipcRenderer.invoke("brainedge:getSpeedTestLast"),
 
   // --- persisted chat history (Talk / Collaborate / Build) ---
   listSessions: (mode) => ipcRenderer.invoke("brainedge:listSessions", mode),
   getSession: (id) => ipcRenderer.invoke("brainedge:getSession", id),
   deleteSession: (id) => ipcRenderer.invoke("brainedge:deleteSession", id),
+
+  // --- saved library (bookmarked responses) ---
+  listSaved: () => ipcRenderer.invoke("brainedge:listSaved"),
+  saveResponse: (item) => ipcRenderer.invoke("brainedge:saveResponse", item),
+  updateSaved: (id, patch) => ipcRenderer.invoke("brainedge:updateSaved", { id, patch }),
+  removeSaved: (id) => ipcRenderer.invoke("brainedge:removeSaved", id),
 
   // --- connectors (MCP) ---
   testConnector: (server) => ipcRenderer.invoke("brainedge:testConnector", server),
@@ -66,18 +79,4 @@ contextBridge.exposeInMainWorld("brainedge", {
   createConversation: (projectId) => ipcRenderer.invoke("brainedge:createConversation", projectId),
   deleteConversation: (id) => ipcRenderer.invoke("brainedge:deleteConversation", id),
 
-  // --- dispatch (background + scheduled tasks) ---
-  listTasks: () => ipcRenderer.invoke("brainedge:listTasks"),
-  createTask: () => ipcRenderer.invoke("brainedge:createTask"),
-  updateTask: (id, patch) => ipcRenderer.invoke("brainedge:updateTask", { id, patch }),
-  deleteTask: (id) => ipcRenderer.invoke("brainedge:deleteTask", id),
-  getRuns: (id) => ipcRenderer.invoke("brainedge:getRuns", id),
-  runTaskNow: (id) => ipcRenderer.invoke("brainedge:runTaskNow", id),
-
-  // --- usage ---
-  getUsage: (days) => ipcRenderer.invoke("brainedge:getUsage", days),
-
-  // --- messaging (Telegram) ---
-  applyMessaging: () => ipcRenderer.invoke("brainedge:applyMessaging"),
-  messagingStatus: () => ipcRenderer.invoke("brainedge:messagingStatus"),
-});
+  // --- dispatch (background + scheduled tasks) --

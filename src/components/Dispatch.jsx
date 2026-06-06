@@ -57,7 +57,7 @@ export default function Dispatch() {
 
       <div style={{ padding: 24, overflowY: "auto" }}>
         {!task ? (
-          <div className="empty"><div><div className="big">Dispatch</div><div>Create a task with a prompt, run it on demand, or schedule it to run automatically. Results are saved below.</div></div></div>
+          <div className="empty"><div><div className="big">Deploy</div><div>Create a task with a prompt, run it on demand, or schedule it to run automatically. Results are saved below.</div></div></div>
         ) : (
           <div style={{ maxWidth: 720 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>

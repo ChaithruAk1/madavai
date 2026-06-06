@@ -44,7 +44,7 @@ export const MODES = [
 export const SECONDARY = [
   { id: "skills",     label: "Skills" },
   { id: "connectors", label: "Connectors" },
-  { id: "dispatch",   label: "Dispatch" },
+  { id: "dispatch",   label: "Deploy" },
   { id: "settings",   label: "Settings" },
 ];
 

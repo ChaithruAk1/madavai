@@ -9,9 +9,45 @@ const settings = require("./settings.cjs");
 const store = require("./projects-store.cjs");
 const sstore = require("./sessions-store.cjs");
 const usage = require("./usage-store.cjs");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 
 let seq = 0;
 const AGENT_MODES = new Set(["cowork", "code"]);
+
+const cleanImgs = (images) => (Array.isArray(images) ? images.filter((im) => im && im.dataUrl) : []);
+const parseDataUrl = (u) => { const m = /^data:(image\/[\w.+-]+);base64,(.*)$/s.exec(u || ""); return m ? { mime: m[1], b64: m[2] } : null; };
+
+// Inline multimodal content for the no-tool chat completion path (single request, no Read tool).
+function inlineContent(userText, images, kind) {
+  const imgs = cleanImgs(images);
+  if (!imgs.length) return userText;
+  const textPart = userText ? [{ type: "text", text: userText }] : [];
+  if (kind === "anthropic") {
+    return [...textPart, ...imgs.map((im) => { const p = parseDataUrl(im.dataUrl); return p ? { type: "image", source: { type: "base64", media_type: p.mime, data: p.b64 } } : null; }).filter(Boolean)];
+  }
+  return [...textPart, ...imgs.map((im) => ({ type: "image_url", image_url: { url: im.dataUrl } }))];
+}
+
+// For agent/SDK paths that take a plain-text prompt but have a file-reading tool:
+// write the pasted images to temp files and point the agent at them.
+function materializeImages(images) {
+  const imgs = cleanImgs(images);
+  if (!imgs.length) return "";
+  const dir = path.join(os.tmpdir(), "brainedge-images");
+  try { fs.mkdirSync(dir, { recursive: true }); } catch {}
+  const paths = [];
+  imgs.forEach((im, i) => {
+    const p = parseDataUrl(im.dataUrl);
+    if (!p) return;
+    const ext = (p.mime.split("/")[1] || "png").replace("+xml", "");
+    const file = path.join(dir, `paste-${Date.now()}-${i}.${ext}`);
+    try { fs.writeFileSync(file, Buffer.from(p.b64, "base64")); paths.push(file); } catch {}
+  });
+  if (!paths.length) return "";
+  return `\n\n[The user attached ${paths.length} image(s). Use your Read tool to view them at:\n${paths.map((p) => `- ${p}`).join("\n")}]`;
+}
 
 class SessionManager {
   constructor(emit) {
@@ -59,19 +95,20 @@ class SessionManager {
       let conv = req.conversationId ? sstore.getSession(req.conversationId) : null;
       if (!conv) conv = sstore.createSession(req.mode, req.cwd);
       s.chatConvId = conv.id;
+      if (req.projectId) s.projectId = req.projectId; // Cowork task scoped to a project
       // Seed the model context from saved messages so reopened chats continue coherently.
       if (conv.messages && conv.messages.length) s.history = conv.messages.map((m) => ({ role: m.role, content: m.content }));
     }
     this.sessions.set(sessionId, s);
-    await this._turn(sessionId, req.prompt);
+    await this._turn(sessionId, req.prompt, req.images);
     return { sessionId, conversationId: s.chatConvId || s.conversationId || null };
   }
 
-  async sendInput(sessionId, text) {
-    if (this.sessions.get(sessionId)) await this._turn(sessionId, text);
+  async sendInput(sessionId, text, images) {
+    if (this.sessions.get(sessionId)) await this._turn(sessionId, text, images);
   }
 
-  async _turn(sessionId, userText) {
+  async _turn(sessionId, userText, images) {
     const s = this.sessions.get(sessionId);
     const profile = settings.activeProfile();
     if (!profile || !profile.baseUrl) {
@@ -103,28 +140,31 @@ class SessionManager {
     // Subscription mode forces the SDK for chat/project too (raw /v1/messages
     // can't use plan creds). Agent modes already use the SDK for anthropic.
     if (subMode && (s.mode === "project" || !AGENT_MODES.has(s.mode))) {
-      return this._chatViaSdk(sessionId, userText, profile);
+      return this._chatViaSdk(sessionId, userText, profile, images);
     }
 
-    if (s.mode === "project") return this._projectTurn(sessionId, userText, profile);
-    if (AGENT_MODES.has(s.mode)) return this._agentTurn(sessionId, userText, profile);
+    if (s.mode === "project") return this._projectTurn(sessionId, userText, profile, images);
+    if (AGENT_MODES.has(s.mode)) return this._agentTurn(sessionId, userText, profile, images);
 
     // Chat: if skills/connectors are configured and the model speaks OpenAI tools,
     // run the lightweight tool loop (skills + connectors, no file/shell). Else plain chat.
+    // Exception: when the turn carries images, take the plain inline-vision path so a
+    // vision-capable model (e.g. a NIM VLM) receives real pixels rather than a Read-file note.
     const cfg = settings.load();
     const hasExtras = (cfg.skillsDirs || []).length > 0 || (cfg.connectors || []).some((c) => c.enabled);
-    if (profile.kind !== "anthropic" && hasExtras) {
-      return this._chatAgentTurn(sessionId, userText, profile, cfg);
+    if (profile.kind !== "anthropic" && hasExtras && cleanImgs(images).length === 0) {
+      return this._chatAgentTurn(sessionId, userText, profile, cfg, images);
     }
-    return this._chatTurn(sessionId, userText, profile);
+    return this._chatTurn(sessionId, userText, profile, images);
   }
 
   // Chat enriched with skills + connectors (OpenAI-compatible providers).
-  async _chatAgentTurn(sessionId, userText, profile, cfg) {
+  async _chatAgentTurn(sessionId, userText, profile, cfg, images) {
     const s = this.sessions.get(sessionId);
     const controller = new AbortController();
     s.controller = controller;
     const emit = (e) => this._send(sessionId, e.kind, e.data);
+    userText = (userText || "") + materializeImages(images);
     try {
       await runOpenAIAgentTurn({
         prompt: userText, mode: "chat", cwd: null, profile, permMode: "default",
@@ -137,9 +177,10 @@ class SessionManager {
   }
 
   // ---- anthropic subscription chat (via Agent SDK, billed to the Claude plan) ----
-  async _chatViaSdk(sessionId, userText, profile) {
+  async _chatViaSdk(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
     const emit = (e) => this._send(sessionId, e.kind, e.data);
+    userText = (userText || "") + materializeImages(images);
     s.sdkSessionId = await runAgentTurn({
       sessionId, prompt: userText, mode: "chat", cwd: s.cwd || null, profile, permMode: s.permMode || "default",
       resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds,
@@ -147,9 +188,10 @@ class SessionManager {
   }
 
   // ---- chat transport ----
-  async _chatTurn(sessionId, userText, profile) {
+  async _chatTurn(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
-    s.history.push({ role: "user", content: userText });
+    // Vision: inline image blocks (OpenAI image_url / Anthropic base64) on this no-tool path.
+    s.history.push({ role: "user", content: inlineContent(userText, images, profile.kind) });
     const controller = new AbortController();
     s.controller = controller;
     this._send(sessionId, "init", { model: profile.model, provider: profile.name, kind: profile.kind, mode: s.mode });
@@ -178,7 +220,7 @@ class SessionManager {
   }
 
   // ---- project conversations (persisted, knowledge-grounded chat) ----
-  async _projectTurn(sessionId, userText, profile) {
+  async _projectTurn(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
     const project = store.getProject(s.projectId);
     if (!project) { this._send(sessionId, "error", { code: "no_project", message: "Project not found." }); return; }
@@ -199,7 +241,7 @@ class SessionManager {
 
     try {
       if (profile.kind === "anthropic") {
-        s.history.push({ role: "user", content: userText });
+        s.history.push({ role: "user", content: inlineContent(userText, images, "anthropic") });
         emit({ kind: "init", data: { model: profile.model, mode: "project", provider: profile.name } });
         const started = Date.now();
         const { text } = await streamChat(profile, s.history, {
@@ -211,7 +253,7 @@ class SessionManager {
         emit({ kind: "result", data: { subtype: "success", duration_ms: Date.now() - started } });
       } else {
         await runOpenAIAgentTurn({
-          prompt: userText, mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: "default",
+          prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
           connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: cfg.globalInstructions || "",
           systemOverride: sys,
@@ -234,12 +276,19 @@ class SessionManager {
   }
 
   // ---- agent transport (routed by profile kind) ----
-  async _agentTurn(sessionId, userText, profile) {
+  async _agentTurn(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
     if (!s.cwd) {
       this._send(sessionId, "error", { code: "no_folder", message: "Pick a working folder first (Choose folder)." });
       return;
     }
+    // Cowork task scoped to a project: inject its instructions + knowledge once, up front.
+    if (s.projectId && !s._projInjected) {
+      const project = store.getProject(s.projectId);
+      if (project) { userText = `${store.projectSystem(project)}\n\n----- TASK -----\n${userText}`; }
+      s._projInjected = true;
+    }
+    userText = (userText || "") + materializeImages(images);
     const emit = (e) => this._send(sessionId, e.kind, e.data);
 
     if (profile.kind === "anthropic") {

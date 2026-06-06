@@ -48,6 +48,7 @@ const DEFAULTS = {
       apiKey: "",
       model: "claude-sonnet-4-6",
     },
+    p_openai: { id: "p_openai", name: "OpenAI", kind: "openai", baseUrl: "https://api.openai.com", apiKey: "", model: "gpt-4o-mini" },
     p_nim: { id: "p_nim", name: "NVIDIA NIM", kind: "openai", baseUrl: "https://integrate.api.nvidia.com", apiKey: "", model: "meta/llama-3.1-8b-instruct" },
     p_gemini: { id: "p_gemini", name: "Google Gemini", kind: "openai", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", apiKey: "", model: "gemini-2.0-flash" },
     p_deepseek: { id: "p_deepseek", name: "DeepSeek", kind: "openai", baseUrl: "https://api.deepseek.com", apiKey: "", model: "deepseek-chat" },

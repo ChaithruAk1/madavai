@@ -1,6 +1,17 @@
 import { useMemo, useState } from "react";
-import { Check, X, Search, ChevronUp, ChevronDown } from "lucide-react";
+import { Check, X, Search, ChevronUp, ChevronDown, Download } from "lucide-react";
 import { MODELS, CATEGORIES, freeInfo } from "../data/modelCatalog.js";
+import { bridge } from "../bridge/index.js";
+
+// Open-weight & where to get it. Proprietary models are API-only (no download).
+function dl(m) {
+  if (/proprietary/i.test(m.license)) return { open: false };
+  const base = (m.run || "").split(":")[0];
+  const ollama = (m.providers || []).some((p) => p.name === "Ollama") ? `https://ollama.com/library/${base}` : null;
+  const hf = `https://huggingface.co/models?search=${encodeURIComponent(m.name)}`;
+  return { open: true, ollama, hf };
+}
+const openExt = (url) => url && bridge.openExternal && bridge.openExternal(url);
 
 const costRank = (m) => { const c = freeInfo(m).cost; return c === "Free (local)" ? 0 : c === "Free tier" ? 1 : 2; };
 
@@ -22,6 +33,7 @@ const COLS = [
   { key: "tools", label: "Tools", sort: (m) => Number(m.tools) },
   { key: "vision", label: "Vision", sort: (m) => Number(m.vision) },
   { key: "license", label: "License", sort: (m) => m.license },
+  { key: "download", label: "Weights", sort: (m) => (dl(m).open ? 0 : 1) },
 ];
 
 function Stars({ value }) {
@@ -171,6 +183,9 @@ export default function ModelsOverview({ activeModel }) {
                 <td><Cap v={m.tools} /></td>
                 <td><Cap v={m.vision} /></td>
                 <td><span className="mo-lic">{m.license}</span></td>
+                <td>{dl(m).open
+                  ? <button className="mo-dlink" title="Open weights — download source" onClick={(e) => { e.stopPropagation(); openExt(dl(m).ollama || dl(m).hf); }}><Download size={12} /> Download</button>
+                  : <span className="mo-sub">API only</span>}</td>
               </tr>
             ))}
             {rows.length === 0 && <tr><td colSpan={COLS.length} style={{ textAlign: "center", color: "var(--text-2)", padding: 24 }}>No models match your filters.</td></tr>}
@@ -229,18 +244,19 @@ export default function ModelsOverview({ activeModel }) {
               </div>
             )}
 
+            <div className="mo-wmhead" style={{ marginTop: 16 }}>Weights & download {dl(detail).open ? <span className="mo-freetag">open weights</span> : <span className="mo-paidtag">API only — no download</span>}</div>
             <div className="mo-dl">
-              {detail.host === "local" ? (
+              {dl(detail).open ? (
                 <>
-                  <button className="btn" onClick={() => copy(`ollama run ${detail.run}`, "ollama")}>{copied === "ollama" ? "Copied!" : "⤓ Ollama"}</button>
-                  <button className="btn" onClick={() => copy(`https://huggingface.co/models?search=${encodeURIComponent(detail.name + " GGUF")}`, "hf")}>{copied === "hf" ? "Copied!" : "⤓ HuggingFace GGUF"}</button>
-                  <button className="btn" onClick={() => copy(detail.name, "lm")}>{copied === "lm" ? "Copied!" : "⤓ LM Studio"}</button>
+                  {dl(detail).ollama && <button className="btn" onClick={() => openExt(dl(detail).ollama)}><Download size={13} /> Ollama library</button>}
+                  <button className="btn" onClick={() => openExt(dl(detail).hf)}><Download size={13} /> Hugging Face</button>
+                  <button className="btn ghost" onClick={() => copy(detail.host === "local" ? `ollama run ${detail.run}` : detail.run, "cmd")}>{copied === "cmd" ? "Copied!" : "Copy run id"}</button>
                 </>
               ) : (
-                <button className="btn" onClick={() => copy(detail.run, "api")}>{copied === "api" ? "Copied!" : `⤓ Copy ${detail.host} model id`}</button>
+                <span className="mo-sub">Closed weights — available only through the {detail.host} API.</span>
               )}
             </div>
-            <pre className="mo-runcmd">{detail.host === "local" ? `ollama run ${detail.run}` : `model: ${detail.run}`}</pre>
+            {dl(detail).open && <pre className="mo-runcmd">{detail.host === "local" ? `ollama run ${detail.run}` : `model: ${detail.run}`}</pre>}
           </div>
         </div>
       )}

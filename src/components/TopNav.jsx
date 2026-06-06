@@ -1,17 +1,18 @@
 import ThinkLogo from "./ThinkLogo.jsx";
-import { MessageCircle, Users, Hammer } from "lucide-react";
+import { MessageCircle, Users, Hammer, PanelLeft } from "lucide-react";
 import { MODES } from "../bridge/contract.js";
 
 const ORDER = ["chat", "cowork", "code"];
 const ICONS = { chat: MessageCircle, cowork: Users, code: Hammer };
 
-export default function TopNav({ mode, onSelect, online, loc }) {
+export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onToggleSidebar }) {
   const tabs = ORDER.map((id) => MODES.find((m) => m.id === id)).filter(Boolean);
   const dot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   return (
     <header className="topnav glass">
+      <button className="tn-collapse" onClick={onToggleSidebar} title={(sidebarOpen ? "Collapse" : "Expand") + " sidebar (Ctrl+B)"}><PanelLeft size={18} /></button>
       <div className="tn-brand">
-        <ThinkLogo size={50} />
+        <ThinkLogo size={38} />
         <div className="tn-brandtext">
           <span className="tn-name">BrainEdge</span>
           <span className="tn-by">by Chaithrodaya Sukruth</span>

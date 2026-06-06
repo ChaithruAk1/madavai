@@ -84,7 +84,7 @@ export const mockBridge = {
     runDemoTurn(sessionId, req.mode, req.prompt); // fire and forget; streams events
     return { sessionId };
   },
-  async sendInput(sessionId, text) {
+  async sendInput(sessionId, text, _images) {
     runDemoTurn(sessionId, "code", text);
   },
   async interrupt(sessionId) {
@@ -114,6 +114,10 @@ export const mockBridge = {
   async listSessions() { return []; },
   async getSession() { return null; },
   async deleteSession() { return true; },
+  async runSpeedTest() { return { at: Date.now(), prompt: "", results: [] }; },
+  async cancelSpeedTest() { return true; },
+  async getSpeedTestLast() { return null; },
+  async openExternal(url) { try { window.open(url, "_blank"); } catch {} return true; },
   async pingProvider() { return true; },
   async saveAccount(a) { _mockSettings.account = { ...(_mockSettings.account || {}), ...a }; return _mockSettings.account; },
   async signOut() { _mockSettings.account = { name: "", email: "", avatar: "", googleLinked: false, anthropicLinked: false }; return true; },
@@ -124,6 +128,11 @@ export const mockBridge = {
     return { ok: false, error: "Connectors run only in the desktop app." };
   },
   async listSkills() { return []; },
+  async listDir() { return []; },
+  async listSaved() { return []; },
+  async saveResponse(item) { return { id: "sav_mock", ...item, createdAt: Date.now() }; },
+  async updateSaved() { return null; },
+  async removeSaved() { return true; },
   async createSkill() { return { error: "Skills run only in the desktop app." }; },
   async importSkillFolder() { return { error: "Desktop app only." }; },
   async importSkillZip() { return { error: "Desktop app only." }; },

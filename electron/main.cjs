@@ -85,16 +85,56 @@ const sm = new SessionManager((uiEvent) => {
 
 // ---- IPC: commands (renderer → main) ----
 ipcMain.handle("brainedge:start", (_e, req) => sm.start(req));
-ipcMain.handle("brainedge:sendInput", (_e, { sessionId, text }) => sm.sendInput(sessionId, text));
+ipcMain.handle("brainedge:sendInput", (_e, { sessionId, text, images }) => sm.sendInput(sessionId, text, images));
 ipcMain.handle("brainedge:interrupt", (_e, { sessionId }) => sm.interrupt(sessionId));
 ipcMain.handle("brainedge:setPermissionMode", (_e, { sessionId, mode }) => sm.setPermissionMode(sessionId, mode));
 ipcMain.on("brainedge:resolvePermission", (_e, { requestId, result }) => sm.resolvePermission(requestId, result));
+
+// ---- IPC: model speed check (cloud) ----
+const speedtest = require("./speedtest.cjs");
+const speedFile = () => path.join(app.getPath("userData"), "speedtest-last.json");
+const DEFAULT_SPEED_PROMPT = "In about 150 words, explain what makes a good API design.";
+let speedAborts = []; // AbortControllers for the in-flight run (for Stop)
+ipcMain.handle("brainedge:runSpeedTest", async (_e, { tests, prompt, maxTokens }) => {
+  const cfg = settings.load();
+  const usePrompt = (prompt || "").trim() || DEFAULT_SPEED_PROMPT;
+  // retryable = quota/balance/auth/model-not-found → try the model on a fallback provider.
+  const RETRY = /\b(401|402|404|429)\b|quota|balance|insufficient|not found|no endpoints/i;
+  speedAborts = [];
+  const results = await Promise.all((tests || []).map(async (t) => {
+    const chain = [{ profileId: t.profileId, modelId: t.modelId }, ...((t.fallbacks) || [])];
+    let last = null;
+    for (let i = 0; i < chain.length; i++) {
+      const p = cfg.profiles[chain[i].profileId];
+      if (!p) { last = { label: t.label, model: chain[i].modelId, ok: false, error: "provider not configured" }; continue; }
+      const ac = new AbortController(); speedAborts.push(ac);
+      const r = await speedtest.runTest(p, chain[i].modelId, usePrompt, maxTokens || 256, ac.signal);
+      if (r.ok) return { label: t.label, model: chain[i].modelId, provider: p.name, fellback: i > 0, ...r };
+      last = { label: t.label, model: chain[i].modelId, provider: p.name, ...r };
+      if (r.error === "cancelled" || !RETRY.test(r.error || "")) break; // stop on cancel or non-retryable
+    }
+    return last || { label: t.label, ok: false, error: "no provider" };
+  }));
+  speedAborts = [];
+  const payload = { at: Date.now(), prompt: usePrompt, results };
+  try { fs.writeFileSync(speedFile(), JSON.stringify(payload, null, 2)); } catch {}
+  return payload;
+});
+ipcMain.handle("brainedge:cancelSpeedTest", () => { speedAborts.forEach((a) => { try { a.abort(); } catch {} }); speedAborts = []; return true; });
+ipcMain.handle("brainedge:getSpeedTestLast", () => { try { return JSON.parse(fs.readFileSync(speedFile(), "utf8")); } catch { return null; } });
 
 // ---- IPC: persisted chat history (Let's Talk / Collaborate / Build) ----
 const sstore = require("./sessions-store.cjs");
 ipcMain.handle("brainedge:listSessions", (_e, mode) => sstore.listSessions(mode));
 ipcMain.handle("brainedge:getSession", (_e, id) => sstore.getSession(id));
 ipcMain.handle("brainedge:deleteSession", (_e, id) => sstore.deleteSession(id));
+
+// ---- IPC: Saved library (bookmarked responses) ----
+const savedStore = require("./saved-store.cjs");
+ipcMain.handle("brainedge:listSaved", () => savedStore.listSaved());
+ipcMain.handle("brainedge:saveResponse", (_e, item) => savedStore.addSaved(item || {}));
+ipcMain.handle("brainedge:updateSaved", (_e, { id, patch }) => savedStore.updateSaved(id, patch || {}));
+ipcMain.handle("brainedge:removeSaved", (_e, id) => savedStore.removeSaved(id));
 
 // ---- IPC: settings + models ----
 ipcMain.handle("brainedge:getSettings", () => settings.load());
@@ -114,6 +154,24 @@ ipcMain.handle("brainedge:pingProvider", async (_e, profileId) => {
 ipcMain.handle("brainedge:chooseFolder", async () => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"] });
   return r.canceled ? null : r.filePaths[0];
+});
+ipcMain.handle("brainedge:openExternal", (_e, url) => { try { if (/^https?:\/\//i.test(url)) shell.openExternal(url); return true; } catch { return false; } });
+
+// ---- IPC: shallow directory listing (for @-mention file picker) ----
+const DIR_SKIP = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", "dist", "build", ".next", ".cache"]);
+ipcMain.handle("brainedge:listDir", (_e, dir) => {
+  if (!dir) return [];
+  try {
+    const out = [];
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (ent.name.startsWith(".") || DIR_SKIP.has(ent.name)) continue;
+      out.push({ name: ent.name, isDir: ent.isDirectory() });
+      if (out.length >= 500) break;
+    }
+    // folders first, then files, alphabetical
+    out.sort((a, b) => (a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1));
+    return out;
+  } catch { return []; }
 });
 
 // ---- IPC: connectors (MCP) ----
@@ -351,59 +409,4 @@ ipcMain.handle("brainedge:googleSignIn", async () => {
         const tj = await tk.json();
         if (!tj.access_token) return finish({ error: "Token exchange failed: " + JSON.stringify(tj).slice(0, 220) });
         const info = await (await fetch("https://www.googleapis.com/oauth2/v3/userinfo", { headers: { Authorization: "Bearer " + tj.access_token } })).json();
-        const account = { name: info.name || "", email: info.email || "", avatar: info.picture || "", googleLinked: true, anthropicLinked: (cfg.account || {}).anthropicLinked || false };
-        settings.save({ ...settings.load(), account });
-        finish({ account });
-      } catch (e) { finish({ error: String((e && e.message) || e) }); }
-    });
-    server.listen(0, "127.0.0.1", () => {
-      redirectUri = `http://127.0.0.1:${server.address().port}`;
-      const authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
-        client_id: clientId, redirect_uri: redirectUri, response_type: "code", scope: "openid email profile",
-        code_challenge: challenge, code_challenge_method: "S256", access_type: "offline", prompt: "consent",
-      }).toString();
-      shell.openExternal(authUrl);
-    });
-    setTimeout(() => finish({ error: "Sign-in timed out." }), 180000);
-  });
-});
-
-// GitHub sign-in via device flow (no secret needed; enable Device Flow on your OAuth app).
-ipcMain.handle("brainedge:githubSignIn", async () => {
-  const cfg = settings.load();
-  const clientId = cfg.githubClientId;
-  if (!clientId) return { error: "Add a GitHub OAuth Client ID in Profile first (github.com → Settings → Developer settings → OAuth Apps → enable Device Flow)." };
-  try {
-    const dc = await (await fetch("https://github.com/login/device/code", {
-      method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: clientId, scope: "read:user user:email" }),
-    })).json();
-    if (!dc.device_code) return { error: "GitHub device code failed: " + JSON.stringify(dc).slice(0, 200) };
-    shell.openExternal(dc.verification_uri);
-    dialog.showMessageBox(win, { type: "info", title: "GitHub sign-in", message: `Enter this code on GitHub:\n\n${dc.user_code}`, detail: dc.verification_uri });
-    const deadline = Date.now() + (dc.expires_in || 900) * 1000;
-    let interval = (dc.interval || 5) * 1000;
-    while (Date.now() < deadline) {
-      await sleep(interval);
-      const tk = await (await fetch("https://github.com/login/oauth/access_token", {
-        method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({ client_id: clientId, device_code: dc.device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code" }),
-      })).json();
-      if (tk.access_token) {
-        const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tk.access_token, "User-Agent": "BrainEdge", Accept: "application/vnd.github+json" } })).json();
-        const account = { ...(cfg.account || {}), name: u.name || u.login || "", email: u.email || "", avatar: u.avatar_url || "", githubLinked: true };
-        settings.save({ ...settings.load(), account });
-        return { account };
-      }
-      if (tk.error === "slow_down") interval += 5000;
-      else if (tk.error && tk.error !== "authorization_pending") return { error: tk.error };
-    }
-    return { error: "Sign-in timed out." };
-  } catch (e) { return { error: String((e && e.message) || e) }; }
-});
-
-app.on("before-quit", () => { mcp.disconnectAll(); });
-
-app.whenReady().then(() => { createWindow(); reconcileMessaging(); });
-app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
-app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
+        const account = { name: info.name || "", email: info.email || "", avatar: info.picture || "", googleLinked: true, ant

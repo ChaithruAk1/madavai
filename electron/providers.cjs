@@ -113,9 +113,21 @@ function streamChat(profile, messages, opts) {
     : streamOpenAI(profile, messages, opts);
 }
 
+// Current Anthropic model ids — used when on the Claude subscription (no API key to
+// query /v1/models with), so all Claude models are available regardless of `claude login`.
+const ANTHROPIC_MODELS = [
+  "claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001",
+  "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest", "claude-3-opus-latest",
+];
+
 // List models from the provider's /v1/models (best-effort).
 async function listModels(profile) {
   if (!profile || !profile.baseUrl) return [];
+  // Anthropic on subscription (or no key): can't query the API — return the known model set.
+  if (profile.kind === "anthropic") {
+    let sub = false; try { sub = !!require("./settings.cjs").load().anthropicUseSubscription; } catch {}
+    if (sub || !(profile.apiKey || "").trim()) return [...ANTHROPIC_MODELS];
+  }
   const url = modelsUrl(profile.baseUrl);
   const headers = {};
   if (profile.kind === "anthropic") {

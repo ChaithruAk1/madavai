@@ -10,8 +10,9 @@ import Connectors from "./components/Connectors.jsx";
 import Skills from "./components/Skills.jsx";
 import ProjectsBrowser from "./components/ProjectsBrowser.jsx";
 import Dispatch from "./components/Dispatch.jsx";
+import SavedLibrary from "./components/SavedLibrary.jsx";
 import Consumption from "./components/Consumption.jsx";
-import ModelsOverview from "./components/ModelsOverview.jsx";
+import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
@@ -29,14 +30,17 @@ export default function App() {
   const [modelsByProfile, setModelsByProfile] = useState({});
   const [cwd, setCwd] = useState(null);
   const [projectCtx, setProjectCtx] = useState(null);
+  const [coworkProj, setCoworkProj] = useState(null); // { id, name } when a Cowork task is scoped to a project
   const [online, setOnline] = useState(null);
   const [artifact, setArtifact] = useState(null);
   const [activeConvId, setActiveConvId] = useState(null);
   const [histRefresh, setHistRefresh] = useState(0);
   const [chatMode, setChatMode] = useState("chat"); // last primary mode → drives the Recents list
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const sessionRef = useRef(null);
   const chatRef = useRef(null);
   const streamOpen = useRef(false);
+  const lastInfoRef = useRef(null); // real {model, provider, kind} from the backend init event
   const modeCacheRef = useRef({}); // per-mode {convId, timeline} so navigating away/back restores
 
   const PRIMARY = ["chat", "cowork", "code"];
@@ -74,6 +78,7 @@ export default function App() {
     switch (e.kind) {
       case "init":
         if (e.data.permissionMode) setPermissionMode(e.data.permissionMode);
+        if (e.data.model || e.data.provider) lastInfoRef.current = { model: e.data.model, provider: e.data.provider, kind: e.data.kind };
         break;
       case "assistant_delta": {
         const text = e.data.text ?? "";
@@ -85,7 +90,7 @@ export default function App() {
             return [...tl.slice(0, -1), { ...last, text: last.text + text }];
           }
           streamOpen.current = true;
-          return [...tl, { type: "message", role: "assistant", text }];
+          return [...tl, { type: "message", role: "assistant", text, meta: lastInfoRef.current }];
         });
         break;
       }
@@ -119,22 +124,27 @@ export default function App() {
   }, []);
 
   useEffect(() => bridge.onEvent(onEvent), [onEvent]);
+  useEffect(() => {
+    const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) { e.preventDefault(); setSidebarOpen((v) => !v); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const isAgentMode = mode === "cowork" || mode === "code";
 
-  const send = async (text) => {
-    setTimeline((tl) => [...tl, { type: "message", role: "user", text }]);
+  const send = async (text, images = []) => {
+    setTimeline((tl) => [...tl, { type: "message", role: "user", text, images }]);
     setBusy(true);
     streamOpen.current = false;
     if (!sessionRef.current) {
       const req = projectCtx
-        ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId }
-        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId };
+        ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId, images }
+        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images };
       const { sessionId, conversationId } = await bridge.start(req);
       sessionRef.current = sessionId;
       if (!projectCtx && conversationId) setActiveConvId(conversationId);
     } else {
-      bridge.sendInput(sessionRef.current, text);
+      bridge.sendInput(sessionRef.current, text, images);
     }
   };
 
@@ -144,12 +154,12 @@ export default function App() {
     if (!conv) return;
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
-    setProjectCtx(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+    setProjectCtx(null); setCoworkProj(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   // Start a fresh chat — also returns to the chat surface if we're in a tool/settings view.
   const newSession = () => {
     if (!PRIMARY.includes(mode)) setMode(chatMode);
-    setProjectCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+    setProjectCtx(null); setCoworkProj(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const removeSession = async (id) => {
     await bridge.deleteSession(id);
@@ -166,6 +176,56 @@ export default function App() {
     sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const backToProjects = () => { setProjectCtx(null); setTimeline([]); sessionRef.current = null; setBusy(false); };
+
+  // Start a new project conversation from the Projects detail composer (opens the chat surface + sends).
+  const startProjectChat = async (project, text) => {
+    const conv = await bridge.createConversation(project.id);
+    setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: conv.id, title: (text || "").slice(0, 48) || "New conversation" });
+    setTimeline(text ? [{ type: "message", role: "user", text }] : []);
+    sessionRef.current = null; streamOpen.current = false;
+    if (text) {
+      setBusy(true);
+      const { sessionId } = await bridge.start({ mode: "project", prompt: text, projectId: project.id, conversationId: conv.id });
+      sessionRef.current = sessionId;
+    }
+  };
+
+  // Start a Cowork task scoped to a project: uses the project's linked folder as the
+  // working dir and injects its instructions + knowledge as context (like Claude).
+  const startProjectCowork = async (project, text) => {
+    if (!project.folder) { alert("Link a folder to this project first (Files & sources) to run a Cowork task."); return; }
+    setMode("cowork"); setChatMode("cowork");
+    setProjectCtx(null); setCoworkProj({ id: project.id, name: project.name });
+    setCwd(project.folder);
+    setTimeline(text ? [{ type: "message", role: "user", text }] : []);
+    setActiveConvId(null); sessionRef.current = null; streamOpen.current = false;
+    if (text) {
+      setBusy(true);
+      const { sessionId, conversationId } = await bridge.start({ mode: "cowork", prompt: text, cwd: project.folder, permissionMode, projectId: project.id });
+      sessionRef.current = sessionId;
+      if (conversationId) setActiveConvId(conversationId);
+    }
+  };
+
+  // Bookmark a BrainEdge response into the Saved library (toggle).
+  const saveResponse = async (i) => {
+    const item = timeline[i];
+    if (!item || item.role !== "assistant") return;
+    if (item.savedId) {
+      await bridge.removeSaved(item.savedId);
+      setTimeline((tl) => tl.map((it, idx) => idx === i ? { ...it, savedId: null } : it));
+      return;
+    }
+    // nearest preceding user message = the question
+    let question = "";
+    for (let j = i - 1; j >= 0; j--) { if (timeline[j].type === "message" && timeline[j].role === "user") { question = timeline[j].text; break; } }
+    const rec = await bridge.saveResponse({
+      text: item.text, question, meta: item.meta || null,
+      convId: projectCtx ? projectCtx.conversationId : activeConvId,
+      mode: projectCtx ? "project" : mode,
+    });
+    if (rec && rec.id) setTimeline((tl) => tl.map((it, idx) => idx === i ? { ...it, savedId: rec.id } : it));
+  };
 
   const changePermission = (m) => {
     setPermissionMode(m);
@@ -196,7 +256,7 @@ export default function App() {
     if (PRIMARY.includes(m)) {
       // Returning to a chat mode: restore its last conversation (or start fresh).
       const c = modeCacheRef.current[m];
-      setProjectCtx(null);
+      setProjectCtx(null); setCoworkProj(null);
       setTimeline(c ? c.timeline : []);
       setActiveConvId(c ? c.convId : null);
       sessionRef.current = null;
@@ -250,14 +310,17 @@ export default function App() {
 
   const _hour = new Date().getHours();
   const _part = _hour < 12 ? "Morning" : _hour < 18 ? "Afternoon" : "Evening";
-  const _who = ((settings && settings.account && settings.account.name) || "").trim().split(" ")[0];
-  const greeting = _who ? `${_part}, ${_who}` : `Good ${_part.toLowerCase()}`;
+  const _acct = (settings && settings.account) || {};
+  const _nm = ((_acct.name || "").trim().split(" ")[0]) || ((_acct.email || "").split("@")[0]) || "";
+  const _who = _nm ? _nm.charAt(0).toUpperCase() + _nm.slice(1) : "";
+  const greeting = _who ? `Good ${_part.toLowerCase()}, ${_who}` : `Good ${_part.toLowerCase()}`;
 
   const isSettings = mode === "settings";
   const isConnectors = mode === "connectors";
   const isSkills = mode === "skills";
   const isDispatch = mode === "dispatch";
   const isConsumption = mode === "consumption";
+  const isSaved = mode === "saved";
   const isModels = mode === "models";
 
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
@@ -282,85 +345,10 @@ export default function App() {
         onPermissionChange={changePermission}
         online={online}
         loc={activeLoc}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
       />
-      <div className="app-body">
+      <div className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`}>
       <Sidebar active={mode} onSelect={switchMode}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
-        onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession} />
-      <div className="main">
-        {isSettings ? (
-          <Settings onChanged={setSettings} />
-        ) : isConnectors ? (
-          <Connectors />
-        ) : isSkills ? (
-          <Skills />
-        ) : isDispatch ? (
-          <Dispatch />
-        ) : isConsumption ? (
-          <Consumption />
-        ) : isModels ? (
-          <ModelsOverview activeModel={activeProfile && activeProfile.model} />
-        ) : (mode === "project" && !projectCtx) ? (
-          <ProjectsBrowser onOpen={openConversation} />
-        ) : (
-          <div className="work-split">
-            <div className="work-main">
-              {timeline.length === 0 ? (
-                <div className="hero scroll">
-                  <div className="hero-inner">
-                    <div className="hero-greet"><ThinkLogo size={52} /><h1 className="greeting">{greeting}</h1></div>
-                    <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
-                    {controlsRow}
-                    {projectCtx && (
-                      <div className="hero-opts">
-                        <button className="chip" onClick={backToProjects}>← Projects</button>
-                        <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {isAgentMode && (
-                    <div className="folder-bar">
-                      <FolderOpen size={14} />
-                      {cwd ? <span className="path">{cwd}</span> : <span className="path muted">No folder selected</span>}
-                      <button className="btn" onClick={pickFolder} style={{ marginLeft: "auto", padding: "5px 10px" }}>{cwd ? "Change folder" : "Choose folder"}</button>
-                    </div>
-                  )}
-                  {projectCtx && (
-                    <div className="folder-bar">
-                      <button className="btn ghost" onClick={backToProjects} style={{ padding: "4px 8px" }}>← Projects</button>
-                      <FolderKanban size={14} />
-                      <span className="path">{projectCtx.projectName}</span>
-                      <span style={{ color: "var(--text-2)" }}>· {projectCtx.title}</span>
-                    </div>
-                  )}
-                  <div className="chat scroll" ref={chatRef}>
-                    <div className="chat-inner">
-                      {timeline.map((item, i) => (
-                        <Message key={i} item={item} onOpenArtifact={setArtifact}
-                          streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
-                      ))}
-                    </div>
-                  </div>
-                  <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} />
-                  {controlsRow}
-                </>
-              )}
-            </div>
-            {artifact && <ArtifactPanel artifact={artifact} onClose={() => setArtifact(null)} />}
-          </div>
-        )}
-      </div>
-      </div>
-
-      <PermissionModal
-        req={perm}
-        onAllow={() => resolve("allow")}
-        onAllowAlways={() => { changePermission("bypassPermissions"); resolve("allow"); }}
-        onDeny={() => resolve("deny")}
-      />
-    </div>
-  );
-}
+        onNew={newSession} onOpenSession={openSession} o
