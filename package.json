@@ -19,6 +19,7 @@
     "@modelcontextprotocol/sdk": "latest",
     "lucide-react": "^0.383.0",
     "ssh2": "^1.16.0",
+    "undici": "^6.21.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -43,14 +44,30 @@
       "package.json"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
         }
       ]
+    },
+    "portable": {
+      "artifactName": "Thinkflux-portable-${version}.exe"
     }
   }
 }

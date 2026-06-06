@@ -191,6 +191,15 @@ export default function Settings({ onChanged }) {
               <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
               {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
             </div>
+            <div style={{ maxWidth: 520, marginBottom: 18 }}>
+              <div className="nav-label" style={{ paddingLeft: 0 }}>Corporate proxy (optional)</div>
+              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
+                Route all LLM, MCP, and Telegram traffic through your company's approved proxy/gateway. Local models (Ollama/LM Studio) bypass it automatically. <b>Restart the app</b> after changing this.
+              </p>
+              <Field label="Proxy URL"><input className="model-search" value={s.proxyUrl || ""} onChange={(e) => setField("proxyUrl", e.target.value)} placeholder="http://proxy.corp:8080" /></Field>
+              <Field label="Bypass hosts (no-proxy)"><input className="model-search" value={s.noProxy || ""} onChange={(e) => setField("noProxy", e.target.value)} placeholder="localhost,127.0.0.1,.corp.internal" /></Field>
+            </div>
+
             <div className="nav-label" style={{ paddingLeft: 0 }}>Providers &amp; models</div>
             <div style={{ display: "grid", gridTemplateColumns: "210px 1fr", gap: 24, marginTop: 6 }}>
             <div>

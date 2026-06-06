@@ -20,6 +20,8 @@ const DEFAULTS = {
   globalInstructions: "", // applied to every conversation, like Claude's custom instructions
   defaultModel: "", // "profileId::model" — applied on every app start
   anthropicUseSubscription: false, // use `claude login` subscription creds instead of an API key
+  proxyUrl: "", // optional corporate proxy, e.g. http://proxy.corp:8080 (applied on startup)
+  noProxy: "", // optional comma-separated hosts to bypass the proxy (defaults to localhost)
   messaging: { enabled: false, platform: "telegram", telegramToken: "", telegramAllowedUserIds: "", target: "chat", folder: "" },
   profiles: {
     p_local: {

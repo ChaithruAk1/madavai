@@ -20,6 +20,28 @@ const runner = require("./dispatch-runner.cjs");
 const usage = require("./usage-store.cjs");
 const tgbot = require("./telegram-bot.cjs");
 
+// Corporate-proxy support: route ALL outbound HTTP(S) — provider/LLM calls, MCP,
+// Telegram — through the proxy named in HTTPS_PROXY/HTTP_PROXY, honoring NO_PROXY.
+// This is the supported way to work behind a gateway (not an evasion). Local model
+// endpoints (Ollama/LM Studio) bypass the proxy by default so they keep working.
+(function setupProxy() {
+  let cfg = {};
+  try { cfg = settings.load(); } catch {}
+  let px = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy || cfg.proxyUrl;
+  if (!px) return;
+  // Mirror into env so EnvHttpProxyAgent and any spawned child (Claude Code binary) see it.
+  process.env.HTTPS_PROXY = process.env.HTTPS_PROXY || px;
+  process.env.HTTP_PROXY = process.env.HTTP_PROXY || px;
+  if (!process.env.NO_PROXY && !process.env.no_proxy) process.env.NO_PROXY = cfg.noProxy || "localhost,127.0.0.1,::1,0.0.0.0";
+  try {
+    const undici = require("undici");
+    undici.setGlobalDispatcher(undici.EnvHttpProxyAgent ? new undici.EnvHttpProxyAgent() : new undici.ProxyAgent(px));
+    console.log(`[thinkflux] proxy enabled → ${px} (NO_PROXY=${process.env.NO_PROXY})`);
+  } catch (e) {
+    console.log("[thinkflux] proxy requested but undici not available — run `npm install undici`. Direct connection. " + (e && e.message));
+  }
+})();
+
 async function reconcileMessaging() {
   const m = settings.load().messaging || {};
   if (m.enabled && m.platform === "telegram" && m.telegramToken) {
@@ -40,6 +62,7 @@ function createWindow() {
     minHeight: 560,
     backgroundColor: "#0e0f11",
     titleBarStyle: "hiddenInset",
+    icon: path.join(__dirname, "..", "build", "icon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,

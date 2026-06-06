@@ -8,7 +8,7 @@ export default function TopNav({ mode, onSelect }) {
   return (
     <header className="topnav glass">
       <div className="tn-brand">
-        <div className="mark tea"><ThinkLogo size={24} /></div>
+        <ThinkLogo size={30} />
         <span className="tn-name">Thinkflux</span>
       </div>
 
