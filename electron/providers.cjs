@@ -27,9 +27,18 @@ async function ensureOk(res, provider) {
   throw err;
 }
 
-// OpenAI-compatible: POST {baseUrl}/v1/chat/completions
+// Resolve the OpenAI-style API base. If the baseUrl already carries a version/openai
+// path (e.g. Gemini's /v1beta/openai, or a user-typed .../v1), use it as-is; else add /v1.
+function apiBase(baseUrl) {
+  const b = (baseUrl || "").replace(/\/$/, "");
+  return /\/v\d|\/openai/.test(b) ? b : b + "/v1";
+}
+const chatUrl = (b) => apiBase(b) + "/chat/completions";
+const modelsUrl = (b) => apiBase(b) + "/models";
+
+// OpenAI-compatible: POST {base}/chat/completions
 async function streamOpenAI(profile, messages, { onDelta, signal }) {
-  const url = profile.baseUrl.replace(/\/$/, "") + "/v1/chat/completions";
+  const url = chatUrl(profile.baseUrl);
   const res = await fetch(url, {
     method: "POST",
     signal,
@@ -89,7 +98,7 @@ function streamChat(profile, messages, opts) {
 // List models from the provider's /v1/models (best-effort).
 async function listModels(profile) {
   if (!profile || !profile.baseUrl) return [];
-  const url = profile.baseUrl.replace(/\/$/, "") + "/v1/models";
+  const url = modelsUrl(profile.baseUrl);
   const headers = {};
   if (profile.kind === "anthropic") {
     headers["anthropic-version"] = "2023-06-01";
@@ -109,7 +118,7 @@ async function listModels(profile) {
 
 // OpenAI-compatible streaming WITH tools — streams text deltas and accumulates tool_calls.
 async function streamChatTools(profile, messages, tools, { onDelta, signal }) {
-  const url = profile.baseUrl.replace(/\/$/, "") + "/v1/chat/completions";
+  const url = chatUrl(profile.baseUrl);
   const res = await fetch(url, {
     method: "POST",
     signal,
@@ -147,7 +156,7 @@ async function streamChatTools(profile, messages, tools, { onDelta, signal }) {
 // Reachability check — any HTTP response means online; a network error means offline.
 async function ping(profile) {
   if (!profile || !profile.baseUrl) return false;
-  const url = profile.baseUrl.replace(/\/$/, "") + "/v1/models";
+  const url = modelsUrl(profile.baseUrl);
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 3500);
   try {

@@ -10,7 +10,7 @@ const PERMS = [
   { id: "plan", label: "Read-only", desc: "Inspect only, never modify", icon: Eye },
 ];
 
-function PermissionPicker({ value, onChange }) {
+export function PermissionPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {

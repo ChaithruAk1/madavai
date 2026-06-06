@@ -35,10 +35,10 @@
  */
 
 export const MODES = [
-  { id: "chat",    label: "Chat",        sub: "Stateless · direct to proxy" },
-  { id: "code",    label: "Claude Code", sub: "Repo tools · ask before write" },
-  { id: "cowork",  label: "Cowork",      sub: "Folder · skills · connectors" },
-  { id: "project", label: "Projects",    sub: "Saved sessions" },
+  { id: "chat",    label: "Let's Talk",        sub: "Conversation" },
+  { id: "code",    label: "Let's Build",       sub: "Code in a repo" },
+  { id: "cowork",  label: "Let's Collaborate", sub: "Work on a folder" },
+  { id: "project", label: "Projects",          sub: "Saved workspaces" },
 ];
 
 export const SECONDARY = [

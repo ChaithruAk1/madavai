@@ -74,6 +74,18 @@ export default function Settings({ onChanged }) {
             <Field label="Display name"><input className="model-search" value={account.name || ""} onChange={(e) => setAccount({ name: e.target.value })} placeholder="Your name" /></Field>
             <Field label="Email"><input className="model-search" value={account.email || ""} onChange={(e) => setAccount({ email: e.target.value })} placeholder="you@example.com" /></Field>
             <Field label="Avatar URL (optional)"><input className="model-search" value={account.avatar || ""} onChange={(e) => setAccount({ avatar: e.target.value })} placeholder="https://…" /></Field>
+
+            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Instructions for Chai</div>
+            <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
+              Applied to <b>every</b> conversation across the app (Chat, Code, Cowork, Projects) — like Claude's custom instructions. Tone, role, rules, things to always remember.
+            </p>
+            <textarea className="model-search" rows={6} style={{ resize: "vertical", fontFamily: "inherit" }}
+              value={s.globalInstructions || ""} onChange={(e) => setS({ ...s, globalInstructions: e.target.value })}
+              placeholder="e.g. Be concise. I'm a senior engineer — skip basics. Always show code diffs. Prefer TypeScript." />
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+              <button className="btn primary" onClick={async () => { await bridge.saveSettings(s); onChanged?.(s); setStatus("Saved ✓"); setTimeout(() => setStatus(""), 1500); }}>Save</button>
+              <span style={{ color: "var(--ok)", fontSize: 12 }}>{status}</span>
+            </div>
           </div>
         )}
 

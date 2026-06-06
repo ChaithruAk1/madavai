@@ -129,15 +129,30 @@ function walkFiles(root, dir, depth, cb) {
   }
 }
 
-// Route a tool call to a skill, an MCP connector, or a local file/shell tool.
-async function dispatch(cwd, name, args, skillsDir) {
+// Route a tool call to a skill, an MCP connector, a remote SSH backend, or a local tool.
+async function dispatch(cwd, name, args, skillsDir, backend) {
   if (name === "load_skill") {
     const r = skillsMgr.loadSkill(skillsDir, args.name);
     if (!r) return "Skill not found: " + args.name;
     return `(Skill "${args.name}" loaded. Its files are in: ${r.dir} — run any scripts there with run_bash.)\n\n` + r.body;
   }
   if (mcp.isMcpTool(name)) return await mcp.callTool(name, args);
+  if (backend) return backendExec(backend, name, args);
   return execTool(cwd, name, args);
+}
+
+// Map a tool call to a remote backend (SSH).
+function backendExec(b, name, args) {
+  switch (name) {
+    case "list_dir": return b.list(args.path || ".");
+    case "read_file": return b.read(args.path);
+    case "write_file": return b.write(args.path, args.content);
+    case "edit_file": return b.edit(args.path, args.old_string, args.new_string);
+    case "run_bash": return b.bash(args.command);
+    case "find_files": return b.find(args.pattern);
+    case "search_text": return b.search(args.query, args.glob);
+    default: throw new Error("unknown tool " + name);
+  }
 }
 
 function askPermission(emit, permissions, toolUseId, toolName, input) {
@@ -148,9 +163,10 @@ function askPermission(emit, permissions, toolUseId, toolName, input) {
   });
 }
 
-async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null }) {
+async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "" }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
-  const sys = (systemOverride || SYSTEM(mode)) + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
+  const gi = globalInstructions ? `\n\nUser's custom instructions (always follow these):\n${globalInstructions}` : "";
+  const sys = (systemOverride || SYSTEM(mode)) + gi + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
   if (history.length === 0) history.push({ role: "system", content: sys });
   else if (history[0] && history[0].role === "system") history[0].content = sys; // refresh index live
   history.push({ role: "user", content: prompt });

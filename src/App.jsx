@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { FolderOpen, FolderKanban } from "lucide-react";
 import Sidebar from "./components/Sidebar.jsx";
-import Topbar from "./components/Topbar.jsx";
+import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
 import Composer from "./components/Composer.jsx";
 import PermissionModal from "./components/PermissionModal.jsx";
@@ -11,6 +11,8 @@ import Skills from "./components/Skills.jsx";
 import ProjectsBrowser from "./components/ProjectsBrowser.jsx";
 import Dispatch from "./components/Dispatch.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
+import TeaLogo from "./components/TeaLogo.jsx";
+import { PermissionPicker } from "./components/Topbar.jsx";
 import { bridge } from "./bridge/index.js";
 
 export default function App() {
@@ -187,27 +189,33 @@ export default function App() {
   };
   const refreshModels = () => loadModelsFor(settings);
 
+  const _hour = new Date().getHours();
+  const _part = _hour < 12 ? "Morning" : _hour < 18 ? "Afternoon" : "Evening";
+  const _who = ((settings && settings.account && settings.account.name) || "").trim().split(" ")[0];
+  const greeting = _who ? `${_part}, ${_who}` : `Good ${_part.toLowerCase()}`;
+
   const isSettings = mode === "settings";
   const isConnectors = mode === "connectors";
   const isSkills = mode === "skills";
   const isDispatch = mode === "dispatch";
 
   return (
-    <div className="app">
+    <div className="app-v">
+      <TopNav
+        mode={mode}
+        onSelect={switchMode}
+        model={activeValue}
+        groups={pickerGroups}
+        onModel={selectModel}
+        onRefresh={refreshModels}
+        permissionMode={permissionMode}
+        onPermissionChange={changePermission}
+        online={online}
+        loc={activeLoc}
+      />
+      <div className="app-body">
       <Sidebar active={mode} onSelect={switchMode} />
       <div className="main">
-        <Topbar
-          mode={mode}
-          model={activeValue}
-          groups={pickerGroups}
-          onModel={selectModel}
-          onRefresh={refreshModels}
-          permissionMode={permissionMode}
-          onPermissionChange={changePermission}
-          online={online}
-          loc={activeLoc}
-        />
-
         {isSettings ? (
           <Settings onChanged={setSettings} />
         ) : isConnectors ? (
@@ -221,50 +229,58 @@ export default function App() {
         ) : (
           <div className="work-split">
             <div className="work-main">
-              {isAgentMode && (
-                <div className="folder-bar">
-                  <FolderOpen size={14} />
-                  {cwd ? <span className="path">{cwd}</span> : <span className="path muted">No folder selected</span>}
-                  <button className="btn" onClick={pickFolder} style={{ marginLeft: "auto", padding: "5px 10px" }}>
-                    {cwd ? "Change folder" : "Choose folder"}
-                  </button>
-                </div>
-              )}
-              {projectCtx && (
-                <div className="folder-bar">
-                  <button className="btn ghost" onClick={backToProjects} style={{ padding: "4px 8px" }}>← Projects</button>
-                  <FolderKanban size={14} />
-                  <span className="path">{projectCtx.projectName}</span>
-                  <span style={{ color: "var(--text-2)" }}>· {projectCtx.title}</span>
-                </div>
-              )}
-              <div className="chat scroll" ref={chatRef}>
-                {timeline.length === 0 ? (
-                  <div className="empty">
-                    <div>
-                      <div className="big">{projectCtx ? projectCtx.projectName : `Start a ${mode} session`}</div>
-                      <div>
-                        {isAgentMode && !cwd
-                          ? "Choose a folder above — Chai will read and edit files in it."
-                          : projectCtx ? "This conversation uses the project's instructions and knowledge."
-                          : activeProfile ? `Using ${activeProfile.name} · ${activeProfile.model}` : "Configure a provider in Settings."}
+              {timeline.length === 0 ? (
+                <div className="hero scroll">
+                  <div className="hero-inner">
+                    <div className="hero-greet"><TeaLogo size={30} /><h1 className="greeting">{greeting}</h1></div>
+                    <Composer mode={mode} busy={busy} onSend={send} onStop={stop} />
+                    {isAgentMode && (
+                      <div className="hero-opts">
+                        <button className="chip" onClick={pickFolder}><FolderOpen size={13} /> {cwd || "Choose folder"}</button>
+                        <PermissionPicker value={permissionMode} onChange={changePermission} />
                       </div>
+                    )}
+                    {projectCtx && (
+                      <div className="hero-opts">
+                        <button className="chip" onClick={backToProjects}>← Projects</button>
+                        <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {isAgentMode && (
+                    <div className="folder-bar">
+                      <FolderOpen size={14} />
+                      {cwd ? <span className="path">{cwd}</span> : <span className="path muted">No folder selected</span>}
+                      <button className="btn" onClick={pickFolder} style={{ marginLeft: "auto", padding: "5px 10px" }}>{cwd ? "Change folder" : "Choose folder"}</button>
+                    </div>
+                  )}
+                  {projectCtx && (
+                    <div className="folder-bar">
+                      <button className="btn ghost" onClick={backToProjects} style={{ padding: "4px 8px" }}>← Projects</button>
+                      <FolderKanban size={14} />
+                      <span className="path">{projectCtx.projectName}</span>
+                      <span style={{ color: "var(--text-2)" }}>· {projectCtx.title}</span>
+                    </div>
+                  )}
+                  <div className="chat scroll" ref={chatRef}>
+                    <div className="chat-inner">
+                      {timeline.map((item, i) => (
+                        <Message key={i} item={item} onOpenArtifact={setArtifact}
+                          streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
+                      ))}
                     </div>
                   </div>
-                ) : (
-                  <div className="chat-inner">
-                    {timeline.map((item, i) => (
-                      <Message key={i} item={item} onOpenArtifact={setArtifact}
-                        streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
-                    ))}
-                  </div>
-                )}
-              </div>
-              <Composer mode={mode} busy={busy} onSend={send} onStop={stop} />
+                  <Composer mode={mode} busy={busy} onSend={send} onStop={stop} />
+                </>
+              )}
             </div>
             {artifact && <ArtifactPanel artifact={artifact} onClose={() => setArtifact(null)} />}
           </div>
         )}
+      </div>
       </div>
 
       <PermissionModal

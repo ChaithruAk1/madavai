@@ -2,6 +2,18 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronDown, Check, Search, RefreshCw } from "lucide-react";
 import { MODELS } from "../bridge/contract.js";
 
+// Best-guess of a model's core purpose from its name (no universal API exposes this).
+export function classify(id) {
+  const n = (id || "").toLowerCase();
+  if (/cod(er|e)\b|coder|deepseek-coder/.test(n)) return "coding";
+  if (/reason|\br1\b|\bo1\b|\bo3\b|qwq|thinking|think\b/.test(n)) return "reasoning";
+  if (/vision|multimodal|\bvl\b|llava|-v\b/.test(n)) return "vision";
+  if (/embed/.test(n)) return "embeddings";
+  if (/flash|mini|lite|haiku|tiny|small|turbo|nano|\b[1-9]b\b/.test(n)) return "fast";
+  return "general";
+}
+const PURPOSE_COLOR = { coding: "#7ee787", reasoning: "#d2a8ff", vision: "#79c0ff", fast: "#ffd479", embeddings: "#79c0ff", general: "var(--text-2)" };
+
 // `groups` are provider-derived: [{ group: providerName, items: [{id:"pid::model", name, prov, badge}] }]
 export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh }) {
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
@@ -68,17 +80,21 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
           {groups.map((g) => (
             <div key={g.group}>
               <div className="model-group">{g.group} · {g.items.length}</div>
-              {g.items.map((it) => (
-                <div
-                  key={it.id}
-                  className={`model-row ${it.id === value ? "sel" : ""}`}
-                  onClick={() => { onChange(it.id); setOpen(false); }}
-                >
-                  {it.name}
-                  {it.badge && <span className="badge">{it.badge}</span>}
-                  {it.id === value && <Check size={15} className="check" />}
-                </div>
-              ))}
+              {g.items.map((it) => {
+                const purpose = classify(it.name);
+                return (
+                  <div
+                    key={it.id}
+                    className={`model-row ${it.id === value ? "sel" : ""}`}
+                    onClick={() => { onChange(it.id); setOpen(false); }}
+                  >
+                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                    <span className="badge" style={{ color: PURPOSE_COLOR[purpose], background: "transparent", border: "1px solid var(--line)" }}>{purpose}</span>
+                    {it.badge && <span className="badge">{it.badge}</span>}
+                    {it.id === value && <Check size={15} className="check" />}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>

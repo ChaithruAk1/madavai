@@ -86,7 +86,7 @@ class SessionManager {
       await runOpenAIAgentTurn({
         prompt: userText, mode: "chat", cwd: null, profile, permMode: "default",
         history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-        connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [],
+        connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: cfg.globalInstructions || "",
       });
     } finally {
       s.controller = null;
@@ -100,7 +100,9 @@ class SessionManager {
     const controller = new AbortController();
     s.controller = controller;
     this._send(sessionId, "init", { model: profile.model, provider: profile.name, kind: profile.kind, mode: s.mode });
-    const messages = [{ role: "system", content: "You are Chai, a helpful assistant." }, ...s.history];
+    const gi = settings.load().globalInstructions;
+    const sysChat = "You are Chai, a helpful assistant." + (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
+    const messages = [{ role: "system", content: sysChat }, ...s.history];
     const started = Date.now();
     try {
       const { text } = await streamChat(profile, messages, {
@@ -124,8 +126,10 @@ class SessionManager {
     const project = store.getProject(s.projectId);
     if (!project) { this._send(sessionId, "error", { code: "no_project", message: "Project not found." }); return; }
     const useFolder = !!project.folder;
+    const gi = settings.load().globalInstructions;
     const sys = store.projectSystem(project) +
-      (useFolder ? `\n\nThis project is linked to a folder of files at: ${project.folder}. Use the file tools (read_file, list_dir, edit_file, run_bash) to inspect or modify those files when relevant.` : "");
+      (useFolder ? `\n\nThis project is linked to a folder of files at: ${project.folder}. Use the file tools (read_file, list_dir, edit_file, run_bash) to inspect or modify those files when relevant.` : "") +
+      (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const cfg = settings.load();
     const emit = (e) => this._send(sessionId, e.kind, e.data);
     const controller = new AbortController();
@@ -152,7 +156,7 @@ class SessionManager {
         await runOpenAIAgentTurn({
           prompt: userText, mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [],
+          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: cfg.globalInstructions || "",
           systemOverride: sys,
         });
       }
@@ -196,7 +200,7 @@ class SessionManager {
         await runOpenAIAgentTurn({
           prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: s.permMode,
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [],
+          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: cfg.globalInstructions || "",
         });
       } finally {
         s.controller = null;
