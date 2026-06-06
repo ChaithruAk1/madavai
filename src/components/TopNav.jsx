@@ -1,15 +1,15 @@
-import TeaLogo from "./TeaLogo.jsx";
+import ThinkLogo from "./ThinkLogo.jsx";
 import { MODES } from "../bridge/contract.js";
 
-const ORDER = ["chat", "cowork", "code", "project"];
+const ORDER = ["chat", "cowork", "code"];
 
 export default function TopNav({ mode, onSelect }) {
   const tabs = ORDER.map((id) => MODES.find((m) => m.id === id)).filter(Boolean);
   return (
     <header className="topnav glass">
       <div className="tn-brand">
-        <div className="mark tea"><TeaLogo size={24} /></div>
-        <span className="tn-name">Chai</span>
+        <div className="mark tea"><ThinkLogo size={24} /></div>
+        <span className="tn-name">Thinkflux</span>
       </div>
 
       <nav className="tn-tabs">

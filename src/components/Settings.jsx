@@ -132,7 +132,7 @@ export default function Settings({ onChanged }) {
             <Field label="GitHub OAuth Client ID (enable Device Flow)"><input className="model-search" value={s.githubClientId || ""} onChange={(e) => setField("githubClientId", e.target.value)} placeholder="Iv1.xxxxxxxx" /></Field>
             {status && !status.startsWith("Default") && <div style={{ color: "var(--text-2)", fontSize: 12, marginBottom: 8 }}>{status}</div>}
 
-            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Instructions for Chai</div>
+            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Instructions for Thinkflux</div>
             <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
               Applied to <b>every</b> conversation across the app (Chat, Code, Cowork, Projects) — like Claude's custom instructions. Tone, role, rules, things to always remember.
             </p>
@@ -151,36 +151,26 @@ export default function Settings({ onChanged }) {
             <h2 style={{ margin: "0 0 16px", fontSize: 18 }}>Claude Sign in</h2>
 
             <div className="acc-card">
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <strong>Anthropic</strong>
-                {account.anthropicLinked && <span className="chip" style={{ color: "var(--ok)" }}><Check size={12} /> authenticated</span>}
-              </div>
-              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 10px" }}>
-                Anthropic has <b>no "Sign in with Anthropic"</b> for third‑party apps (unlike Google), and no public endpoint that returns account name/email/usage. The real credential is your <b>API key</b> — Chai authenticates by validating it against the API. (Subscription/account billing only works through the bundled Claude Code via <code>claude login</code>.)
-              </p>
-              <Field label="Anthropic API key">
-                <input className="model-search" type="password" value={(s.profiles.p_anthropic && s.profiles.p_anthropic.apiKey) || ""} onChange={(e) => setAnthKey(e.target.value)} placeholder="sk-ant-…" />
-              </Field>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button className="btn primary" onClick={verifyAnthropic}>Authenticate &amp; show details</button>
-                <span style={{ color: anthStatus.startsWith("Authenticated") ? "var(--ok)" : "var(--text-2)", fontSize: 12 }}>{anthStatus}</span>
-              </div>
-            </div>
-
-            <div className="acc-card" style={{ marginTop: 14 }}>
               <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                 <input type="checkbox" checked={!!s.anthropicUseSubscription} onChange={(e) => setField("anthropicUseSubscription", e.target.checked)} style={{ marginTop: 3 }} />
                 <span>
-                  <strong>Use my Claude subscription (via <code>claude login</code>)</strong>
+                  <strong>Use my Claude subscription</strong>
                   {s.anthropicUseSubscription && <span className="chip" style={{ color: "var(--ok)", marginLeft: 8 }}><Check size={12} /> on</span>}
                   <div style={{ color: "var(--text-2)", fontSize: 12, marginTop: 6 }}>
-                    Bills Anthropic models to your plan's <b>Agent‑SDK credit pool</b> ($200/mo on Max‑20×) instead of pay‑as‑you‑go API credits. When on, Chai sends <b>no API key</b> for Anthropic and uses the credentials stored by <code>claude login</code>. Applies to Chat, Cowork &amp; Code on the Anthropic provider.
+                    Bills Anthropic models to your plan's <b>Agent‑SDK credit pool</b> (e.g. $200/mo on Max‑20×) instead of pay‑as‑you‑go API credits. Thinkflux sends <b>no API key</b> — it uses the credentials from <code>claude login</code>. Applies to Chat, Cowork &amp; Code on the Anthropic provider.
                   </div>
                 </span>
               </label>
-              <div style={{ background: "rgba(110,123,255,0.08)", border: "1px solid var(--line)", borderRadius: 8, padding: "10px 12px", marginTop: 10, fontSize: 12, color: "var(--text-2)" }}>
-                <b>One‑time setup</b> — run this in a terminal, then sign in with your Max account:
-                <pre style={{ margin: "6px 0 0", whiteSpace: "pre-wrap", color: "var(--text-1)" }}>npm i -g @anthropic-ai/claude-code{"\n"}claude login</pre>
+            </div>
+
+            <div style={{ background: "linear-gradient(135deg, rgba(110,123,255,0.16), rgba(56,232,208,0.10))", border: "1px solid var(--accent)", borderRadius: 12, padding: "16px 18px", marginTop: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-1)", marginBottom: 6 }}>⚡ One‑time setup</div>
+              <div style={{ color: "var(--text-2)", fontSize: 13, marginBottom: 10 }}>
+                Run this in a terminal, then sign in with your Max account in the browser:
+              </div>
+              <pre style={{ margin: 0, padding: "12px 14px", background: "rgba(0,0,0,0.45)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 13, lineHeight: 1.7, color: "var(--text-1)", whiteSpace: "pre-wrap", fontFamily: "ui-monospace, monospace" }}>npm i -g @anthropic-ai/claude-code{"\n"}claude login</pre>
+              <div style={{ color: "var(--text-2)", fontSize: 12, marginTop: 10 }}>
+                After <code>claude login</code> succeeds, tick the box above and pick an Anthropic model in the top bar — that's it.
               </div>
             </div>
 
@@ -248,14 +238,14 @@ export default function Settings({ onChanged }) {
           <div style={{ maxWidth: 560 }}>
             <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Messaging — Telegram bot</h2>
             <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 0 }}>
-              Drive Chai from Telegram. Message your bot and it runs the active model and replies. ⚠ This is remote control of this machine — only your allowed user id can use it.
+              Drive Thinkflux from Telegram. Message your bot and it runs the active model and replies. ⚠ This is remote control of this machine — only your allowed user id can use it.
             </p>
             <div className="acc-card">
               <label className="chip" style={{ cursor: "pointer", marginBottom: 12 }}>
                 <input type="checkbox" checked={!!msg.enabled} onChange={(e) => setMsg("enabled", e.target.checked)} style={{ marginRight: 6 }} /> Enable Telegram bot
               </label>
               <Field label="Bot token (from @BotFather)"><input className="model-search" type="password" value={msg.telegramToken || ""} onChange={(e) => setMsg("telegramToken", e.target.value)} placeholder="123456:ABC-..." /></Field>
-              <Field label="Allowed Telegram user id(s) — comma separated (find yours via @userinfobot)"><input className="model-search" value={msg.telegramAllowedUserIds || ""} onChange={(e) => setMsg("telegramAllowedUserIds", e.target.value)} placeholder="1442423552" /></Field>
+              <Field label="Allowed Telegram user id(s) — comma separated (find yours via @userinfobot)"><input className="model-search" value={msg.telegramAllowedUserIds || ""} onChange={(e) => setMsg("telegramAllowedUserIds", e.target.value)} placeholder="e.g. 123456789" /></Field>
               <Field label="Run target">
                 <select className="model-search" value={msg.target || "chat"} onChange={(e) => setMsg("target", e.target.value)}>
                   <option value="chat">Chat (no file/shell access — safest)</option>

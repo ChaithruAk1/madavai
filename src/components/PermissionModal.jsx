@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ShieldAlert, TerminalSquare, FilePen, FilePlus } from "lucide-react";
 
 function summarize(toolName, input = {}) {
@@ -14,18 +15,24 @@ function summarize(toolName, input = {}) {
 }
 
 export default function PermissionModal({ req, onAllow, onAllowAlways, onDeny }) {
+  useEffect(() => {
+    if (!req) return;
+    const onKey = (e) => { if (e.key === "Escape") onDeny && onDeny(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [req, onDeny]);
   if (!req) return null;
   const s = summarize(req.toolName, req.input);
   const Icon = s.icon;
   return (
-    <div className="scrim">
+    <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onDeny && onDeny(); }}>
       <div className="modal">
         <div className="modal-head">
           <Icon size={20} className="ic" />
           <h3>{s.title}?</h3>
         </div>
         <div className="modal-body">
-          Chakra wants to make a change in your folder.
+          Thinkflux wants to make a change in your folder.
           {s.detail && <div className="tcall">{s.mono ? `$ ${s.detail}` : s.detail}</div>}
         </div>
         <div className="modal-actions">

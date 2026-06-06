@@ -1,6 +1,6 @@
 import { LayoutTemplate } from "lucide-react";
 import ToolCard from "./ToolCard.jsx";
-import TeaLogo from "./TeaLogo.jsx";
+import ThinkLogo from "./ThinkLogo.jsx";
 import { extractArtifacts } from "../artifacts.js";
 
 // Strip a leading raw-JSON blob some weak models prepend to their reply
@@ -19,9 +19,9 @@ export default function Message({ item, streaming, onOpenArtifact }) {
   const artifacts = isUser || streaming ? [] : extractArtifacts(item.text);
   return (
     <div className={`msg ${isUser ? "user" : "assistant"}`}>
-      <div className="avatar">{isUser ? "Y" : <TeaLogo size={17} />}</div>
+      <div className="avatar">{isUser ? "Y" : <ThinkLogo size={17} />}</div>
       <div className="body">
-        <div className="who">{isUser ? "You" : "Chai"}</div>
+        <div className="who">{isUser ? "You" : "Thinkflux"}</div>
         <div className="content">
           {text}
           {streaming && <span className="cursor" />}

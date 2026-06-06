@@ -1,6 +1,7 @@
-import { Puzzle, Plug, Send, BarChart3, Settings as SettingsIcon } from "lucide-react";
+import { Puzzle, Plug, Send, BarChart3, FolderKanban, Settings as SettingsIcon } from "lucide-react";
 
 const TOOLS = [
+  { id: "project", label: "Projects", icon: FolderKanban },
   { id: "skills", label: "Skills", icon: Puzzle },
   { id: "connectors", label: "Connectors", icon: Plug },
   { id: "dispatch", label: "Dispatch", icon: Send },

@@ -1,10 +1,10 @@
 // Self-built agent loop for OpenAI-compatible providers (NIM, OpenRouter, local).
-// No proxy, no Anthropic dependency — Chakra runs the tool-calling loop itself,
+// No proxy, no Anthropic dependency — Chai runs the tool-calling loop itself,
 // in-process, against the active external model. Emits the same UiEvents as the SDK path.
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
-const { streamChatTools } = require("./providers.cjs");
+const { streamChatTools, stripReasoning } = require("./providers.cjs");
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
 
@@ -54,13 +54,13 @@ function isBlocked(permMode, name) {
 
 const SYSTEM = (mode) =>
   mode === "chat"
-    ? `You are Chai, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
+    ? `You are Thinkflux, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
       `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.`
     : mode === "code"
-    ? `You are Chai, an expert software engineer working in the user's repository. ` +
+    ? `You are Thinkflux, an expert software engineer working in the user's repository. ` +
       `Always explore before editing: use find_files and search_text to locate code, read_file to understand it, then make minimal, correct edits with edit_file/write_file. ` +
       `Prefer surgical edits over rewrites. After changes, you may run tests/build via run_bash. Explain what you changed in one short paragraph; show diffs or key snippets when useful, but never paste raw tool JSON.`
-    : `You are Chai, an AI assistant working inside the user's "${mode}" folder. ` +
+    : `You are Thinkflux, an AI assistant working inside the user's "${mode}" folder. ` +
       `Use the provided tools (files, shell, skills, and connectors) to take real actions rather than describing them. Use relative paths. ` +
       `Reply to the user in clear, natural language. When they ask to SEE something — a file list, file contents, search results — ` +
       `actually present it readably (a short bullet or comma-separated list, or a brief excerpt). Don't just say "here are the files" without showing them. ` +
@@ -181,8 +181,9 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     if (mcpTools.length) tools = [...tools, ...mcpTools];
   } catch {}
 
-  // Chat streams live (no mutating tools, so no premature-claim risk); agent modes buffer.
-  const streamLive = mode === "chat";
+  // Always buffer: reasoning models emit chain-of-thought (often a bare </think>
+  // with no opener) into content, which must be stripped before it reaches the UI.
+  const streamLive = false;
 
   const started = Date.now();
   const MAX_STEPS = 12;
@@ -207,8 +208,9 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     history.push(assistantMsg);
 
     if (!toolCalls.length) {
-      // Final answer — reveal the text now (unless we already streamed it live in chat).
-      if (!streamLive && content) emit({ kind: "assistant_delta", data: { text: content } });
+      // Final answer — strip any chain-of-thought, then reveal the clean text.
+      const clean = stripReasoning(content);
+      if (clean) emit({ kind: "assistant_delta", data: { text: clean } });
       emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
       emit({ kind: "result", data: { subtype: "success", num_turns: step + 1, duration_ms: Date.now() - started } });
       return;

@@ -1,8 +1,8 @@
 {
-  "name": "chakra",
+  "name": "thinkflux",
   "version": "0.1.0",
   "private": true,
-  "description": "Chakra — a Claude-Desktop-style app over Anthropic, cloud, and local LLMs",
+  "description": "Thinkflux — a Claude-Desktop-style app over Anthropic, cloud, and local LLMs",
   "author": "Chaithrodaya Sukruth <chaithru@gmail.com>",
   "type": "module",
   "main": "electron/main.cjs",
@@ -32,8 +32,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.chaithrodaya.chakra",
-    "productName": "Chakra",
+    "appId": "com.chaithrodaya.thinkflux",
+    "productName": "Thinkflux",
     "directories": {
       "output": "release"
     },

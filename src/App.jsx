@@ -12,7 +12,7 @@ import ProjectsBrowser from "./components/ProjectsBrowser.jsx";
 import Dispatch from "./components/Dispatch.jsx";
 import Consumption from "./components/Consumption.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
-import TeaLogo from "./components/TeaLogo.jsx";
+import ThinkLogo from "./components/ThinkLogo.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
 import { PermissionPicker } from "./components/Topbar.jsx";
 import { bridge } from "./bridge/index.js";
@@ -265,7 +265,7 @@ export default function App() {
               {timeline.length === 0 ? (
                 <div className="hero scroll">
                   <div className="hero-inner">
-                    <div className="hero-greet"><TeaLogo size={30} /><h1 className="greeting">{greeting}</h1></div>
+                    <div className="hero-greet"><ThinkLogo size={30} /><h1 className="greeting">{greeting}</h1></div>
                     <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {controlsRow}
                     {projectCtx && (

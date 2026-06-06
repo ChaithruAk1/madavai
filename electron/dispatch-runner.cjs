@@ -45,7 +45,7 @@ async function runTask(task) {
       // plain chat
       const hasExtras = (cfg.skillsDirs || []).length || (cfg.connectors || []).some((c) => c.enabled);
       if (profile.kind === "anthropic" || !hasExtras) {
-        const r = await streamChat(profile, [{ role: "system", content: "You are Chai." }, { role: "user", content: task.prompt }], { onDelta: () => {} });
+        const r = await streamChat(profile, [{ role: "system", content: "You are Thinkflux." }, { role: "user", content: task.prompt }], { onDelta: () => {} });
         text = r.text;
       } else {
         await agent({ mode: "chat", cwd: null });

@@ -26,11 +26,11 @@ async function handle(c, u) {
   if (!msg || !msg.text) return;
   const from = String(msg.from && msg.from.id);
   const allowed = (c.allowed || "").split(/[,\s]+/).filter(Boolean);
-  if (!allowed.length) { await send(c.token, msg.chat.id, "🔒 Chai bot is locked — no allowed user is configured in Settings → Messaging."); return; }
+  if (!allowed.length) { await send(c.token, msg.chat.id, "🔒 Thinkflux bot is locked — no allowed user is configured in Settings → Messaging."); return; }
   if (!allowed.includes(from)) { await send(c.token, msg.chat.id, `Not authorized. Your Telegram user id is ${from}.`); return; }
 
   const text = msg.text.trim();
-  if (text === "/start" || text === "/help") { await send(c.token, msg.chat.id, "Chai is connected ☕. Send a prompt and I'll run it. Target: " + (c.target || "chat") + "."); return; }
+  if (text === "/start" || text === "/help") { await send(c.token, msg.chat.id, "Thinkflux is connected 🧠. Send a prompt and I'll run it. Target: " + (c.target || "chat") + "."); return; }
 
   try { await tg(c.token, "sendChatAction", { chat_id: msg.chat.id, action: "typing" }); } catch {}
   const target = c.target === "folder" && c.folder ? { type: "folder", folder: c.folder } : { type: "chat" };
@@ -64,9 +64,20 @@ async function loop() {
 }
 
 async function start(c) {
-  cfg = c; active = true;
-  try { const me = await tg(c.token, "getMe"); if (me && me.ok) username = me.result.username; } catch {}
-  if (!running) loop().catch(() => { running = false; status = "error"; });
+  cfg = { ...c, token: String(c.token || "").trim() }; active = true;
+  c = cfg;
+  if (!/^\d{6,}:[\w-]{30,}$/.test(c.token)) {
+    status = "bad token format — expected like 123456789:AAH... (digits, colon, ~35 chars). Re-copy from @BotFather.";
+    active = false; return;
+  }
+  // Validate the token up front and clear any webhook (a set webhook makes getUpdates 409).
+  try {
+    const me = await tg(c.token, "getMe");
+    if (me && me.ok) { username = me.result.username; status = "validated @" + username; }
+    else { status = "bad token: " + ((me && me.description) || "getMe failed"); active = false; return; }
+  } catch (e) { status = "network error: " + ((e && e.message) || e); active = false; return; }
+  try { await tg(c.token, "deleteWebhook", { drop_pending_updates: false }); } catch {}
+  if (!running) loop().catch((e) => { running = false; status = "error: " + ((e && e.message) || e); });
 }
 function stop() { active = false; }
 function getStatus() { return { running, status, username }; }

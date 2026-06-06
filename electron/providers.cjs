@@ -1,6 +1,19 @@
 // Chat transport: stream from OpenAI- or Anthropic-compatible endpoints.
 // Node 18+/Electron has global fetch + ReadableStream. No deps.
 
+// Remove chain-of-thought that reasoning models dump into `content`. Handles:
+//  - matched <think>…</think> blocks
+//  - an orphan </think> with no opener (everything before it is reasoning)
+//  - an orphan <think> with no close (drop from it to the end)
+function stripReasoning(str) {
+  if (!str) return str || "";
+  let s = String(str).replace(/<think>[\s\S]*?<\/think>/gi, "");
+  const i = s.lastIndexOf("</think>");
+  if (i !== -1) s = s.slice(i + "</think>".length);
+  s = s.replace(/<think>[\s\S]*$/i, "");
+  return s.replace(/^\s+/, "");
+}
+
 async function* sseLines(res) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -50,14 +63,19 @@ async function streamOpenAI(profile, messages, { onDelta, signal }) {
   });
   await ensureOk(res, "OpenAI-compatible");
 
-  let text = "";
+  // Buffer the whole reply, strip any chain-of-thought, then emit the clean text.
+  // Reasoning models emit their monologue into `content` (often a bare </think> with
+  // no opener), which can't be detected mid-stream — so we clean once at the end.
+  let raw = "";
   for await (const data of sseLines(res)) {
     if (data === "[DONE]") break;
     let json; try { json = JSON.parse(data); } catch { continue; }
-    const delta = json.choices?.[0]?.delta?.content;
-    if (delta) { text += delta; onDelta(delta); }
+    const delta = json.choices?.[0]?.delta?.content; // ignore delta.reasoning_content on purpose
+    if (delta) raw += delta;
   }
-  return { text };
+  const clean = stripReasoning(raw);
+  if (clean) onDelta(clean);
+  return { text: clean };
 }
 
 // Anthropic-compatible: POST {baseUrl}/v1/messages (works for the free-cc proxy too)
@@ -169,4 +187,4 @@ async function ping(profile) {
   } catch { clearTimeout(t); return false; }
 }
 
-module.exports = { streamChat, streamChatTools, listModels, ping };
+module.exports = { streamChat, streamChatTools, listModels, ping, stripReasoning };

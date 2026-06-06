@@ -120,7 +120,7 @@ export default function ProjectsBrowser({ onOpen }) {
 
             <div className="nav-label" style={{ paddingLeft: 0 }}>Custom instructions</div>
             <textarea className="model-search" rows={4} style={{ resize: "vertical", fontFamily: "inherit" }}
-              placeholder="Tell Chakra how to behave in this project (tone, role, rules)…"
+              placeholder="Tell Thinkflux how to behave in this project (tone, role, rules)…"
               value={instr} onChange={(e) => setInstr(e.target.value)} onBlur={saveMeta} />
 
             <div className="nav-label" style={{ paddingLeft: 0, marginTop: 12 }}>Project knowledge ({(project.knowledge || []).length})</div>

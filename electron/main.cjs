@@ -20,10 +20,10 @@ const runner = require("./dispatch-runner.cjs");
 const usage = require("./usage-store.cjs");
 const tgbot = require("./telegram-bot.cjs");
 
-function reconcileMessaging() {
+async function reconcileMessaging() {
   const m = settings.load().messaging || {};
   if (m.enabled && m.platform === "telegram" && m.telegramToken) {
-    tgbot.start({ token: m.telegramToken, allowed: m.telegramAllowedUserIds, target: m.target, folder: m.folder });
+    await tgbot.start({ token: m.telegramToken, allowed: m.telegramAllowedUserIds, target: m.target, folder: m.folder });
   } else {
     tgbot.stop();
   }
@@ -57,53 +57,53 @@ function createWindow() {
 
 // One SessionManager; it pushes UiEvents to the focused renderer.
 const sm = new SessionManager((uiEvent) => {
-  if (win && !win.isDestroyed()) win.webContents.send("chai:event", uiEvent);
+  if (win && !win.isDestroyed()) win.webContents.send("thinkflux:event", uiEvent);
 });
 
 // ---- IPC: commands (renderer → main) ----
-ipcMain.handle("chai:start", (_e, req) => sm.start(req));
-ipcMain.handle("chai:sendInput", (_e, { sessionId, text }) => sm.sendInput(sessionId, text));
-ipcMain.handle("chai:interrupt", (_e, { sessionId }) => sm.interrupt(sessionId));
-ipcMain.handle("chai:setPermissionMode", (_e, { sessionId, mode }) => sm.setPermissionMode(sessionId, mode));
-ipcMain.on("chai:resolvePermission", (_e, { requestId, result }) => sm.resolvePermission(requestId, result));
+ipcMain.handle("thinkflux:start", (_e, req) => sm.start(req));
+ipcMain.handle("thinkflux:sendInput", (_e, { sessionId, text }) => sm.sendInput(sessionId, text));
+ipcMain.handle("thinkflux:interrupt", (_e, { sessionId }) => sm.interrupt(sessionId));
+ipcMain.handle("thinkflux:setPermissionMode", (_e, { sessionId, mode }) => sm.setPermissionMode(sessionId, mode));
+ipcMain.on("thinkflux:resolvePermission", (_e, { requestId, result }) => sm.resolvePermission(requestId, result));
 
 // ---- IPC: settings + models ----
-ipcMain.handle("chai:getSettings", () => settings.load());
-ipcMain.handle("chai:saveSettings", (_e, next) => settings.save(next));
-ipcMain.handle("chai:listModels", async (_e, profileId) => {
+ipcMain.handle("thinkflux:getSettings", () => settings.load());
+ipcMain.handle("thinkflux:saveSettings", (_e, next) => settings.save(next));
+ipcMain.handle("thinkflux:listModels", async (_e, profileId) => {
   const s = settings.load();
   const p = profileId ? s.profiles[profileId] : settings.activeProfile(s);
   try { return await listModels(p); } catch { return []; }
 });
-ipcMain.handle("chai:pingProvider", async (_e, profileId) => {
+ipcMain.handle("thinkflux:pingProvider", async (_e, profileId) => {
   const s = settings.load();
   const p = profileId ? s.profiles[profileId] : settings.activeProfile(s);
   try { return await ping(p); } catch { return false; }
 });
 
 // ---- IPC: folder picker (for Cowork/Code working directory) ----
-ipcMain.handle("chai:chooseFolder", async () => {
+ipcMain.handle("thinkflux:chooseFolder", async () => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"] });
   return r.canceled ? null : r.filePaths[0];
 });
 
 // ---- IPC: connectors (MCP) ----
-ipcMain.handle("chai:testConnector", (_e, server) => mcp.testServer(server));
+ipcMain.handle("thinkflux:testConnector", (_e, server) => mcp.testServer(server));
 
 // ---- IPC: skills ----
-ipcMain.handle("chai:listSkills", () => {
+ipcMain.handle("thinkflux:listSkills", () => {
   const cfg = settings.load();
   const disabled = new Set(cfg.disabledSkills || []);
   return skillsMgr.discover(cfg.skillsDirs).map((s) => ({ ...s, enabled: !disabled.has(s.dir) }));
 });
-ipcMain.handle("chai:setSkillEnabled", (_e, { dir, enabled }) => {
+ipcMain.handle("thinkflux:setSkillEnabled", (_e, { dir, enabled }) => {
   const cfg = settings.load();
   const set = new Set(cfg.disabledSkills || []);
   if (enabled) set.delete(dir); else set.add(dir);
   settings.save({ ...cfg, disabledSkills: [...set] });
   return true;
 });
-ipcMain.handle("chai:deleteSkill", (_e, dir) => {
+ipcMain.handle("thinkflux:deleteSkill", (_e, dir) => {
   try {
     fs.rmSync(dir, { recursive: true, force: true });
     const cfg = settings.load();
@@ -111,14 +111,14 @@ ipcMain.handle("chai:deleteSkill", (_e, dir) => {
     return { ok: true };
   } catch (e) { return { error: String(e.message || e) }; }
 });
-ipcMain.handle("chai:createSkill", (_e, name) => {
+ipcMain.handle("thinkflux:createSkill", (_e, name) => {
   const dir = (settings.load().skillsDirs || [])[0];
   if (!dir) return { error: "Add a skills folder first." };
   try { return skillsMgr.createStarter(dir, name); } catch (e) { return { error: String(e.message || e) }; }
 });
 
 // Import a skill by copying a folder (must contain SKILL.md somewhere) into the first skills folder.
-ipcMain.handle("chai:importSkillFolder", async () => {
+ipcMain.handle("thinkflux:importSkillFolder", async () => {
   const dest = (settings.load().skillsDirs || [])[0];
   if (!dest) return { error: "Add a skills folder first." };
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"], title: "Select a skill folder (contains SKILL.md)" });
@@ -132,7 +132,7 @@ ipcMain.handle("chai:importSkillFolder", async () => {
 });
 
 // Import a skill from a .zip or .skill archive (extract into the first skills folder).
-ipcMain.handle("chai:importSkillZip", async () => {
+ipcMain.handle("thinkflux:importSkillZip", async () => {
   const dest = (settings.load().skillsDirs || [])[0];
   if (!dest) return { error: "Add a skills folder first." };
   const r = await dialog.showOpenDialog(win, { properties: ["openFile"], filters: [{ name: "Skill archive", extensions: ["zip", "skill"] }] });
@@ -141,7 +141,7 @@ ipcMain.handle("chai:importSkillZip", async () => {
   try {
     let zip = src;
     if (!src.toLowerCase().endsWith(".zip")) {
-      zip = path.join(os.tmpdir(), "chakra_skill_" + Date.now() + ".zip");
+      zip = path.join(os.tmpdir(), "chai_skill_" + Date.now() + ".zip");
       fs.copyFileSync(src, zip);
     }
     const target = path.join(dest, path.basename(src).replace(/\.(zip|skill)$/i, ""));
@@ -155,14 +155,14 @@ ipcMain.handle("chai:importSkillZip", async () => {
 });
 
 // ---- IPC: projects + conversations ----
-ipcMain.handle("chai:listProjects", () => store.listProjects());
-ipcMain.handle("chai:getProject", (_e, id) => store.getProject(id));
-ipcMain.handle("chai:createProject", (_e, name) => store.createProject(name));
-ipcMain.handle("chai:updateProject", (_e, { id, patch }) => store.updateProject(id, patch));
-ipcMain.handle("chai:deleteProject", (_e, id) => store.deleteProject(id));
+ipcMain.handle("thinkflux:listProjects", () => store.listProjects());
+ipcMain.handle("thinkflux:getProject", (_e, id) => store.getProject(id));
+ipcMain.handle("thinkflux:createProject", (_e, name) => store.createProject(name));
+ipcMain.handle("thinkflux:updateProject", (_e, { id, patch }) => store.updateProject(id, patch));
+ipcMain.handle("thinkflux:deleteProject", (_e, id) => store.deleteProject(id));
 
-ipcMain.handle("chai:addKnowledgeText", (_e, { projectId, name, content }) => store.addKnowledge(projectId, { name, type: "text", content }));
-ipcMain.handle("chai:addKnowledgeFile", async (_e, projectId) => {
+ipcMain.handle("thinkflux:addKnowledgeText", (_e, { projectId, name, content }) => store.addKnowledge(projectId, { name, type: "text", content }));
+ipcMain.handle("thinkflux:addKnowledgeFile", async (_e, projectId) => {
   const r = await dialog.showOpenDialog(win, {
     properties: ["openFile", "multiSelections"],
     filters: [{ name: "Text/Docs", extensions: ["txt", "md", "markdown", "json", "csv", "log", "yml", "yaml", "js", "ts", "py", "html", "xml"] }],
@@ -178,16 +178,16 @@ ipcMain.handle("chai:addKnowledgeFile", async (_e, projectId) => {
   }
   return { added, project: store.getProject(projectId) };
 });
-ipcMain.handle("chai:removeKnowledge", (_e, { projectId, knId }) => store.removeKnowledge(projectId, knId));
+ipcMain.handle("thinkflux:removeKnowledge", (_e, { projectId, knId }) => store.removeKnowledge(projectId, knId));
 
 // Link a project to a source folder or a GitHub repo (gives its conversations file access).
-ipcMain.handle("chai:linkProjectFolder", async (_e, projectId) => {
+ipcMain.handle("thinkflux:linkProjectFolder", async (_e, projectId) => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"], title: "Link a folder to this project" });
   if (r.canceled) return { canceled: true };
   store.updateProject(projectId, { folder: r.filePaths[0], githubUrl: "" });
   return { folder: r.filePaths[0] };
 });
-ipcMain.handle("chai:linkGithub", async (_e, { projectId, url }) => {
+ipcMain.handle("thinkflux:linkGithub", async (_e, { projectId, url }) => {
   if (!url) return { error: "Enter a repository URL." };
   const repoName = (url.split("/").pop() || "repo").replace(/\.git$/, "");
   const dest = path.join(app.getPath("userData"), "projects-data", "repos", projectId);
@@ -200,31 +200,31 @@ ipcMain.handle("chai:linkGithub", async (_e, { projectId, url }) => {
     return { folder: target };
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
-ipcMain.handle("chai:pullGithub", async (_e, projectId) => {
+ipcMain.handle("thinkflux:pullGithub", async (_e, projectId) => {
   const p = store.getProject(projectId);
   if (!p || !p.folder) return { error: "No linked repo." };
   try { await pExecFile("git", ["-C", p.folder, "pull"], { timeout: 180000 }); return { ok: true }; }
   catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
-ipcMain.handle("chai:unlinkProjectSource", (_e, projectId) => store.updateProject(projectId, { folder: "", githubUrl: "" }));
+ipcMain.handle("thinkflux:unlinkProjectSource", (_e, projectId) => store.updateProject(projectId, { folder: "", githubUrl: "" }));
 
-ipcMain.handle("chai:listConversations", (_e, projectId) => store.listConversations(projectId));
-ipcMain.handle("chai:getConversation", (_e, id) => store.getConversation(id));
-ipcMain.handle("chai:createConversation", (_e, projectId) => store.createConversation(projectId));
-ipcMain.handle("chai:deleteConversation", (_e, id) => store.deleteConversation(id));
+ipcMain.handle("thinkflux:listConversations", (_e, projectId) => store.listConversations(projectId));
+ipcMain.handle("thinkflux:getConversation", (_e, id) => store.getConversation(id));
+ipcMain.handle("thinkflux:createConversation", (_e, projectId) => store.createConversation(projectId));
+ipcMain.handle("thinkflux:deleteConversation", (_e, id) => store.deleteConversation(id));
 
 // ---- IPC: dispatch (background + scheduled tasks) ----
-ipcMain.handle("chai:listTasks", () => dispatch.listTasks());
-ipcMain.handle("chai:createTask", () => dispatch.createTask());
-ipcMain.handle("chai:updateTask", (_e, { id, patch }) => dispatch.updateTask(id, patch));
-ipcMain.handle("chai:deleteTask", (_e, id) => dispatch.deleteTask(id));
-ipcMain.handle("chai:getRuns", (_e, id) => dispatch.getRuns(id));
-ipcMain.handle("chai:getUsage", (_e, days) => usage.summary(days));
+ipcMain.handle("thinkflux:listTasks", () => dispatch.listTasks());
+ipcMain.handle("thinkflux:createTask", () => dispatch.createTask());
+ipcMain.handle("thinkflux:updateTask", (_e, { id, patch }) => dispatch.updateTask(id, patch));
+ipcMain.handle("thinkflux:deleteTask", (_e, id) => dispatch.deleteTask(id));
+ipcMain.handle("thinkflux:getRuns", (_e, id) => dispatch.getRuns(id));
+ipcMain.handle("thinkflux:getUsage", (_e, days) => usage.summary(days));
 
 // ---- IPC: messaging (Telegram) ----
-ipcMain.handle("chai:applyMessaging", () => { reconcileMessaging(); return tgbot.getStatus(); });
-ipcMain.handle("chai:messagingStatus", () => tgbot.getStatus());
-ipcMain.handle("chai:runTaskNow", async (_e, id) => {
+ipcMain.handle("thinkflux:applyMessaging", async () => { await reconcileMessaging(); return tgbot.getStatus(); });
+ipcMain.handle("thinkflux:messagingStatus", () => tgbot.getStatus());
+ipcMain.handle("thinkflux:runTaskNow", async (_e, id) => {
   const t = dispatch.getTask(id);
   if (!t) return { status: "error", output: "Task not found." };
   const run = await runner.runTask(t);
@@ -251,29 +251,29 @@ async function schedulerTick() {
     try {
       const run = await runner.runTask(t);
       dispatch.addRun(t.id, run);
-      if (win && !win.isDestroyed()) win.webContents.send("chai:dispatchRun", { taskId: t.id, run });
+      if (win && !win.isDestroyed()) win.webContents.send("thinkflux:dispatchRun", { taskId: t.id, run });
     } catch {}
   }
 }
 setInterval(schedulerTick, 60000);
 
 // ---- IPC: account / sign-in ----
-ipcMain.handle("chai:saveAccount", (_e, account) => {
+ipcMain.handle("thinkflux:saveAccount", (_e, account) => {
   const cfg = settings.load();
   settings.save({ ...cfg, account: { ...(cfg.account || {}), ...account } });
   return settings.load().account;
 });
-ipcMain.handle("chai:signOut", () => {
+ipcMain.handle("thinkflux:signOut", () => {
   const cfg = settings.load();
   settings.save({ ...cfg, account: { name: "", email: "", avatar: "", googleLinked: false, anthropicLinked: false } });
   return true;
 });
-ipcMain.handle("chai:linkAnthropic", () => {
+ipcMain.handle("thinkflux:linkAnthropic", () => {
   const cfg = settings.load();
   settings.save({ ...cfg, account: { ...(cfg.account || {}), anthropicLinked: true } });
   return { ok: true, note: "Run `claude login` once in a terminal to authorize your Anthropic account; the agent (SDK) path will then bill usage to your account instead of an API key." };
 });
-ipcMain.handle("chai:googleSignIn", async () => {
+ipcMain.handle("thinkflux:googleSignIn", async () => {
   const cfg = settings.load();
   const clientId = cfg.googleClientId;
   if (!clientId) return { error: "Add a Google OAuth Client ID (Account settings) first. Create one at console.cloud.google.com → Credentials → OAuth client → Desktop app." };
@@ -288,7 +288,7 @@ ipcMain.handle("chai:googleSignIn", async () => {
         const u = new URL(req.url, "http://127.0.0.1");
         const code = u.searchParams.get("code");
         res.writeHead(200, { "Content-Type": "text/html" });
-        res.end("<html><body style='font-family:system-ui;background:#0b0d12;color:#eef;display:grid;place-items:center;height:100vh'><h2>Chai — signed in. You can close this window.</h2></body></html>");
+        res.end("<html><body style='font-family:system-ui;background:#0b0d12;color:#eef;display:grid;place-items:center;height:100vh'><h2>Thinkflux — signed in. You can close this window.</h2></body></html>");
         if (!code) return finish({ error: "No authorization code returned." });
         const body = new URLSearchParams({ code, client_id: clientId, redirect_uri: redirectUri, grant_type: "authorization_code", code_verifier: verifier });
         if (cfg.googleClientSecret) body.set("client_secret", cfg.googleClientSecret);
@@ -314,7 +314,7 @@ ipcMain.handle("chai:googleSignIn", async () => {
 });
 
 // GitHub sign-in via device flow (no secret needed; enable Device Flow on your OAuth app).
-ipcMain.handle("chai:githubSignIn", async () => {
+ipcMain.handle("thinkflux:githubSignIn", async () => {
   const cfg = settings.load();
   const clientId = cfg.githubClientId;
   if (!clientId) return { error: "Add a GitHub OAuth Client ID in Profile first (github.com → Settings → Developer settings → OAuth Apps → enable Device Flow)." };
