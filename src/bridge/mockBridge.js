@@ -117,6 +117,8 @@ export const mockBridge = {
   async runSpeedTest() { return { at: Date.now(), prompt: "", results: [] }; },
   async cancelSpeedTest() { return true; },
   async getSpeedTestLast() { return null; },
+  async getSpeedTestStatus() { return { running: false, startedAt: 0 }; },
+  async getOpenRouterCatalog() { return {}; },
   async openExternal(url) { try { window.open(url, "_blank"); } catch {} return true; },
   async pingProvider() { return true; },
   async saveAccount(a) { _mockSettings.account = { ...(_mockSettings.account || {}), ...a }; return _mockSettings.account; },
@@ -126,6 +128,12 @@ export const mockBridge = {
   async linkAnthropic() { return { ok: true, note: "Desktop app only." }; },
   async testConnector() {
     return { ok: false, error: "Connectors run only in the desktop app." };
+  },
+  async listConnectorDirectory() {
+    return { items: [
+      { name: "demo/notion", title: "Notion", description: "Search and update your Notion workspace", kind: "remote", connector: { name: "Notion", url: "https://mcp.notion.com/mcp", transport: "http", enabled: true }, env: [] },
+      { name: "demo/filesystem", title: "Filesystem", description: "Local files in a folder", kind: "npm", connector: { name: "Filesystem", command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem"], env: {}, enabled: true }, env: [] },
+    ], stale: false, source: "mock" };
   },
   async listSkills() { return []; },
   async listDir() { return []; },
@@ -158,7 +166,7 @@ export const mockBridge = {
   async createConversation(projectId) { const c = { id: "cnv_" + Math.random().toString(36).slice(2, 7), projectId, title: "New conversation", messages: [], updatedAt: Date.now() }; _mockConvs[c.id] = c; return c; },
   async deleteConversation(id) { delete _mockConvs[id]; return true; },
 
-  // --- dispatch (in-memory mock) ---
+  // --- tasks + Via Mobile (in-memory mock) ---
   async listTasks() { return Object.values(_mockTasks); },
   async createTask() { const t = { id: "tsk_" + Math.random().toString(36).slice(2, 7), name: "New task", prompt: "", target: { type: "chat" }, schedule: { mode: "off", everyMinutes: 60, time: "09:00", weekday: 1 }, lastRun: 0 }; _mockTasks[t.id] = t; return t; },
   async updateTask(id, patch) { _mockTasks[id] = { ..._mockTasks[id], ...patch }; return _mockTasks[id]; },
@@ -167,6 +175,14 @@ export const mockBridge = {
   async runTaskNow() { return { status: "success", output: "(mock run)", at: Date.now() }; },
   async applyMessaging() { return { running: false, status: "desktop app only" }; },
   async messagingStatus() { return { running: false, status: "desktop app only" }; },
+  async completeOnce() { return { text: "What would you like this task to do? (adaptive setup runs in the desktop app)" }; },
+  async listViaMobile() { return []; },
+  async removeViaMobile() { return true; },
+  async clearViaMobile() { return true; },
+  async getMobileLink() { return null; },
+  async setMobileLink(link) { return link || null; },
+  async clearMobileLink() { return null; },
+  async setKeepAwake(on) { return !!on; },
   async getUsage() {
     return { messages: 42, tokens: 184000, sessions: 6, activeDays: 4, currentStreak: 2, longestStreak: 3, peakHour: "9 PM", favoriteModel: "deepseek/deepseek-chat",
       models: [{ model: "deepseek/deepseek-chat", tokens: 120000, messages: 28 }, { model: "gemini-2.0-flash", tokens: 64000, messages: 14 }], byDay: {} };

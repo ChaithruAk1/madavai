@@ -5,6 +5,29 @@ import { bridge } from "../bridge/index.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 
+// Quick-add templates for popular providers — pick one and it prefills the wire format + base URL;
+// you just add your API key. (All OpenAI-compatible unless noted.) Add a row here to support more.
+const PROVIDER_PRESETS = [
+  { name: "OpenAI", kind: "openai", baseUrl: "https://api.openai.com/v1" },
+  { name: "Anthropic", kind: "anthropic", baseUrl: "https://api.anthropic.com" },
+  { name: "OpenRouter", kind: "openai", baseUrl: "https://openrouter.ai/api/v1" },
+  { name: "Google Gemini", kind: "openai", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
+  { name: "NVIDIA NIM", kind: "openai", baseUrl: "https://integrate.api.nvidia.com/v1" },
+  { name: "DeepSeek", kind: "openai", baseUrl: "https://api.deepseek.com/v1" },
+  { name: "Mistral", kind: "openai", baseUrl: "https://api.mistral.ai/v1" },
+  { name: "xAI (Grok)", kind: "openai", baseUrl: "https://api.x.ai/v1" },
+  { name: "Groq", kind: "openai", baseUrl: "https://api.groq.com/openai/v1" },
+  { name: "Together AI", kind: "openai", baseUrl: "https://api.together.xyz/v1" },
+  { name: "Fireworks AI", kind: "openai", baseUrl: "https://api.fireworks.ai/inference/v1" },
+  { name: "Perplexity", kind: "openai", baseUrl: "https://api.perplexity.ai" },
+  { name: "Cerebras", kind: "openai", baseUrl: "https://api.cerebras.ai/v1" },
+  { name: "DeepInfra", kind: "openai", baseUrl: "https://api.deepinfra.com/v1/openai" },
+  { name: "Hyperbolic", kind: "openai", baseUrl: "https://api.hyperbolic.xyz/v1" },
+  { name: "Ollama (local)", kind: "openai", baseUrl: "http://localhost:11434/v1" },
+  { name: "LM Studio (local)", kind: "openai", baseUrl: "http://localhost:1234/v1" },
+  { name: "llama.cpp (local)", kind: "openai", baseUrl: "http://localhost:8080/v1" },
+];
+
 function Field({ label, children }) {
   return (
     <label style={{ display: "block", marginBottom: 12 }}>
@@ -33,6 +56,12 @@ export default function ModelConfig({ onChanged }) {
   const patch = (field, val) => persist({ ...s, profiles: { ...s.profiles, [selId]: { ...sel, [field]: val } } });
   const setField = (k, v) => persist({ ...s, [k]: v });
   const addProfile = () => { const id = "p_" + Math.random().toString(36).slice(2, 7); persist({ ...s, profiles: { ...s.profiles, [id]: BLANK(id) } }); setSelId(id); };
+  const addPreset = (name) => {
+    const id = "p_" + Math.random().toString(36).slice(2, 7);
+    const pr = PROVIDER_PRESETS.find((x) => x.name === name);
+    const prof = pr ? { id, name: pr.name, kind: pr.kind, baseUrl: pr.baseUrl, apiKey: "", model: "" } : BLANK(id);
+    persist({ ...s, profiles: { ...s.profiles, [id]: prof } }); setSelId(id);
+  };
   const delProfile = () => {
     if (profiles.length <= 1) return;
     const rest = { ...s.profiles }; delete rest[selId];
@@ -79,7 +108,11 @@ export default function ModelConfig({ onChanged }) {
               <Plug size={15} /> {p.name}
             </button>
           ))}
-          <button className="nav-item" onClick={addProfile} style={{ marginTop: 6 }}><Plus size={15} /> Add provider</button>
+          <select className="model-search" style={{ marginTop: 6 }} value="" onChange={(e) => { if (e.target.value === "__custom") addProfile(); else if (e.target.value) addPreset(e.target.value); e.target.value = ""; }}>
+            <option value="">+ Add provider…</option>
+            {PROVIDER_PRESETS.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+            <option value="__custom">Custom (blank)</option>
+          </select>
         </div>
 
         <div className="mc-card mc-editor">
@@ -106,20 +139,20 @@ export default function ModelConfig({ onChanged }) {
           {sel.kind === "anthropic" && (
             <>
               <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>Billing &amp; sign‑in</div>
-              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 10px" }}>Choose how Anthropic models are billed:</p>
+              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 10px" }}>Choose how Anthropic models are billed (testing only — subscription/OAuth use is restricted by Anthropic's terms; remove before publishing):</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <button type="button" onClick={() => setField("anthropicUseSubscription", false)} style={{ textAlign: "left", border: "1px solid " + (!s.anthropicUseSubscription ? "var(--accent)" : "var(--line)"), borderRadius: 10, padding: "12px 14px", background: !s.anthropicUseSubscription ? "rgba(110,123,255,0.08)" : "var(--bg-1)", cursor: "pointer" }}>
+                <button type="button" onClick={() => setField("anthropicUseSubscription", false)} style={{ textAlign: "left", border: "1px solid " + (!s.anthropicUseSubscription ? "var(--accent)" : "var(--line)"), borderRadius: 10, padding: "12px 14px", background: !s.anthropicUseSubscription ? "var(--accent-weak)" : "var(--bg-1)", cursor: "pointer" }}>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>🔑 API key {!s.anthropicUseSubscription && <span className="chip" style={{ color: "var(--ok)", marginLeft: 6 }}><Check size={12} /></span>}</div>
-                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginTop: 6 }}>Use an <code>sk‑ant‑…</code> key. Billed <b>pay‑as‑you‑go to your Anthropic API credits</b>.</div>
+                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginTop: 6 }}>Use an <code>sk‑ant‑…</code> commercial key. Billed pay‑as‑you‑go to your Anthropic API credits.</div>
                 </button>
-                <button type="button" onClick={() => setField("anthropicUseSubscription", true)} style={{ textAlign: "left", border: "1px solid " + (s.anthropicUseSubscription ? "var(--accent)" : "var(--line)"), borderRadius: 10, padding: "12px 14px", background: s.anthropicUseSubscription ? "rgba(110,123,255,0.08)" : "var(--bg-1)", cursor: "pointer" }}>
+                <button type="button" onClick={() => setField("anthropicUseSubscription", true)} style={{ textAlign: "left", border: "1px solid " + (s.anthropicUseSubscription ? "var(--accent)" : "var(--line)"), borderRadius: 10, padding: "12px 14px", background: s.anthropicUseSubscription ? "var(--accent-weak)" : "var(--bg-1)", cursor: "pointer" }}>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>👤 Subscription {s.anthropicUseSubscription && <span className="chip" style={{ color: "var(--ok)", marginLeft: 6 }}><Check size={12} /></span>}</div>
-                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginTop: 6 }}>No API key. Billed to your <b>Claude Pro/Max plan</b> via <code>claude login</code>. All Anthropic models become available.</div>
+                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginTop: 6 }}>No API key. Uses your Claude plan via <code>claude login</code>. ⚠ Testing only — not permitted for production.</div>
                 </button>
               </div>
               {s.anthropicUseSubscription ? (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginBottom: 6 }}>One‑time setup — run in a terminal, then sign in with your Max account:</div>
+                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginBottom: 6 }}>One‑time setup — run in a terminal, then sign in:</div>
                   <pre style={{ margin: 0, padding: "10px 12px", background: "rgba(0,0,0,0.45)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 12.5, lineHeight: 1.6, color: "var(--text-1)", whiteSpace: "pre-wrap", fontFamily: "var(--mono)" }}>npm i -g @anthropic-ai/claude-code{"\n"}claude login</pre>
                 </div>
               ) : (
@@ -134,4 +167,11 @@ export default function ModelConfig({ onChanged }) {
             <span style={{ color: status.startsWith("Saved") ? "var(--ok)" : "var(--text-2)", fontSize: 12 }}>{status}</span>
           </div>
           <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 14 }}>
-            Every 
+            Every provider is always available — the model you pick in the top-bar selector decides which one runs.
+          </p>
+        </div>
+      </div>
+      </div>
+    </div>
+  );
+}

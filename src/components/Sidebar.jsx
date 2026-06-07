@@ -1,20 +1,39 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Bookmark } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
-const TOOLS = [
+const TOP = [
   { id: "project", label: "Projects", icon: FolderKanban },
-  { id: "saved", label: "Saved", icon: Bookmark },
+];
+const INTERFACE = [
   { id: "skills", label: "Skills", icon: Puzzle },
   { id: "connectors", label: "Connectors", icon: Plug },
-  { id: "models", label: "Models", icon: Cpu },
-  { id: "dispatch", label: "Deploy", icon: Send },
+  { id: "plugins", label: "Plugins", icon: Blocks },
+  { id: "viamobile", label: "Via Mobile", icon: Send },
+];
+const MODELS = [
+  { id: "models", label: "Model configuration", icon: SlidersHorizontal },
+  { id: "models-overview", label: "Models overview", icon: List },
+  { id: "models-speed", label: "Models speed check", icon: Gauge },
+];
+const BOTTOM = [
+  { id: "scheduler", label: "Scheduler", icon: Clock },
   { id: "consumption", label: "Consumption", icon: BarChart3 },
 ];
 
 export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession }) {
   const [recents, setRecents] = useState([]);
   const [q, setQ] = useState("");
+  const [ifaceOpen, setIfaceOpen] = useState(true);
+  const [modelsOpen, setModelsOpen] = useState(false);
+  const navBtn = (t) => {
+    const I = t.icon;
+    return (
+      <button key={t.id} className={`nav-item ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
+        <I size={16} /> <span className="sb-t">{t.label}</span>
+      </button>
+    );
+  };
   useEffect(() => {
     let live = true;
     bridge.listSessions(historyMode).then((l) => { if (live) setRecents(l || []); }).catch(() => {});
@@ -28,14 +47,35 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     <aside className="sidebar glass">
       <button className="sb-new" onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
 
-      {TOOLS.map((t) => {
+      {TOP.map(navBtn)}
+
+      <button className={`nav-item nav-group ${INTERFACE.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setIfaceOpen((o) => !o)}>
+        <LayoutGrid size={16} /> <span className="sb-t">Interface</span>
+        <span className="nav-caret sb-t">{ifaceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+      </button>
+      {ifaceOpen && INTERFACE.map((t) => {
         const I = t.icon;
         return (
-          <button key={t.id} className={`nav-item ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
-            <I size={16} /> <span className="sb-t">{t.label}</span>
+          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
+            <I size={15} /> <span className="sb-t">{t.label}</span>
           </button>
         );
       })}
+
+      <button className={`nav-item nav-group ${MODELS.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setModelsOpen((o) => !o)}>
+        <Cpu size={16} /> <span className="sb-t">Models</span>
+        <span className="nav-caret sb-t">{modelsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+      </button>
+      {modelsOpen && MODELS.map((t) => {
+        const I = t.icon;
+        return (
+          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
+            <I size={15} /> <span className="sb-t">{t.label}</span>
+          </button>
+        );
+      })}
+
+      {BOTTOM.map(navBtn)}
 
       <div className="sb-expand">
         <div className="nav-label" style={{ marginTop: 10 }}>Recents</div>
@@ -56,4 +96,9 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
       </div>
 
       <button className={`nav-item ${active === "settings" ? "active" : ""}`} onClick={() => onSelect("settings")}>
-        <SettingsIcon size={16} /> <span className="sb-t">Se
+        <SettingsIcon size={16} /> <span className="sb-t">Settings</span>
+      </button>
+      <div className="sb-copyright sb-t">© 2026 BrainEdge · Proprietary</div>
+    </aside>
+  );
+}

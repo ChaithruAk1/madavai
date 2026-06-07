@@ -1,4 +1,4 @@
-// Dispatch store — reusable background tasks + their run history, persisted to disk.
+// Task store — reusable background / scheduled tasks + their run history, persisted to disk.
 // A task: { id, name, prompt, target:{type:"chat"|"project"|"folder", projectId?, folder?},
 //           schedule:{enabled, everyMinutes}, lastRun }
 const { app } = require("electron");
@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 const rand = (p) => p + Math.random().toString(36).slice(2, 9);
-const baseDir = () => path.join(app.getPath("userData"), "dispatch-data");
+const baseDir = () => path.join(app.getPath("userData"), "task-data");
 const runsDir = () => path.join(baseDir(), "runs");
 const tasksFile = () => path.join(baseDir(), "tasks.json");
 const ensure = () => fs.mkdirSync(runsDir(), { recursive: true });

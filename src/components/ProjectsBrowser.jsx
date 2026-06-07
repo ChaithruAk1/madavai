@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, FileText, FileUp, MessageSquare, Github, FolderInput, RefreshCw, Search, ArrowUpDown, ArrowLeft, Send, Users } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+import Composer from "./Composer.jsx";
 
 function rel(ts) {
   if (!ts) return "";
@@ -85,22 +86,10 @@ export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork }) 
               <button className="icon-btn danger" title="Delete project" onClick={delProject}><Trash2 size={15} /></button>
             </div>
 
-            <div className="pjd-composer">
-              <div className="pjd-modetabs">
-                <button className={pmode === "chat" ? "active" : ""} onClick={() => setPmode("chat")}><MessageSquare size={13} /> Chat</button>
-                <button className={pmode === "cowork" ? "active" : ""} onClick={() => setPmode("cowork")} disabled={!project.folder}
-                  title={project.folder ? "Run a task on this project's files" : "Link a folder first to use Cowork"}><Users size={13} /> Cowork</button>
-              </div>
-              <textarea rows={2} value={chat}
-                placeholder={pmode === "cowork" ? "Describe a task to run on this project's files…" : "Start a chat in this project…"}
-                onChange={(e) => setChat(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); startChat(); } }} />
-              <div className="pjd-composer-row">
-                {pmode === "chat" && <button className="btn ghost" onClick={newBlank}>Blank chat</button>}
-                {pmode === "cowork" && <span className="mo-sub">Uses this project's folder, instructions &amp; knowledge.</span>}
-                <span style={{ flex: 1 }} />
-                <button className="send" onClick={startChat} disabled={!chat.trim()} title="Start"><Send size={15} /></button>
-              </div>
-            </div>
+            <Composer mode="project" busy={false} onSend={(text) => onStartChat && onStartChat(project, text)} onStop={() => {}} />
+            <button className="pjd-cowork" onClick={() => onStartCowork && onStartCowork(project)}>
+              <Users size={15} /> Start a task in Cowork
+            </button>
 
             <div className="pjd-convs">
               {convs.length === 0 ? (
@@ -203,4 +192,19 @@ export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork }) 
         <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setCreating(false); }}>
           <div className="pj-create">
             <h2>Create a personal project</h2>
- 
+            <label>What are you working on?</label>
+            <input className="model-search" autoFocus value={draft.name} placeholder="Name your project"
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && doCreate()} />
+            <label>What are you trying to achieve?</label>
+            <textarea className="model-search" rows={3} style={{ resize: "vertical", fontFamily: "inherit" }} value={draft.desc}
+              placeholder="Describe your project, goals, subject, etc…" onChange={(e) => setDraft({ ...draft, desc: e.target.value })} />
+            <div className="pj-create-btns">
+              <button className="btn" onClick={() => setCreating(false)}>Cancel</button>
+              <button className="btn primary" onClick={doCreate}>Create project</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

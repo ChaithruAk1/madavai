@@ -1,29 +1,36 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Plug, RefreshCw, Check, Mail, Cloud, HardDrive, Github, MessageSquare, FolderOpen, Globe } from "lucide-react";
+import { Plus, Trash2, Plug, RefreshCw, Check, Mail, Cloud, HardDrive, Github, MessageSquare, FolderOpen, Globe, Search } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const BLANK = (id) => ({ id, name: "New connector", command: "npx", args: [], env: {}, enabled: true });
-
-// App gallery — one click adds the MCP connector; cloud apps still need credentials/sign-in.
-const APPS = [
-  { name: "Gmail", desc: "Read & search email", icon: Mail, command: "npx", args: ["-y", "@gongrzhe/server-gmail-autoauth-mcp"], env: {} },
-  { name: "OneDrive / MS 365", desc: "Files, Outlook, calendar", icon: Cloud, command: "npx", args: ["-y", "@softeria/ms-365-mcp-server"], env: {} },
-  { name: "Google Drive", desc: "Search & read Drive", icon: HardDrive, command: "npx", args: ["-y", "@isaacphi/mcp-gdrive"], env: {} },
-  { name: "GitHub", desc: "Repos, issues, PRs", icon: Github, command: "npx", args: ["-y", "@modelcontextprotocol/server-github"], env: { GITHUB_PERSONAL_ACCESS_TOKEN: "" } },
-  { name: "Slack", desc: "Channels & messages", icon: MessageSquare, command: "npx", args: ["-y", "@modelcontextprotocol/server-slack"], env: { SLACK_BOT_TOKEN: "" } },
-  { name: "Filesystem", desc: "Local files in a folder", icon: FolderOpen, command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", "<FOLDER>"], env: {} },
-  { name: "Web fetch", desc: "Fetch & read web pages", icon: Globe, command: "npx", args: ["-y", "@modelcontextprotocol/server-fetch"], env: {} },
-];
 
 export default function Connectors() {
   const [s, setS] = useState(null);
   const [selId, setSelId] = useState(null);
   const [status, setStatus] = useState("");
   const [tools, setTools] = useState(null);
+  const [dir, setDir] = useState([]);
+  const [dirQ, setDirQ] = useState("");
+  const [dirMsg, setDirMsg] = useState("Loading directory…");
+  const [fKind, setFKind] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
 
   useEffect(() => {
     bridge.getSettings().then((cfg) => { const withC = { ...cfg, connectors: cfg.connectors || [] }; setS(withC); });
   }, []);
+
+  useEffect(() => {
+    if (!bridge.listConnectorDirectory) { setDirMsg("Directory available in the desktop app."); return; }
+    const q = dirQ.trim();
+    setDirMsg(q ? "Searching…" : "Loading directory…");
+    const t = setTimeout(() => {
+      bridge.listConnectorDirectory({ search: q }).then((r) => {
+        setDir(r.items || []);
+        setDirMsg((r.items || []).length ? (r.stale ? "Showing cached list (registry unreachable)." : "") : (q ? `No connectors match "${q}".` : "No connectors found."));
+      }).catch(() => setDirMsg("Couldn't load the directory."));
+    }, q ? 350 : 0);
+    return () => clearTimeout(t);
+  }, [dirQ]);
 
   if (!s) return <div className="empty"><div>Loading…</div></div>;
   const list = s.connectors;
@@ -42,6 +49,25 @@ export default function Connectors() {
   };
   const remove = () => { setConnectors(list.filter((c) => c.id !== selId)); setSelId(null); };
 
+  const isLocalKind = (k) => k === "npm" || k === "pypi" || k === "oci";
+  const dirShown = dir
+    .filter((it) => fKind === "all" || (fKind === "remote" ? it.kind === "remote" : isLocalKind(it.kind)))
+    .sort((a, b) => sortBy === "recent"
+      ? (new Date(b.updated || 0) - new Date(a.updated || 0))
+      : (a.title || "").localeCompare(b.title || ""))
+    .slice(0, 80);
+  const isNew = (it) => it.updated && (Date.now() - new Date(it.updated).getTime()) < 30 * 86400000;
+  // Deterministic tile color from the connector name.
+  const TILE = ["#6e7bff", "#38b2ac", "#e8893a", "#d6597b", "#7a5cf0", "#46a35a", "#c98a12", "#3a8fd6"];
+  const tileColor = (s) => { let h = 0; for (let i = 0; i < (s || "").length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return TILE[h % TILE.length]; };
+  const addFromDirectory = (item) => {
+    if (!item.connector) { setStatus(`${item.title} isn't one-click installable here (package type: ${item.kind}).`); return; }
+    const existing = list.find((c) => c.name === item.connector.name);
+    if (existing) { setSelId(existing.id); return; }
+    const id = "c_" + Math.random().toString(36).slice(2, 7);
+    setConnectors([...list, { id, ...item.connector }]); setSelId(id); setTools(null); setStatus("");
+  };
+
   const test = async () => {
     setStatus("Connecting…"); setTools(null);
     const r = await bridge.testConnector(sel);
@@ -53,20 +79,46 @@ export default function Connectors() {
     <div className="settings scroll" style={{ padding: 24, overflow: "auto" }}>
       <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Connect your apps</h2>
       <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 0 }}>
-        One click adds the integration; cloud apps then need a quick sign-in or API key below. Connected apps are
-        available to the agent in Chat, Cowork, Code, and Projects.
+        Add an integration from the Model Context Protocol registry — popular apps are shown below; search for anything else.
+        Cloud apps then need a quick sign-in or token. Connected apps are available to the agent in Chat, Cowork, Code, and Projects.
       </p>
 
-      <div className="app-gallery">
-        {APPS.map((a) => {
-          const Icon = a.icon;
-          const added = list.some((c) => c.name === a.name);
+      <div className="cdir-search"><Search size={16} /><input value={dirQ} onChange={(e) => setDirQ(e.target.value)} placeholder="Search connectors…" /></div>
+      <div className="cdir-bar">
+        <span style={{ flex: 1 }} />
+        <select className="cdir-select" value={fKind} onChange={(e) => setFKind(e.target.value)}>
+          <option value="all">Filter: All</option>
+          <option value="remote">Remote (URL)</option>
+          <option value="local">Local (npm)</option>
+        </select>
+        <select className="cdir-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <option value="name">Sort: Name</option>
+          <option value="recent">Sort: Recent</option>
+        </select>
+      </div>
+      {dirMsg && <div className="cdir-msg">{dirMsg}</div>}
+      <div className="cdir-grid">
+        {dirShown.map((item) => {
+          const cname = item.connector && item.connector.name;
+          const added = cname && list.some((c) => c.name === cname);
           return (
-            <button key={a.name} className={`app-card ${added ? "added" : ""}`} onClick={() => addFrom(a)}>
-              <span className="ac-ico"><Icon size={19} /></span>
-              <span className="ac-text"><span className="ac-name">{a.name}</span><span className="ac-desc">{a.desc}</span></span>
-              <span className="ac-act">{added ? <Check size={15} /> : <Plus size={15} />}</span>
-            </button>
+            <div key={item.name} className="cdir-card">
+              <div className="cdir-cardhead">
+                <ConnectorIcon item={item} color={tileColor(item.title)} />
+                <div className="cdir-titles">
+                  <div className="cdir-name">
+                    {item.title}
+                    {isNew(item) && <span className="cdir-tag new">New</span>}
+                    <span className="cdir-tag kind">{item.kind === "remote" ? "Remote" : "Local"}</span>
+                  </div>
+                  <div className="cdir-id">{item.name}</div>
+                </div>
+                <button className={`cdir-add ${added ? "on" : ""}`} title={added ? "Added" : "Add connector"} onClick={() => addFromDirectory(item)}>
+                  {added ? <Check size={16} /> : <Plus size={16} />}
+                </button>
+              </div>
+              {item.description && <div className="cdir-desc">{item.description}</div>}
+            </div>
           );
         })}
       </div>
@@ -122,6 +174,31 @@ export default function Connectors() {
       </div>
     </div>
   );
+}
+
+// Best-guess brand domain for a connector: prefer the remote URL host, else the
+// reverse-DNS registry id (com.notion/mcp → notion.com).
+function iconDomain(item) {
+  try {
+    if (item.connector && item.connector.url) {
+      const parts = new URL(item.connector.url).hostname.split(".");
+      return parts.slice(-2).join(".");
+    }
+  } catch {}
+  const ns = (item.name || "").split("/")[0];
+  const segs = ns.split(".").filter(Boolean);
+  if (segs.length >= 2) return [segs[1], segs[0]].join(".");
+  return null;
+}
+
+function ConnectorIcon({ item, color }) {
+  const [err, setErr] = useState(false);
+  const domain = iconDomain(item);
+  const src = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : null;
+  if (!src || err) {
+    return <span className="cdir-ico" style={{ background: color }}>{(item.title || "?").slice(0, 1).toUpperCase()}</span>;
+  }
+  return <span className="cdir-ico cdir-ico-img"><img src={src} alt="" loading="lazy" onError={() => setErr(true)} /></span>;
 }
 
 function Field({ label, children }) {

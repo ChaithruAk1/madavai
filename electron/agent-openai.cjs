@@ -60,7 +60,7 @@ const SYSTEM = (mode) =>
     ? `You are BrainEdge, an expert software engineer working in the user's repository. ` +
       `Always explore before editing: use find_files and search_text to locate code, read_file to understand it, then make minimal, correct edits with edit_file/write_file. ` +
       `Prefer surgical edits over rewrites. After changes, you may run tests/build via run_bash. Explain what you changed in one short paragraph; show diffs or key snippets when useful, but never paste raw tool JSON.`
-    : `You are BrainEdge, an AI assistant working inside the user's "${mode}" folder. ` +
+    : `You are BrainEdge, an AI assistant working inside the user's folder. ` +
       `Use the provided tools (files, shell, skills, and connectors) to take real actions rather than describing them. Use relative paths. ` +
       `Reply to the user in clear, natural language. When they ask to SEE something — a file list, file contents, search results — ` +
       `actually present it readably (a short bullet or comma-separated list, or a brief excerpt). Don't just say "here are the files" without showing them. ` +
@@ -130,7 +130,7 @@ function walkFiles(root, dir, depth, cb) {
 }
 
 // Route a tool call to a skill, an MCP connector, a remote SSH backend, or a local tool.
-async function dispatch(cwd, name, args, skillsDir, backend) {
+async function runTool(cwd, name, args, skillsDir, backend) {
   if (name === "load_skill") {
     const r = skillsMgr.loadSkill(skillsDir, args.name);
     if (!r) return "Skill not found: " + args.name;
@@ -243,7 +243,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "declined" } });
         output = "(user declined this tool call)";
       } else {
-        try { output = await dispatch(cwd, tc.name, args, skillsDir); emit({ kind: "tool_result", data: { id: tc.id, output: String(output).slice(0, 4000) } }); }
+        try { output = await runTool(cwd, tc.name, args, skillsDir); emit({ kind: "tool_result", data: { id: tc.id, output: String(output).slice(0, 4000) } }); }
         catch (e) { output = "ERROR: " + e.message; emit({ kind: "tool_result", data: { id: tc.id, output } }); }
       }
       history.push({ role: "tool", tool_call_id: tc.id, content: String(output).slice(0, 8000) });

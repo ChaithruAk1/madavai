@@ -1,3 +1,4 @@
+// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";

@@ -7,7 +7,10 @@ async function sdk() {
   if (!_mod) {
     const client = await import("@modelcontextprotocol/sdk/client/index.js");
     const stdio = await import("@modelcontextprotocol/sdk/client/stdio.js");
-    _mod = { Client: client.Client, StdioClientTransport: stdio.StdioClientTransport };
+    let StreamableHTTPClientTransport, SSEClientTransport;
+    try { ({ StreamableHTTPClientTransport } = await import("@modelcontextprotocol/sdk/client/streamableHttp.js")); } catch {}
+    try { ({ SSEClientTransport } = await import("@modelcontextprotocol/sdk/client/sse.js")); } catch {}
+    _mod = { Client: client.Client, StdioClientTransport: stdio.StdioClientTransport, StreamableHTTPClientTransport, SSEClientTransport };
   }
   return _mod;
 }
@@ -20,13 +23,27 @@ const fnName = (serverId, toolName) => `mcp__${sanitize(serverId)}__${sanitize(t
 
 async function connect(server) {
   if (clients.has(server.id)) return clients.get(server.id);
-  const { Client, StdioClientTransport } = await sdk();
-  const transport = new StdioClientTransport({
-    command: server.command,
-    args: server.args || [],
-    env: { ...process.env, ...(server.env || {}) },
-  });
-  const client = new Client({ name: "brainedge", version: "0.1.0" }, { capabilities: {} });
+  const m = await sdk();
+  let transport;
+  if (server.url) {
+    // Remote MCP server (hosted, like the official-registry "remotes" entries).
+    const url = new URL(server.url);
+    const opts = server.headers ? { requestInit: { headers: server.headers } } : undefined;
+    if (server.transport === "sse") {
+      if (!m.SSEClientTransport) throw new Error("SSE transport unavailable in this MCP SDK build");
+      transport = new m.SSEClientTransport(url, opts);
+    } else {
+      if (!m.StreamableHTTPClientTransport) throw new Error("HTTP transport unavailable in this MCP SDK build");
+      transport = new m.StreamableHTTPClientTransport(url, opts);
+    }
+  } else {
+    transport = new m.StdioClientTransport({
+      command: server.command,
+      args: server.args || [],
+      env: { ...process.env, ...(server.env || {}) },
+    });
+  }
+  const client = new m.Client({ name: "brainedge", version: "0.1.0" }, { capabilities: {} });
   await client.connect(transport);
   const listed = await client.listTools();
   const entry = { client, tools: listed.tools || [] };

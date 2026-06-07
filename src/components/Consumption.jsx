@@ -3,6 +3,8 @@ import { bridge } from "../bridge/index.js";
 
 const RANGES = [{ label: "7d", days: 7 }, { label: "30d", days: 30 }, { label: "All", days: 0 }];
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(n || 0));
+// Show only the model name, dropping any "provider/" prefix.
+const shortModel = (s) => { const x = String(s || ""); const i = x.lastIndexOf("/"); return i >= 0 ? x.slice(i + 1) : x; };
 
 export default function Consumption() {
   const [days, setDays] = useState(7);
@@ -19,7 +21,7 @@ export default function Consumption() {
     ["Current streak", d.currentStreak + "d"],
     ["Longest streak", d.longestStreak + "d"],
     ["Peak hour", d.peakHour],
-    ["Top model", d.favoriteModel],
+    ["Top model", shortModel(d.favoriteModel)],
   ];
 
   return (
@@ -47,7 +49,7 @@ export default function Consumption() {
         <div className="bars">
           {d.models.map((m) => (
             <div className="bar-row" key={m.model}>
-              <div className="bar-label" title={m.model}>{m.model}</div>
+              <div className="bar-label" title={m.model}>{shortModel(m.model)}</div>
               <div className="bar-track"><div className="bar-fill" style={{ width: `${Math.max(3, (m.tokens / maxTok) * 100)}%` }} /></div>
               <div className="bar-val">{fmt(m.tokens)} · {m.messages} msg</div>
             </div>

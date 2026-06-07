@@ -22,6 +22,12 @@ const ANTHROPIC = { name: "Anthropic", type: "cloud", tier: "paid" };
 const OPENAI = { name: "OpenAI", type: "cloud", tier: "paid" };
 const COHERE = { name: "Cohere", type: "cloud", tier: "freemium" };
 const XAI = { name: "xAI", type: "cloud", tier: "paid" };
+const TOGETHER = { name: "Together AI", type: "cloud", tier: "paid" };
+const FIREWORKS = { name: "Fireworks AI", type: "cloud", tier: "paid" };
+const PERPLEXITY = { name: "Perplexity", type: "cloud", tier: "paid" };
+const CEREBRAS = { name: "Cerebras", type: "cloud", tier: "freemium" };
+const DEEPINFRA = { name: "DeepInfra", type: "cloud", tier: "paid" };
+const HYPERBOLIC = { name: "Hyperbolic", type: "cloud", tier: "paid" };
 
 export const MODELS = [
   // ---------- Local: coding ----------
@@ -97,6 +103,16 @@ export const MODELS = [
   { name: "Command R+ (API)", maker: "Cohere", year: 2024, cat: "General", bestFor: "RAG + citations", size: "104B", ctx: 128, host: "Cohere", vram: null, run: "command-r-plus", thinking: false, tools: true, vision: false, license: "Proprietary (API)", providers: [COHERE, OR_PAID] },
   { name: "Grok 2", maker: "xAI", year: 2024, cat: "General", bestFor: "X-integrated chat", size: "—", ctx: 128, host: "xAI", vram: null, run: "grok-2", thinking: false, tools: true, vision: true, license: "Proprietary", providers: [XAI, OR_PAID] },
 ];
+
+// Aggregator inference hosts (Together / Fireworks / DeepInfra / Hyperbolic / Cerebras) serve the
+// same OPEN-weight models. Attach them automatically to any open model that's offered on OpenRouter,
+// so their "Available on" list reflects reality without hand-editing every row.
+for (const m of MODELS) {
+  if (/proprietary/i.test(m.license)) continue;
+  if (!(m.providers || []).some((p) => p.name === "OpenRouter")) continue;
+  m.providers.push(TOGETHER, FIREWORKS, DEEPINFRA, HYPERBOLIC);
+  if (/llama|qwen|deepseek/i.test(m.name + " " + (m.run || ""))) m.providers.push(CEREBRAS); // Cerebras hosts a fast, select set
+}
 
 // Approximate community/industry standing (0-5). SUBJECTIVE reputation guide — NOT a
 // benchmark score. Reflects general real-world regard as of early 2026; verify for decisions.

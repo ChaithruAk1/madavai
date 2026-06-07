@@ -10,9 +10,8 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
   const dot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   return (
     <header className="topnav glass">
-      <button className="tn-collapse" onClick={onToggleSidebar} title={(sidebarOpen ? "Collapse" : "Expand") + " sidebar (Ctrl+B)"}><PanelLeft size={18} /></button>
       <div className="tn-brand">
-        <ThinkLogo size={38} />
+        <ThinkLogo size={46} />
         <div className="tn-brandtext">
           <span className="tn-name">BrainEdge</span>
           <span className="tn-by">by Chaithrodaya Sukruth</span>
@@ -24,17 +23,19 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
           const I = ICONS[m.id];
           return (
             <button key={m.id} className={`tn-tab ${mode === m.id ? "active" : ""}`} onClick={() => onSelect(m.id)}>
-              {I && <I size={15} className="tn-tabicon" />}<span>{m.label}</span>
+              {I && <I size={19} className="tn-tabicon" />}<span>{m.label}</span>
             </button>
           );
         })}
       </nav>
 
       <div className="tn-right">
-        <span className="chip tn-status" title={`Active model is ${online === null ? "checking…" : online ? "online" : "offline"}`}>
+        <span className="chip tn-status" title={`Active model is ${online === null ? "checking…" : online ? "online" : "offline"}`}
+          style={{ color: online === false ? "var(--danger)" : undefined }}>
           <span className="tn-statusdot" style={{ background: dot, boxShadow: online ? "0 0 7px var(--ok)" : "none" }} />
-          {loc || (online ? "online" : "offline")}
+          {online === null ? "checking…" : online ? "online" : "offline"}
         </span>
+        <button className="tn-collapse" onClick={onToggleSidebar} title={(sidebarOpen ? "Collapse" : "Expand") + " sidebar (Ctrl+B)"}><PanelLeft size={18} /></button>
       </div>
     </header>
   );

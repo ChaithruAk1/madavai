@@ -50,18 +50,19 @@ async function runTest(profile, model, prompt, maxTokens, signal) {
   }
   if (!res.ok) { const b = (await res.text()).slice(0, 180); return { ok: false, error: res.status + " " + b }; }
 
-  let tFirst = 0, chars = 0, usageTokens = 0;
+  let tFirst = 0, chars = 0, usageTokens = 0, text = "";
+  const grab = (s) => { if (text.length < 1200) text += s; };
   try {
     for await (const data of sseLines(res)) {
       if (data === "[DONE]") break;
       let j; try { j = JSON.parse(data); } catch { continue; }
       if (profile.kind === "anthropic") {
-        if (j.type === "content_block_delta" && j.delta && j.delta.text) { if (!tFirst) tFirst = Date.now(); chars += j.delta.text.length; }
+        if (j.type === "content_block_delta" && j.delta && j.delta.text) { if (!tFirst) tFirst = Date.now(); chars += j.delta.text.length; grab(j.delta.text); }
         if (j.type === "message_delta" && j.usage && j.usage.output_tokens) usageTokens = j.usage.output_tokens;
         if (j.type === "message_stop") break;
       } else {
         const d = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
-        if (d) { if (!tFirst) tFirst = Date.now(); chars += d.length; }
+        if (d) { if (!tFirst) tFirst = Date.now(); chars += d.length; grab(d); }
         if (j.usage && j.usage.completion_tokens) usageTokens = j.usage.completion_tokens;
       }
     }
@@ -83,6 +84,7 @@ async function runTest(profile, model, prompt, maxTokens, signal) {
     tokens,
     tps: +(tokens / Math.max(0.05, effMs / 1000)).toFixed(1),
     estimated: !usageTokens,
+    text: text.slice(0, 1200),
   };
 }
 

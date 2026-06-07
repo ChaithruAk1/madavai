@@ -1,15 +1,34 @@
-import { useMemo, useState } from "react";
-import { Check, X, Search, ChevronUp, ChevronDown, Download } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench } from "lucide-react";
 import { MODELS, CATEGORIES, freeInfo } from "../data/modelCatalog.js";
+import { classifyProvider, isModelFree } from "../data/providerRules.js";
 import { bridge } from "../bridge/index.js";
 
+// Each capability tag gets a distinct colour + a widely-recognised icon.
+const CAP_META = {
+  "Reasoning": { icon: Brain, color: "#f5c044" },        // brain = reasoning/thinking
+  "Image": { icon: ImageIcon, color: "#4fc98a" },        // image/vision
+  "Long context": { icon: ScrollText, color: "#5aa0ff" },// long document
+  "Agentic": { icon: Bot, color: "#f0823c" },            // robot = agent
+  "Tools": { icon: Wrench, color: "#e87aa8" },           // tool calling
+};
+
 // Open-weight & where to get it. Proprietary models are API-only (no download).
+// Returns every place a user can grab the weights, so the UI can offer a chooser.
 function dl(m) {
-  if (/proprietary/i.test(m.license)) return { open: false };
-  const base = (m.run || "").split(":")[0];
-  const ollama = (m.providers || []).some((p) => p.name === "Ollama") ? `https://ollama.com/library/${base}` : null;
-  const hf = `https://huggingface.co/models?search=${encodeURIComponent(m.name)}`;
-  return { open: true, ollama, hf };
+  if (/proprietary/i.test(m.license)) return { open: false, targets: [] };
+  const base = (m.run || m.name || "").split(":")[0].split("/").pop();
+  const nameQ = encodeURIComponent(m.name);
+  const knownOllama = (m.providers || []).some((p) => p.name === "Ollama");
+  const ollama = knownOllama ? `https://ollama.com/library/${base}` : `https://ollama.com/search?q=${nameQ}`;
+  const hf = `https://huggingface.co/models?search=${nameQ}`;
+  const lmstudio = `https://lmstudio.ai/models?search=${nameQ}`;
+  const targets = [
+    { id: "hf", label: "Hugging Face", note: "Original & GGUF weights", url: hf },
+    { id: "ollama", label: "Ollama", note: knownOllama ? "One-command local run" : "Search the library", url: ollama },
+    { id: "lmstudio", label: "LM Studio", note: "Desktop GUI · GGUF", url: lmstudio },
+  ];
+  return { open: true, ollama, hf, lmstudio, targets };
 }
 const openExt = (url) => url && bridge.openExternal && bridge.openExternal(url);
 
@@ -18,22 +37,46 @@ const costRank = (m) => { const c = freeInfo(m).cost; return c === "Free (local)
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 function Cap({ v }) {
-  if (v === "toggle") return <span className="mo-toggle">Toggle</span>;
+  // "toggle" (optional capability) is shown as a yes indicator.
   return v ? <Check size={15} className="mo-yes" /> : <X size={15} className="mo-no" />;
 }
 
+// Host availability: Cloud, Local, or both.
+// Union of where the model can run: catalog availability + the provider it's loaded from.
+function hostFlags(m) {
+  const types = new Set((m.providers || []).map((p) => (p.type === "local" ? "local" : "cloud")));
+  const hs = m._hostSet || new Set();
+  const hasLocal = types.has("local") || m.host === "local" || hs.has("local");
+  const hasCloud = types.has("cloud") || (m.host && m.host !== "local") || hs.has("cloud");
+  return { hasLocal, hasCloud };
+}
+function hostLabel(m) {
+  const { hasLocal, hasCloud } = hostFlags(m);
+  if (hasLocal && hasCloud) return "Cloud & Local";
+  if (hasLocal) return "Local";
+  return "Cloud";
+}
+// Which hosts a model is available on, as separate labels (both when it runs cloud AND local).
+function hostsOf(m) {
+  const { hasLocal, hasCloud } = hostFlags(m);
+  const out = [];
+  if (hasCloud) out.push("Cloud");
+  if (hasLocal) out.push("Local");
+  return out.length ? out : ["Cloud"];
+}
+// Free/paid: provider-rule verdict wins when known, else fall back to the catalog's freeInfo.
+const isFree = (m) => (m._free != null ? m._free : freeInfo(m).has);
+
 const COLS = [
   { key: "name", label: "Model", sort: (m) => m.name },
-  { key: "rating", label: "Rating", sort: (m) => m.rating },
   { key: "bestFor", label: "Best for", sort: (m) => m.bestFor },
   { key: "ctx", label: "Context", sort: (m) => m.ctx },
-  { key: "host", label: "Host", sort: (m) => (m.host === "local" ? "0" : "1" + m.host) },
-  { key: "cost", label: "Cost", sort: (m) => costRank(m) },
-  { key: "thinking", label: "Thinking", sort: (m) => String(m.thinking) },
-  { key: "tools", label: "Tools", sort: (m) => Number(m.tools) },
-  { key: "vision", label: "Vision", sort: (m) => Number(m.vision) },
-  { key: "license", label: "License", sort: (m) => m.license },
-  { key: "download", label: "Weights", sort: (m) => (dl(m).open ? 0 : 1) },
+  { key: "host", label: "Host", sort: (m) => hostLabel(m) },
+  { key: "cost", label: "Cost", sort: (m) => (isFree(m) ? 0 : 1) },
+  { key: "thinking", label: "Reasoning", sort: (m) => String(m.thinking) },
+  { key: "vision", label: "Image", sort: (m) => Number(m.vision) },
+  { key: "size", label: "Params", sort: (m) => sizeNum(m.size) },
+  { key: "download", label: "Download available", sort: (m) => (dl(m).open ? 0 : 1) },
 ];
 
 function Stars({ value }) {
@@ -46,10 +89,36 @@ function Stars({ value }) {
   );
 }
 
-const fmtCtx = (k) => (k >= 1000 ? (k / 1000) + "M" : k + "K");
+const fmtCtx = (k) => (!k ? "—" : k >= 1000 ? (k / 1000) + "M" : k + "K");
+// Parameter count for sorting: "32B" → 32, "671B MoE" → 671, "—"/unknown → -1 (sorts last).
+const sizeNum = (s) => { const m = String(s || "").match(/(\d+(?:\.\d+)?)\s*[bB]/); return m ? parseFloat(m[1]) : -1; };
+
+// Infer capabilities + a readable type from a model id when no catalog / API metadata exists
+// (e.g. NVIDIA NIM models). Reliable because the id usually encodes the type and size.
+function inferMeta(id) {
+  const s = String(id || "").toLowerCase();
+  const m = s.match(/(\d+(?:\.\d+)?)\s*b\b/);
+  return {
+    vision: /\bvl\b|vlm|vision|multimodal|-mm\b|image|cosmos/.test(s),
+    reasoning: /reason|reasoner|-r1\b|think|deepseek-r|\bqwq\b|nemotron-(super|ultra)/.test(s),
+    coding: /cod(e|er|ing)|coder|devstral|codestral/.test(s),
+    embed: /embed|retriever|embedqa|rerank/.test(s),
+    guard: /guard|safety|moderation|content-safety/.test(s),
+    size: m ? m[1].toUpperCase() + "B" : "",
+  };
+}
 
 const TOP = new Set(["Qwen2.5-Coder 32B", "Qwen3 32B", "Claude Sonnet"]);
 
+function capsFor(m) {
+  const c = [];
+  if (m.agentic) c.push("Agentic");
+  if (m.thinking) c.push("Reasoning");
+  if (m.vision) c.push("Image");
+  if (m.tools) c.push("Tools");
+  if (m.ctx >= 200) c.push("Long context");
+  return c;
+}
 function tagsFor(m) {
   const t = [m.cat];
   if (m.agentic) t.push("Agentic");
@@ -89,27 +158,105 @@ export default function ModelsOverview({ activeModel }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("All");
   const [hostFilter, setHostFilter] = useState("All"); // All | local | cloud
-  const [caps, setCaps] = useState({ tools: false, vision: false, thinking: false, agentic: false });
+  const [caps, setCaps] = useState({ tools: false, vision: false, thinking: false, agentic: false, downloadable: false });
   const [freeOnly, setFreeOnly] = useState(false);
   const [sortKey, setSortKey] = useState("ctx");
   const [dir, setDir] = useState("desc");
   const [detail, setDetail] = useState(null);
   const [copied, setCopied] = useState("");
+  const [cfg, setCfg] = useState(null);
+  const [orCat, setOrCat] = useState(null);
+  const [dlMenu, setDlMenu] = useState(null); // model name whose download-source chooser is open
   const copy = (text, label) => { try { navigator.clipboard.writeText(text); setCopied(label); setTimeout(() => setCopied(""), 1400); } catch {} };
+
+  // Close the download chooser on any outside click or Escape.
+  useEffect(() => {
+    if (!dlMenu) return;
+    const close = () => setDlMenu(null);
+    const onKey = (e) => { if (e.key === "Escape") setDlMenu(null); };
+    document.addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("click", close); document.removeEventListener("keydown", onKey); };
+  }, [dlMenu]);
+
+  useEffect(() => { bridge.getSettings().then(setCfg).catch(() => {}); }, []);
+  useEffect(() => {
+    if (cfg && Object.values(cfg.profiles || {}).some((p) => /openrouter/i.test(p.baseUrl || "")) && bridge.getOpenRouterCatalog) {
+      bridge.getOpenRouterCatalog().then(setOrCat).catch(() => {});
+    }
+  }, [cfg]);
+
+  // The list mirrors the top-bar model selector: every model loaded on a configured
+  // provider. Matched to the curated catalog for rich details; otherwise a basic row.
+  const allModels = useMemo(() => {
+    if (!cfg || !cfg.profiles) return MODELS;
+    const out = []; const seenId = new Set(); const byName = new Map();
+    for (const p of Object.values(cfg.profiles)) {
+      // Host + free/paid are decided by the shared, data-driven provider rules (providerRules.js).
+      const cls = classifyProvider(p);
+      const isLocal = cls.host === "local";
+      const ids = (p.cachedModels && p.cachedModels.length) ? p.cachedModels : (p.model ? [p.model] : []);
+      for (const id of ids) {
+        const key = norm(id);
+        // Per-provider dedupe (so the SAME model on a cloud AND a local provider is both processed).
+        if (!key || seenId.has(p.id + "::" + key)) continue; seenId.add(p.id + "::" + key);
+        const match = MODELS.find((m) => { const r = norm(m.run), n = norm(m.name); return key === r || (r && (key.includes(r) || r.includes(key))) || (n && key.includes(n)); });
+        const orm = orCat && orCat[id];
+        let entry;
+        if (match) entry = { ...match, run: id };
+        else {
+          entry = { name: id, run: id, maker: id.includes("/") ? id.split("/")[0] : p.name, host: isLocal ? "local" : p.name, sparse: true, rating: 0, ctx: 0, vram: 0, size: "—", license: "—", cat: "General", tools: false, vision: false, thinking: false, agentic: false, year: "", bestFor: `Available via ${p.name}`, providers: [{ name: p.name, type: isLocal ? "local" : "cloud", tier: "paid" }] };
+          if (orm) { // enrich OpenRouter-sourced models with real metadata
+            entry.ctx = orm.ctx || 0;
+            entry.vision = !!orm.image;
+            entry.thinking = !!orm.reasoning;
+            if (orm.desc) { entry.bestForFull = orm.desc; entry.bestFor = orm.desc.split(". ")[0].slice(0, 220); }
+            entry.providers = [{ name: p.name, type: "cloud", tier: orm.free ? "freemium" : "paid" }];
+          } else { // no catalog/API data (e.g. NVIDIA NIM) → infer type + capabilities from the id
+            const inf = inferMeta(id);
+            entry.vision = inf.vision;
+            entry.thinking = inf.reasoning;
+            if (inf.size) entry.size = inf.size;
+            if (inf.coding) entry.cat = "Coding";
+            if (inf.embed) entry.cat = "Embedding";
+            const kind = inf.embed ? "Embedding model" : inf.guard ? "Safety / guardrail model" : inf.vision ? "Vision-language model" : inf.reasoning ? "Reasoning model" : inf.coding ? "Coding model" : "Chat model";
+            entry.bestFor = `${kind}${inf.size ? ` · ${inf.size}` : ""} · available via ${p.name} (details not published by the provider)`;
+          }
+        }
+        const thisFree = isModelFree({ profile: p, modelId: id, orFree: orm ? !!orm.free : null });
+        const nkey = norm(entry.name);
+        const dup = byName.get(nkey);
+        if (dup) {
+          // Same model from another provider → merge hosts (so it can read "Cloud & Local") and
+          // keep the more favourable free verdict, instead of dropping the duplicate.
+          dup._hostSet.add(cls.host);
+          if (dup._free !== true && thisFree === true) dup._free = true;
+          continue;
+        }
+        entry._hostSet = new Set([cls.host]); // hosts this model is available on, unioned across providers
+        entry._free = thisFree;
+        byName.set(nkey, entry);
+        out.push(entry);
+      }
+    }
+    return out.length ? out : MODELS;
+  }, [cfg, orCat]);
 
   const activeNorm = norm(activeModel);
   const isActive = (m) => activeNorm && (activeNorm.includes(norm(m.run)) || activeNorm.includes(norm(m.name)) || norm(m.run).includes(activeNorm));
 
   const rows = useMemo(() => {
-    let r = MODELS.filter((m) => {
+    let r = allModels.filter((m) => {
       if (cat !== "All" && m.cat !== cat) return false;
-      if (hostFilter === "local" && m.host !== "local") return false;
-      if (hostFilter === "cloud" && m.host === "local") return false;
+      const hl = hostLabel(m);
+      if (hostFilter === "local" && hl === "Cloud") return false;   // keep Local + Cloud & Local
+      if (hostFilter === "cloud" && hl === "Local") return false;   // keep Cloud + Cloud & Local
       if (caps.tools && !m.tools) return false;
       if (caps.vision && !m.vision) return false;
       if (caps.thinking && !m.thinking) return false;
       if (caps.agentic && !m.agentic) return false;
-      if (freeOnly && !freeInfo(m).has) return false;
+      if (caps.downloadable && !dl(m).open) return false;
+      if (freeOnly && !isFree(m)) return false;
       if (q) { const t = (m.name + " " + m.maker + " " + m.bestFor + " " + m.run).toLowerCase(); if (!t.includes(q.toLowerCase())) return false; }
       return true;
     });
@@ -120,10 +267,12 @@ export default function ModelsOverview({ activeModel }) {
       return dir === "asc" ? cmp : -cmp;
     });
     return r;
-  }, [q, cat, hostFilter, caps, freeOnly, sortKey, dir]);
+  }, [allModels, q, cat, hostFilter, caps, freeOnly, sortKey, dir]);
 
   const setSort = (key) => { if (sortKey === key) setDir((d) => (d === "asc" ? "desc" : "asc")); else { setSortKey(key); setDir(key === "ctx" || key === "vram" ? "desc" : "asc"); } };
   const toggleCap = (k) => setCaps((c) => ({ ...c, [k]: !c[k] }));
+  const noFilters = cat === "All" && hostFilter === "All" && !freeOnly && !Object.values(caps).some(Boolean);
+  const resetFilters = () => { setCat("All"); setHostFilter("All"); setFreeOnly(false); setCaps({ tools: false, vision: false, thinking: false, agentic: false, downloadable: false }); };
 
   return (
     <div className="mo scroll">
@@ -131,7 +280,7 @@ export default function ModelsOverview({ activeModel }) {
         <div>
           <h2 style={{ margin: 0, fontSize: 18 }}>Models overview</h2>
           <p style={{ color: "var(--text-2)", fontSize: 12, margin: "4px 0 0" }}>
-            Curated reference — VRAM is an approximate ~Q4 estimate, context is the practical max. {rows.length} of {MODELS.length} shown.
+            Models loaded on your configured providers (same as the top-bar selector). {rows.length} of {allModels.length} shown.
           </p>
         </div>
       </div>
@@ -142,19 +291,20 @@ export default function ModelsOverview({ activeModel }) {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search models…" />
         </div>
         <div className="mo-chips">
-          {["All", ...CATEGORIES].map((c) => (
+          {/* "All" is a master reset; it highlights only when nothing is filtered. */}
+          <button className={`mo-chip ${noFilters ? "on" : ""}`} onClick={resetFilters}>All</button>
+          {CATEGORIES.map((c) => (
             <button key={c} className={`mo-chip ${cat === c ? "on" : ""}`} onClick={() => setCat(cat === c ? "All" : c)}>{c}</button>
           ))}
           <span className="mo-sep" />
-          {["All", "local", "cloud"].map((h) => (
-            <button key={h} className={`mo-chip ${hostFilter === h ? "on" : ""}`} onClick={() => setHostFilter(hostFilter === h ? "All" : h)}>{h === "All" ? "All hosts" : h === "local" ? "Local" : "Cloud"}</button>
+          {["local", "cloud"].map((h) => (
+            <button key={h} className={`mo-chip ${hostFilter === h ? "on" : ""}`} onClick={() => setHostFilter(hostFilter === h ? "All" : h)}>{h === "local" ? "Local" : "Cloud"}</button>
           ))}
           <span className="mo-sep" />
           <button className={`mo-chip ${caps.agentic ? "on" : ""}`} onClick={() => toggleCap("agentic")}>Agentic</button>
-          <button className={`mo-chip ${caps.tools ? "on" : ""}`} onClick={() => toggleCap("tools")}>Tools</button>
-          <button className={`mo-chip ${caps.vision ? "on" : ""}`} onClick={() => toggleCap("vision")}>Vision</button>
-          <button className={`mo-chip ${caps.thinking ? "on" : ""}`} onClick={() => toggleCap("thinking")}>Thinking</button>
-          <button className={`mo-chip ${freeOnly ? "on" : ""}`} onClick={() => setFreeOnly((v) => !v)}>Free endpoint</button>
+          <button className={`mo-chip ${caps.vision ? "on" : ""}`} onClick={() => toggleCap("vision")}>Image</button>
+          <button className={`mo-chip ${caps.downloadable ? "on" : ""}`} onClick={() => toggleCap("downloadable")}>Download</button>
+          <button className={`mo-chip ${freeOnly ? "on" : ""}`} onClick={() => setFreeOnly((v) => !v)}>Free</button>
         </div>
       </div>
 
@@ -173,18 +323,31 @@ export default function ModelsOverview({ activeModel }) {
           <tbody>
             {rows.map((m) => (
               <tr key={m.name} className={isActive(m) ? "active" : ""} onClick={() => setDetail(m)} style={{ cursor: "pointer" }}>
-                <td><div className="mo-name">{m.name}{isActive(m) && <span className="mo-activebadge">active</span>}</div><div className="mo-sub">{m.maker} · {m.year}</div></td>
-                <td><Stars value={m.rating} /></td>
-                <td><span className="mo-best">{m.bestFor}</span>{m.agentic && <span className="mo-agentic" title="Strong for agentic / tool-use workflows">⚡ agentic</span>}</td>
+                <td><div className="mo-name">{m.name}{isActive(m) && <span className="mo-activebadge">active</span>}</div><div className="mo-sub">{m.maker}{m.year ? " · " + m.year : ""}</div></td>
+                <td>
+                  <div className="mo-best" title={m.bestForFull || m.bestFor}>{m.bestFor}</div>
+                  <div className="mo-caps">{capsFor(m).map((c) => { const meta = CAP_META[c] || {}; const I = meta.icon; return <span key={c} className="mo-captag" style={meta.color ? { color: meta.color } : undefined}>{I && <I size={11} />}{c}</span>; })}</div>
+                </td>
                 <td className="mo-num">{fmtCtx(m.ctx)}</td>
-                <td>{m.host === "local" ? <span className="mo-pill local">Local · {m.vram}GB</span> : <span className="mo-pill cloud">Cloud · {m.host}</span>}</td>
-                <td><span className={`mo-cost ${costRank(m) === 0 ? "free" : costRank(m) === 1 ? "tier" : "paid"}`}>{freeInfo(m).cost}</span></td>
+                <td><span className="mo-hosts">{hostsOf(m).map((h) => <span key={h} className={`mo-pill ${h === "Local" ? "local" : "cloud"}`}>{h}</span>)}</span></td>
+                <td><span className={`mo-cost ${isFree(m) ? "free" : "paid"}`}>{isFree(m) ? "Free" : "Paid"}</span></td>
                 <td><Cap v={m.thinking} /></td>
-                <td><Cap v={m.tools} /></td>
                 <td><Cap v={m.vision} /></td>
-                <td><span className="mo-lic">{m.license}</span></td>
+                <td className="mo-num">{m.size && m.size !== "—" ? m.size : "—"}</td>
                 <td>{dl(m).open
-                  ? <button className="mo-dlink" title="Open weights — download source" onClick={(e) => { e.stopPropagation(); openExt(dl(m).ollama || dl(m).hf); }}><Download size={12} /> Download</button>
+                  ? <div className="mo-dlwrap" onClick={(e) => e.stopPropagation()}>
+                      <button className="mo-dlink" title="Open weights — choose a source" onClick={(e) => { e.stopPropagation(); setDlMenu(dlMenu === m.name ? null : m.name); }}><Download size={12} /> Download <ChevronDown size={11} /></button>
+                      {dlMenu === m.name && (
+                        <div className="mo-dlmenu">
+                          <div className="mo-dlmenu-h">Get {m.name} from</div>
+                          {dl(m).targets.map((t) => (
+                            <button key={t.id} className="mo-dlmenu-item" onClick={() => { openExt(t.url); setDlMenu(null); }}>
+                              <Download size={13} /><span><b>{t.label}</b><span className="mo-dlmenu-note">{t.note}</span></span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   : <span className="mo-sub">API only</span>}</td>
               </tr>
             ))}
@@ -200,7 +363,6 @@ export default function ModelsOverview({ activeModel }) {
               <div>
                 <div className="mo-card-title">{detail.name}{TOP.has(detail.name) && <span className="mo-pick">Top pick</span>}</div>
                 <div className="mo-sub">{detail.maker}{detail.year ? " · " + detail.year : ""}</div>
-                {detail.rating ? <div className="mo-rating-row"><Stars value={detail.rating} /> <span className="mo-rating-num">{detail.rating.toFixed(1)}</span> <span className="mo-sub">· approx. reputation</span></div> : null}
               </div>
               <button className="icon-btn" onClick={() => setDetail(null)}><X size={16} /></button>
             </div>
@@ -244,12 +406,13 @@ export default function ModelsOverview({ activeModel }) {
               </div>
             )}
 
-            <div className="mo-wmhead" style={{ marginTop: 16 }}>Weights & download {dl(detail).open ? <span className="mo-freetag">open weights</span> : <span className="mo-paidtag">API only — no download</span>}</div>
+            <div className="mo-wmhead" style={{ marginTop: 16 }}>Available for Download {dl(detail).open ? <span className="mo-freetag">open weights</span> : <span className="mo-paidtag">API only — no download</span>}</div>
             <div className="mo-dl">
               {dl(detail).open ? (
                 <>
-                  {dl(detail).ollama && <button className="btn" onClick={() => openExt(dl(detail).ollama)}><Download size={13} /> Ollama library</button>}
                   <button className="btn" onClick={() => openExt(dl(detail).hf)}><Download size={13} /> Hugging Face</button>
+                  <button className="btn" onClick={() => openExt(dl(detail).ollama)}><Download size={13} /> Ollama</button>
+                  <button className="btn" onClick={() => openExt(dl(detail).lmstudio)}><Download size={13} /> LM Studio</button>
                   <button className="btn ghost" onClick={() => copy(detail.host === "local" ? `ollama run ${detail.run}` : detail.run, "cmd")}>{copied === "cmd" ? "Copied!" : "Copy run id"}</button>
                 </>
               ) : (

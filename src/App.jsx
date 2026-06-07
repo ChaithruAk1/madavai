@@ -1,5 +1,6 @@
+// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 import { useEffect, useRef, useState, useCallback } from "react";
-import { FolderOpen, FolderKanban } from "lucide-react";
+import { FolderOpen, FolderKanban, Smartphone } from "lucide-react";
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
@@ -8,9 +9,10 @@ import PermissionModal from "./components/PermissionModal.jsx";
 import Settings from "./components/Settings.jsx";
 import Connectors from "./components/Connectors.jsx";
 import Skills from "./components/Skills.jsx";
+import Plugins from "./components/Plugins.jsx";
 import ProjectsBrowser from "./components/ProjectsBrowser.jsx";
-import Dispatch from "./components/Dispatch.jsx";
-import SavedLibrary from "./components/SavedLibrary.jsx";
+import Scheduler from "./components/Scheduler.jsx";
+import ViaMobile from "./components/ViaMobile.jsx";
 import Consumption from "./components/Consumption.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
@@ -34,6 +36,8 @@ export default function App() {
   const [online, setOnline] = useState(null);
   const [artifact, setArtifact] = useState(null);
   const [activeConvId, setActiveConvId] = useState(null);
+  const [mobileLink, setMobileLink] = useState(null); // Telegram-linked session binding
+  const [botRunning, setBotRunning] = useState(false); // Telegram bot online?
   const [histRefresh, setHistRefresh] = useState(0);
   const [chatMode, setChatMode] = useState("chat"); // last primary mode → drives the Recents list
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -124,6 +128,38 @@ export default function App() {
   }, []);
 
   useEffect(() => bridge.onEvent(onEvent), [onEvent]);
+
+  // Theme: apply dark/light/system to <html data-theme>, and follow the OS when "system".
+  useEffect(() => {
+    const theme = (settings && settings.theme) || "dark";
+    const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: light)") : null;
+    const apply = () => {
+      const resolved = theme === "system" ? (mq && mq.matches ? "light" : "dark") : theme;
+      document.documentElement.dataset.theme = resolved;
+    };
+    apply();
+    if (theme === "system" && mq) {
+      mq.addEventListener ? mq.addEventListener("change", apply) : mq.addListener(apply);
+      return () => { mq.removeEventListener ? mq.removeEventListener("change", apply) : mq.removeListener(apply); };
+    }
+  }, [settings && settings.theme]);
+
+  // Accent color: "default" = original two-tone (iris + teal, multi-color marks).
+  // Any hex = monochrome blend of the whole UI to that single color.
+  useEffect(() => {
+    const root = document.documentElement;
+    const raw = ((settings && settings.accent) || "default").trim();
+    const clearVars = () => { ["--accent", "--accent-rgb", "--accent-2", "--accent2-rgb"].forEach((v) => root.style.removeProperty(v)); };
+    const m = /^#?([0-9a-f]{6})$/i.exec(raw);
+    if (raw === "default" || !m) { root.dataset.accent = "default"; clearVars(); return; }
+    const n = parseInt(m[1], 16);
+    const rgb = `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+    root.dataset.accent = "custom";
+    root.style.setProperty("--accent", "#" + m[1]);
+    root.style.setProperty("--accent-rgb", rgb);
+    root.style.setProperty("--accent-2", "#" + m[1]);   // blend secondary into the chosen color
+    root.style.setProperty("--accent2-rgb", rgb);
+  }, [settings && settings.accent]);
   useEffect(() => {
     const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) { e.preventDefault(); setSidebarOpen((v) => !v); } };
     window.addEventListener("keydown", onKey);
@@ -167,6 +203,40 @@ export default function App() {
     setHistRefresh((n) => n + 1);
   };
 
+  // ---- Continue on phone (bind a Cowork session to the Telegram bot) ----
+  useEffect(() => { bridge.getMobileLink && bridge.getMobileLink().then(setMobileLink).catch(() => {}); }, []);
+  // Poll whether the Telegram bot is online so we can auto-link when it is.
+  useEffect(() => {
+    let live = true;
+    const tick = () => bridge.messagingStatus && bridge.messagingStatus().then((s) => { if (live) setBotRunning(!!(s && s.running)); }).catch(() => {});
+    tick();
+    const iv = setInterval(tick, 5000);
+    return () => { live = false; clearInterval(iv); };
+  }, []);
+  const autoContinue = !settings || !settings.messaging || settings.messaging.autoContinue !== false; // default on
+  const linkedHere = mobileLink && mobileLink.sessionId && mobileLink.sessionId === activeConvId;
+  // Auto: while you're in a Cowork session (any project, any folder) AND the bot is online, make THAT
+  // session the linked one — so each project uses its own folder. When you leave Cowork, release the
+  // link so the bot reverts to working independently (its own Bot-setup folder/chat).
+  useEffect(() => {
+    if (!autoContinue) return;
+    if (mode === "cowork" && activeConvId && botRunning) {
+      if (mobileLink && mobileLink.sessionId === activeConvId) return;
+      const title = (timeline.find((t) => t.role === "user")?.text || "Cowork session").slice(0, 60);
+      bridge.setMobileLink({ sessionId: activeConvId, title, cwd: cwd || "" }).then(setMobileLink).catch(() => {});
+    } else if (mode !== "cowork" && mobileLink) {
+      bridge.clearMobileLink().then(() => setMobileLink(null)).catch(() => {});
+    }
+  }, [autoContinue, mode, activeConvId, botRunning, cwd]); // eslint-disable-line
+  const linkThisToPhone = async () => {
+    if (!activeConvId) { alert("Send a message first so this session is saved, then link it to your phone."); return; }
+    const title = (timeline.find((t) => t.role === "user")?.text || "Cowork session").slice(0, 60);
+    const link = await bridge.setMobileLink({ sessionId: activeConvId, title, cwd: cwd || "" });
+    setMobileLink(link);
+    if (!botRunning) alert("Linked ✓\n\nOpen Via Mobile and enable your Telegram bot. Then message the bot — it continues this session and replies appear here when you return.");
+  };
+  const unlinkPhone = async () => { await bridge.clearMobileLink(); setMobileLink(null); };
+
   // Open a saved project conversation into the chat surface.
   const openConversation = async (project, convMeta) => {
     const full = await bridge.getConversation(convMeta.id);
@@ -207,26 +277,6 @@ export default function App() {
     }
   };
 
-  // Bookmark a BrainEdge response into the Saved library (toggle).
-  const saveResponse = async (i) => {
-    const item = timeline[i];
-    if (!item || item.role !== "assistant") return;
-    if (item.savedId) {
-      await bridge.removeSaved(item.savedId);
-      setTimeline((tl) => tl.map((it, idx) => idx === i ? { ...it, savedId: null } : it));
-      return;
-    }
-    // nearest preceding user message = the question
-    let question = "";
-    for (let j = i - 1; j >= 0; j--) { if (timeline[j].type === "message" && timeline[j].role === "user") { question = timeline[j].text; break; } }
-    const rec = await bridge.saveResponse({
-      text: item.text, question, meta: item.meta || null,
-      convId: projectCtx ? projectCtx.conversationId : activeConvId,
-      mode: projectCtx ? "project" : mode,
-    });
-    if (rec && rec.id) setTimeline((tl) => tl.map((it, idx) => idx === i ? { ...it, savedId: rec.id } : it));
-  };
-
   const changePermission = (m) => {
     setPermissionMode(m);
     if (sessionRef.current) bridge.setPermissionMode(sessionRef.current, m);
@@ -263,7 +313,7 @@ export default function App() {
     } else if (m === "project") {
       setProjectCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null;
     }
-    // Secondary views (settings/skills/connectors/dispatch/consumption): leave the
+    // Secondary views (settings/skills/connectors/viamobile/consumption): leave the
     // current conversation untouched so coming back restores it.
   };
 
@@ -318,10 +368,12 @@ export default function App() {
   const isSettings = mode === "settings";
   const isConnectors = mode === "connectors";
   const isSkills = mode === "skills";
-  const isDispatch = mode === "dispatch";
+  const isPlugins = mode === "plugins";
+  const isModels = mode === "models" || mode === "models-overview" || mode === "models-speed";
+  const modelsTab = mode === "models-overview" ? "overview" : mode === "models-speed" ? "speed" : "config";
+  const isViaMobile = mode === "viamobile";
+  const isScheduler = mode === "scheduler";
   const isConsumption = mode === "consumption";
-  const isSaved = mode === "saved";
-  const isModels = mode === "models";
 
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   const controlsRow = (
@@ -333,7 +385,7 @@ export default function App() {
   );
 
   return (
-    <div className="app-v">
+    <div className={`app-v ${sidebarOpen ? "" : "sb-collapsed"}`}>
       <TopNav
         mode={mode}
         onSelect={switchMode}
@@ -351,4 +403,98 @@ export default function App() {
       <div className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`}>
       <Sidebar active={mode} onSelect={switchMode}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
-        onNew={newSession} onOpenSession={openSession} o
+        onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession} />
+      <div className="main">
+        {isSettings ? (
+          <Settings onChanged={setSettings} />
+        ) : isConnectors ? (
+          <Connectors />
+        ) : isSkills ? (
+          <Skills />
+        ) : isPlugins ? (
+          <Plugins onNavigate={switchMode} />
+        ) : isViaMobile ? (
+          <ViaMobile onNavigate={switchMode} onSettingsChanged={setSettings} />
+        ) : isScheduler ? (
+          <Scheduler />
+        ) : isConsumption ? (
+          <Consumption />
+        ) : isModels ? (
+          <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
+            tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : "models")} />
+        ) : (mode === "project" && !projectCtx) ? (
+          <ProjectsBrowser onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} />
+        ) : (
+          <div className="work-split">
+            <div className="work-main">
+              {timeline.length === 0 ? (
+                <div className="hero scroll">
+                  <div className="hero-inner">
+                    <div className="hero-greet"><ThinkLogo size={40} animated={false} /><h1 className="greeting">{greeting}</h1></div>
+                    <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} cwd={cwd} controls={controlsRow} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
+                    {projectCtx && (
+                      <div className="hero-opts">
+                        <button className="chip" onClick={backToProjects}>← Projects</button>
+                        <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {isAgentMode && (
+                    <div className="folder-bar">
+                      <FolderOpen size={14} />
+                      {cwd ? <span className="path">{cwd}</span> : <span className="path muted">No folder selected</span>}
+                      <button className="btn" onClick={pickFolder} style={{ marginLeft: "auto", padding: "5px 10px" }}>{cwd ? "Change folder" : "Choose folder"}</button>
+                      {mode === "cowork" && (
+                        autoContinue
+                          ? <span className={`folder-phone ${botRunning ? (linkedHere ? "active" : "linking") : "inactive"}`}
+                              title={botRunning
+                                ? (linkedHere
+                                    ? "On phone (auto): this session is live on your phone via the Telegram bot. Turn auto off in Via Mobile to pin a specific session."
+                                    : "Linking this session to your phone…")
+                                : "Phone: the Telegram bot is offline. Enable it in Via Mobile."}>
+                              <Smartphone size={16} />
+                            </span>
+                          : (linkedHere
+                              ? <button className="btn phone-linked" onClick={unlinkPhone} title="This session continues on your phone via the Telegram bot. Click to unlink." style={{ padding: "5px 10px" }}><Smartphone size={14} /> On phone · Unlink</button>
+                              : <button className="btn" onClick={linkThisToPhone} title="Continue this session from your phone via the Telegram bot" style={{ padding: "5px 10px" }}><Smartphone size={14} /> Continue on phone</button>)
+                      )}
+                    </div>
+                  )}
+                  {projectCtx && (
+                    <div className="folder-bar">
+                      <button className="btn ghost" onClick={backToProjects} style={{ padding: "4px 8px" }}>← Projects</button>
+                      <FolderKanban size={14} />
+                      <span className="path">{projectCtx.projectName}</span>
+                      <span style={{ color: "var(--text-2)" }}>· {projectCtx.title}</span>
+                    </div>
+                  )}
+                  <div className="chat scroll" ref={chatRef}>
+                    <div className="chat-inner">
+                      {timeline.map((item, i) => (
+                        <Message key={i} item={item} onOpenArtifact={setArtifact} userName={_who || "You"}
+                          streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
+                      ))}
+                    </div>
+                  </div>
+                  <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} cwd={cwd} controls={controlsRow} />
+                </>
+              )}
+            </div>
+            {artifact && <ArtifactPanel artifact={artifact} onClose={() => setArtifact(null)} />}
+          </div>
+        )}
+      </div>
+      </div>
+
+      <PermissionModal
+        req={perm}
+        onAllow={() => resolve("allow")}
+        onAllowAlways={() => { changePermission("bypassPermissions"); resolve("allow"); }}
+        onDeny={() => resolve("deny")}
+      />
+    </div>
+  );
+}

@@ -1,12 +1,23 @@
-// Dispatch runner — executes a task headlessly (no UI session), capturing the output.
+// Task runner — executes a task headlessly (no UI session), capturing the output.
 // Runs unattended, so it uses permission mode "bypass" (auto-approves tools).
 const { streamChat } = require("./providers.cjs");
 const { runOpenAIAgentTurn } = require("./agent-openai.cjs");
 const settings = require("./settings.cjs");
 const store = require("./projects-store.cjs");
 
+function profileFor(task) {
+  const cfg = settings.load();
+  if (task.model && task.model.includes("::")) {
+    const pid = task.model.slice(0, task.model.indexOf("::"));
+    const mid = task.model.slice(task.model.indexOf("::") + 2);
+    const p = cfg.profiles[pid];
+    if (p && mid) return { ...p, model: mid };
+  }
+  return settings.activeProfile();
+}
+
 async function runTask(task) {
-  const profile = settings.activeProfile();
+  const profile = profileFor(task);
   if (!profile || !profile.baseUrl) return { status: "error", output: "No provider configured." };
   const cfg = settings.load();
   const target = task.target || { type: "chat" };
@@ -19,13 +30,19 @@ async function runTask(task) {
     else if (e.kind === "error") notes.push("ERROR: " + (e.data.message || ""));
   };
   const permissions = new Map();
-  const history = [];
+  // Prior turns, so a continued session (e.g. handed off to Telegram) keeps its context.
+  const history = Array.isArray(task.history) ? task.history.slice() : [];
 
-  const agent = (opts) => runOpenAIAgentTurn({
-    prompt: task.prompt, profile, permMode: "bypass", history, emit, permissions,
-    connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [],
-    ...opts,
-  });
+  const agent = (opts) => {
+    // The agent only applies its system prompt when history[0] is a system slot; a
+    // continued session's history starts with user/assistant turns, so ensure one exists.
+    if (history.length && (!history[0] || history[0].role !== "system")) history.unshift({ role: "system", content: "" });
+    return runOpenAIAgentTurn({
+      prompt: task.prompt, profile, permMode: "bypass", history, emit, permissions,
+      connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [],
+      ...opts,
+    });
+  };
 
   try {
     if (target.type === "project") {
@@ -33,7 +50,7 @@ async function runTask(task) {
       if (!project) return { status: "error", output: "Project not found." };
       const sys = store.projectSystem(project) + (project.folder ? `\n\nLinked folder: ${project.folder}` : "");
       if (profile.kind === "anthropic") {
-        const r = await streamChat(profile, [{ role: "system", content: sys }, { role: "user", content: task.prompt }], { onDelta: () => {} });
+        const r = await streamChat(profile, [{ role: "system", content: sys }, ...history, { role: "user", content: task.prompt }], { onDelta: () => {} });
         text = r.text;
       } else {
         await agent({ mode: project.folder ? "cowork" : "chat", cwd: project.folder || null, systemOverride: sys });
@@ -45,10 +62,11 @@ async function runTask(task) {
       // plain chat
       const hasExtras = (cfg.skillsDirs || []).length || (cfg.connectors || []).some((c) => c.enabled);
       if (profile.kind === "anthropic" || !hasExtras) {
-        const r = await streamChat(profile, [{ role: "system", content: "You are BrainEdge." }, { role: "user", content: task.prompt }], { onDelta: () => {} });
+        const sys = task.systemOverride || "You are BrainEdge.";
+        const r = await streamChat(profile, [{ role: "system", content: sys }, ...history, { role: "user", content: task.prompt }], { onDelta: () => {} });
         text = r.text;
       } else {
-        await agent({ mode: "chat", cwd: null });
+        await agent({ mode: "chat", cwd: null, systemOverride: task.systemOverride });
       }
     }
     const out = (text.trim() || notes.join("\n") || "(no output)").slice(0, 20000);

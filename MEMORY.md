@@ -1,7 +1,10 @@
 # BrainEdge — Project Memory
 
 > Resume file. If the chat is lost, read this first to pick up exactly where we left off.
-> Last updated: end of Phase 3 Skills (multi-folder + import).
+> Last updated: 2026-06-07 — "dispatch" cleanup, Via Mobile + Telegram handoff, legal/security hardening.
+> NOTE: Sections 1–9 below are older. **Section 10 (bottom) is the current authoritative state** and
+> corrects stale facts (app is now "BrainEdge" not "Chai"; bridge is `window.brainedge`; the "Dispatch"
+> feature was renamed; copyright owner is Samskruthi Harish). Read Section 10 first.
 
 ---
 
@@ -25,6 +28,7 @@ talks to providers directly and runs its own agent loop.
 - Settings file at runtime: `%APPDATA%\brainedge\chai-settings.json`
 - Run (browser UI, mock data): `npm install` then `npm run dev` (http://localhost:5174)
 - Run (full desktop app): `npm run electron:dev`
+- **Build the Windows installer (after changes):** `npm run electron:build` → outputs NSIS setup + portable .exe to `release/` (electron-builder --win). Bump `package.json` "version" first.
 - **Main-process changes (electron/*.cjs) require a FULL restart** (Ctrl+C then `npm run electron:dev`);
   renderer changes (src/**) hot-reload.
 - Commit (PowerShell 5 has NO `&&` — separate lines):
@@ -130,8 +134,15 @@ electron/ (main process, CommonJS .cjs):
 - `projects-store.cjs` — projects + conversations + knowledge persisted to userData/projects-data/;
   CRUD + projectSystem() (instructions+knowledge → system prompt). Projects can link a folder or a GitHub
   repo (cloned to projects-data/repos/<id>) → conversations get file tools over it.
-- `dispatch-store.cjs` + `dispatch-runner.cjs` — background/scheduled tasks (tasks+runs persisted;
-  headless runner uses permMode bypass). main.cjs has a 60s scheduler (interval/daily/weekly).
+- `task-store.cjs` + `task-runner.cjs` (RENAMED from dispatch-store/dispatch-runner) — background/
+  scheduled tasks (tasks+runs persisted in `task-data/`; headless runner uses permMode bypass; runner
+  now also accepts `history`+`systemOverride` so a session can be continued from Telegram). main.cjs has
+  a 60s scheduler (interval/daily/weekly), event `brainedge:taskRun`.
+- `viamobile-log.cjs` (RENAMED from dispatch-log.cjs) — log of remote "Via Mobile" requests; add/list/
+  remove/clear; persisted to `brainedge-viamobile-log.json` (keeps last 2000).
+- `telegram-bot.cjs` — Telegram Bot API long-poll remote control; reuses task-runner; honours a mobile
+  link to continue a Let's Collaborate session and write replies back; `/start` and `/unlink`.
+- `mobile-link.cjs` — binds ONE cowork session `{sessionId,title,cwd}` to the bot (get/set/clear).
 - `providers.cjs` also exports `ping(profile)` for the online/offline indicator.
 
 src/ (renderer, React):
@@ -204,3 +215,62 @@ places), `ROADMAP.md` (3-phase plan), `README.md`, this `MEMORY.md`.
 - "Phase 3: Skills across chat, code, cowork, projects"
 - (pending push) multi-folder skills + import + toggle/delete + real-time index refresh
 - (pending push) Projects: persisted workspaces (instructions + knowledge + conversations)
+
+---
+
+## 10. CURRENT STATE — 2026-06-07 (authoritative; supersedes stale details above)
+
+### Identity / ownership / legal
+- App name is **BrainEdge** (the earlier "Chai" tea theme was reverted). UI footer: "© 2026 BrainEdge · Proprietary".
+- **Copyright owner: Samskruthi Harish** (contact chaithru@gmail.com). Source files carry the header
+  `// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.`
+- Legal files added: `LICENSE` (proprietary), `TERMS.md`, `TRADEMARKS.md`; `package.json` `"license":"UNLICENSED"`,
+  author "Samskruthi Harish <chaithru@gmail.com>".
+
+### Security hardening (done)
+- **Secrets encrypted at rest** via Electron `safeStorage` (OS keychain), prefix `enc:v1:` — applies to
+  provider apiKey, `messaging.telegramToken`, `googleClientSecret`. settings.cjs load() decrypts, save() encrypts.
+- **Strict CSP** injected on the renderer via `session.defaultSession.webRequest.onHeadersReceived`
+  (script-src 'self' in prod; eval+ws relaxed only in dev). `img-src 'self' data: https:`.
+
+### Bridge / settings (corrections to older sections)
+- Bridge global is **`window.brainedge`** (preload.cjs); IPC channels are `brainedge:*`. (Older notes say `window.chai`/`chai:*` — stale.)
+- Settings file: `%APPDATA%\brainedge\brainedge-settings.json`. DEFAULTS shallow-merged over the saved file.
+- Anthropic is back as a provider INCLUDING the subscription/OAuth path — **TESTING ONLY, REMOVE BEFORE
+  PUBLISHING** (subscription use breaches Anthropic ToS). Commercial API-key access is the legit path.
+
+### "dispatch" term removed (rename map)
+- Via Mobile feature → `viamobile`: `ViaMobile.jsx`, `viamobile-log.cjs`, mode id `"viamobile"`, IPC
+  `listViaMobile`/`removeViaMobile`/`clearViaMobile`.
+- Scheduler internals → `task`/`scheduler`: `Scheduler.jsx`, `task-store.cjs`, `task-runner.cjs`,
+  main var `taskStore`, event `brainedge:taskRun`, data dir `task-data/`.
+- Generic tool router `dispatch()` → `runTool()` (agent-openai.cjs). Only DOM `dispatchEvent` + undici
+  `setGlobalDispatcher` remain.
+
+### Via Mobile (Telegram remote control) — current
+- Sidebar INTERFACE group has **Via Mobile** (`ViaMobile.jsx`). Page: intro, Bot setup (enable, masked
+  token/user-ids, run target chat|folder, Apply), collapsible help, **Open in Telegram** t.me deep-link
+  button, and the Requests history (persisted, per-item delete + Clear-all). Bot username is masked in
+  status chips via `maskBot()`.
+- **Telegram → Cowork handoff** ("Continue on phone"): `mobile-link.cjs` binds ONE cowork session; the
+  bot continues that session (last ~30 turns + its folder) and **writes replies back into the session**
+  so they appear on the desktop. Commands `/start`, `/unlink`.
+- **Auto-continue** (`messaging.autoContinue`, default ON): when in a cowork session AND the bot is online,
+  App auto-binds the current session (polls bot status every 5s). Folder bar shows a status chip; manual
+  "Continue on phone" / Unlink available when auto is off.
+- QR code was tried (`qrcode` npm) but REMOVED — Vite couldn't resolve the dep through the degraded mount;
+  the dependency-free t.me button covers the need. If re-adding, vendor a self-contained encoder (no dep).
+
+### Models Overview — current
+- "Best for" cell shows full text on hover (`title`); row click opens detail card.
+- Download is a **source chooser popup** (Hugging Face / Ollama / LM Studio) instead of always Hugging Face.
+
+### Next steps (pick up here)
+1. **Before publishing: remove the Anthropic subscription/OAuth path** (keep API-key only).
+2. Build the Windows installer: `npm run electron:build` (electron-builder --win; nsis + portable).
+3. brainedge.ai web version; review "Let's Build" to behave like Claude Code.
+4. Optional: vendor a local QR encoder for Via Mobile; PWA + E2E relay only if leaving Telegram.
+
+### Environment quirk (still true)
+- The sandbox bash mount serves **truncated reads** of long files → false `node --check`/grep failures and
+  npm JSON-parse errors on package.json. Trust the host Read/Write/Edit tools, not bash reads, for long files.

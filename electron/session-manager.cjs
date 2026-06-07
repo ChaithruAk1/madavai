@@ -1,3 +1,4 @@
+// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 // SessionManager (main process).
 //  - chat mode  → direct streaming transport (providers.cjs)
 //  - cowork/code → agent transport (agent-transport.cjs, Claude Agent SDK)
@@ -12,9 +13,12 @@ const usage = require("./usage-store.cjs");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const errorExplainer = require("./error-explainer.cjs");
 
 let seq = 0;
 const AGENT_MODES = new Set(["cowork", "code"]);
+// Errors that already carry a clear, human message — don't spend a model call on them.
+const FRIENDLY_CODES = new Set(["no_vision", "no_key", "no_profile", "no_folder", "no_project", "auth", "rate_limit", "cancelled", "interrupted"]);
 
 const cleanImgs = (images) => (Array.isArray(images) ? images.filter((im) => im && im.dataUrl) : []);
 const parseDataUrl = (u) => { const m = /^data:(image\/[\w.+-]+);base64,(.*)$/s.exec(u || ""); return m ? { mime: m[1], b64: m[2] } : null; };
@@ -116,9 +120,8 @@ class SessionManager {
       return;
     }
 
-    // Anthropic subscription mode: bill the user's Claude plan via `claude login`
-    // creds (no API key). Only the SDK path can carry those, so we route ALL
-    // anthropic turns through the Agent SDK and skip the API-key requirement.
+    // TESTING ONLY: Anthropic subscription mode bills the user's Claude plan via `claude login`
+    // creds (no API key). Routed through the Agent SDK. (Restricted by Anthropic ToS — for testing.)
     const subMode = profile.kind === "anthropic" && !!settings.load().anthropicUseSubscription;
 
     // Diagnostic: shows in the [ELECTRON] terminal exactly which profile is active.
@@ -137,8 +140,7 @@ class SessionManager {
 
     this._curTurn = { sessionId, model: profile.model, provider: profile.name, mode: s.mode, promptChars: (userText || "").length, replyChars: 0, replyText: "", userText: userText || "" };
 
-    // Subscription mode forces the SDK for chat/project too (raw /v1/messages
-    // can't use plan creds). Agent modes already use the SDK for anthropic.
+    // Subscription forces the SDK for chat/project too (raw /v1/messages can't use plan creds).
     if (subMode && (s.mode === "project" || !AGENT_MODES.has(s.mode))) {
       return this._chatViaSdk(sessionId, userText, profile, images);
     }
@@ -188,6 +190,19 @@ class SessionManager {
   }
 
   // ---- chat transport ----
+  // Build an {code, message} error payload, upgrading unknown raw errors to a
+  // friendly sentence via the cached explainer (keeps the raw text in `detail`).
+  async _friendlyError(err) {
+    const code = (err && err.code) || "error";
+    const raw = String((err && err.message) || err || "Error");
+    if (FRIENDLY_CODES.has(code)) return { code, message: raw };
+    try {
+      const friendly = await errorExplainer.explain(raw, { timeoutMs: 4000 });
+      if (friendly) return { code, message: friendly, detail: raw };
+    } catch {}
+    return { code, message: raw };
+  }
+
   async _chatTurn(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
     // Vision: inline image blocks (OpenAI image_url / Anthropic base64) on this no-tool path.
@@ -213,7 +228,7 @@ class SessionManager {
       this._send(sessionId, "result", { subtype: "success", num_turns: 1, duration_ms: Date.now() - started, total_cost_usd: 0 });
     } catch (err) {
       if (err.name === "AbortError") this._send(sessionId, "result", { subtype: "interrupted", duration_ms: Date.now() - started });
-      else this._send(sessionId, "error", { code: err.code || "error", message: String(err.message || err) });
+      else this._send(sessionId, "error", await this._friendlyError(err));
     } finally {
       s.controller = null;
     }
@@ -261,7 +276,7 @@ class SessionManager {
       }
     } catch (e) {
       if (e.name === "AbortError") emit({ kind: "result", data: { subtype: "interrupted" } });
-      else emit({ kind: "error", data: { code: e.code || "error", message: String(e.message || e) } });
+      else emit({ kind: "error", data: await this._friendlyError(e) });
     } finally {
       s.controller = null;
       const msgs = s.history.filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.length);

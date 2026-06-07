@@ -1,7 +1,7 @@
 // Telegram bot — drives BrainEdge's agent remotely via the Bot API (long polling, no server).
-// Reuses the dispatch runner so it inherits providers/skills/connectors. Single poll loop
+// Reuses the task runner so it inherits providers/skills/connectors. Single poll loop
 // that reads the latest config each iteration, so re-applying settings reconfigures it live.
-const runner = require("./dispatch-runner.cjs");
+const runner = require("./task-runner.cjs");
 
 let cfg = null, active = false, running = false, offset = 0;
 let status = "stopped", username = "";
@@ -30,14 +30,84 @@ async function handle(c, u) {
   if (!allowed.includes(from)) { await send(c.token, msg.chat.id, `Not authorized. Your Telegram user id is ${from}.`); return; }
 
   const text = msg.text.trim();
-  if (text === "/start" || text === "/help") { await send(c.token, msg.chat.id, "BrainEdge is connected 🧠. Send a prompt and I'll run it. Target: " + (c.target || "chat") + "."); return; }
+  if (text === "/start" || text === "/help") {
+    const lk = require("./mobile-link.cjs").get();
+    const where = lk && lk.title
+      ? `Continuing: “${lk.title}”. /sessions to switch, /unlink to work independently.`
+      : `Working independently (${c.target || "chat"}). /sessions to continue a Let's Collaborate project.`;
+    await send(c.token, msg.chat.id, "BrainEdge is connected 🧠. Send a prompt and I'll run it. " + where + "\n\nCommands: /sessions, /use <name or number>, /unlink");
+    return;
+  }
+  if (text === "/unlink") {
+    require("./mobile-link.cjs").clear();
+    await send(c.token, msg.chat.id, "Unlinked. Messages now run independently as " + (c.target || "chat") + " requests.");
+    return;
+  }
+  // List your Let's Collaborate sessions (each can have a different folder).
+  if (text === "/sessions" || text === "/list") {
+    const list = require("./sessions-store.cjs").listSessions("cowork");
+    if (!list.length) { await send(c.token, msg.chat.id, "No Let's Collaborate sessions yet. Start one on the desktop first."); return; }
+    const cur = require("./mobile-link.cjs").get();
+    const lines = list.slice(0, 30).map((sx, i) => `${i + 1}. ${sx.title || sx.id}${sx.cwd ? ` — ${sx.cwd}` : " — (chat, no folder)"}${cur && cur.sessionId === sx.id ? "   ⬅ current" : ""}`);
+    await send(c.token, msg.chat.id, "Your Let's Collaborate sessions:\n\n" + lines.join("\n") + "\n\nSend  /use <number or name>  to continue one.");
+    return;
+  }
+  // Switch which session the bot continues, by number or by (part of) its name.
+  if (text.toLowerCase().startsWith("/use")) {
+    const q = text.slice(4).trim();
+    const list = require("./sessions-store.cjs").listSessions("cowork");
+    if (!q) { await send(c.token, msg.chat.id, "Usage:  /use <number or part of the name>.  Send /sessions to see them."); return; }
+    let pick = /^\d+$/.test(q) ? (list[parseInt(q, 10) - 1] || null) : null;
+    if (!pick) {
+      const ql = q.toLowerCase();
+      const matches = list.filter((sx) => (sx.title || "").toLowerCase().includes(ql));
+      if (matches.length > 1) { await send(c.token, msg.chat.id, `Several sessions match “${q}”:\n` + matches.slice(0, 10).map((sx, i) => `${i + 1}. ${sx.title}`).join("\n") + "\n\nBe more specific, or use the number from /sessions."); return; }
+      pick = matches[0] || null;
+    }
+    if (!pick) { await send(c.token, msg.chat.id, `No session matches “${q}”. Send /sessions to list them.`); return; }
+    require("./mobile-link.cjs").set({ sessionId: pick.id, title: pick.title || pick.id, cwd: pick.cwd || "" });
+    await send(c.token, msg.chat.id, `Now continuing: “${pick.title || pick.id}”${pick.cwd ? ` (folder: ${pick.cwd})` : " (chat — no folder)"}. Send your next message.`);
+    return;
+  }
 
   try { await tg(c.token, "sendChatAction", { chat_id: msg.chat.id, action: "typing" }); } catch {}
-  const target = c.target === "folder" && c.folder ? { type: "folder", folder: c.folder } : { type: "chat" };
-  let run;
-  try { run = await runner.runTask({ prompt: text, target }); }
-  catch (e) { run = { output: "Error: " + ((e && e.message) || e) }; }
+
+  // If a Let's Collaborate session is linked, continue it (shared history + folder) and write back.
+  const link = require("./mobile-link.cjs").get();
+  const sessions = require("./sessions-store.cjs");
+  const linkedSes = link && link.sessionId ? sessions.getSession(link.sessionId) : null;
+
+  let run, target, logTarget;
+  if (linkedSes) {
+    // Continue the linked session using ITS OWN folder — each Let's Collaborate project can have a
+    // different folder, and the bot follows whichever session is linked (not the Bot-setup folder,
+    // which is only for independent/standalone messages with no session linked).
+    target = linkedSes.cwd ? { type: "folder", folder: linkedSes.cwd } : { type: "chat" };
+    const history = (linkedSes.messages || []).slice(-30).map((m) => ({ role: m.role, content: m.content }));
+    try { run = await runner.runTask({ prompt: text, target, history }); }
+    catch (e) { run = { output: "Error: " + ((e && e.message) || e), status: "error" }; }
+    try {
+      linkedSes.messages = linkedSes.messages || [];
+      linkedSes.messages.push({ role: "user", content: text, via: "mobile", at: Date.now() });
+      linkedSes.messages.push({ role: "assistant", content: run.output, via: "mobile", at: Date.now() });
+      sessions.saveSession(linkedSes);
+    } catch {}
+    logTarget = `session: ${link.title || linkedSes.title || linkedSes.id}` + (target.type === "folder" ? ` · ${target.folder}` : " · chat (no files)");
+  } else {
+    target = c.target === "folder" && c.folder ? { type: "folder", folder: c.folder } : { type: "chat" };
+    try { run = await runner.runTask({ prompt: text, target }); }
+    catch (e) { run = { output: "Error: " + ((e && e.message) || e), status: "error" }; }
+    logTarget = c.target === "folder" ? `folder: ${c.folder || ""}` : "chat";
+  }
+
   await send(c.token, msg.chat.id, run.output);
+  try {
+    require("./viamobile-log.cjs").add({
+      source: "Telegram", from: (msg.from && (msg.from.username || msg.from.first_name)) || from,
+      text, output: run.output, status: run.status || (/^error/i.test(run.output || "") ? "error" : "ok"),
+      target: logTarget,
+    });
+  } catch {}
 }
 
 async function loop() {

@@ -170,12 +170,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
 
   const placeholder = skill
     ? `Message for the ${skill.name} skill…`
-    : ({
-        chat: "Message BrainEdge…  ( / commands · @ files )",
-        code: "Describe a change to the repo…  ( / · @ )",
-        cowork: "Ask BrainEdge to work on your folder…  ( / · @ )",
-        project: "Continue this project…  ( / · @ )",
-      }[mode] || "Message BrainEdge…  ( / commands · @ files )");
+    : "How can I help you today?  ( / commands · @ files )";
   const canSend = !!text.trim() || files.length > 0 || !!skill;
 
   return (

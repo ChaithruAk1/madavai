@@ -81,7 +81,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
             <div key={g.group}>
               <div className="model-group">{g.group} · {g.items.length}</div>
               {g.items.map((it) => {
-                const purpose = classify(it.name);
+                const isLocal = /local/i.test(it.prov || g.group || "");
                 return (
                   <div
                     key={it.id}
@@ -89,8 +89,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
                     onClick={() => { onChange(it.id); setOpen(false); }}
                   >
                     <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                    <span className="badge" style={{ color: PURPOSE_COLOR[purpose], background: "transparent", border: "1px solid var(--line)" }}>{purpose}</span>
-                    {it.badge && <span className="badge">{it.badge}</span>}
+                    <span className="badge" style={{ background: "transparent", border: "1px solid var(--line)", color: isLocal ? "var(--ok)" : "var(--accent)" }}>{isLocal ? "Local" : "Cloud"}</span>
                     {it.id === value && <Check size={15} className="check" />}
                   </div>
                 );

@@ -1,3 +1,4 @@
+// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 // Chat transport: stream from OpenAI- or Anthropic-compatible endpoints.
 // Node 18+/Electron has global fetch + ReadableStream. No deps.
 
@@ -35,6 +36,12 @@ async function ensureOk(res, provider) {
   if (res.ok) return;
   let detail = "";
   try { detail = (await res.text()).slice(0, 400); } catch {}
+  // Friendly message when the chosen model can't accept images (very common cause of confusion).
+  if (/image input|support image|no endpoints found that support image|does not support image|vision/i.test(detail)) {
+    const err = new Error("This model doesn't support image handling. Switch to a vision-capable model (e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet, google/gemini-2.0-flash, or meta-llama/llama-3.2-90b-vision-instruct) and resend the image.");
+    err.code = "no_vision";
+    throw err;
+  }
   const err = new Error(`${provider} ${res.status}: ${detail || res.statusText}`);
   err.code = res.status === 429 ? "rate_limit" : res.status === 401 ? "auth" : "http_error";
   throw err;

@@ -1,3 +1,4 @@
+// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 // Exposes window.brainedge — the real Bridge (mirrors src/bridge/contract.js).
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -37,6 +38,8 @@ contextBridge.exposeInMainWorld("brainedge", {
   runSpeedTest: (args) => ipcRenderer.invoke("brainedge:runSpeedTest", args),
   cancelSpeedTest: () => ipcRenderer.invoke("brainedge:cancelSpeedTest"),
   getSpeedTestLast: () => ipcRenderer.invoke("brainedge:getSpeedTestLast"),
+  getSpeedTestStatus: () => ipcRenderer.invoke("brainedge:getSpeedTestStatus"),
+  getOpenRouterCatalog: (opts) => ipcRenderer.invoke("brainedge:getOpenRouterCatalog", opts),
 
   // --- persisted chat history (Talk / Collaborate / Build) ---
   listSessions: (mode) => ipcRenderer.invoke("brainedge:listSessions", mode),
@@ -51,6 +54,7 @@ contextBridge.exposeInMainWorld("brainedge", {
 
   // --- connectors (MCP) ---
   testConnector: (server) => ipcRenderer.invoke("brainedge:testConnector", server),
+  listConnectorDirectory: (opts) => ipcRenderer.invoke("brainedge:listConnectorDirectory", opts),
 
   // --- skills ---
   listSkills: () => ipcRenderer.invoke("brainedge:listSkills"),
@@ -79,4 +83,26 @@ contextBridge.exposeInMainWorld("brainedge", {
   createConversation: (projectId) => ipcRenderer.invoke("brainedge:createConversation", projectId),
   deleteConversation: (id) => ipcRenderer.invoke("brainedge:deleteConversation", id),
 
-  // --- dispatch (background + scheduled tasks) --
+  // --- background + scheduled tasks ---
+  listTasks: () => ipcRenderer.invoke("brainedge:listTasks"),
+  createTask: () => ipcRenderer.invoke("brainedge:createTask"),
+  updateTask: (id, patch) => ipcRenderer.invoke("brainedge:updateTask", { id, patch }),
+  deleteTask: (id) => ipcRenderer.invoke("brainedge:deleteTask", id),
+  getRuns: (id) => ipcRenderer.invoke("brainedge:getRuns", id),
+  runTaskNow: (id) => ipcRenderer.invoke("brainedge:runTaskNow", id),
+
+  // --- usage ---
+  getUsage: (days) => ipcRenderer.invoke("brainedge:getUsage", days),
+
+  // --- messaging (Telegram) ---
+  applyMessaging: () => ipcRenderer.invoke("brainedge:applyMessaging"),
+  messagingStatus: () => ipcRenderer.invoke("brainedge:messagingStatus"),
+  completeOnce: (messages) => ipcRenderer.invoke("brainedge:completeOnce", messages),
+  listViaMobile: () => ipcRenderer.invoke("brainedge:listViaMobile"),
+  removeViaMobile: (id) => ipcRenderer.invoke("brainedge:removeViaMobile", id),
+  clearViaMobile: () => ipcRenderer.invoke("brainedge:clearViaMobile"),
+  getMobileLink: () => ipcRenderer.invoke("brainedge:getMobileLink"),
+  setMobileLink: (link) => ipcRenderer.invoke("brainedge:setMobileLink", link),
+  clearMobileLink: () => ipcRenderer.invoke("brainedge:clearMobileLink"),
+  setKeepAwake: (on) => ipcRenderer.invoke("brainedge:setKeepAwake", on),
+});

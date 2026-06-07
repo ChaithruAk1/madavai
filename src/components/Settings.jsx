@@ -6,7 +6,6 @@ import { bridge } from "../bridge/index.js";
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 const SECTIONS = [
   { id: "profile", label: "Profile", icon: User },
-  { id: "messaging", label: "Messaging", icon: Send },
 ];
 
 export default function Settings({ onChanged }) {
@@ -16,17 +15,8 @@ export default function Settings({ onChanged }) {
   const [status, setStatus] = useState("");
   const [section, setSection] = useState("profile");
   const [busy, setBusy] = useState("");
-  const [msgStatus, setMsgStatus] = useState(null);
-  const [anthStatus, setAnthStatus] = useState("");
 
   useEffect(() => { bridge.getSettings().then((cfg) => { setS(cfg); setSelId(cfg.activeProfileId); }); }, []);
-  useEffect(() => {
-    if (section !== "messaging") return;
-    let alive = true;
-    const t = () => bridge.messagingStatus().then((r) => alive && setMsgStatus(r));
-    t(); const iv = setInterval(t, 4000);
-    return () => { alive = false; clearInterval(iv); };
-  }, [section]);
   if (!s || !selId) return <div className="empty"><div>Loading settings…</div></div>;
 
   const account = s.account || {};
@@ -41,10 +31,6 @@ export default function Settings({ onChanged }) {
   const patch = (field, val) => persist({ ...s, profiles: { ...s.profiles, [selId]: { ...sel, [field]: val } } });
   const setAccount = (a) => persist({ ...s, account: { ...account, ...a } });
   const setField = (k, v) => persist({ ...s, [k]: v });
-  const msg = s.messaging || {};
-  const setMsg = (k, v) => persist({ ...s, messaging: { ...msg, [k]: v } });
-  const applyMsg = async () => { await bridge.saveSettings(s); const r = await bridge.applyMessaging(); setMsgStatus(r); };
-  const pickMsgFolder = async () => { const d = await bridge.chooseFolder(); if (d) setMsg("folder", d); };
 
   const addProfile = () => { const id = "p_" + Math.random().toString(36).slice(2, 7); persist({ ...s, profiles: { ...s.profiles, [id]: BLANK(id) } }); setSelId(id); };
   const delProfile = () => {
@@ -79,16 +65,6 @@ export default function Settings({ onChanged }) {
     if (r?.error) { setStatus(r.error); return; }
     if (r?.account) { const next = await bridge.getSettings(); setS(next); }
   };
-  const setAnthKey = (v) => {
-    const base = s.profiles.p_anthropic || { id: "p_anthropic", name: "Anthropic", kind: "anthropic", baseUrl: "https://api.anthropic.com", model: "claude-sonnet-4-6" };
-    persist({ ...s, profiles: { ...s.profiles, p_anthropic: { ...base, apiKey: v } } });
-  };
-  const verifyAnthropic = async () => {
-    setAnthStatus("Authenticating…");
-    const models = await bridge.listModels("p_anthropic");
-    if (models && models.length) { setAnthStatus(`Authenticated ✓ · ${models.length} models available to this key`); setAccount({ anthropicLinked: true }); }
-    else { setAnthStatus("Could not authenticate — check the API key (a 401 means the key is wrong)."); setAccount({ anthropicLinked: false }); }
-  };
   const signOut = async () => { await bridge.signOut(); const next = await bridge.getSettings(); setS(next); };
 
   const initials = (account.name || account.email || "Y").slice(0, 1).toUpperCase();
@@ -114,6 +90,36 @@ export default function Settings({ onChanged }) {
                 <div style={{ color: "var(--text-2)", fontSize: 13 }}>{account.email || "no email set"}</div>
               </div>
             </div>
+            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 2 }}>Appearance</div>
+            <Field label="Theme">
+              <select className="model-search" value={s.theme || "dark"} onChange={(e) => setField("theme", e.target.value)}>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="system">System (match OS)</option>
+              </select>
+            </Field>
+            <Field label="Accent color">
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button title="Default (multi-color)" onClick={() => setField("accent", "default")}
+                  style={{ width: 24, height: 24, borderRadius: "50%", cursor: "pointer",
+                    background: "linear-gradient(135deg, #9fb0ff, #38e8d0 55%, #b88cff)",
+                    border: (s.accent || "default") === "default" ? "2px solid var(--text-0)" : "2px solid transparent",
+                    boxShadow: "0 0 0 1px var(--line)" }} />
+                {["#6e7bff", "#7c5cff", "#38b2ac", "#22a06b", "#e8893a", "#d6597b", "#e0433f", "#2b8fd6"].map((c) => (
+                  <button key={c} title={c} onClick={() => setField("accent", c)}
+                    style={{ width: 24, height: 24, borderRadius: "50%", background: c, cursor: "pointer",
+                      border: (s.accent || "").toLowerCase() === c ? "2px solid var(--text-0)" : "2px solid transparent",
+                      boxShadow: "0 0 0 1px var(--line)" }} />
+                ))}
+                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-2)", cursor: "pointer" }}>
+                  <input type="color" value={s.accent || "#6e7bff"} onChange={(e) => setField("accent", e.target.value)}
+                    style={{ width: 28, height: 28, padding: 0, border: "none", background: "transparent", cursor: "pointer" }} />
+                  Custom
+                </label>
+              </div>
+            </Field>
+
+            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Account</div>
             <Field label="Display name"><input className="model-search" value={account.name || ""} onChange={(e) => setAccount({ name: e.target.value })} placeholder="Your name" /></Field>
             <Field label="Email"><input className="model-search" value={account.email || ""} onChange={(e) => setAccount({ email: e.target.value })} placeholder="you@example.com" /></Field>
             <Field label="Avatar URL (optional)"><input className="model-search" value={account.avatar || ""} onChange={(e) => setAccount({ avatar: e.target.value })} placeholder="https://…" /></Field>
@@ -144,45 +150,6 @@ export default function Settings({ onChanged }) {
           </div>
         )}
 
-        {section === "messaging" && (
-          <div style={{ maxWidth: 560 }}>
-            <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Messaging — Telegram bot</h2>
-            <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 0 }}>
-              Drive BrainEdge from Telegram. Message your bot and it runs the active model and replies. ⚠ This is remote control of this machine — only your allowed user id can use it.
-            </p>
-            <div className="acc-card">
-              <label className="chip" style={{ cursor: "pointer", marginBottom: 12 }}>
-                <input type="checkbox" checked={!!msg.enabled} onChange={(e) => setMsg("enabled", e.target.checked)} style={{ marginRight: 6 }} /> Enable Telegram bot
-              </label>
-              <Field label="Bot token (from @BotFather)"><input className="model-search" type="password" value={msg.telegramToken || ""} onChange={(e) => setMsg("telegramToken", e.target.value)} placeholder="123456:ABC-..." /></Field>
-              <Field label="Allowed Telegram user id(s) — comma separated (find yours via @userinfobot)"><input className="model-search" value={msg.telegramAllowedUserIds || ""} onChange={(e) => setMsg("telegramAllowedUserIds", e.target.value)} placeholder="e.g. 123456789" /></Field>
-              <Field label="Run target">
-                <select className="model-search" value={msg.target || "chat"} onChange={(e) => setMsg("target", e.target.value)}>
-                  <option value="chat">Chat (no file/shell access — safest)</option>
-                  <option value="folder">A folder (agent can edit files & run commands)</option>
-                </select>
-              </Field>
-              {msg.target === "folder" && (
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
-                  <button className="btn" onClick={pickMsgFolder}><FolderInput size={14} /> Choose folder</button>
-                  {msg.folder && <span style={{ fontFamily: "var(--mono)", fontSize: 12 }}>{msg.folder}</span>}
-                </div>
-              )}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button className="btn primary" onClick={applyMsg}>Apply</button>
-                {msgStatus && (
-                  <span className="chip" style={{ color: msgStatus.running ? "var(--ok)" : "var(--text-2)" }}>
-                    <span style={{ width: 7, height: 7, borderRadius: 9, background: msgStatus.running ? "var(--ok)" : "var(--text-2)", marginRight: 6 }} />
-                    {msgStatus.status}
-                  </span>
-                )}
-              </div>
-            </div>
-            <p style={{ color: "var(--text-2)", fontSize: 12 }}>
-              Scheduled/unattended, so it auto-approves tools. Uses the active provider. Send /start to your bot to test.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -196,4 +163,3 @@ function Field({ label, children }) {
     </label>
   );
 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
