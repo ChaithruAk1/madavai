@@ -1,6 +1,6 @@
 {
   "name": "brainedge",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "BrainEdge — a Claude-Desktop-style app over Anthropic, cloud, and local LLMs",
   "author": "Samskruthi Harish <chaithru@gmail.com>",

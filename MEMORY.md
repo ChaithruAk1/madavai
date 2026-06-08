@@ -1,8 +1,10 @@
 # BrainEdge — Project Memory
 
 > Resume file. If the chat is lost, read this first to pick up exactly where we left off.
-> Last updated: 2026-06-07 — "dispatch" cleanup, Via Mobile + Telegram handoff, legal/security hardening.
-> NOTE: Sections 1–9 below are older. **Section 10 (bottom) is the current authoritative state** and
+> Last updated: 2026-06-08 — auth + monetization, full WEB app, provider proxy, web folder access,
+>   default language, code obfuscation, deploy config, reusable auth-kit skill. **Section 11 (bottom) is
+>   now the most current authoritative state.**
+> NOTE: Sections 1–9 below are older. **Section 10/11 (bottom) is the current authoritative state** and
 > corrects stale facts (app is now "BrainEdge" not "Chai"; bridge is `window.brainedge`; the "Dispatch"
 > feature was renamed; copyright owner is Samskruthi Harish). Read Section 10 first.
 
@@ -274,3 +276,76 @@ places), `ROADMAP.md` (3-phase plan), `README.md`, this `MEMORY.md`.
 ### Environment quirk (still true)
 - The sandbox bash mount serves **truncated reads** of long files → false `node --check`/grep failures and
   npm JSON-parse errors on package.json. Trust the host Read/Write/Edit tools, not bash reads, for long files.
+
+---
+
+## 11. CURRENT STATE — 2026-06-08 (authoritative; supersedes Section 10 where they differ)
+
+Version bumped to **0.3.0**. Big theme this round: **accounts + monetization, and a full web version
+with feature parity**.
+
+### Accounts + monetization (auth server)
+- Standalone zero-dependency auth server: `server/auth-server.mjs` (Node ≥18), store in `server/store.mjs`
+  (JSON file default; **Postgres** when `DATABASE_URL` set). Loads `server/.env` automatically (mini dotenv).
+- Login = **Google/GitHub OAuth** (secrets stay on the server). Session token = HMAC, 24h, re-validated
+  online. **7-day free trial → mandatory Stripe subscription.** Status model: trialing|active|expired|suspended.
+- Endpoints: `/auth/:provider/start|callback`, `/me`, `/auth/logout`, `/auth/dev/start` (ALLOW_DEV_LOGIN=1),
+  `/billing/checkout|portal|webhook`, `/admin/users/:id/(suspend|unsuspend|comp|uncomp)`, `/admin/users`,
+  `/admin/stats`, `/events`, `/proxy/chat`, `/proxy/models`, `/health`, + static serving of `dist/`.
+- **Admin** = email in `server/admin-emails.txt` or `ADMIN_EMAILS`. **Free access** = `server/free-emails.txt`
+  or `FREE_EMAILS`, or per-user `/comp`. Admin endpoints accept the admin's session OR `x-admin-key`.
+- Analytics: signup/signin/subscribed events + last-seen; `/admin/stats` = counts, 7-day funnel, recent events.
+- Client gate: `src/auth/AuthGate.jsx` wraps the app (always-online). Account UI: `AccountCard.jsx`,
+  `AdminPanel.jsx`. Desktop IPC in `electron/auth.cjs` + main.cjs; web in `webBridge`.
+- Docs: `AUTH.md`, `OAUTH-SETUP.md`, `DEPLOY.md`, `PRIVACY.md`. Run: `node server/auth-server.mjs`.
+
+### WEB app (browser build of the same UI) — NEW
+- `src/bridge/index.js` now picks `window.brainedge` (desktop) **or `webBridge`** (browser); exports `isWeb`.
+- `src/bridge/webBridge.js` implements the WHOLE contract in the browser: auth/billing/admin via the auth
+  server; settings/history/projects/saved/tasks in **localStorage** (keys stay on device); chat streams
+  **browser→provider** via `src/shared/providers.js` (ESM mirror of providers.cjs).
+- The **auth server also serves the built `dist/`** so the web app + API share one origin (no CORS, clean
+  OAuth redirect with `?token=`). Run: `npm run build` then `node server/auth-server.mjs` → http://127.0.0.1:8787/.
+- **Provider proxy** (`/proxy/chat`,`/proxy/models`): web tries direct first; if the browser blocks it (CORS,
+  e.g. NVIDIA/OpenAI) it auto-falls back to the server proxy. OpenRouter etc. stay direct.
+- **Web folder access** ("Let's Collaborate" on web): `src/bridge/webfs.js` uses the **File System Access API
+  (Chrome/Edge only)**; `webBridge` runs a browser file-tool agent (list/read/write/edit, NO terminal). Folder
+  stays local; only files the model reads are sent to the provider. Folder bar shows a Chrome/Edge notice.
+- Doc: `WEB.md`. Deploy: `render.yaml` + `GO-LIVE.md` (Supabase + Render). Added `pg` to root deps.
+
+### Other changes this round
+- **Default language** setting (Settings → Profile → Appearance): `responseLanguage` ("model" or a language)
+  injected into the system prompt on BOTH web (`webBridge.systemPrompt`/`coworkSystem`) and desktop
+  (`session-manager.withLang`). settings.cjs default added.
+- **Code obfuscation** on production builds only: `rollup-obfuscator` in `vite.config.js` (apply:"build",
+  conservative settings). Install: `npm install -D rollup-obfuscator`. Source stays readable; dev unaffected.
+- **Sidebar bottom = Profile** (name + photo) with a trial/upgrade box above it; opens Settings. The old
+  floating trial banner + top-right account menu were removed (now in the sidebar).
+- **Admin Analytics is its own Settings section** (admins only) — moved out of the Profile page.
+- **Profile page cleaned up**: removed the manual Account fields (name/email/avatar) + the "Link your profile"
+  OAuth-client-id block (real auth is via sign-in now).
+- **Kept the Anthropic Agent SDK** (it powers the desktop Claude-Code-grade agent + future Anthropic features);
+  only scrubbed obvious "Claude Agent SDK" naming from comments. Decided hiding it isn't worth the feature loss.
+
+### Reusable auth-kit "skill" — NEW (`auth-kit/`)
+- Universal, plug-and-play login+trial+subscription+analytics for FUTURE projects. Files: `auth-kit/SKILL.md`,
+  `README.md`, `server/auth-server.mjs` (generalized via `APP_NAME`), `server/store.mjs`, `server/.env.example`,
+  `client/auth-client.js` (framework-agnostic browser client). Packaged installable: `auth-paywall.skill`.
+- Everything per-business is env (APP_NAME, TRIAL_DAYS, STRIPE_PRICE_ID, ADMIN_EMAILS, FREE_EMAILS, DATABASE_URL).
+
+### Security guidance given to user (not code)
+- Real protection = secrets stay server-side (done) + obfuscation + license; turn on **2FA** on
+  Google/GitHub/Stripe/host. Admin-account-hijack blast radius is limited (no money/keys/DB/code from the
+  panel; all actions reversible). Offered (not yet built): admin **audit log** + **revoke-all-sessions** kill switch.
+
+### Pending / queue (pick up here)
+1. **Server-move (secret sauce):** move the speed-check **quiz grading** (QUIZ answer key + `scoreQuiz`) to the
+   auth server behind an API; client sends model answers, server returns scores. (Runs once/test → no perf hit.)
+2. **Consumption** section → world-class interactive analytics dashboard.
+3. **Model Speed Check results** → world-class analytics dashboard (no perf impact).
+4. Before launch: rotate the OAuth secrets exposed during testing; remove the Anthropic subscription path.
+
+### How to run (quick ref)
+- Web: `npm run build` → `node server/auth-server.mjs` → http://127.0.0.1:8787/ (needs `server/.env` with OAuth).
+- Desktop: `node server/auth-server.mjs` (window 1) + `npm run electron:dev` (window 2).
+- Free the port if EADDRINUSE: `Get-NetTCPConnection -LocalPort 8787 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`
