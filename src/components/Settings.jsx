@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput } from "lucide-react";
 import ModelPicker from "./ModelPicker.jsx";
+import AccountCard from "../auth/AccountCard.jsx";
 import { bridge } from "../bridge/index.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
@@ -82,6 +83,7 @@ export default function Settings({ onChanged }) {
         {section === "profile" && (
           <div style={{ maxWidth: 480 }}>
             <h2 style={{ margin: "0 0 16px", fontSize: 18 }}>Profile</h2>
+            <AccountCard />
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
               {account.avatar ? <img src={account.avatar} alt="" style={{ width: 56, height: 56, borderRadius: "50%" }} />
                 : <div style={{ width: 56, height: 56, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 22, fontWeight: 600, background: "linear-gradient(135deg, var(--accent), var(--accent-2))", color: "#06070a" }}>{initials}</div>}
