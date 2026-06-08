@@ -179,6 +179,12 @@ export const mockBridge = {
   async listViaMobile() { return []; },
   async removeViaMobile() { return true; },
   async clearViaMobile() { return true; },
+  // Auth (browser/mock dev): pretend the user is in an active trial so the gate doesn't block dev.
+  async authSignIn() { return { ok: true }; },
+  async authMe() { return { user: { name: "Dev User", email: "dev@brainedge.local", provider: "google" }, status: "trialing", daysLeft: 7, subscription: { active: false, plan: null } }; },
+  async authSignOut() { return { ok: true }; },
+  async billingCheckout() { return { error: "billing not available in browser dev" }; },
+  async billingPortal() { return { error: "billing not available in browser dev" }; },
   async getMobileLink() { return null; },
   async setMobileLink(link) { return link || null; },
   async clearMobileLink() { return null; },

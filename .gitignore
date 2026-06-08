@@ -5,3 +5,6 @@ release/
 *.log
 *.local
 .env
+server/users.json
+server/.env
+stripe.exe

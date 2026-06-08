@@ -434,6 +434,15 @@ ipcMain.handle("brainedge:listViaMobile", () => viaMobileLog.list());
 ipcMain.handle("brainedge:removeViaMobile", (_e, id) => viaMobileLog.remove(id));
 ipcMain.handle("brainedge:clearViaMobile", () => viaMobileLog.clear());
 
+// ---- IPC: account auth + 7-day trial (see AUTH.md). Always-online; gates the whole UI. ----
+const auth = require("./auth.cjs");
+const authBase = () => (settings.load().authBaseUrl || "http://127.0.0.1:8787");
+ipcMain.handle("brainedge:authSignIn", (_e, provider) => auth.signIn(provider === "github" ? "github" : provider === "dev" ? "dev" : "google", authBase()));
+ipcMain.handle("brainedge:authMe", () => auth.me(authBase()));
+ipcMain.handle("brainedge:authSignOut", () => auth.signOut(authBase()));
+ipcMain.handle("brainedge:billingCheckout", () => auth.billing("checkout", authBase()));
+ipcMain.handle("brainedge:billingPortal", () => auth.billing("portal", authBase()));
+
 // Mobile link — continue a Let's Collaborate session from Telegram.
 const mobileLink = require("./mobile-link.cjs");
 ipcMain.handle("brainedge:getMobileLink", () => mobileLink.get());
