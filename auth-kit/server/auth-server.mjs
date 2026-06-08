@@ -1,11 +1,10 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. Reference auth server (Phase 1).
+// Reusable auth + paywall server — drop-in login, 7-day trial, Stripe subscription, analytics.
+// Zero-dependency Node (>=18). Configure entirely via env / .env (see .env.example).
 //
-// Zero-dependency Node (>=18) reference implementation of the BrainEdge auth contract (see AUTH.md):
-//   Google/GitHub OAuth (secrets stay here), 7-day trial, account status, /me, suspend.
-// This is a STARTING POINT for local dev / small deploys. Before production, read the "Security TODO"
-// in AUTH.md (HTTPS, real DB, state/CSRF validation, rate limiting, key rotation, security review).
+//   Google/GitHub OAuth (secrets stay here) · session tokens · 7-day trial · /me account status
+//   · Stripe checkout/portal/webhook · admin suspend + free-access · product event analytics.
 //
-// Run:  node server/auth-server.mjs   (configure via env — see server/README.md)
+// Run:  node server/auth-server.mjs
 
 import http from "node:http";
 import crypto from "node:crypto";
@@ -14,8 +13,7 @@ import path from "node:path";
 import { URL } from "node:url";
 import { makeStore } from "./store.mjs";
 
-// Minimal .env loader (no dependency): load server/.env into process.env if present.
-// Real environment variables (e.g. set in PowerShell or on the host) always win.
+// Minimal .env loader (no dependency). Real environment variables always win.
 try {
   const txt = fs.readFileSync(new URL("./.env", import.meta.url), "utf8");
   for (const line of txt.split(/\r?\n/)) {
@@ -24,15 +22,14 @@ try {
   }
 } catch {}
 
+const APP_NAME = process.env.APP_NAME || "App";
 const PORT = +(process.env.PORT || 8787);
 const BASE = process.env.AUTH_BASE_URL || `http://127.0.0.1:${PORT}`;
 const SECRET = process.env.SESSION_SECRET || "dev-insecure-secret-change-me";
 const ADMIN_KEY = process.env.ADMIN_KEY || "dev-admin-key";
 const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 7);
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24h; re-validated online so bans still bite quickly
-// Extra redirect targets allowed besides loopback (your web app origin), comma-separated.
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // re-validated online so bans bite quickly
 const ALLOWED_REDIRECTS = (process.env.ALLOWED_REDIRECTS || "").split(",").map((s) => s.trim()).filter(Boolean);
-// Stripe (Phase 2). Billing endpoints are only active when these are set; the rest runs without them.
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_PRICE = process.env.STRIPE_PRICE_ID || "";
 const STRIPE_WH = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -49,35 +46,27 @@ const OAUTH = {
     auth: "https://github.com/login/oauth/authorize", token: "https://github.com/login/oauth/access_token",
     scope: "read:user user:email",
     userInfo: async (tok) => {
-      const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tok, "User-Agent": "BrainEdge" } })).json();
+      const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tok, "User-Agent": APP_NAME } })).json();
       let email = u.email;
-      if (!email) { try { const es = await (await fetch("https://api.github.com/user/emails", { headers: { Authorization: "Bearer " + tok, "User-Agent": "BrainEdge" } })).json(); email = (es.find((e) => e.primary) || es[0] || {}).email; } catch {} }
+      if (!email) { try { const es = await (await fetch("https://api.github.com/user/emails", { headers: { Authorization: "Bearer " + tok, "User-Agent": APP_NAME } })).json(); email = (es.find((e) => e.primary) || es[0] || {}).email; } catch {} }
       return { sub: "github:" + u.id, email, name: u.name || u.login, avatar: u.avatar_url };
     },
   },
 };
 
-// ---- user store (JSON file by default, Postgres when DATABASE_URL is set) ----
 const store = await makeStore();
 
-// Email lists read live (editing the file needs no restart): combines an env var (comma-separated)
-// with a text file (one email per line, '#' for comments).
-//   free-emails  -> users who get free access (no subscription)
-//   admin-emails -> users who can see analytics + manage users
+// Email lists (env var + live-edited text file): free-access users and admins.
 const FREE_EMAILS_FILE = new URL("./free-emails.txt", import.meta.url);
 const ADMIN_EMAILS_FILE = new URL("./admin-emails.txt", import.meta.url);
 function emailSet(envVar, file) {
   const set = new Set((process.env[envVar] || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean));
-  try {
-    const txt = fs.readFileSync(file, "utf8");
-    for (const line of txt.split(/\r?\n/)) { const e = line.split("#")[0].trim().toLowerCase(); if (e) set.add(e); }
-  } catch {}
+  try { const txt = fs.readFileSync(file, "utf8"); for (const line of txt.split(/\r?\n/)) { const e = line.split("#")[0].trim().toLowerCase(); if (e) set.add(e); } } catch {}
   return set;
 }
 const isFreeEmail = (email) => !!email && emailSet("FREE_EMAILS", FREE_EMAILS_FILE).has(email.toLowerCase());
 const isAdminEmail = (email) => !!email && emailSet("ADMIN_EMAILS", ADMIN_EMAILS_FILE).has(email.toLowerCase());
 
-// Admin endpoints accept EITHER the x-admin-key header OR a signed-in admin-email user's session.
 async function adminOk(req) {
   if (ADMIN_KEY && (req.headers["x-admin-key"] || "") === ADMIN_KEY) return true;
   const pl = verify(bearer(req)); if (!pl) return false;
@@ -87,14 +76,13 @@ async function adminOk(req) {
 function statusOf(u) {
   const now = Date.now();
   if (u.suspended) return { status: "suspended", daysLeft: 0 };
-  if (u.freeAccess || isFreeEmail(u.email)) return { status: "active", daysLeft: null };   // comped (by id) or on the free-emails list
+  if (u.freeAccess || isFreeEmail(u.email)) return { status: "active", daysLeft: null };
   if (u.subscriptionActive) return { status: "active", daysLeft: null };
   const end = Date.parse(u.trialEndsAt);
   if (now < end) return { status: "trialing", daysLeft: Math.ceil((end - now) / 864e5) };
   return { status: "expired", daysLeft: 0 };
 }
 
-// ---- session token: base64url(payload).hmac ----
 const b64u = (b) => Buffer.from(b).toString("base64url");
 function sign(sub) {
   const payload = b64u(JSON.stringify({ sub, exp: Date.now() + SESSION_TTL_MS }));
@@ -109,40 +97,27 @@ function verify(token) {
   try { const p = JSON.parse(Buffer.from(payload, "base64url").toString()); return p.exp > Date.now() ? p : null; } catch { return null; }
 }
 
-// ---- helpers ----
 const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type, x-admin-key", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" }); res.end(JSON.stringify(obj)); };
 
-// Static serving for the WEB app: serves the built Vite bundle (dist/) so the web app and the API
-// share one origin (no CORS, OAuth redirects come back here). SPA fallback to index.html.
+// Optional: serve a built web app (set WEB_DIR). Lets the API and SPA share one origin.
 const WEB_DIR = process.env.WEB_DIR || path.join(process.cwd(), "dist");
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".ico": "image/x-icon", ".webp": "image/webp", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".map": "application/json" };
 function serveStatic(res, p) {
   let rel = decodeURIComponent(p).replace(/^\/+/, "") || "index.html";
   const file = path.join(WEB_DIR, rel);
-  if (!file.startsWith(WEB_DIR)) { res.writeHead(403); return res.end(); } // path-traversal guard
+  if (!file.startsWith(WEB_DIR)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, buf) => {
-    if (err) {
-      fs.readFile(path.join(WEB_DIR, "index.html"), (e2, idx) => {
-        if (e2) return json(res, 404, { error: "not found" });
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(idx);
-      });
-      return;
-    }
+    if (err) { fs.readFile(path.join(WEB_DIR, "index.html"), (e2, idx) => { if (e2) return json(res, 404, { error: "not found" }); res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(idx); }); return; }
     const ext = file.slice(file.lastIndexOf("."));
-    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
-    res.end(buf);
+    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" }); res.end(buf);
   });
 }
 const bearer = (req) => (req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
 const html = (res, body) => { res.writeHead(200, { "Content-Type": "text/html" }); res.end(`<!doctype html><meta charset=utf-8><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;display:grid;place-items:center;height:100vh;text-align:center">${body}</body>`); };
 const rawBody = (req) => new Promise((r) => { let d = ""; req.on("data", (c) => (d += c)); req.on("end", () => r(d)); });
 
-// ---- Stripe (REST; no SDK dependency) ----
 async function stripe(pathname, params) {
-  const res = await fetch("https://api.stripe.com/v1/" + pathname, {
-    method: "POST", headers: { Authorization: "Bearer " + STRIPE_SECRET, "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(params),
-  });
+  const res = await fetch("https://api.stripe.com/v1/" + pathname, { method: "POST", headers: { Authorization: "Bearer " + STRIPE_SECRET, "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(params) });
   return res.json();
 }
 function verifyStripeSig(header, payload, secret) {
@@ -153,14 +128,11 @@ function verifyStripeSig(header, payload, secret) {
     return crypto.timingSafeEqual(Buffer.from(parts.v1), Buffer.from(expected));
   } catch { return false; }
 }
-// A redirect target is allowed if it's loopback (desktop) or in the ALLOWED_REDIRECTS list (web).
 const isAllowedRedirect = (r) => /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(r) || ALLOWED_REDIRECTS.some((a) => r.startsWith(a));
 
-// OAuth state store with a 10-minute TTL (CSRF protection).
-const pending = new Map(); // state -> { provider, redirect, exp }
+const pending = new Map();
 setInterval(() => { const now = Date.now(); for (const [k, v] of pending) if (v.exp < now) pending.delete(k); }, 60000).unref?.();
 
-// Simple in-memory rate limiter (per IP + bucket). Swap for a shared store if you run multiple instances.
 const hits = new Map();
 function rateLimited(req, bucket, max, windowMs) {
   const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
@@ -175,7 +147,6 @@ const server = http.createServer(async (req, res) => {
   const p = u.pathname;
   if (req.method === "OPTIONS") return json(res, 204, {});
 
-  // GET /auth/:provider/start?redirect=...&state=...
   let m = p.match(/^\/auth\/(google|github)\/start$/);
   if (m && req.method === "GET") {
     if (rateLimited(req, "auth", 30, 60000)) return json(res, 429, { error: "rate limited" });
@@ -194,7 +165,6 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(302, { Location: a.toString() }); return res.end();
   }
 
-  // GET /auth/:provider/callback?code=...&state=...
   m = p.match(/^\/auth\/(google|github)\/callback$/);
   if (m && req.method === "GET") {
     const prov = OAUTH[m[1]];
@@ -213,24 +183,20 @@ const server = http.createServer(async (req, res) => {
       const token = sign(user.id);
       const redir = ctx.redirect;
       if (redir && isAllowedRedirect(redir)) {
-        // Loopback (desktop): token as a query param so the app's local server receives it.
         const sep = redir.includes("?") ? "&" : "?";
         res.writeHead(302, { Location: redir + sep + "token=" + encodeURIComponent(token) }); return res.end();
       }
-      // Web fallback: a real deployment sets a cookie / redirects to the SPA. Dev fallback below.
       res.writeHead(200, { "Content-Type": "text/html" });
-      return res.end(`<h2>Signed in to BrainEdge</h2><p>You can close this window.</p>`);
+      return res.end(`<h2>Signed in to ${APP_NAME}</h2><p>You can close this window.</p>`);
     } catch (e) { res.writeHead(500); return res.end("OAuth error: " + (e && e.message)); }
   }
 
-  // GET /me
   if (p === "/me" && req.method === "GET") {
     if (rateLimited(req, "me", 120, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req));
     if (!pl) return json(res, 401, { error: "unauthenticated" });
     const user = await store.getUser(pl.sub);
     if (!user) return json(res, 401, { error: "unknown user" });
-    // Throttled last-seen so we don't write on every poll (poll is every ~3 min anyway).
     const seen = user.lastSeenAt ? Date.parse(user.lastSeenAt) : 0;
     if (Date.now() - seen > 5 * 60000) store.patchUser(user.id, { lastSeenAt: new Date().toISOString() }).catch(() => {});
     const st = statusOf(user);
@@ -243,14 +209,12 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // POST /auth/logout  (stateless tokens — client just drops it; here we no-op)
   if (p === "/auth/logout" && req.method === "POST") return json(res, 200, { ok: true });
 
-  // DEV-ONLY test login (no OAuth). Enable with ALLOW_DEV_LOGIN=1. NEVER enable in production.
   if (p === "/auth/dev/start" && req.method === "GET") {
     if (process.env.ALLOW_DEV_LOGIN !== "1") return json(res, 404, { error: "not found" });
     const redirect = u.searchParams.get("redirect") || "";
-    const email = u.searchParams.get("email") || "dev@brainedge.local";
+    const email = u.searchParams.get("email") || "dev@local";
     const existed = await store.getUser("dev:" + email);
     const user = await store.upsertUser({ sub: "dev:" + email, email, name: "Dev User", avatar: "" });
     await store.logEvent({ userId: user.id, type: existed ? "signin" : "signup", meta: { provider: "dev" } });
@@ -263,8 +227,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { token });
   }
 
-  // POST /admin/users/:id/(suspend|unsuspend|comp|uncomp)   header: x-admin-key
-  // comp = give this user free access forever (no subscription needed); uncomp removes it.
   m = p.match(/^\/admin\/users\/(.+)\/(suspend|unsuspend|comp|uncomp)$/);
   if (m && req.method === "POST") {
     if (!(await adminOk(req))) return json(res, 403, { error: "forbidden" });
@@ -272,11 +234,10 @@ const server = http.createServer(async (req, res) => {
     if (!user) return json(res, 404, { error: "no such user" });
     const action = m[2];
     if (action === "suspend" || action === "unsuspend") { await store.patchUser(id, { suspended: action === "suspend" }); return json(res, 200, { ok: true, id, suspended: action === "suspend" }); }
-    await store.patchUser(id, { freeAccess: action === "comp" }); // comp / uncomp
+    await store.patchUser(id, { freeAccess: action === "comp" });
     return json(res, 200, { ok: true, id, freeAccess: action === "comp" });
   }
 
-  // POST /events (Bearer) -> log an app-reported usage event (e.g. opened a section). Never prompt content.
   if (p === "/events" && req.method === "POST") {
     if (rateLimited(req, "events", 300, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
@@ -287,54 +248,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ok: true });
   }
 
-  // POST /proxy/chat (Bearer) — forward a streaming chat to the user's provider. Lets the WEB app reach
-  // providers that don't allow direct browser calls (CORS), e.g. NVIDIA/OpenAI. Signed-in users only.
-  if (p === "/proxy/chat" && req.method === "POST") {
-    if (rateLimited(req, "proxy", 120, 60000)) return json(res, 429, { error: "rate limited" });
-    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
-    const { kind, baseUrl, apiKey, model, messages } = b;
-    if (!baseUrl || !model) return json(res, 400, { error: "baseUrl and model required" });
-    try {
-      let url, headers, payload;
-      if (kind === "anthropic") {
-        url = baseUrl.replace(/\/$/, "") + "/v1/messages";
-        const system = (messages || []).filter((m) => m.role === "system").map((m) => m.content).join("\n") || undefined;
-        const turns = (messages || []).filter((m) => m.role !== "system");
-        headers = { "Content-Type": "application/json", "anthropic-version": "2023-06-01", ...(apiKey ? { "x-api-key": apiKey } : {}) };
-        payload = { model, max_tokens: 4096, system, messages: turns, stream: true };
-      } else {
-        const bb = (baseUrl || "").replace(/\/$/, ""); const apib = /\/v\d|\/openai/.test(bb) ? bb : bb + "/v1";
-        url = apib + "/chat/completions";
-        headers = { "Content-Type": "application/json", ...(apiKey ? { Authorization: "Bearer " + apiKey } : {}) };
-        payload = { model, messages, stream: true };
-      }
-      const upstream = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
-      res.writeHead(upstream.status, { "Content-Type": upstream.headers.get("content-type") || "text/event-stream", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-cache" });
-      if (upstream.body) { const reader = upstream.body.getReader(); while (true) { const { done, value } = await reader.read(); if (done) break; res.write(Buffer.from(value)); } }
-      return res.end();
-    } catch (e) { if (!res.headersSent) return json(res, 502, { error: "proxy", detail: String((e && e.message) || e) }); try { res.end(); } catch {} }
-  }
-
-  // POST /proxy/models (Bearer) — list models via the user's provider (CORS bypass for the web app).
-  if (p === "/proxy/models" && req.method === "POST") {
-    if (rateLimited(req, "proxy", 120, 60000)) return json(res, 429, { error: "rate limited" });
-    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
-    const { kind, baseUrl, apiKey } = b;
-    if (!baseUrl) return json(res, 400, { error: "baseUrl required" });
-    try {
-      const bb = (baseUrl || "").replace(/\/$/, ""); const apib = /\/v\d|\/openai/.test(bb) ? bb : bb + "/v1";
-      const headers = {};
-      if (kind === "anthropic") { headers["anthropic-version"] = "2023-06-01"; if (apiKey) headers["x-api-key"] = apiKey; }
-      else if (apiKey) headers["Authorization"] = "Bearer " + apiKey;
-      const r = await fetch(apib + "/models", { headers });
-      const j = await r.json().catch(() => ({}));
-      return json(res, 200, j);
-    } catch (e) { return json(res, 502, { error: "proxy", detail: String((e && e.message) || e) }); }
-  }
-
-  // GET /admin/users (x-admin-key) -> all users with computed status + last-seen.
   if (p === "/admin/users" && req.method === "GET") {
     if (!(await adminOk(req))) return json(res, 403, { error: "forbidden" });
     const users = await store.listUsers();
@@ -345,7 +258,6 @@ const server = http.createServer(async (req, res) => {
     }; }) });
   }
 
-  // GET /admin/stats (x-admin-key) -> aggregate counts, 7-day funnel, recent events.
   if (p === "/admin/stats" && req.method === "GET") {
     if (!(await adminOk(req))) return json(res, 403, { error: "forbidden" });
     const users = await store.listUsers();
@@ -366,12 +278,9 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { counts, last7d, events: ev.slice(0, 60) });
   }
 
-  // POST /billing/checkout (Bearer) -> { url } : start a Stripe subscription Checkout.
   if (p === "/billing/checkout" && req.method === "POST") {
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
     const user = await store.getUser(pl.sub); if (!user) return json(res, 401, { error: "unknown user" });
-    // DEV simulate: with dev login on and no Stripe configured, mark the account active so the
-    // subscribe → auto-unlock flow can be tested without Stripe/CLI. NEVER active in production.
     if (process.env.ALLOW_DEV_LOGIN === "1" && (!STRIPE_SECRET || !STRIPE_PRICE)) {
       await store.patchUser(user.id, { stripeCustomerId: user.stripeCustomerId || ("cus_dev_" + user.id), subscriptionActive: true, plan: "pro (dev)" });
       await store.logEvent({ userId: user.id, type: "subscribed", meta: { plan: "pro (dev)" } });
@@ -389,7 +298,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { url: s.url });
   }
 
-  // POST /billing/portal (Bearer) -> { url } : Stripe customer portal to manage/cancel.
   if (p === "/billing/portal" && req.method === "POST") {
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
     const user = await store.getUser(pl.sub);
@@ -399,30 +307,28 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { url: ps.url });
   }
 
-  // POST /billing/webhook : Stripe events flip subscriptionActive. Signed; raw body required.
   if (p === "/billing/webhook" && req.method === "POST") {
     const raw = await rawBody(req);
     if (STRIPE_WH && !verifyStripeSig(req.headers["stripe-signature"], raw, STRIPE_WH)) return json(res, 400, { error: "bad signature" });
     let evt; try { evt = JSON.parse(raw); } catch { return json(res, 400, { error: "bad json" }); }
     const obj = (evt.data && evt.data.object) || {};
     if (evt.type === "checkout.session.completed") {
-      const u = await store.getUser(obj.client_reference_id);
-      if (u) { await store.patchUser(u.id, { stripeCustomerId: obj.customer, stripeSubId: obj.subscription, subscriptionActive: true, plan: "pro" }); await store.logEvent({ userId: u.id, type: "subscribed", meta: { plan: "pro" } }); }
+      const usr = await store.getUser(obj.client_reference_id);
+      if (usr) { await store.patchUser(usr.id, { stripeCustomerId: obj.customer, stripeSubId: obj.subscription, subscriptionActive: true, plan: "pro" }); await store.logEvent({ userId: usr.id, type: "subscribed", meta: { plan: "pro" } }); }
     } else if (evt.type === "customer.subscription.deleted") {
-      const u = await store.findByCustomer(obj.customer); if (u) await store.patchUser(u.id, { subscriptionActive: false, plan: null });
+      const usr = await store.findByCustomer(obj.customer); if (usr) await store.patchUser(usr.id, { subscriptionActive: false, plan: null });
     } else if (evt.type === "customer.subscription.updated") {
-      const u = await store.findByCustomer(obj.customer); if (u) await store.patchUser(u.id, { subscriptionActive: ["active", "trialing", "past_due"].includes(obj.status) });
+      const usr = await store.findByCustomer(obj.customer); if (usr) await store.patchUser(usr.id, { subscriptionActive: ["active", "trialing", "past_due"].includes(obj.status) });
     }
     return json(res, 200, { received: true });
   }
 
-  if (p === "/billing/done") return html(res, "<div><h2>Subscription active 🎉</h2><p>You can close this window and return to BrainEdge — it unlocks automatically.</p></div>");
+  if (p === "/billing/done") return html(res, `<div><h2>Subscription active 🎉</h2><p>You can close this window and return to ${APP_NAME} — it unlocks automatically.</p></div>`);
   if (p === "/billing/cancel") return html(res, "<div><h2>Checkout canceled</h2><p>No charge was made. You can close this window.</p></div>");
 
   if (p === "/health") return json(res, 200, { ok: true });
-  // Anything else: serve the web app (GET) or 404 (other methods).
   if (req.method === "GET") return serveStatic(res, p);
   json(res, 404, { error: "not found" });
 });
 
-server.listen(PORT, () => console.log(`BrainEdge auth server on ${BASE}  (store ${store.kind} · trial ${TRIAL_DAYS}d · dev-login ${process.env.ALLOW_DEV_LOGIN === "1" ? "ON" : "off"} · stripe ${STRIPE_SECRET && STRIPE_PRICE ? "ON" : "off"})`));
+server.listen(PORT, () => console.log(`${APP_NAME} auth server on ${BASE}  (store ${store.kind} · trial ${TRIAL_DAYS}d · dev-login ${process.env.ALLOW_DEV_LOGIN === "1" ? "ON" : "off"} · stripe ${STRIPE_SECRET && STRIPE_PRICE ? "ON" : "off"})`);

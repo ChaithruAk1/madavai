@@ -7,5 +7,6 @@ release/
 .env
 server/users.json
 server/free-emails.txt
+server/admin-emails.txt
 server/.env
 stripe.exe

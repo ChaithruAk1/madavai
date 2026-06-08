@@ -80,4 +80,42 @@ async function signOut(authBaseUrl) {
   return { ok: true };
 }
 
-module.exports = { signIn, me, signOut, billing };
+// Fire-and-forget product event (e.g. opened a section). Never sends prompt content.
+async function track(type, meta, authBaseUrl) {
+  const token = loadToken();
+  if (!token) return { ok: false };
+  try {
+    await fetch(`${authBaseUrl.replace(/\/+$/, "")}/events`, {
+      method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ type, meta: meta || null }),
+    });
+    return { ok: true };
+  } catch { return { ok: false }; }
+}
+
+// Admin read endpoints — authorized by the signed-in admin's session (preferred) OR an admin key.
+function adminHeaders(adminKey) {
+  const h = {}; const token = loadToken();
+  if (token) h.Authorization = "Bearer " + token;
+  if (adminKey) h["x-admin-key"] = adminKey;
+  return h;
+}
+async function adminGet(kind, adminKey, authBaseUrl) {
+  try {
+    const r = await fetch(`${authBaseUrl.replace(/\/+$/, "")}/admin/${kind}`, { headers: adminHeaders(adminKey) });
+    if (r.status === 403) return { error: "forbidden" };
+    if (!r.ok) return { error: "server " + r.status };
+    return await r.json();
+  } catch { return { error: "offline" }; }
+}
+// Admin action — suspend|unsuspend|comp|uncomp on a user id.
+async function adminAction(id, action, adminKey, authBaseUrl) {
+  try {
+    const r = await fetch(`${authBaseUrl.replace(/\/+$/, "")}/admin/users/${encodeURIComponent(id)}/${action}`, { method: "POST", headers: adminHeaders(adminKey) });
+    if (r.status === 403) return { error: "forbidden" };
+    const j = await r.json().catch(() => ({}));
+    return r.ok ? (j || { ok: true }) : { error: (j && j.error) || ("server " + r.status) };
+  } catch { return { error: "offline" }; }
+}
+
+module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction };

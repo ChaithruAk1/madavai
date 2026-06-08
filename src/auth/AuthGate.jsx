@@ -73,18 +73,8 @@ export default function AuthGate({ children }) {
   }, [phase, check]);
 
   if (phase === "ok") {
-    return (
-      <>
-        {me && me.status === "trialing" && (
-          <div className="trial-banner">
-            <Sparkles size={14} /> Free trial — {me.daysLeft} day{me.daysLeft === 1 ? "" : "s"} left.
-            <button className="trial-up" onClick={() => setPhase("expired")}>Upgrade</button>
-          </div>
-        )}
-        <AccountMenu me={me} onSubscribe={() => setPhase("expired")} onPortal={portal} onLogout={logout} />
-        {children}
-      </>
-    );
+    // Trial banner + account menu now live in the sidebar (Profile entry + upgrade box).
+    return <>{children}</>;
   }
 
   return (

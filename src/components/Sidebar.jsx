@@ -118,8 +118,35 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
         </div>
       </div>
 
-      <button className={`nav-item ${active === "settings" ? "active" : ""}`} onClick={() => onSelect("settings")}>
-        <SettingsIcon size={16} /> <span className="sb-t">Settings</span>
+      {/* Trial / Upgrade box — sits directly above the Profile entry */}
+      {st === "trialing" && (
+        <div className="sb-upsell sb-t">
+          <div className="sb-upsell-row"><Sparkles size={13} /> <span>Free trial · {acct.daysLeft} day{acct.daysLeft === 1 ? "" : "s"} left</span></div>
+          <button className="sb-upsell-btn" disabled={upBusy} onClick={upgrade}>{upBusy ? "Opening…" : "Upgrade"}</button>
+        </div>
+      )}
+      {st === "expired" && (
+        <div className="sb-upsell sb-t">
+          <div className="sb-upsell-row"><Sparkles size={13} /> <span>Trial ended</span></div>
+          <button className="sb-upsell-btn" disabled={upBusy} onClick={upgrade}>{upBusy ? "Opening…" : "Upgrade"}</button>
+        </div>
+      )}
+      {st === "active" && (
+        <div className="sb-upsell active sb-t">
+          <div className="sb-upsell-row"><Sparkles size={13} /> <span>{plan || "Pro"}</span></div>
+        </div>
+      )}
+
+      {/* Profile entry — replaces the old Settings button; opens the settings page (settings live inside Profile) */}
+      <button className={`sb-profile ${active === "settings" ? "active" : ""}`} onClick={() => onSelect("settings")} title="Profile & settings">
+        {u && u.avatar
+          ? <img className="sb-profile-av" src={u.avatar} alt="" />
+          : <span className="sb-profile-av sb-profile-ini">{profileInitial}</span>}
+        <span className="sb-t sb-profile-meta">
+          <span className="sb-profile-name">{profileName}</span>
+          <span className="sb-profile-sub">View profile & settings</span>
+        </span>
+        <SettingsIcon className="sb-t sb-profile-gear" size={14} />
       </button>
       <div className="sb-copyright sb-t">© 2026 BrainEdge · Proprietary</div>
     </aside>

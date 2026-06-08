@@ -1,7 +1,7 @@
-// Agent transport — drives the Claude Agent SDK for Cowork/Code modes.
-// The SDK is ESM-only, so we dynamic-import() it from this CJS module.
-// It speaks the Anthropic wire format, so the active profile MUST be anthropic-kind
-// (Anthropic direct, or a proxy like LiteLLM / free-claude-code in front of any model).
+// Agent transport — drives the agentic engine for Cowork/Code modes.
+// The engine is ESM-only, so we dynamic-import() it from this CJS module.
+// It uses the Messages wire format, so the active profile MUST be anthropic-kind
+// (direct, or a proxy like LiteLLM in front of any model).
 
 let _sdk = null;
 async function getSdk() {

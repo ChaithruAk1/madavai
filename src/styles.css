@@ -717,7 +717,62 @@ input, textarea, select { font-family: inherit; }
 .sched-empty { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 64px 20px; text-align: center; }
 .sched-empty-title { font-size: 15px; color: var(--text-1); }
 .sched-empty-chips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+/* Sidebar trial/upgrade box — sits just above the Profile entry */
+.sb-upsell { margin: 8px 4px 6px; padding: 8px 10px; border: 1px solid var(--accent-line); border-radius: 10px; background: rgba(var(--accent-rgb),0.10); display: flex; flex-direction: column; gap: 7px; }
+.sb-upsell.active { background: var(--bg-2); border-color: var(--line); }
+.sb-upsell-row { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-0); }
+.sb-upsell-row svg { color: var(--accent); flex: 0 0 auto; }
+.sb-upsell-btn { width: 100%; padding: 5px 0; border: 0; border-radius: 7px; background: var(--accent); color: #06070a; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: filter .14s; }
+.sb-upsell-btn:hover { filter: brightness(1.08); }
+.sb-upsell-btn:disabled { opacity: 0.6; cursor: default; }
+/* Sidebar Profile entry — replaces the old Settings button */
+.sb-profile { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 7px 9px; margin-top: 2px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text-1); font: inherit; cursor: pointer; transition: border-color .14s, background .14s; }
+.sb-profile:hover { background: var(--bg-2); }
+.sb-profile.active { background: var(--bg-2); border-color: var(--accent-line); }
+.sb-profile-av { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+.sb-profile-ini { display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #06070a; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.sb-profile-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.sb-profile-name { font-size: 13px; color: var(--text-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-profile-sub { font-size: 10.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-profile-gear { flex: 0 0 auto; color: var(--text-2); }
 .sb-copyright { margin-top: 8px; padding: 6px 11px 2px; font-size: 10.5px; color: var(--text-2); opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* ---------- Admin panel (analytics + user management) ---------- */
+.adminp { margin-top: 6px; }
+.adminp-keyrow { display: flex; gap: 8px; align-items: center; }
+.adminp-keyrow .model-search { flex: 1; }
+.adminp-err { margin-top: 8px; color: var(--danger); font-size: 12px; }
+.adminp-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.adminp-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.adminp-card.accent { border-color: var(--accent-line); background: rgba(var(--accent-rgb),0.08); }
+.adminp-card-v { font-size: 22px; font-weight: 700; color: var(--text-0); line-height: 1.1; }
+.adminp-card-l { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+.adminp-funnel { margin-top: 10px; font-size: 12px; color: var(--text-1); }
+.adminp-funnel b { color: var(--text-0); }
+.adminp-table { margin-top: 6px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.adminp-tr { display: grid; grid-template-columns: 1.6fr 1fr 0.8fr 0.7fr; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line); font-size: 12.5px; }
+.adminp-tr:first-child { border-top: 0; }
+.adminp-th { background: var(--bg-2); color: var(--text-2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+.adminp-user { display: flex; flex-direction: column; min-width: 0; }
+.adminp-user b { color: var(--text-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adminp-user em { font-style: normal; color: var(--text-2); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adminp-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; border: 1px solid var(--line); color: var(--text-1); margin-right: 4px; }
+.adminp-badge.s-active { color: var(--ok); border-color: rgba(34,160,107,0.4); }
+.adminp-badge.s-trialing { color: var(--accent); border-color: var(--accent-line); }
+.adminp-badge.s-expired { color: var(--text-2); }
+.adminp-badge.s-suspended { color: var(--danger); border-color: rgba(224,67,63,0.4); }
+.adminp-badge.s-comp { color: #b88cff; border-color: rgba(184,140,255,0.4); }
+.adminp-seen { color: var(--text-2); font-size: 11.5px; }
+.adminp-acts { display: flex; gap: 6px; }
+.adminp-acts button { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--text-1); cursor: pointer; }
+.adminp-acts button:hover { background: var(--bg-2); border-color: var(--accent-line); }
+.adminp-empty { padding: 12px; color: var(--text-2); font-size: 12px; }
+.adminp-events { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.adminp-ev { display: grid; grid-template-columns: 0.7fr 1.6fr 0.7fr; gap: 8px; padding: 6px 12px; border-top: 1px solid var(--line); font-size: 11.5px; }
+.adminp-ev:first-child { border-top: 0; }
+.adminp-ev-t { color: var(--text-0); }
+.adminp-ev-u { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adminp-ev-d { color: var(--text-2); text-align: right; }
+@media (max-width: 560px) { .adminp-cards { grid-template-columns: repeat(2, 1fr); } }
 /* Telegram bot help */
 .bot-help { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 12px 6px; margin-bottom: 12px; }
 .bot-help ol { margin: 0; padding-left: 26px; display: flex; flex-direction: column; gap: 8px; }

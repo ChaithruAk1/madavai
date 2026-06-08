@@ -29,7 +29,7 @@
  * @property {string} [cwd]
  * @property {string} [model]
  *
- * SDK PermissionResult (verbatim from the Agent SDK).
+ * PermissionResult (matches the agent permission contract).
  * @typedef {{behavior:"allow", updatedInput?:Object}
  *   | {behavior:"deny", message?:string, interrupt?:boolean}} PermissionResult
  */

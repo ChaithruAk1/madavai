@@ -442,6 +442,11 @@ ipcMain.handle("brainedge:authMe", () => auth.me(authBase()));
 ipcMain.handle("brainedge:authSignOut", () => auth.signOut(authBase()));
 ipcMain.handle("brainedge:billingCheckout", () => auth.billing("checkout", authBase()));
 ipcMain.handle("brainedge:billingPortal", () => auth.billing("portal", authBase()));
+// Analytics: fire-and-forget product events, and admin-key-gated stats/users/actions.
+ipcMain.handle("brainedge:track", (_e, type, meta) => auth.track(type, meta, authBase()));
+ipcMain.handle("brainedge:adminStats", (_e, adminKey) => auth.adminGet("stats", adminKey, authBase()));
+ipcMain.handle("brainedge:adminUsers", (_e, adminKey) => auth.adminGet("users", adminKey, authBase()));
+ipcMain.handle("brainedge:adminAction", (_e, id, action, adminKey) => auth.adminAction(id, action, adminKey, authBase()));
 
 // Mobile link — continue a Let's Collaborate session from Telegram.
 const mobileLink = require("./mobile-link.cjs");

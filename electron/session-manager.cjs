@@ -1,7 +1,7 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 // SessionManager (main process).
 //  - chat mode  → direct streaming transport (providers.cjs)
-//  - cowork/code → agent transport (agent-transport.cjs, Claude Agent SDK)
+//  - cowork/code → agent transport (agent-transport.cjs)
 // Both emit normalized UiEvents via emit().
 const { streamChat } = require("./providers.cjs");
 const { runAgentTurn } = require("./agent-transport.cjs");
@@ -12,6 +12,15 @@ const sstore = require("./sessions-store.cjs");
 const usage = require("./usage-store.cjs");
 const fs = require("fs");
 const os = require("os");
+
+// Combine the user's custom instructions with the chosen default response language (Settings).
+function withLang(cfg) {
+  const gi = cfg.globalInstructions || "";
+  const lang = cfg.responseLanguage;
+  if (!lang || lang === "model") return gi;
+  const line = `Always respond in ${lang}, regardless of the language of the question.`;
+  return gi ? `${line}\n\n${gi}` : line;
+}
 const path = require("path");
 const errorExplainer = require("./error-explainer.cjs");
 
@@ -171,7 +180,7 @@ class SessionManager {
       await runOpenAIAgentTurn({
         prompt: userText, mode: "chat", cwd: null, profile, permMode: "default",
         history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-        connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: cfg.globalInstructions || "",
+        connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
       });
     } finally {
       s.controller = null;
@@ -270,7 +279,7 @@ class SessionManager {
         await runOpenAIAgentTurn({
           prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: cfg.globalInstructions || "",
+          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
           systemOverride: sys,
         });
       }
@@ -321,7 +330,7 @@ class SessionManager {
         await runOpenAIAgentTurn({
           prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: s.permMode,
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: cfg.globalInstructions || "",
+          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
         });
       } finally {
         s.controller = null;

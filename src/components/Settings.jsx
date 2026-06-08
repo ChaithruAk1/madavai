@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput } from "lucide-react";
 import ModelPicker from "./ModelPicker.jsx";
 import AccountCard from "../auth/AccountCard.jsx";
+import AdminPanel from "../auth/AdminPanel.jsx";
 import { bridge } from "../bridge/index.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
@@ -16,8 +17,10 @@ export default function Settings({ onChanged }) {
   const [status, setStatus] = useState("");
   const [section, setSection] = useState("profile");
   const [busy, setBusy] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => { bridge.getSettings().then((cfg) => { setS(cfg); setSelId(cfg.activeProfileId); }); }, []);
+  useEffect(() => { bridge.authMe?.().then((r) => { if (r && !r.error) setIsAdmin(!!r.admin); }).catch(() => {}); }, []);
   if (!s || !selId) return <div className="empty"><div>Loading settings…</div></div>;
 
   const account = s.account || {};
@@ -77,6 +80,9 @@ export default function Settings({ onChanged }) {
         {SECTIONS.map((sec) => { const I = sec.icon; return (
           <button key={sec.id} className={`nav-item ${section === sec.id ? "active" : ""}`} onClick={() => setSection(sec.id)}><I size={15} /> {sec.label}</button>
         ); })}
+        {isAdmin && (
+          <button className={`nav-item ${section === "admin" ? "active" : ""}`} onClick={() => setSection("admin")}><ShieldCheck size={15} /> Admin Analytics</button>
+        )}
       </div>
 
       <div style={{ padding: 24, overflowY: "auto" }}>
@@ -87,20 +93,29 @@ export default function Settings({ onChanged }) {
             <Field label="Account server URL (advanced)">
               <input className="model-search" value={s.authBaseUrl || ""} onChange={(e) => setField("authBaseUrl", e.target.value)} placeholder="http://127.0.0.1:8787  (or your deployed https URL)" />
             </Field>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-              {account.avatar ? <img src={account.avatar} alt="" style={{ width: 56, height: 56, borderRadius: "50%" }} />
-                : <div style={{ width: 56, height: 56, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 22, fontWeight: 600, background: "linear-gradient(135deg, var(--accent), var(--accent-2))", color: "#06070a" }}>{initials}</div>}
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 16 }}>{account.name || "Your name"}</div>
-                <div style={{ color: "var(--text-2)", fontSize: 13 }}>{account.email || "no email set"}</div>
-              </div>
-            </div>
-            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 2 }}>Appearance</div>
+            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 12 }}>Appearance</div>
             <Field label="Theme">
               <select className="model-search" value={s.theme || "dark"} onChange={(e) => setField("theme", e.target.value)}>
                 <option value="dark">Dark</option>
                 <option value="light">Light</option>
                 <option value="system">System (match OS)</option>
+              </select>
+            </Field>
+            <Field label="Default language">
+              <select className="model-search" value={s.responseLanguage || "model"} onChange={(e) => setField("responseLanguage", e.target.value)}>
+                <option value="model">Model default (let the model decide)</option>
+                <option value="English">English</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+                <option value="German">German</option>
+                <option value="Italian">Italian</option>
+                <option value="Portuguese">Portuguese</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Arabic">Arabic</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Japanese">Japanese</option>
+                <option value="Korean">Korean</option>
+                <option value="Russian">Russian</option>
               </select>
             </Field>
             <Field label="Accent color">
@@ -124,23 +139,6 @@ export default function Settings({ onChanged }) {
               </div>
             </Field>
 
-            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Account</div>
-            <Field label="Display name"><input className="model-search" value={account.name || ""} onChange={(e) => setAccount({ name: e.target.value })} placeholder="Your name" /></Field>
-            <Field label="Email"><input className="model-search" value={account.email || ""} onChange={(e) => setAccount({ email: e.target.value })} placeholder="you@example.com" /></Field>
-            <Field label="Avatar URL (optional)"><input className="model-search" value={account.avatar || ""} onChange={(e) => setAccount({ avatar: e.target.value })} placeholder="https://…" /></Field>
-
-            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Link your profile</div>
-            <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>Sign in with Google or GitHub to auto‑fill your name, email, and avatar. Each needs a one‑time OAuth Client ID (your own app).</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-              <button className="btn" onClick={googleSignIn} disabled={busy === "google"}>{busy === "google" ? "Opening…" : "Sign in with Google"}{account.googleLinked ? " ✓" : ""}</button>
-              <button className="btn" onClick={githubSignIn} disabled={busy === "github"}>{busy === "github" ? "Waiting…" : "Sign in with GitHub"}{account.githubLinked ? " ✓" : ""}</button>
-              {(account.googleLinked || account.githubLinked) && <button className="btn ghost danger" onClick={signOut}><LogOut size={14} /> Unlink</button>}
-            </div>
-            <Field label="Google OAuth Client ID (Desktop app)"><input className="model-search" value={s.googleClientId || ""} onChange={(e) => setField("googleClientId", e.target.value)} placeholder="…apps.googleusercontent.com" /></Field>
-            <Field label="Google Client Secret (if required)"><input className="model-search" type="password" value={s.googleClientSecret || ""} onChange={(e) => setField("googleClientSecret", e.target.value)} /></Field>
-            <Field label="GitHub OAuth Client ID (enable Device Flow)"><input className="model-search" value={s.githubClientId || ""} onChange={(e) => setField("githubClientId", e.target.value)} placeholder="Iv1.xxxxxxxx" /></Field>
-            {status && !status.startsWith("Default") && <div style={{ color: "var(--text-2)", fontSize: 12, marginBottom: 8 }}>{status}</div>}
-
             <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Instructions for BrainEdge</div>
             <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
               Applied to <b>every</b> conversation across the app (Chat, Code, Cowork, Projects) — like Claude's custom instructions. Tone, role, rules, things to always remember.
@@ -152,6 +150,15 @@ export default function Settings({ onChanged }) {
               <button className="btn primary" onClick={async () => { await bridge.saveSettings(s); onChanged?.(s); setStatus("Saved ✓"); setTimeout(() => setStatus(""), 1500); }}>Save</button>
               <span style={{ color: "var(--ok)", fontSize: 12 }}>{status}</span>
             </div>
+
+          </div>
+        )}
+
+        {section === "admin" && isAdmin && (
+          <div style={{ maxWidth: 820 }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Admin Analytics</h2>
+            <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 14px" }}>Usage stats and user management — suspend/ban users or grant free access. Visible only to admins.</p>
+            <AdminPanel />
           </div>
         )}
 

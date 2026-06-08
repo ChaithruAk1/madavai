@@ -19,7 +19,11 @@ import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
 import { PermissionPicker } from "./components/Topbar.jsx";
-import { bridge } from "./bridge/index.js";
+import { bridge, isWeb } from "./bridge/index.js";
+
+// On the web, local-folder access uses the File System Access API (Chrome/Edge only).
+const folderInChromeEdge = isWeb && !(typeof window !== "undefined" && typeof window.showDirectoryPicker === "function");
+const webFolderSupported = isWeb && typeof window !== "undefined" && typeof window.showDirectoryPicker === "function";
 
 export default function App() {
   const [mode, setMode] = useState("chat");
@@ -284,7 +288,8 @@ export default function App() {
 
   const pickFolder = async () => {
     const dir = await bridge.chooseFolder();
-    if (dir) { setCwd(dir); sessionRef.current = null; setTimeline([]); setActiveConvId(null); }
+    if (typeof dir === "string" && dir) { setCwd(dir); sessionRef.current = null; setTimeline([]); setActiveConvId(null); }
+    else if (dir && dir.error) { alert(dir.error); } // e.g. web: folder access is desktop-only
   };
 
   const stop = () => { if (sessionRef.current) bridge.interrupt(sessionRef.current); setBusy(false); };
@@ -301,6 +306,7 @@ export default function App() {
   const switchMode = (m) => {
     // Snapshot the conversation of the mode we're leaving so we can restore it.
     if (PRIMARY.includes(mode)) modeCacheRef.current[mode] = { convId: activeConvId, timeline };
+    if (m !== mode) bridge.track?.("view", { section: m }); // analytics: which sections get used
     setMode(m); streamOpen.current = false; setBusy(false); setPerm(null);
     if (PRIMARY.includes(m)) setChatMode(m);
     if (PRIMARY.includes(m)) {
@@ -446,7 +452,12 @@ export default function App() {
                     <div className="folder-bar">
                       <FolderOpen size={14} />
                       {cwd ? <span className="path">{cwd}</span> : <span className="path muted">No folder selected</span>}
-                      <button className="btn" onClick={pickFolder} style={{ marginLeft: "auto", padding: "5px 10px" }}>{cwd ? "Change folder" : "Choose folder"}</button>
+                      {isWeb && !cwd && (
+                        <span style={{ fontSize: 11, color: folderInChromeEdge ? "var(--danger)" : "var(--text-2)", marginLeft: 10 }}>
+                          {folderInChromeEdge ? "⚠ Open in Chrome or Edge to use folders" : "Works in Chrome & Edge"}
+                        </span>
+                      )}
+                      <button className="btn" onClick={pickFolder} disabled={folderInChromeEdge} style={{ marginLeft: "auto", padding: "5px 10px" }}>{cwd ? "Change folder" : "Choose folder"}</button>
                       {mode === "cowork" && (
                         autoContinue
                           ? <span className={`folder-phone ${botRunning ? (linkedHere ? "active" : "linking") : "inactive"}`}

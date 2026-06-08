@@ -1,0 +1,44 @@
+# Render.com blueprint — one service that builds the web app and serves it + the API together.
+# After connecting your repo to Render, this provisions the service; you fill the secret env vars
+# in the dashboard (marked sync:false). See GO-LIVE.md for the full walkthrough.
+services:
+  - type: web
+    name: brainedge
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node server/auth-server.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: TRIAL_DAYS
+        value: "7"
+      - key: SESSION_SECRET
+        generateValue: true        # Render makes a strong random value
+      - key: ADMIN_KEY
+        generateValue: true
+      # --- set these yourself in the Render dashboard (Environment tab) ---
+      - key: AUTH_BASE_URL          # your live URL, e.g. https://brainedge.onrender.com
+        sync: false
+      - key: ALLOWED_REDIRECTS      # same URL (your web app origin)
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: DATABASE_URL           # Postgres connection string (Supabase/Neon) — keeps data across deploys
+        sync: false
+      - key: ADMIN_EMAILS           # your admin email(s), comma-separated
+        sync: false
+      # --- Stripe (optional; add when you turn on paid plans) ---
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
