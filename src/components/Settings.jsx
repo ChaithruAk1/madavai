@@ -84,6 +84,9 @@ export default function Settings({ onChanged }) {
           <div style={{ maxWidth: 480 }}>
             <h2 style={{ margin: "0 0 16px", fontSize: 18 }}>Profile</h2>
             <AccountCard />
+            <Field label="Account server URL (advanced)">
+              <input className="model-search" value={s.authBaseUrl || ""} onChange={(e) => setField("authBaseUrl", e.target.value)} placeholder="http://127.0.0.1:8787  (or your deployed https URL)" />
+            </Field>
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
               {account.avatar ? <img src={account.avatar} alt="" style={{ width: 56, height: 56, borderRadius: "50%" }} />
                 : <div style={{ width: 56, height: 56, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 22, fontWeight: 600, background: "linear-gradient(135deg, var(--accent), var(--accent-2))", color: "#06070a" }}>{initials}</div>}

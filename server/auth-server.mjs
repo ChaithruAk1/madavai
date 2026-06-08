@@ -10,8 +10,8 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
 import { URL } from "node:url";
+import { makeStore } from "./store.mjs";
 
 const PORT = +(process.env.PORT || 8787);
 const BASE = process.env.AUTH_BASE_URL || `http://127.0.0.1:${PORT}`;
@@ -19,7 +19,8 @@ const SECRET = process.env.SESSION_SECRET || "dev-insecure-secret-change-me";
 const ADMIN_KEY = process.env.ADMIN_KEY || "dev-admin-key";
 const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 7);
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24h; re-validated online so bans still bite quickly
-const STORE = process.env.STORE_FILE || path.join(process.cwd(), "server", "users.json");
+// Extra redirect targets allowed besides loopback (your web app origin), comma-separated.
+const ALLOWED_REDIRECTS = (process.env.ALLOWED_REDIRECTS || "").split(",").map((s) => s.trim()).filter(Boolean);
 // Stripe (Phase 2). Billing endpoints are only active when these are set; the rest runs without them.
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_PRICE = process.env.STRIPE_PRICE_ID || "";
@@ -45,24 +46,26 @@ const OAUTH = {
   },
 };
 
-// ---- tiny JSON store (swap for Postgres in production) ----
-const load = () => { try { return JSON.parse(fs.readFileSync(STORE, "utf8")); } catch { return { users: {} }; } };
-const save = (db) => { fs.mkdirSync(path.dirname(STORE), { recursive: true }); fs.writeFileSync(STORE, JSON.stringify(db, null, 2)); };
-function upsertUser(idn) {
-  const db = load();
-  let u = db.users[idn.sub];
-  if (!u) {
-    u = { id: idn.sub, provider: idn.sub.split(":")[0], email: idn.email, name: idn.name, avatar: idn.avatar,
-      createdAt: new Date().toISOString(), trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString(),
-      suspended: false, subscriptionActive: false, plan: null };
-    db.users[idn.sub] = u;
-  } else { u.email = idn.email || u.email; u.name = idn.name || u.name; u.avatar = idn.avatar || u.avatar; }
-  save(db);
-  return u;
+// ---- user store (JSON file by default, Postgres when DATABASE_URL is set) ----
+const store = await makeStore();
+
+// Bulk free-access list: emails in server/free-emails.txt (one per line, '#' for comments)
+// OR the FREE_EMAILS env var (comma-separated). Read live, so editing the file needs no restart.
+const FREE_EMAILS_FILE = new URL("./free-emails.txt", import.meta.url);
+function freeEmailSet() {
+  const set = new Set((process.env.FREE_EMAILS || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean));
+  try {
+    const txt = fs.readFileSync(FREE_EMAILS_FILE, "utf8");
+    for (const line of txt.split(/\r?\n/)) { const e = line.split("#")[0].trim().toLowerCase(); if (e) set.add(e); }
+  } catch {}
+  return set;
 }
+function isFreeEmail(email) { return !!email && freeEmailSet().has(email.toLowerCase()); }
+
 function statusOf(u) {
   const now = Date.now();
   if (u.suspended) return { status: "suspended", daysLeft: 0 };
+  if (u.freeAccess || isFreeEmail(u.email)) return { status: "active", daysLeft: null };   // comped (by id) or on the free-emails list
   if (u.subscriptionActive) return { status: "active", daysLeft: null };
   const end = Date.parse(u.trialEndsAt);
   if (now < end) return { status: "trialing", daysLeft: Math.ceil((end - now) / 864e5) };
@@ -106,8 +109,22 @@ function verifyStripeSig(header, payload, secret) {
     return crypto.timingSafeEqual(Buffer.from(parts.v1), Buffer.from(expected));
   } catch { return false; }
 }
-const userByCustomer = (db, cust) => Object.values(db.users).find((u) => u.stripeCustomerId === cust);
-const pending = new Map(); // state -> { provider, redirect }  (use a store/TTL in production)
+// A redirect target is allowed if it's loopback (desktop) or in the ALLOWED_REDIRECTS list (web).
+const isAllowedRedirect = (r) => /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(r) || ALLOWED_REDIRECTS.some((a) => r.startsWith(a));
+
+// OAuth state store with a 10-minute TTL (CSRF protection).
+const pending = new Map(); // state -> { provider, redirect, exp }
+setInterval(() => { const now = Date.now(); for (const [k, v] of pending) if (v.exp < now) pending.delete(k); }, 60000).unref?.();
+
+// Simple in-memory rate limiter (per IP + bucket). Swap for a shared store if you run multiple instances.
+const hits = new Map();
+function rateLimited(req, bucket, max, windowMs) {
+  const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
+  const key = bucket + ":" + ip; const now = Date.now();
+  const rec = hits.get(key);
+  if (!rec || now > rec.reset) { hits.set(key, { n: 1, reset: now + windowMs }); return false; }
+  rec.n++; return rec.n > max;
+}
 
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, BASE);
@@ -117,10 +134,13 @@ const server = http.createServer(async (req, res) => {
   // GET /auth/:provider/start?redirect=...&state=...
   let m = p.match(/^\/auth\/(google|github)\/start$/);
   if (m && req.method === "GET") {
+    if (rateLimited(req, "auth", 30, 60000)) return json(res, 429, { error: "rate limited" });
     const prov = OAUTH[m[1]];
     if (!prov.clientId) return json(res, 500, { error: `${m[1]} OAuth not configured on server` });
+    const redirect = u.searchParams.get("redirect") || "";
+    if (redirect && !isAllowedRedirect(redirect)) return json(res, 400, { error: "redirect not allowed" });
     const state = crypto.randomBytes(16).toString("hex");
-    pending.set(state, { provider: m[1], redirect: u.searchParams.get("redirect") || "" });
+    pending.set(state, { provider: m[1], redirect, exp: Date.now() + 10 * 60000 });
     const a = new URL(prov.auth);
     a.searchParams.set("client_id", prov.clientId);
     a.searchParams.set("redirect_uri", `${BASE}/auth/${m[1]}/callback`);
@@ -136,16 +156,16 @@ const server = http.createServer(async (req, res) => {
     const prov = OAUTH[m[1]];
     const code = u.searchParams.get("code"); const state = u.searchParams.get("state");
     const ctx = pending.get(state); pending.delete(state);
-    if (!code || !ctx) { res.writeHead(400); return res.end("Invalid OAuth state"); }
+    if (!code || !ctx || (ctx.exp && ctx.exp < Date.now())) { res.writeHead(400); return res.end("Invalid or expired OAuth state"); }
     try {
       const body = new URLSearchParams({ client_id: prov.clientId, client_secret: prov.clientSecret, code, redirect_uri: `${BASE}/auth/${m[1]}/callback`, grant_type: "authorization_code" });
       const tr = await (await fetch(prov.token, { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" }, body })).json();
       if (!tr.access_token) { res.writeHead(400); return res.end("Token exchange failed"); }
       const idn = await prov.userInfo(tr.access_token);
-      const user = upsertUser(idn);
+      const user = await store.upsertUser(idn);
       const token = sign(user.id);
       const redir = ctx.redirect;
-      if (redir && /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(redir)) {
+      if (redir && isAllowedRedirect(redir)) {
         // Loopback (desktop): token as a query param so the app's local server receives it.
         const sep = redir.includes("?") ? "&" : "?";
         res.writeHead(302, { Location: redir + sep + "token=" + encodeURIComponent(token) }); return res.end();
@@ -158,16 +178,17 @@ const server = http.createServer(async (req, res) => {
 
   // GET /me
   if (p === "/me" && req.method === "GET") {
+    if (rateLimited(req, "me", 120, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req));
     if (!pl) return json(res, 401, { error: "unauthenticated" });
-    const db = load(); const user = db.users[pl.sub];
+    const user = await store.getUser(pl.sub);
     if (!user) return json(res, 401, { error: "unknown user" });
     const st = statusOf(user);
     if (st.status === "suspended") return json(res, 403, { error: "suspended" });
     return json(res, 200, {
       user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, provider: user.provider },
       status: st.status, trialEndsAt: user.trialEndsAt, daysLeft: st.daysLeft,
-      subscription: { active: !!user.subscriptionActive, plan: user.plan || null },
+      subscription: { active: !!user.subscriptionActive || !!user.freeAccess || isFreeEmail(user.email), plan: (user.freeAccess || isFreeEmail(user.email)) ? "Complimentary" : (user.plan || null) },
     });
   }
 
@@ -179,7 +200,7 @@ const server = http.createServer(async (req, res) => {
     if (process.env.ALLOW_DEV_LOGIN !== "1") return json(res, 404, { error: "not found" });
     const redirect = u.searchParams.get("redirect") || "";
     const email = u.searchParams.get("email") || "dev@brainedge.local";
-    const user = upsertUser({ sub: "dev:" + email, email, name: "Dev User", avatar: "" });
+    const user = await store.upsertUser({ sub: "dev:" + email, email, name: "Dev User", avatar: "" });
     const token = sign(user.id);
     if (redirect && /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(redirect)) {
       const sep = redirect.includes("?") ? "&" : "?";
@@ -188,25 +209,27 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { token });
   }
 
-  // POST /admin/users/:id/(un)suspend   header: x-admin-key
-  m = p.match(/^\/admin\/users\/(.+)\/(suspend|unsuspend)$/);
+  // POST /admin/users/:id/(suspend|unsuspend|comp|uncomp)   header: x-admin-key
+  // comp = give this user free access forever (no subscription needed); uncomp removes it.
+  m = p.match(/^\/admin\/users\/(.+)\/(suspend|unsuspend|comp|uncomp)$/);
   if (m && req.method === "POST") {
     if ((req.headers["x-admin-key"] || "") !== ADMIN_KEY) return json(res, 403, { error: "forbidden" });
-    const db = load(); const user = db.users[decodeURIComponent(m[1])];
+    const id = decodeURIComponent(m[1]); const user = await store.getUser(id);
     if (!user) return json(res, 404, { error: "no such user" });
-    user.suspended = m[2] === "suspend"; save(db);
-    return json(res, 200, { ok: true, id: user.id, suspended: user.suspended });
+    const action = m[2];
+    if (action === "suspend" || action === "unsuspend") { await store.patchUser(id, { suspended: action === "suspend" }); return json(res, 200, { ok: true, id, suspended: action === "suspend" }); }
+    await store.patchUser(id, { freeAccess: action === "comp" }); // comp / uncomp
+    return json(res, 200, { ok: true, id, freeAccess: action === "comp" });
   }
 
   // POST /billing/checkout (Bearer) -> { url } : start a Stripe subscription Checkout.
   if (p === "/billing/checkout" && req.method === "POST") {
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    const db = load(); const user = db.users[pl.sub]; if (!user) return json(res, 401, { error: "unknown user" });
+    const user = await store.getUser(pl.sub); if (!user) return json(res, 401, { error: "unknown user" });
     // DEV simulate: with dev login on and no Stripe configured, mark the account active so the
     // subscribe → auto-unlock flow can be tested without Stripe/CLI. NEVER active in production.
     if (process.env.ALLOW_DEV_LOGIN === "1" && (!STRIPE_SECRET || !STRIPE_PRICE)) {
-      user.stripeCustomerId = user.stripeCustomerId || ("cus_dev_" + user.id);
-      user.subscriptionActive = true; user.plan = "pro (dev)"; save(db);
+      await store.patchUser(user.id, { stripeCustomerId: user.stripeCustomerId || ("cus_dev_" + user.id), subscriptionActive: true, plan: "pro (dev)" });
       return json(res, 200, { url: `${BASE}/billing/done` });
     }
     if (!STRIPE_SECRET || !STRIPE_PRICE) return json(res, 500, { error: "billing not configured" });
@@ -224,7 +247,7 @@ const server = http.createServer(async (req, res) => {
   // POST /billing/portal (Bearer) -> { url } : Stripe customer portal to manage/cancel.
   if (p === "/billing/portal" && req.method === "POST") {
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    const db = load(); const user = db.users[pl.sub];
+    const user = await store.getUser(pl.sub);
     if (!user || !user.stripeCustomerId) return json(res, 400, { error: "no subscription" });
     const ps = await stripe("billing_portal/sessions", { customer: user.stripeCustomerId, return_url: `${BASE}/billing/done` });
     if (!ps.url) return json(res, 502, { error: "stripe", detail: JSON.stringify(ps).slice(0, 300) });
@@ -236,14 +259,14 @@ const server = http.createServer(async (req, res) => {
     const raw = await rawBody(req);
     if (STRIPE_WH && !verifyStripeSig(req.headers["stripe-signature"], raw, STRIPE_WH)) return json(res, 400, { error: "bad signature" });
     let evt; try { evt = JSON.parse(raw); } catch { return json(res, 400, { error: "bad json" }); }
-    const db = load(); const obj = (evt.data && evt.data.object) || {};
+    const obj = (evt.data && evt.data.object) || {};
     if (evt.type === "checkout.session.completed") {
-      const u = db.users[obj.client_reference_id];
-      if (u) { u.stripeCustomerId = obj.customer; u.stripeSubId = obj.subscription; u.subscriptionActive = true; u.plan = "pro"; save(db); }
+      const u = await store.getUser(obj.client_reference_id);
+      if (u) await store.patchUser(u.id, { stripeCustomerId: obj.customer, stripeSubId: obj.subscription, subscriptionActive: true, plan: "pro" });
     } else if (evt.type === "customer.subscription.deleted") {
-      const u = userByCustomer(db, obj.customer); if (u) { u.subscriptionActive = false; u.plan = null; save(db); }
+      const u = await store.findByCustomer(obj.customer); if (u) await store.patchUser(u.id, { subscriptionActive: false, plan: null });
     } else if (evt.type === "customer.subscription.updated") {
-      const u = userByCustomer(db, obj.customer); if (u) { u.subscriptionActive = ["active", "trialing", "past_due"].includes(obj.status); save(db); }
+      const u = await store.findByCustomer(obj.customer); if (u) await store.patchUser(u.id, { subscriptionActive: ["active", "trialing", "past_due"].includes(obj.status) });
     }
     return json(res, 200, { received: true });
   }
@@ -255,4 +278,4 @@ const server = http.createServer(async (req, res) => {
   json(res, 404, { error: "not found" });
 });
 
-server.listen(PORT, () => console.log(`BrainEdge auth server on ${BASE}  (trial ${TRIAL_DAYS}d · dev-login ${process.env.ALLOW_DEV_LOGIN === "1" ? "ON" : "off"} · stripe ${STRIPE_SECRET && STRIPE_PRICE ? "ON" : "off"})`));
+server.listen(PORT, () => console.log(`BrainEdge auth server on ${BASE}  (store ${store.kind} · trial ${TRIAL_DAYS}d · dev-login ${process.env.ALLOW_DEV_LOGIN === "1" ? "ON" : "off"} · stripe ${STRIPE_SECRET && STRIPE_PRICE ? "ON" : "off"})`));

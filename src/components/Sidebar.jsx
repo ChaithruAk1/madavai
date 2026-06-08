@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const TOP = [
@@ -26,6 +26,29 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   const [q, setQ] = useState("");
   const [ifaceOpen, setIfaceOpen] = useState(true);
   const [modelsOpen, setModelsOpen] = useState(false);
+  const [acct, setAcct] = useState(null);   // authMe() result: { user, status, daysLeft, subscription }
+  const [upBusy, setUpBusy] = useState(false);
+
+  // Pull the signed-in account so the sidebar can show the profile + trial/upgrade box.
+  useEffect(() => {
+    let live = true;
+    const pull = () => bridge.authMe?.().then((r) => { if (live && r && !r.error) setAcct(r); }).catch(() => {});
+    pull();
+    const iv = setInterval(pull, 3 * 60 * 1000); // refresh so an upgrade/trial change reflects without a relaunch
+    return () => { live = false; clearInterval(iv); };
+  }, [refreshKey]);
+
+  const upgrade = async () => {
+    if (!bridge.billingCheckout) { onSelect("settings"); return; } // fall back to the Profile page
+    setUpBusy(true);
+    try { await bridge.billingCheckout(); } catch {} finally { setUpBusy(false); }
+  };
+
+  const u = acct && acct.user;
+  const profileName = (u && u.name) || "Profile";
+  const profileInitial = ((u && (u.name || u.email)) || "P").slice(0, 1).toUpperCase();
+  const st = acct && acct.status;
+  const plan = acct && acct.subscription && acct.subscription.plan;
   const navBtn = (t) => {
     const I = t.icon;
     return (

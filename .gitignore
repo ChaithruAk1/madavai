@@ -6,5 +6,6 @@ release/
 *.local
 .env
 server/users.json
+server/free-emails.txt
 server/.env
 stripe.exe
