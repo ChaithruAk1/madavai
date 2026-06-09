@@ -35025,6 +35025,39 @@ Full detail MEMORY.md §11ag-2. Backend pattern reused, both platforms.
 - **Studio**: Agents|Teams tabs, team cards w/ stacked faces, plain-language team builder (mode cards, ordered line-up, add-from-bench). `settings.teams`; `agenticOnly` ModelPicker prop applied to all Studio pickers (global selector untouched).
 - Limits: web members tool-less; sequential execution; teams don't re-attach on reopen; ~N+2 model calls per mission. Not compile-checked.
 
+## Session — 2026-06-09 (parallel fan-out, Agent Guide, full CODE REVIEW + fix waves 1–4)
+
+### 🧑 User — "go ahead with parallel fan-out" → 🤖 BUILT (web + desktop)
+- **Managed teams now dispatch all members simultaneously** (desktop `_teamTurn` `Promise.all`; web `runTeamTurn` same) — each member receives only its own sub-task; coordinator merges after the join. Relay stays sequential by design.
+- **Permission queue added** so two parallel members asking permission at once can't deadlock the modal. Mission Control shows multiple stations glowing + "N agents on the floor". Caveat: parallel cuts wall-clock time, not tokens — rate-limit risk with 5–6 members on one provider.
+
+### 🧑 User — "test entire agent concept e2e, scenarios for agent, relay, managed, all three together" → 🤖 TEST-AGENTS.md WRITTEN
+Six scenarios, ~30 min, exact copy-paste prompts + pass/fail criteria + score card + troubleshooting map. **Scenario 0 = Save-path smoke test and it gates everything** (Save bug unresolved). 1–2 solo agents (Designer/Bench, then Quant + files), 3 Relay line, 4 Managed parallel ("all four stations glow at once" is the fan-out proof), 5 finale: one mission through solo → Managed → Relay (outputs pasted between stages; auto-chaining = `call_agent` roadmap item).
+
+### 🧑 User — "Agents click → storytelling guide: concepts, types, flow diagrams, simulations" → 🤖 AGENT GUIDE BUILT, then SPLIT-PANE redesign
+- Guide on first visit: 5 chapters (agent Anatomy flow diagram Identity→Instructions→Capabilities→Model; Solo journey; Relay assembly line; Managed factory fan-out) + the 5 test scenarios as **flyable simulations** (story cards w/ Start buttons; sim 1 pre-fills the Designer input). Pure themed markup, no images. Guide button in header reopens it.
+- Then **two-pane redesign** (user: no big scroll): left = staged chapter rail 01–04 (one chapter on stage, ✓ on passed, pager dots, last Next → "Create your first agent"); right = "Flight school" simulation column; active chapter glow-highlights its matching sims. Panes scroll independently; stacks <980px.
+- Refinements round: "Ready to hire?" removed; page scroll clamped; Create-your-first-agent moved to guide header; tabs renamed **Agent** (single-person icon) / **Agents Team** (group icon); **Agent Guide** button placed before Agent w/ standing violet highlight + page-turning book animation; **mandatory model gate** (Studio blocks agent creation w/o model — accent-solid picker pulses + "Pick a model first"); **global icon theming** — all lucide icons painted theme accent (contrast inversions on accent-solid surfaces; danger-red deletes kept).
+
+### 🧑 User — "code review entire project (rest built by Opus 4.8) — report only, then I confirm" → 🤖 CODE-REVIEW-SUMMARY.md
+3 parallel review subagents (backend / frontend / web+CLI), ~80 findings, 6 sections: analysis, **fix-plan questionnaire Q1–Q17 in 4 waves + Q18 UI pass**, missed features, half-baked items, **zero-bug deployment strategy where BrainEdge tests itself** (Managed QA team: Smoke Tester, API Prober, UI Auditor, Regression Scribe certifying builds), world-class-UI recommendation. Headlines: prod runs with factory-default secrets; command injection in zip import; weak session IDs; chat shows raw `**markdown**`; whole-conversation re-render per token; unbounded logs/history; silent web save failures. Opus strengths: path-traversal guards, OAuth CSRF, encrypted secrets at rest, permission model, one-engine/three-surfaces.
+
+### 🧑 User — "fix all waves, full autonomous permission" → 🤖 16 of 17 LANDED
+- **Wave 1 security:** auth server refuses to start in production on factory-default `SESSION_SECRET`/`ADMIN_KEY`; zip import via argument-safe `tar` (injection killed); crypto-strength session/team IDs; timing-safe admin-key compare + strict rate limit; web "your keys live in this browser" notice.
+- **Wave 2 reliability:** async `run_bash` (no more 30s UI freeze); usage log rotates at 4MB; history load cap 200 messages; team hand-off trimming; usage-tracking race fixed (per-session turn state); settings cache + corruption guard; web history-save failures now warn instead of silently losing data.
+- **Wave 3 visible quality:** **chat renders real markdown** (headings, bold, code blocks w/ copy button, lists, tables, links) via new dependency-free XSS-safe renderer building React elements (`src/markdown.jsx`); **streaming re-renders only the live message** (Message memo); model picker render cap 250 rows; light theme extended to Studio/Mission Control/Guide; focus rings + aria-labels; web Skills page honestly states what needs desktop.
+- **Wave 4 structural:** "latest" deps pinned to verified versions (agent-sdk 0.3.150, MCP SDK 1.29.0); node-pty packaging confirmed correct. **Q16 monolith file split = the one deferral** — waits for first green `npm run build` (zero compile verification this session).
+
+### Standing directives logged
+Top-5 AI-provider quality bar. **100k users in 2 years** → scale roadmap: Postgres user store (already supported), Redis-backed rate limiting, multi-instance readiness — dedicated scale session before marketing hard.
+
+### 🧑 "lets commit" → from USER's terminal: `npm run build` FIRST (the actual test of today's code), eyeball `git status` (no `server/.env`/`users.json`/email lists), then add/commit/push. **Deploy note:** auth server now **exits in production** unless real `SESSION_SECRET` + `ADMIN_KEY` are set — set on Render before next deploy.
+
+### Open / unresolved
+- **Save button "nothing happens" bug still undiagnosed** — need user's DevTools console / [VITE] output; gates all agent/team testing (Scenario 0).
+- Nothing compile-checked this session → `npm run build` + full restart; watch markdown.jsx, Message.jsx, agent-openai.cjs, settings.cjs first; markdown smoke test: "a table comparing 3 coffee brewing methods with a code sample".
+- Q16 monolith split (deferred); per-agent knowledge files (GPTs-style) flagged as gap; `call_agent` + scheduler-run teams + parallel-aware run history on roadmap; global icon repaint — eyeball app for stray accent-on-accent spots.
+
 ### 🧑 User — "parallel fan-out next; 5 test examples; never feel like an Anthropic copy (borrow Teamly-style concepts)" → 🤖 PARALLEL FAN-OUT BUILT
 - Managed teams now run all members **simultaneously** (Promise.all, sub-task-only prompts), coordinator merges after the join; Relay stays sequential by design. Mission Control shows multiple glowing stations + "N agents on the floor". **Permission queue** added in App.jsx (parallel members asking at once previously deadlocked the modal). Web + desktop. Cost note: parallel saves wall-clock, not tokens; watch rate limits.
 - Originality directive logged as standing: AI-workforce metaphor (hire/crew/bench/Mission Control), keep borrowing market-wide concepts (workforce roles, run history/KPIs, org chart as next steps).

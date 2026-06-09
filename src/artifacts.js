@@ -38,6 +38,10 @@ const CDN = {
 };
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+// Graceful CDN failure: if a preview library can't load (strict/offline network), say so
+// plainly instead of showing a blank white frame. Attached as an onerror attribute.
+const CDN_FAIL = `onerror="document.body.innerHTML='<div style=&quot;font-family:system-ui;padding:26px;color:#444;line-height:1.6&quot;><b>Preview library blocked</b><br>This preview needs a small library from the internet and your network blocked it.<br>The full source is still in the <b>Code</b> tab.</div>'"`;
+
 // Build the srcDoc for a previewable artifact, by kind.
 export function artifactSrcDoc(a) {
   switch (a.kind) {
@@ -51,7 +55,7 @@ export function artifactSrcDoc(a) {
     case "mermaid":
       return `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff;display:grid;place-items:center;min-height:100vh">
 <div class="mermaid">${esc(a.code)}</div>
-<script src="${CDN.mermaid}"></script><script>mermaid.initialize({startOnLoad:true,theme:"default"});</script></body>`;
+<script src="${CDN.mermaid}" ${CDN_FAIL}></script><script>window.addEventListener("load",()=>{ if (window.mermaid) mermaid.initialize({startOnLoad:true,theme:"default"}); });</script></body>`;
 
     case "markdown":
       return `<!doctype html><meta charset="utf-8">
@@ -60,8 +64,8 @@ h1,h2,h3{line-height:1.25;margin-top:1.4em}pre{background:#f4f4f5;padding:12px 1
 code{background:#f4f4f5;padding:2px 5px;border-radius:4px;font-size:.9em}pre code{background:none;padding:0}
 table{border-collapse:collapse;margin:1em 0}td,th{border:1px solid #e2e2e5;padding:6px 12px}img{max-width:100%}
 blockquote{border-left:3px solid #ddd;margin:1em 0;padding-left:14px;color:#555}a{color:#2563eb}</style>
-<body><div id="c"></div><script src="${CDN.marked}"></script>
-<script>document.getElementById("c").innerHTML=marked.parse(${JSON.stringify(a.code)});</script></body>`;
+<body><div id="c"></div><script src="${CDN.marked}" ${CDN_FAIL}></script>
+<script>window.addEventListener("load",()=>{ if (window.marked) document.getElementById("c").innerHTML=marked.parse(${JSON.stringify(a.code)}); });</script></body>`;
 
     case "react": {
       let body = a.code.replace(/^\s*import[^\n]*\n/gm, "");   // React + hooks are provided as globals
@@ -72,7 +76,7 @@ blockquote{border-left:3px solid #ddd;margin:1em 0;padding-left:14px;color:#555}
       body = body.replace(/export\s+default\s+/g, "");
       return `<!doctype html><html><head><meta charset="utf-8">
 <script src="${CDN.tailwind}"></script>
-<script src="${CDN.react}"></script><script src="${CDN.reactDom}"></script><script src="${CDN.babel}"></script>
+<script src="${CDN.react}" ${CDN_FAIL}></script><script src="${CDN.reactDom}" ${CDN_FAIL}></script><script src="${CDN.babel}" ${CDN_FAIL}></script>
 <style>body{margin:0;font-family:system-ui}</style></head>
 <body><div id="root"></div>
 <script type="text/babel" data-presets="react">

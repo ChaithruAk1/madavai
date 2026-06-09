@@ -4,7 +4,11 @@ import { artifactSrcDoc } from "../artifacts.js";
 
 const EXT = { html: "html", svg: "svg", markdown: "md", react: "jsx", mermaid: "mmd", code: "txt" };
 
-export default function ArtifactPanel({ artifact, onClose }) {
+export default function ArtifactPanel({ artifact: artifactProp, versions = [], onClose }) {
+  // Version history: when the conversation produced several artifacts of the same type
+  // (iterations on one page/diagram/component), let the user flip between them.
+  const [vIdx, setVIdx] = useState(-1); // -1 = the artifact that was clicked (latest intent)
+  const artifact = vIdx >= 0 && versions[vIdx] ? versions[vIdx] : artifactProp;
   const [tab, setTab] = useState(artifact.previewable ? "preview" : "code");
   const [copied, setCopied] = useState(false);
   const [nonce, setNonce] = useState(0); // bump to reload the preview iframe
@@ -28,6 +32,12 @@ export default function ArtifactPanel({ artifact, onClose }) {
     <div className="artifact-wrap" style={{ width: "46%", maxWidth: 760 }}>
       <div className="artifact-head">
         <span className="artifact-title">{artifact.title}</span>
+        {versions.length > 1 && (
+          <select className="artifact-ver" title="Version history" value={vIdx} onChange={(e) => setVIdx(Number(e.target.value))}>
+            <option value={-1}>latest</option>
+            {versions.map((_, i) => <option key={i} value={i}>v{i + 1}{i === versions.length - 1 ? " (newest)" : ""}</option>)}
+          </select>
+        )}
         <div className="artifact-tabs">
           {artifact.previewable && <button className={`artifact-tab ${tab === "preview" ? "active" : ""}`} onClick={() => setTab("preview")}><Eye size={13} /> Preview</button>}
           <button className={`artifact-tab ${tab === "code" ? "active" : ""}`} onClick={() => setTab("code")}><CodeIcon size={13} /> Code</button>

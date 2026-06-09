@@ -25,6 +25,7 @@ import ThinkLogo from "./components/ThinkLogo.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
 import { PermissionPicker } from "./components/Topbar.jsx";
 import { bridge, isWeb } from "./bridge/index.js";
+import { extractArtifacts } from "./artifacts.js";
 
 // On the web, local-folder access uses the File System Access API (Chrome/Edge only).
 const folderInChromeEdge = isWeb && !(typeof window !== "undefined" && typeof window.showDirectoryPicker === "function");
@@ -250,7 +251,12 @@ export default function App() {
     if (!conv) return;
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
-    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); setTeamCtx(null); setTeamRun(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+    setProjectCtx(null); setCoworkProj(null);
+    // Re-attach the agent/team this conversation ran with (saved on the record).
+    setAgentCtx(conv.agent || null);
+    setTeamCtx(conv.team && conv.team.members && conv.team.members.length ? conv.team : null);
+    setTeamRun(null);
+    sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   // Start a fresh chat — also returns to the chat surface if we're in a tool/settings view.
   const newSession = () => {
@@ -631,6 +637,11 @@ export default function App() {
                           {folderInChromeEdge ? "⚠ Open in Chrome or Edge to use folders" : "Works in Chrome & Edge"}
                         </span>
                       )}
+                      {isWeb && cwd && (
+                        <span style={{ fontSize: 11, color: "var(--text-2)", marginLeft: 10 }}>
+                          File edits only on web — running commands (npm, git, tests) needs the desktop app
+                        </span>
+                      )}
                       <button className="btn" onClick={pickFolder} disabled={folderInChromeEdge} style={{ marginLeft: "auto", padding: "5px 10px" }}>{cwd ? "Change folder" : "Choose folder"}</button>
                       {mode === "cowork" && (
                         autoContinue
@@ -678,7 +689,9 @@ export default function App() {
                 </>
               )}
             </div>
-            {artifact && <ArtifactPanel artifact={artifact} onClose={() => setArtifact(null)} />}
+            {artifact && <ArtifactPanel artifact={artifact}
+              versions={timeline.filter((it) => it.type === "message" && it.role === "assistant").flatMap((it) => extractArtifacts(it.text)).filter((a) => a.kind === artifact.kind)}
+              onClose={() => setArtifact(null)} />}
             {teamCtx && !artifact && <TeamOps team={teamCtx} run={teamRun} onClose={clearTeam} />}
           </div>
         )}

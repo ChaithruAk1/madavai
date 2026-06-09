@@ -97,6 +97,9 @@ class SessionManager {
     if (a) conv.messages.push({ role: "assistant", content: a });
     if ((!conv.title || conv.title === "New task") && u) conv.title = u.slice(0, 60);
     conv.cwd = s.cwd || conv.cwd;
+    // Remember who ran this conversation so reopening it re-attaches the agent/team.
+    if (s.agent) conv.agent = s.agent;
+    if (s.team) conv.team = { name: s.team.name, mode: s.team.mode, members: s.team.members, identity: s.team.identity };
     try { sstore.saveSession(conv); } catch {}
   }
 

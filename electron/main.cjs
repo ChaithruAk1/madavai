@@ -133,6 +133,7 @@ ipcMain.handle("brainedge:runSpeedTest", async (_e, { tests, prompt, maxTokens, 
   const RETRY = /\b(401|402|404|429)\b|quota|balance|insufficient|not found|no endpoints/i;
   speedAborts = [];
   speedRunning = true; speedStartedAt = Date.now();
+  _speedSnap = { pid: cfg.activeProfileId, model: (cfg.profiles[cfg.activeProfileId] || {}).model || "" };
   try {
     const results = await Promise.all((tests || []).map(async (t) => {
       const chain = [{ profileId: t.profileId, modelId: t.modelId }, ...((t.fallbacks) || [])];
@@ -165,8 +166,22 @@ ipcMain.handle("brainedge:runSpeedTest", async (_e, { tests, prompt, maxTokens, 
     return payload;
   } finally {
     speedAborts = []; speedRunning = false;
+    // GUARD against "model selector stranding": if ANYTHING changed the active selection
+    // while the test ran, put it back exactly as the user had it. The test must never
+    // repoint what chat runs on. (Logged so the true culprit shows itself if it recurs.)
+    try {
+      const after = settings.load();
+      if (after.activeProfileId !== _speedSnap.pid || ((after.profiles[_speedSnap.pid] || {}).model !== _speedSnap.model)) {
+        console.warn(`[brainedge] speed test changed the active selection (${_speedSnap.pid}/${_speedSnap.model} → ${after.activeProfileId}/${(after.profiles[after.activeProfileId] || {}).model}) — restoring.`);
+        const fixed = { ...after, activeProfileId: _speedSnap.pid };
+        if (fixed.profiles[_speedSnap.pid]) fixed.profiles[_speedSnap.pid] = { ...fixed.profiles[_speedSnap.pid], model: _speedSnap.model };
+        settings.save(fixed);
+      }
+    } catch {}
   }
 });
+// Snapshot of the user's active selection, taken when a speed run starts (see guard above).
+let _speedSnap = { pid: null, model: null };
 ipcMain.handle("brainedge:cancelSpeedTest", () => { speedAborts.forEach((a) => { try { a.abort(); } catch {} }); speedAborts = []; speedRunning = false; return true; });
 ipcMain.handle("brainedge:getSpeedTestLast", () => { try { return JSON.parse(fs.readFileSync(speedFile(), "utf8")); } catch { return null; } });
 ipcMain.handle("brainedge:getSpeedTestStatus", () => ({ running: speedRunning, startedAt: speedStartedAt }));
@@ -364,21 +379,42 @@ ipcMain.handle("brainedge:updateProject", (_e, { id, patch }) => store.updatePro
 ipcMain.handle("brainedge:deleteProject", (_e, id) => store.deleteProject(id));
 
 ipcMain.handle("brainedge:addKnowledgeText", (_e, { projectId, name, content }) => store.addKnowledge(projectId, { name, type: "text", content }));
+// Knowledge import — now also parses PDF and Word (.docx) into text via lazy-loaded
+// parsers (pdf-parse / mammoth). If a parser is missing or a file is image-only,
+// the file is skipped with a clear reason instead of importing garbage.
+async function knowledgeText(fp) {
+  const ext = path.extname(fp).toLowerCase();
+  if (ext === ".pdf") {
+    const pdfParse = require("pdf-parse"); // lazy: only loaded when a PDF is imported
+    const data = await pdfParse(fs.readFileSync(fp));
+    const text = (data.text || "").trim();
+    if (!text) throw new Error("no extractable text (scanned/image-only PDF?)");
+    return text;
+  }
+  if (ext === ".docx") {
+    const mammoth = require("mammoth");
+    const r = await mammoth.extractRawText({ buffer: fs.readFileSync(fp) });
+    const text = (r.value || "").trim();
+    if (!text) throw new Error("no extractable text");
+    return text;
+  }
+  return fs.readFileSync(fp, "utf8");
+}
 ipcMain.handle("brainedge:addKnowledgeFile", async (_e, projectId) => {
   const r = await dialog.showOpenDialog(win, {
     properties: ["openFile", "multiSelections"],
-    filters: [{ name: "Text/Docs", extensions: ["txt", "md", "markdown", "json", "csv", "log", "yml", "yaml", "js", "ts", "py", "html", "xml"] }],
+    filters: [{ name: "Docs & text", extensions: ["pdf", "docx", "txt", "md", "markdown", "json", "csv", "log", "yml", "yaml", "js", "ts", "py", "html", "xml"] }],
   });
   if (r.canceled) return { canceled: true };
-  let added = 0;
+  let added = 0; const skipped = [];
   for (const fp of r.filePaths) {
     try {
-      const content = fs.readFileSync(fp, "utf8");
-      store.addKnowledge(projectId, { name: path.basename(fp), type: "file", content });
+      const content = await knowledgeText(fp);
+      store.addKnowledge(projectId, { name: path.basename(fp), type: "file", content: content.slice(0, 400000) }); // ~100k tokens cap per file
       added++;
-    } catch {}
+    } catch (e) { skipped.push(`${path.basename(fp)}: ${String(e.message || e)}`); }
   }
-  return { added, project: store.getProject(projectId) };
+  return { added, skipped, project: store.getProject(projectId) };
 });
 ipcMain.handle("brainedge:removeKnowledge", (_e, { projectId, knId }) => store.removeKnowledge(projectId, knId));
 

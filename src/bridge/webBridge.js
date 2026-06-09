@@ -457,7 +457,8 @@ const HISTORY_KEY = "be.sessions";
 function persistSession(sess) {
   const rec = { id: sess.id, mode: sess.mode || "code", title: sess.title || "Untitled", updatedAt: Date.now(),
     messages: sess.messages, projectId: sess.projectId || null, convId: sess.convId || null,
-    model: (sess.profile && sess.profile.model) || null, provider: (sess.profile && sess.profile.name) || null };
+    model: (sess.profile && sess.profile.model) || null, provider: (sess.profile && sess.profile.name) || null,
+    agent: sess.agent || null, team: sess.team ? { name: sess.team.name, mode: sess.team.mode, members: sess.team.members, identity: sess.team.identity } : null };
   // Surface save failures instead of losing history silently: warn once per session in the
   // chat (as a system-style event) + always in the console, then keep running.
   idbPut(rec).catch((e) => {
@@ -692,9 +693,20 @@ export const webBridge = {
     // Run models concurrently (like desktop) with a small pool so we don't flood the browser/proxy.
     const queue = (tests || []).slice();
     const worker = async () => { while (queue.length && !_speedCancel) await one(queue.shift()); };
+    const snap = { pid: s.activeProfileId, model: (s.profiles[s.activeProfileId] || {}).model || "" }; // guard: tests must never repoint chat
     await Promise.all(Array.from({ length: Math.min(6, queue.length || 1) }, worker));
     _speedRunning = false;
     _lastSpeed = { at: startedAt, prompt, results };
+    // Restore the user's active selection if anything moved it during the run (selector-stranding guard).
+    try {
+      const after = loadSettings();
+      if (after.activeProfileId !== snap.pid || ((after.profiles[snap.pid] || {}).model !== snap.model)) {
+        console.warn("[brainedge] speed test changed the active selection — restoring", snap);
+        const fixed = { ...after, activeProfileId: snap.pid };
+        if (fixed.profiles[snap.pid]) fixed.profiles[snap.pid] = { ...fixed.profiles[snap.pid], model: snap.model };
+        LS.set(SETTINGS_KEY, fixed);
+      }
+    } catch {}
     return _lastSpeed;
   },
   async cancelSpeedTest() { _speedCancel = true; _speedRunning = false; return true; },
