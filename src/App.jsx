@@ -1,6 +1,6 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 import { useEffect, useRef, useState, useCallback } from "react";
-import { FolderOpen, FolderKanban, Smartphone } from "lucide-react";
+import { FolderOpen, FolderKanban, Smartphone, Bot, X } from "lucide-react";
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
@@ -17,6 +17,7 @@ import Consumption from "./components/Consumption.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import StudioLauncher from "./components/StudioLauncher.jsx";
+import Agents from "./components/Agents.jsx";
 import TerminalPanel from "./components/TerminalPanel.jsx";
 import EnvPicker from "./components/EnvPicker.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
@@ -51,8 +52,10 @@ export default function App() {
   const [histRefresh, setHistRefresh] = useState(0);
   const [chatMode, setChatMode] = useState("chat"); // last primary mode → drives the Recents list
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [agentCtx, setAgentCtx] = useState(null); // active custom agent for this session ({id,name,instructions,tools,model})
   const sessionRef = useRef(null);
   const studioSeed = useRef(null); // pending Studio starter prompt, sent once we're in chat mode
+  const agentSeed = useRef(null);  // pending { agent, prompt } from the Agents launcher
   const chatRef = useRef(null);
   const streamOpen = useRef(false);
   const lastInfoRef = useRef(null); // real {model, provider, kind} from the backend init event
@@ -180,14 +183,29 @@ export default function App() {
 
   const isAgentMode = mode === "cowork" || mode === "code";
 
-  const send = async (text, images = []) => {
+  // Retry an assistant reply: drop from the preceding user message onward and re-send it (fresh turn).
+  const retryAt = (i) => {
+    let u = -1; for (let k = i - 1; k >= 0; k--) { if (timeline[k]?.type === "message" && timeline[k].role === "user") { u = k; break; } }
+    if (u < 0) return; const item = timeline[u];
+    setTimeline((tl) => tl.slice(0, u)); sessionRef.current = null; streamOpen.current = false;
+    send(item.text, item.images || []);
+  };
+  // Edit a user message: drop from that message onward and re-send the edited text.
+  const editAt = (i, newText) => {
+    const item = timeline[i]; if (!item) return;
+    setTimeline((tl) => tl.slice(0, i)); sessionRef.current = null; streamOpen.current = false;
+    send(newText, item.images || []);
+  };
+
+  const send = async (text, images = [], agentOv = null) => {
+    const ag = agentOv || agentCtx; // explicit override beats state (avoids a stale closure on seeded launches)
     setTimeline((tl) => [...tl, { type: "message", role: "user", text, images }]);
     setBusy(true);
     streamOpen.current = false;
     if (!sessionRef.current) {
       const req = projectCtx
         ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId, images }
-        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images };
+        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined };
       const { sessionId, conversationId } = await bridge.start(req);
       sessionRef.current = sessionId;
       if (!projectCtx && conversationId) setActiveConvId(conversationId);
@@ -202,12 +220,12 @@ export default function App() {
     if (!conv) return;
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
-    setProjectCtx(null); setCoworkProj(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   // Start a fresh chat — also returns to the chat surface if we're in a tool/settings view.
   const newSession = () => {
     if (!PRIMARY.includes(mode)) setMode(chatMode);
-    setProjectCtx(null); setCoworkProj(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const removeSession = async (id) => {
     await bridge.deleteSession(id);
@@ -340,6 +358,7 @@ export default function App() {
       // Returning to a chat mode: restore its last conversation (or start fresh).
       const c = modeCacheRef.current[m];
       setProjectCtx(null); setCoworkProj(null);
+      if (!agentSeed.current) setAgentCtx(null); // manual navigation drops the agent; a pending launch keeps it
       setTimeline(c ? c.timeline : []);
       setActiveConvId(c ? c.convId : null);
       sessionRef.current = null;
@@ -409,12 +428,32 @@ export default function App() {
   const isConsumption = mode === "consumption";
   const isStudio = mode === "studio";
   const isTerminal = mode === "terminal";
+  const isAgents = mode === "agents";
   const startStudio = (prompt) => {
     studioSeed.current = prompt || null;
     modeCacheRef.current.chat = { convId: null, timeline: [] }; // fresh chat per Studio idea (don't restore the last one)
     switchMode("chat");
   };
   useEffect(() => { if (mode === "chat" && studioSeed.current) { const seed = studioSeed.current; studioSeed.current = null; send(seed); } }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Launch a custom agent: pin its model (if any), open a FRESH session in the right
+  // mode (file/terminal agents collaborate on a folder; the rest chat), then seed it.
+  const startAgentSession = (agent, prompt) => {
+    if (agent.model) selectModel(agent.model); // agents run on the model selector — pinning just repoints it
+    const target = (agent.tools && (agent.tools.files || agent.tools.shell)) ? "cowork" : "chat";
+    agentSeed.current = { agent, prompt: prompt || null, target };
+    modeCacheRef.current[target] = { convId: null, timeline: [] }; // fresh conversation per agent run
+    switchMode(target);
+  };
+  useEffect(() => {
+    const seed = agentSeed.current;
+    if (seed && mode === seed.target) {
+      agentSeed.current = null;
+      setAgentCtx(seed.agent);
+      if (seed.prompt) send(seed.prompt, [], seed.agent);
+    }
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  const clearAgent = () => { setAgentCtx(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
 
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   const controlsRow = (
@@ -475,6 +514,8 @@ export default function App() {
           <Scheduler />
         ) : isConsumption ? (
           <Consumption />
+        ) : isAgents ? (
+          <Agents onLaunch={startAgentSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
         ) : isStudio ? (
           <StudioLauncher onStart={startStudio} />
         ) : isTerminal ? (
@@ -490,12 +531,29 @@ export default function App() {
               {timeline.length === 0 ? (
                 <div className="hero scroll">
                   <div className="hero-inner">
-                    <div className="hero-greet"><ThinkLogo size={40} animated={false} /><h1 className="greeting">{greeting}</h1></div>
+                    {agentCtx ? (
+                      <div className="hero-greet hero-agent">
+                        <span className="hero-agent-ic"><Bot size={26} /></span>
+                        <div>
+                          <h1 className="greeting">{agentCtx.name}</h1>
+                          <div className="hero-agent-sub">{agentCtx.description || "Custom agent"} · ready when you are</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="hero-greet"><ThinkLogo size={40} animated={false} /><h1 className="greeting">{greeting}</h1></div>
+                    )}
                     <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {projectCtx && (
                       <div className="hero-opts">
                         <button className="chip" onClick={backToProjects}>← Projects</button>
                         <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
+                      </div>
+                    )}
+                    {agentCtx && (
+                      <div className="hero-opts">
+                        <span className="chip agent-chip"><Bot size={13} /> {agentCtx.name}
+                          <button className="agent-chip-x" title="Detach agent" onClick={clearAgent}><X size={12} /></button>
+                        </span>
                       </div>
                     )}
                   </div>
@@ -536,10 +594,20 @@ export default function App() {
                       <span style={{ color: "var(--text-2)" }}>· {projectCtx.title}</span>
                     </div>
                   )}
+                  {agentCtx && (
+                    <div className="folder-bar agent-bar">
+                      <Bot size={14} />
+                      <span className="path">{agentCtx.name}</span>
+                      <span style={{ color: "var(--text-2)" }}>· custom agent</span>
+                      <button className="btn ghost" style={{ padding: "3px 7px", marginLeft: "auto" }} title="Detach agent" onClick={clearAgent}><X size={12} /></button>
+                    </div>
+                  )}
                   <div className="chat scroll" ref={chatRef}>
                     <div className="chat-inner">
                       {timeline.map((item, i) => (
                         <Message key={i} item={item} onOpenArtifact={setArtifact} userName={_who || "You"}
+                          onRetry={!busy && item.type === "message" && item.role === "assistant" ? () => retryAt(i) : undefined}
+                          onEdit={!busy && item.type === "message" && item.role === "user" ? (t) => editAt(i, t) : undefined}
                           streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
                       ))}
                     </div>

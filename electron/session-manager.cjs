@@ -98,6 +98,7 @@ class SessionManager {
   async start(req) {
     const sessionId = "sess_" + Math.random().toString(36).slice(2, 9);
     const s = { mode: req.mode, cwd: req.cwd, history: [], controller: null, sdkSessionId: null, permMode: req.permissionMode || "default" };
+    if (req.agent && req.agent.instructions) s.agent = req.agent; // custom agent: { name, description, instructions, tools }
     if (req.mode === "project") {
       s.projectId = req.projectId;
       s.conversationId = req.conversationId;
@@ -119,6 +120,27 @@ class SessionManager {
 
   async sendInput(sessionId, text, images) {
     if (this.sessions.get(sessionId)) await this._turn(sessionId, text, images);
+  }
+
+  // ---- custom agents (Agents builder) ----
+  // System prompt for a session bound to a user-built agent.
+  _agentSys(s) {
+    const a = s.agent;
+    if (!a) return null;
+    const now = new Date();
+    const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
+    return `You are "${a.name || "a custom agent"}", an agent the user built in BrainEdge.` +
+      (a.description ? ` Purpose: ${a.description}` : "") + ` ${dateLine}` +
+      `\n\nAgent instructions (always follow):\n${a.instructions}`;
+  }
+  // Connectors/skills config filtered by the agent's enabled tools.
+  _agentExtras(s, cfg) {
+    const t = (s.agent && s.agent.tools) || {};
+    return {
+      connectors: t.connectors ? (cfg.connectors || []) : [],
+      skillsDir: t.skills ? (cfg.skillsDirs || []) : [],
+      disabledSkills: cfg.disabledSkills || [],
+    };
   }
 
   async _turn(sessionId, userText, images) {
@@ -162,7 +184,8 @@ class SessionManager {
     // Exception: when the turn carries images, take the plain inline-vision path so a
     // vision-capable model (e.g. a NIM VLM) receives real pixels rather than a Read-file note.
     const cfg = settings.load();
-    const hasExtras = (cfg.skillsDirs || []).length > 0 || (cfg.connectors || []).some((c) => c.enabled);
+    const agentExtras = s.agent && s.agent.tools && (s.agent.tools.connectors || s.agent.tools.skills);
+    const hasExtras = agentExtras || (cfg.skillsDirs || []).length > 0 || (cfg.connectors || []).some((c) => c.enabled);
     if (profile.kind !== "anthropic" && hasExtras && cleanImgs(images).length === 0) {
       return this._chatAgentTurn(sessionId, userText, profile, cfg, images);
     }
@@ -176,11 +199,13 @@ class SessionManager {
     s.controller = controller;
     const emit = (e) => this._send(sessionId, e.kind, e.data);
     userText = (userText || "") + materializeImages(images);
+    const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
     try {
       await runOpenAIAgentTurn({
         prompt: userText, mode: "chat", cwd: null, profile, permMode: "default",
         history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-        connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
+        connectors: ex.connectors, skillsDir: ex.skillsDir, disabledSkills: ex.disabledSkills, globalInstructions: withLang(cfg),
+        systemOverride: this._agentSys(s) || null,
       });
     } finally {
       s.controller = null;
@@ -222,8 +247,8 @@ class SessionManager {
     const gi = settings.load().globalInstructions;
     const now = new Date();
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Use this whenever a date is needed; never say you don't know it.`;
-    const sysChat = "You are BrainEdge, a helpful assistant. " + dateLine +
-      " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence." +
+    const sysChat = (this._agentSys(s) || ("You are BrainEdge, a helpful assistant. " + dateLine +
+      " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence.")) +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const messages = [{ role: "system", content: sysChat }, ...s.history];
     const started = Date.now();
@@ -315,6 +340,13 @@ class SessionManager {
     userText = (userText || "") + materializeImages(images);
     const emit = (e) => this._send(sessionId, e.kind, e.data);
 
+    // Custom agent in a folder session: inject its instructions once, up front (SDK path),
+    // and as systemOverride on the self-built loop below.
+    if (s.agent && profile.kind === "anthropic" && !s._agentInjected) {
+      userText = `${this._agentSys(s)}\n\n----- TASK -----\n${userText}`;
+      s._agentInjected = true;
+    }
+
     if (profile.kind === "anthropic") {
       // Anthropic (or a proxy): full Claude Agent SDK.
       s.sdkSessionId = await runAgentTurn({
@@ -327,10 +359,15 @@ class SessionManager {
       s.controller = controller;
       try {
         const cfg = settings.load();
+        const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
+        // A custom agent keeps the mode's file-tool system prompt and appends its own
+        // instructions (a full override would lose the tool-usage guidance).
+        const agentSys = this._agentSys(s);
         await runOpenAIAgentTurn({
           prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: s.permMode,
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
+          connectors: ex.connectors, skillsDir: ex.skillsDir, disabledSkills: ex.disabledSkills,
+          globalInstructions: agentSys ? `${agentSys}\n\n${withLang(cfg)}` : withLang(cfg),
         });
       } finally {
         s.controller = null;

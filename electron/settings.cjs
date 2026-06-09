@@ -34,6 +34,7 @@ function mapSecrets(s, fn) {
 
 const DEFAULTS = {
   activeProfileId: "p_local",
+  agents: [], // user-built agents (Agents builder): { id, name, description, instructions, tools, model }
   connectors: [],
   skillsDir: "",
   skillsDirs: [],
@@ -85,6 +86,7 @@ function load() {
     // shallow-merge defaults so new fields appear for old config files
     const merged = { ...DEFAULTS, ...data, profiles: { ...DEFAULTS.profiles, ...(data.profiles || {}) } };
     if (!Array.isArray(merged.skillsDirs)) merged.skillsDirs = [];
+    if (!Array.isArray(merged.agents)) merged.agents = [];
     if (merged.skillsDirs.length === 0 && merged.skillsDir) merged.skillsDirs = [merged.skillsDir]; // migrate single → list
     if (merged.profiles.p_proxy) delete merged.profiles.p_proxy; // free-claude-code proxy removed
     if (!merged.profiles[merged.activeProfileId]) merged.activeProfileId = Object.keys(merged.profiles)[0];

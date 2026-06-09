@@ -131,6 +131,14 @@ function systemPrompt(s, projectId) {
   return parts.join("\n\n").trim();
 }
 
+// Custom agent (Agents builder): its identity + instructions, appended to the session system prompt.
+function agentBlock(a) {
+  if (!a || !a.instructions) return "";
+  return `You are "${a.name || "a custom agent"}", an agent the user built in BrainEdge.` +
+    (a.description ? ` Purpose: ${a.description}` : "") +
+    `\n\nAgent instructions (always follow):\n${a.instructions}`;
+}
+
 function userContent(text, images) {
   if (!images || !images.length) return text;
   const content = [{ type: "text", text }];
@@ -366,16 +374,23 @@ export const webBridge = {
   // ---- chat / agent ----
   async start(req) {
     const s = loadSettings();
-    const agentic = webfs.hasRoot() && (!!req.cwd || req.mode === "cowork"); // a real folder is selected → file-agent mode
+    const agent = (req.agent && req.agent.instructions) ? req.agent : null; // custom agent (Agents builder)
+    // A custom agent only gets file tools when its Files capability is on.
+    const wantsFiles = agent ? !!(agent.tools && agent.tools.files) : true;
+    const agentic = webfs.hasRoot() && (!!req.cwd || req.mode === "cowork") && wantsFiles; // a real folder is selected → file-agent mode
     const prior = req.conversationId ? await idbGet(req.conversationId) : null;
     let id, messages, title;
     if (prior) {
       // Continuing an opened chat — resume its full message history so context carries over.
       id = req.conversationId; messages = (prior.messages || []).slice(); title = prior.title || "";
     } else {
-      id = rid("sess_"); messages = []; const sys = agentic ? coworkSystem(s) : systemPrompt(s, req.projectId); if (sys) messages.push({ role: "system", content: sys }); title = "";
+      id = rid("sess_"); messages = [];
+      let sys = agentic ? coworkSystem(s) : systemPrompt(s, req.projectId);
+      const ab = agentBlock(agent);
+      if (ab) sys = sys ? `${ab}\n\n${sys}` : ab; // agent identity leads; base behavior/tool guidance follows
+      if (sys) messages.push({ role: "system", content: sys }); title = "";
     }
-    const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, convId: id, title, agentic, cwd: req.cwd || null };
+    const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, convId: id, title, agentic, cwd: req.cwd || null, agent };
     sessions.set(id, sess);
     runTurn(sess, req.prompt || "", req.images); // fire and forget; streams events
     return { sessionId: id, conversationId: id };

@@ -34905,3 +34905,113 @@ Stated honestly that per-model download/usage counts are **not available from an
 - **Provider display name + logo** — user requested showing a provider's real display name and logo instead of the plain lowercase id (e.g. "openai"). **Requested at end of session, NOT yet built.**
 - **Hugging Face downloads column** (open-weight models only) — offered, awaiting go-ahead.
 - Carried: Models Overview still needs an accepted restyle direction (plain format is baseline); benchmark curated set covers ~22 families (expand on request); Let's Build / GitHub repo list verify web + desktop; Ink CLI + node-pty interactive verification; model determination/selector bug; pre-launch rotate OAuth secrets + remove Anthropic subscription/OAuth path; file-tree view + undo/checkpoint buttons still to surface.
+
+## Session — 2026-06-09 17:10 (provider logos BUILT, release date in detail card, "General" filter discussion, commit guidance, design pass started)
+
+Continuation of the 16:39 Models Overview session.
+
+### 🤖 BrainEdge — provider display name + logo BUILT (clears the 16:39 open item)
+Added real provider brand logos next to each maker name in Models Overview, with a colored monogram fallback for makers without a known logo. First wired to **Clearbit's logo API — discovered it's dead** (HubSpot acquired Clearbit and shut the free endpoint down, so every request 404'd → all monograms). Switched to **Google's favicon service** (`google.com/s2/favicons`), which serves a real brand mark for any domain reliably. Fixed several maker→domain mappings (meta.ai, x.ai, qwen.ai, moonshot.ai, z.ai) and added openrouter. Verified the renderer CSP allows external logos (`img-src 'self' data: https:`), so loading was never blocked — Clearbit being dead was the only cause. Caveat noted: favicons are real but low-res (16–64px, fine at the 15px render size); offered to bundle crisp Simple-Icons SVGs for the top ~20 providers with favicons as fallback (best-of-both), not yet done.
+
+### 🤖 BrainEdge — release date + "Best for" polish
+- Pulled OpenRouter's real `created` timestamp during enrichment and show **"released 5d ago / 3mo ago"** in the **model detail card** (click any row) — a genuine recency/relevance signal (popularity counts remain unavailable, see below).
+- **"Best for"** confirmed dim (muted secondary) + wrapping, with the char cap raised (~88→160) so it shows much more text instead of truncating.
+- Clarified the existing columns already cover the user's asks: modality (text→image) = the **Image** column; long context = the **Context** column.
+
+### 🧑 User — "What does General cover?" → 🤖 honest answer (no change yet)
+Explained that **General** currently matches `m.cat === "General"`, which is a **thin heuristic** — the ~440 uncurated OpenRouter models default to "General" unless their name signals coding/embedding, so the chip returns a big, not-very-meaningful pile that overlaps with Reasoning/Image/Agentic. Offered a one-line redefinition to **"general-purpose, NOT a specialist"** (exclude coding/thinking/vision/embedding). **Not changed — awaiting user confirmation.**
+
+### 🤖 BrainEdge — popularity/usage counts reaffirmed declined
+Repeated that OpenRouter's "5.87M tokens" popularity number is **not in any public API** (lives only on their rankings webpage) and editorial tags like "frontier" are hand-curated — so capabilities are derived from real model metadata rather than faked.
+
+### 🧑 User — "Let's Collaborate: similar progress-report window + what's in queue + hide/open button"
+Requested porting a progress-report/queue panel (with a hide/open toggle) into the **Let's Collaborate** surface, mirroring an existing one. **Requested, NOT yet built** (folded into the design pass below).
+
+### 🧑 User — "commit all changes" → 🤖 declined to run git from the sandbox
+Refused to `git add`/commit from the sandbox: the bash mount **truncates large files**, so staging from it would commit corrupted half-empty files and poison the repo. Gave the user PowerShell to run in their own terminal: `npm run build` first (nothing was compile-checked in the sandbox), then `git status` / `git add -A` / `git commit` / `git push`, plus a reminder to confirm `server/.env`, `users.json`, `free-emails.txt`, `admin-emails.txt` stay gitignored. **No source code touched; no git run.**
+
+### 🧑 User — "let's work on aesthetic, UI look and feel now" → 🤖 design pass started
+Began a deliberate UI/UX design pass; asked (AskUserQuestion) to lock direction + starting surface rather than restyling everything blind (can't compile-check in the sandbox). **In progress — no edits landed yet.**
+
+### Open / unresolved
+- **Let's Collaborate progress-report/queue panel + hide/open button** — requested, not yet built (part of the design pass).
+- **UI/UX design pass** — just started, direction not yet locked, no edits landed.
+- **"General" filter** redefinition — offered, awaiting user OK.
+- **Provider logos** — favicon source works; optional upgrade to bundled Simple-Icons SVGs for top providers not done.
+- **Hugging Face downloads column** (open-weight only) — still offered, awaiting go-ahead.
+- Carried: Models Overview accepted restyle direction; Let's Build / GitHub repo list verify web + desktop; Ink CLI + node-pty interactive verification; model determination/selector bug; pre-launch rotate OAuth secrets + remove Anthropic subscription/OAuth path; CLI anthropic wire format + npm/`.exe` distribution; file-tree view + undo/checkpoint buttons still to surface. Nothing this session was compile-checked in the sandbox → rebuild + eyeball.
+
+## Session — 2026-06-09 18:10 (design pass underway: header/logo cleanup, sidebar alignment, ModelPicker redesign + multi-select filters; maker filter in progress)
+
+### 🧑 User — "Guide me command to start app via terminal"
+Gave the dev-run commands: `npm run electron:dev` (Vite + Electron, hot-reload), `node server/auth-server.mjs` in a second terminal for auth/subscription/admin, `npm run dev` + `http://localhost:5174` for web-only, `npm install` once after the dependency additions.
+
+### 🧑 User — "Don't animate logo text, remove 'by Chaithrodaya Sukruth'" → 🤖 header cleanup BUILT
+Removed the "by Chaithrodaya Sukruth" tagline from the header and stopped the **BrainEdge** wordmark shimmer animation. Follow-up "keep logo text to single theme colour": wordmark is now a single solid color (theme accent), no gradient, in every accent. Leftover `.tn-by` CSS rules left in place (target a removed element; harmless).
+
+### 🧑 User — "Align logo/text/toggle as one centered unit" → 🤖 sidebar header alignment BUILT
+Toggle + logo + wordmark now vertically centered to each other, equal 10px gaps, and the group is centered within the 252px sidebar column when open (stays left-anchored when collapsed).
+
+### 🧑 User — "Add Agentic filter to Model Selector; make it appealing, not raw text" → 🤖 ModelPicker REDESIGNED (rewrite)
+Rewrote ModelPicker: **Agentic** filter added (uses real tool-calling data from the OpenRouter catalog, name-based fallback); real provider favicon logos on every row and group header; colored capability pills (coding green, reasoning purple, vision blue, fast amber, agentic orange; host pill Free/Local/Cloud); dropdown widened to 480px × 560px with more padding. Eyeball: 480px may clip in the composer.
+
+### 🧑 User — "Remove 'Any'; allow multiple filter selection; coding and agentic are different — show separately"
+- **"Any" chip removed**; capability chips now multi-select toggles combining with AND (nothing selected = all). Click an active chip to clear it.
+- **Independent capability detection**: agentic now comes from the model's real `tools` capability (removed the heuristic that lumped "coder" in with "agentic"); a coding+agentic model shows **both** pills.
+- Added a `title` hover tooltip with the full model name on truncated rows.
+- Verified Models Overview already keeps Coding/Agentic independent (`capCoding` from name, `capAgentic` from `m.tools`) — no change needed there.
+- **Reasoning vs Thinking**: acknowledged it's the same feature named inconsistently (picker "Reasoning", overview column "Thinking"); offered to standardize on "Reasoning" — **awaiting user OK**.
+
+### 🧑 User — "highlight currently selected model with theme box background that follows scroll" → requested, NOT yet confirmed built
+
+### 🧑 User — "categorize models by provider/maker in selector (e.g. see only NVIDIA within OpenRouter)" → 🤖 maker filter IN PROGRESS
+Started adding a maker filter to the picker (state + detection edits underway); session still running at the time of this log — completion not yet confirmed.
+
+### Open / unresolved
+- **Maker filter in ModelPicker** — in progress, unconfirmed.
+- **Selected-model highlight following scroll** — requested, unconfirmed.
+- **Reasoning/Thinking naming standardization** — offered, awaiting OK.
+- Carried: Let's Collaborate progress-report/queue panel + hide/open button; "General" filter redefinition awaiting OK; Simple-Icons SVG logo upgrade; HF downloads column offer; Let's Build / GitHub repo list verify web + desktop; Ink CLI + node-pty interactive verification; model determination/selector bug; pre-launch rotate OAuth secrets + remove Anthropic subscription/OAuth path; CLI anthropic wire format + npm/`.exe` distribution; file-tree view + undo/checkpoint buttons. Nothing compile-checked in the sandbox → rebuild + eyeball.
+
+## Session — 2026-06-09 (ModelPicker maker filter + provider-logo fix + selected-row highlight; composer "+" trimmed; two NEW requests)
+
+All shared code → web + desktop. Nothing compile-checked in the sandbox. Full detail in MEMORY.md §11ae/§11af.
+
+### 🧑 User — "categorize models by maker (see only NVIDIA within OpenRouter)" → 🤖 maker filter BUILT
+Added a **"Maker" dropdown** to ModelPicker listing every maker present (nvidia, meta-llama, qwen, deepseek…) with per-maker counts, sorted by count. Narrows within a router (e.g. OpenRouter → only NVIDIA). `makerOf` = id prefix before "/" (or provider for local); native `<select>` (OS-styled options — themed upgrade optional). Clears the prior "in progress".
+
+### 🧑 User — "fix logo for provider also" → 🤖 provider-logo bug FIXED
+Group header was using the FIRST model's maker for its logo (OpenRouter showed ai21's "a"). Now passes `prov={g.group}` → shows the **provider's** logo. Improved `Logo` matching for multi-word names + added router domains (deepinfra, groq, together, fireworks, lmstudio, ollama, novita, hyperbolic, sambanova, cerebras, lambda, nvidianim).
+
+### 🧑 User — "highlight selected model with theme box that follows scroll — is this done?" → 🤖 NOW BUILT
+It hadn't been (slipped earlier). `.model-row.sel` now has an **accent-tinted background box + inset accent border** (was text-color only) + a 0.12s transition. Highlight is a CSS state on the row, so it scrolls with the list naturally — smooth, no JS.
+
+### 🧑 User — "remove Use style/instructions and Commands & skills from the '+' menu; replicate GitHub connect exactly like Claude" → 🤖 menu trimmed; GitHub modal NOT built
+- Removed **"Commands & skills"** (redundant with `/`) and **"Use style / instructions"** from the composer "+" menu.
+- **NEW — Claude-style "Add content from GitHub" modal (NOT built):** user shared Claude's exact dialog — "Add content from GitHub / Select the files you would like to add to this chat", a **"Select a repository" dropdown** + paste-URL, a file picker ("Select a repository or paste a URL above to get started"), footer "Select files to add to chat context · N% of capacity used". Must link a GitHub account, switch repos, and pick **individual files** to add to the chat as context. Richer than the current EnvPicker (which clones a repo as a working folder) — this is **file-level context selection into chat**. Pending.
+
+### 🧑 User — "add Skills section listing skills that can be applied to chat or co-work" → 🤖 NOT built
+Wants a **Skills submenu in the "+" menu** listing available skills (algorithmic-art, canvas-design, design-director, doc-coauthoring, internal-comms, mcp-builder, research-deep, skill-creator, slack-gif-creator…) applicable to a Chat/Cowork session, with "Manage skills" + "Add skill" — like Claude's "+ → Skills →" flyout. Pending.
+
+### 🧑 User — "you are taking longer time"
+Noted impatience — keep edits tighter/faster.
+
+### Open / unresolved
+- **NEW:** Claude-style "Add content from GitHub" file-picker modal (repo dropdown + URL + per-file selection into chat context); "+" menu Skills submenu (apply skills to Chat/Cowork, Manage/Add).
+- Let's Collaborate progress/queue panel + hide/open button; "General" filter redefinition awaiting OK; Reasoning/Thinking label standardization awaiting OK; Simple-Icons SVG logo upgrade; HF downloads column offer.
+- Let's Build / GitHub repo list verify web+desktop; Ink CLI + node-pty interactive verification; model determination/selector bug.
+- Pre-launch: rotate OAuth secrets; remove Anthropic subscription/OAuth path; CLI anthropic wire format + npm/`.exe` distribution; file-tree view + undo/checkpoint buttons. Commit from the user's own terminal (not the sandbox). Nothing compile-checked → `npm run build` + eyeball.
+
+## Session — 2026-06-09 (AGENTS — Console-style agent builder, web + desktop)
+
+### 🧑 User — "Add Agents into my sidebar; replicate Claude Console's agent builder (screenshot) — agents use the model from the model selector, not an API key" → 🤖 BUILT
+Clarified first (Integrate = model binding via selector; all capabilities, per-agent toggles; AI-generated config; adapted Console templates), then built end-to-end. Full detail in MEMORY.md §11ag.
+- **New `src/components/Agents.jsx`**: list of saved agents (Run/Edit/Delete, tool + pinned-model pills) + Console-style 4-step builder — Create (describe → `completeOnce` AI-generates name/description/instructions/tools; 10-template searchable gallery), Configure environment (instructions + 4 capability toggles), Start session (summary + optional first message), Integrate (embedded ModelPicker pins a model; unpinned = current selector model).
+- **Storage**: `settings.agents` on both platforms (no new IPC); `settings.cjs` DEFAULTS + guard.
+- **Wiring**: Sidebar "Agents" (Bot icon); App route + `startAgentSession` (pins model via selectModel, files/shell agents → cowork, else chat, fresh seeded conversation); accent agent chip/bar with detach.
+- **Engine**: desktop `session-manager.cjs` `_agentSys`/`_agentExtras` → systemOverride + connectors/skills filtered per agent across chat/tool-loop/cowork/SDK paths; web `webBridge.js` `agentBlock()` + Files-toggle gating of the file agent.
+- **Limits**: reopened conversations don't re-attach the agent; web connectors/skills are prompt-level (MCP is desktop-only); NOT compile-checked (sandbox VM down) → run + eyeball.
+
+### Open / unresolved
+- Verify Agents on web + desktop; roadmap: Scheduler-run agents, CLI `--agent`, agent re-attach on reopen.
+- Carried: GitHub file-picker modal; "+" menu Skills submenu; Collaborate progress panel; model selector bug; pre-launch secret rotation + Anthropic path removal.

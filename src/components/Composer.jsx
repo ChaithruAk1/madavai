@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+import GithubContent from "./GithubContent.jsx";
 
 export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNewChat, onPickFolder, onAddRepo, cwd, controls }) {
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]); // { name, content } | { name, image, dataUrl }
   const [skill, setSkill] = useState(null); // attached slash-command skill { name, description }
   const [menuOpen, setMenuOpen] = useState(false);
+  const [ghOpen, setGhOpen] = useState(false);   // "Add content from GitHub" modal
+  const [skillsSub, setSkillsSub] = useState(false); // Skills submenu in the "+" menu
   const [listening, setListening] = useState(false);
 
   // ---- slash-command (commands + skills) menu ----
@@ -38,16 +41,12 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   useEffect(() => { loadSkills(); loadConnectors(); }, []);
   useEffect(() => { if (cwd && bridge.listDir) bridge.listDir(cwd).then((l) => setDirFiles(l || [])).catch(() => setDirFiles([])); else setDirFiles([]); }, [cwd]);
 
-  // Built-in slash commands (run immediately on select, like Claude).
+  // Built-in slash commands — inline ACTIONS you use in place (Claude-style), not navigation away.
   const nav = (m) => { setMenuOpen(false); onNavigate && onNavigate(m); };
   const COMMANDS = [
+    { id: "add-files", desc: "Open the file picker", run: () => pickFiles() },
     { id: "new", desc: mode === "cowork" ? "Start a new task" : mode === "code" ? "Start a new session" : "Start a new chat", run: () => onNewChat && onNewChat() },
     { id: "folder", desc: "Choose a working folder", run: () => onPickFolder && onPickFolder() },
-    { id: "projects", desc: "Open Projects", run: () => nav("project") },
-    { id: "skills", desc: "Manage skills", run: () => nav("skills") },
-    { id: "connectors", desc: "Manage connectors", run: () => nav("connectors") },
-    { id: "models", desc: "Model settings", run: () => nav("models") },
-    { id: "settings", desc: "Open settings", run: () => nav("settings") },
   ];
 
   const q = slashQuery.toLowerCase();
@@ -248,17 +247,28 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
             {menuOpen && (
               <div className="plus-menu">
                 <button className="plus-item" onClick={pickFiles}><Paperclip size={15} /> Add files or photos <span className="kbd">Ctrl+U</span></button>
-                <button className="plus-item" onClick={openSlashFromMenu}><Zap size={15} /> Commands &amp; skills <span className="kbd">/</span></button>
                 <button className="plus-item" onClick={() => { setMenuOpen(false); setText((v) => (v ? v + " @" : "@")); setAtOpen(true); setAtQuery(""); setAtIdx(0); loadConnectors(); ref.current && ref.current.focus(); }}><AtSign size={15} /> Mention file / connector <span className="kbd">@</span></button>
+                <button className="plus-item" onClick={() => { setMenuOpen(false); setGhOpen(true); }}><Github size={15} /> Add from GitHub</button>
                 <div className="plus-sep" />
+                <button className="plus-item" onClick={() => { setSkillsSub((v) => !v); loadSkills(); }}><Puzzle size={15} /> Skills <ChevronRight size={14} className="pm-chev" style={{ transform: skillsSub ? "rotate(90deg)" : "none" }} /></button>
+                {skillsSub && (
+                  <div className="plus-sub">
+                    {skills.length === 0 && <div className="plus-subempty">No skills installed yet</div>}
+                    {skills.map((s) => (
+                      <button key={s.name || s.dir} className="plus-item plus-subitem" title={s.description || ""} onClick={() => { setSkill({ name: s.name, description: s.description }); setSkillsSub(false); setMenuOpen(false); }}>
+                        <Puzzle size={13} /> <span className="plus-subname">{s.name}</span>
+                      </button>
+                    ))}
+                    <button className="plus-item plus-subitem" onClick={() => nav("skills")}><Plus size={13} /> Manage / add skills</button>
+                  </div>
+                )}
                 <button className="plus-item" onClick={() => nav("project")}><FolderKanban size={15} /> Add to project <ChevronRight size={14} className="pm-chev" /></button>
-                <button className="plus-item" onClick={() => { setMenuOpen(false); onAddRepo && onAddRepo(); }}><Github size={15} /> Connect a GitHub repo</button>
                 <div className="plus-sep" />
                 <button className="plus-item" onClick={() => nav("connectors")}><Plug size={15} /> Connectors <ChevronRight size={14} className="pm-chev" /></button>
-                <button className="plus-item" onClick={() => nav("settings")}><Palette size={15} /> Use style / instructions</button>
               </div>
             )}
           </div>
+          {ghOpen && <GithubContent onClose={() => setGhOpen(false)} onAttach={(items) => setFiles((f) => [...f, ...items])} />}
 
           <span style={{ flex: 1 }} />
           {controls && <div className="composer-controls">{controls}</div>}

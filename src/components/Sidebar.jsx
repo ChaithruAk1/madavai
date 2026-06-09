@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const TOP = [
   { id: "project", label: "Projects", icon: FolderKanban },
+  { id: "agents", label: "Agents", icon: Bot },
   { id: "studio", label: "Studio", icon: Shapes },
   { id: "terminal", label: "Terminal", icon: TerminalSquare },
 ];

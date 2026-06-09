@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronDown, Check, Search, RefreshCw } from "lucide-react";
 import { MODELS } from "../bridge/contract.js";
+import { bridge } from "../bridge/index.js";
 
 // Best-guess of a model's core purpose from its name (no universal API exposes this).
 export function classify(id) {
@@ -12,54 +13,93 @@ export function classify(id) {
   if (/flash|mini|lite|haiku|tiny|small|turbo|nano|\b[1-9]b\b/.test(n)) return "fast";
   return "general";
 }
-const PURPOSE_COLOR = { coding: "#7ee787", reasoning: "#d2a8ff", vision: "#79c0ff", fast: "#ffd479", embeddings: "#79c0ff", general: "var(--text-2)" };
-const chipStyle = (active) => ({ padding: "3px 11px", borderRadius: 999, fontSize: 11.5, lineHeight: 1.5, border: "1px solid " + (active ? "var(--accent)" : "var(--line)"), background: active ? "var(--accent)" : "transparent", color: active ? "#04121a" : "var(--text-2)", cursor: "pointer", fontWeight: active ? 600 : 400 });
+const PURPOSE_COLOR = { coding: "#7ee787", reasoning: "#d2a8ff", vision: "#79c0ff", fast: "#ffd479", embeddings: "#79c0ff", agentic: "#f0883e", general: "var(--text-2)" };
+const chipStyle = (active) => ({ padding: "4px 12px", borderRadius: 999, fontSize: 11.5, lineHeight: 1.5, border: "1px solid " + (active ? "var(--accent)" : "var(--line)"), background: active ? "var(--accent)" : "transparent", color: active ? "#04121a" : "var(--text-2)", cursor: "pointer", fontWeight: active ? 600 : 400 });
+const pill = (color) => ({ fontSize: 10, padding: "1px 7px", borderRadius: 999, border: `1px solid color-mix(in srgb, ${color} 40%, transparent)`, background: `color-mix(in srgb, ${color} 12%, transparent)`, color, whiteSpace: "nowrap", lineHeight: 1.6, fontWeight: 600 });
+
+// Provider → domain, for real logos (site favicons).
+const DOMAIN = {
+  openai: "openai.com", anthropic: "anthropic.com", google: "google.com", meta: "meta.ai", "meta-llama": "meta.ai",
+  mistralai: "mistral.ai", mistral: "mistral.ai", deepseek: "deepseek.com", qwen: "qwen.ai", alibaba: "alibabacloud.com",
+  "x-ai": "x.ai", xai: "x.ai", nvidia: "nvidia.com", openrouter: "openrouter.ai", cohere: "cohere.com", liquid: "liquid.ai",
+  moonshotai: "moonshot.ai", stepfun: "stepfun.com", "stepfun-ai": "stepfun.com", nous: "nousresearch.com", nousresearch: "nousresearch.com",
+  microsoft: "microsoft.com", perplexity: "perplexity.ai", "01-ai": "01.ai", ai21: "ai21.com", amazon: "amazon.com",
+  ibm: "ibm.com", "ibm-granite": "ibm.com", arcee: "arcee.ai", "arcee-ai": "arcee.ai", morph: "morphllm.com", allenai: "allenai.org",
+  reka: "reka.ai", thudm: "z.ai", zhipu: "z.ai", baidu: "baidu.com", minimax: "minimaxi.com", kwaipilot: "kuaishou.com", cohereforai: "cohere.com",
+  bigcode: "huggingface.co", bytedance: "bytedance.com", inclusionai: "huggingface.co", agentica: "huggingface.co", "z-ai": "z.ai",
+  // Routers / hosting providers (used for the provider group header logo)
+  deepinfra: "deepinfra.com", groq: "groq.com", together: "together.ai", togetherai: "together.ai", fireworks: "fireworks.ai",
+  lmstudio: "lmstudio.ai", ollama: "ollama.com", novita: "novita.ai", hyperbolic: "hyperbolic.xyz", sambanova: "sambanova.ai",
+  cerebras: "cerebras.ai", lambda: "lambdalabs.com", nvidianim: "nvidia.com", nim: "nvidia.com",
+};
+function Logo({ name, prov }) {
+  const [err, setErr] = useState(false);
+  const maker = ((name || "").includes("/") ? name.split("/")[0] : (prov || "")).toLowerCase().trim();
+  const d = DOMAIN[maker] || DOMAIN[maker.replace(/\s+/g, "")] || DOMAIN[maker.split(/[\s-]/)[0]];
+  if (d && !err) return <img src={`https://www.google.com/s2/favicons?domain=${d}&sz=64`} alt="" width={16} height={16} loading="lazy" onError={() => setErr(true)} style={{ borderRadius: 4, flex: "none" }} />;
+  const hue = [...maker].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0) % 360;
+  return <span style={{ flex: "none", width: 16, height: 16, borderRadius: 4, display: "grid", placeItems: "center", fontSize: 9, fontWeight: 700, background: `hsl(${hue} 55% 55% / .2)`, color: `hsl(${hue} 70% 72%)` }}>{(maker.replace(/^[~@]/, "")[0] || "?").toUpperCase()}</span>;
+}
 
 // `groups` are provider-derived: [{ group: providerName, items: [{id:"pid::model", name, prov, badge}] }]
 export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh }) {
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [cost, setCost] = useState("all");      // all | free | paid
-  const [purpose, setPurpose] = useState("any"); // any | coding | reasoning | vision | fast
+  const [cost, setCost] = useState("all");       // all | free | paid
+  const [caps, setCaps] = useState(() => new Set()); // active capability filters (multi-select, AND-combined)
   const [refreshing, setRefreshing] = useState(false);
+  const [orCat, setOrCat] = useState(null);
+  const [maker, setMaker] = useState("all"); // filter by model maker (nvidia, meta, qwen…) within a router
   const ref = useRef(null);
   const isFree = (it, groupName) => /local/i.test(it.prov || groupName || "") || /:free\b/.test((it.name || "").toLowerCase());
+  const makerOf = (it, group) => ((it.name || "").includes("/") ? it.name.split("/")[0] : (it.prov || group || "")).toLowerCase().trim();
+  const ormOf = (it) => { if (!orCat) return null; const id = it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name; return orCat[id] || null; };
+  // Agentic = real tool-calling capability from the catalog. Don't assume it from "coder" etc.
+  const agenticOf = (it) => { const o = ormOf(it); if (o) return !!o.tools; return /\bagent/i.test(it.name || ""); };
+  // Each capability is detected INDEPENDENTLY — a model can be several at once (e.g. coding AND agentic).
+  const CAPS = {
+    coding: (it) => /cod(er|e)\b|coder|codestral|devstral/i.test(it.name || ""),
+    reasoning: (it) => { const o = ormOf(it); return (o && o.reasoning) || /reason|\br1\b|\bo1\b|\bo3\b|qwq|think/i.test(it.name || ""); },
+    vision: (it) => { const o = ormOf(it); return (o && o.image) || /vision|multimodal|\bvl\b|llava/i.test(it.name || ""); },
+    fast: (it) => /flash|mini|lite|haiku|tiny|small|turbo|nano/i.test(it.name || ""),
+    agentic: (it) => agenticOf(it),
+  };
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
+  useEffect(() => { if (open && !orCat && bridge.getOpenRouterCatalog) bridge.getOpenRouterCatalog().then(setOrCat).catch(() => {}); }, [open]); // eslint-disable-line
 
-  // Find the selected item; if not in the list yet, synthesize a label from the value.
   const current = useMemo(() => {
     for (const g of source) for (const it of g.items) if (it.id === value) return it;
-    if (value && value.includes("::")) {
-      const mid = value.slice(value.indexOf("::") + 2);
-      return { id: value, name: mid || "select model", prov: "" };
-    }
+    if (value && value.includes("::")) { const mid = value.slice(value.indexOf("::") + 2); return { id: value, name: mid || "select model", prov: "" }; }
     return source[0]?.items[0] || { name: "no models", prov: "" };
   }, [value, source]);
 
   const total = source.reduce((n, g) => n + g.items.length, 0);
+  // Unique makers across all loaded models (e.g. nvidia, meta-llama, qwen…), sorted by how many each has.
+  const makers = useMemo(() => {
+    const m = new Map();
+    for (const g of source) for (const it of g.items) { const k = makerOf(it, g.group); if (k) m.set(k, (m.get(k) || 0) + 1); }
+    return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [source]);
   const groups = source
     .map((g) => ({ ...g, items: g.items.filter((it) => {
       if (!(it.name + it.id).toLowerCase().includes(q.toLowerCase())) return false;
+      if (maker !== "all" && makerOf(it, g.group) !== maker) return false;
       const free = isFree(it, g.group);
       if (cost === "free" && !free) return false;
       if (cost === "paid" && free) return false;
-      if (purpose !== "any" && classify(it.name) !== purpose) return false;
+      for (const k of caps) { if (CAPS[k] && !CAPS[k](it)) return false; } // multi-select, AND-combined
       return true;
     }) }))
     .filter((g) => g.items.length);
   const shown = groups.reduce((n, g) => n + g.items.length, 0);
 
-  const doRefresh = async () => {
-    if (!onRefresh) return;
-    setRefreshing(true);
-    try { await onRefresh(); } finally { setRefreshing(false); }
-  };
+  const doRefresh = async () => { if (!onRefresh) return; setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); } };
 
   return (
     <div className="model-picker" ref={ref}>
@@ -67,58 +107,65 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
         {current.prov && <span className="prov">{current.prov}</span>} {current.name} <ChevronDown size={14} />
       </button>
       {open && (
-        <div className="model-menu scroll">
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+        <div className="model-menu scroll" style={{ width: 480, maxHeight: 560 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <div style={{ position: "relative", flex: 1 }}>
-              <Search size={14} style={{ position: "absolute", left: 10, top: 10, color: "var(--text-2)" }} />
-              <input
-                className="model-search" style={{ paddingLeft: 30, marginBottom: 0 }} autoFocus
-                placeholder={`Search ${total} models…`} value={q} onChange={(e) => setQ(e.target.value)}
-              />
+              <Search size={14} style={{ position: "absolute", left: 11, top: 10, color: "var(--text-2)" }} />
+              <input className="model-search" style={{ paddingLeft: 32, marginBottom: 0 }} autoFocus placeholder={`Search ${total} models…`} value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
-            {onRefresh && (
-              <button className="btn" title="Reload models from providers" onClick={doRefresh} style={{ padding: "8px 9px" }}>
-                <RefreshCw size={14} className={refreshing ? "spin" : ""} />
-              </button>
-            )}
+            {onRefresh && <button className="btn" title="Reload models from providers" onClick={doRefresh} style={{ padding: "8px 9px" }}><RefreshCw size={14} className={refreshing ? "spin" : ""} /></button>}
           </div>
 
-          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+          {makers.length > 1 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".05em" }}>Maker</span>
+              <select value={maker} onChange={(e) => setMaker(e.target.value)} className="model-search" style={{ flex: 1, marginBottom: 0, padding: "7px 10px", cursor: "pointer" }}>
+                <option value="all">All makers · {total}</option>
+                {makers.map(([k, n]) => <option key={k} value={k}>{k} · {n}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
             {[["all", "All"], ["free", "Free"], ["paid", "Paid"]].map(([k, label]) => (
               <button key={k} onClick={() => setCost(k)} style={chipStyle(cost === k)}>{label}</button>
             ))}
-            <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "2px 3px" }} />
-            {[["any", "Any"], ["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"]].map(([k, label]) => (
-              <button key={k} onClick={() => setPurpose(k)} style={chipStyle(purpose === k)}>{label}</button>
+            <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "2px 4px" }} />
+            {[["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"], ["agentic", "Agentic"]].map(([k, label]) => (
+              <button key={k} onClick={() => setCaps((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; })} style={chipStyle(caps.has(k))}>{label}</button>
             ))}
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-3)" }}>{shown} of {total}</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-3)", fontVariantNumeric: "tabular-nums" }}>{shown} of {total}</span>
           </div>
 
           {groups.length === 0 && (
-            <div className="model-group" style={{ textTransform: "none", color: "var(--text-2)", padding: 10 }}>
+            <div className="model-group" style={{ textTransform: "none", color: "var(--text-2)", padding: 12 }}>
               No models match these filters. Clear a filter, or open Settings to add a provider.
             </div>
           )}
 
           {groups.map((g) => (
             <div key={g.group}>
-              <div className="model-group">{g.group} · {g.items.length}</div>
+              <div className="model-group" style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <Logo prov={g.group} /> {g.group} · {g.items.length}
+              </div>
               {g.items.map((it) => {
                 const isLocal = /local/i.test(it.prov || g.group || "");
                 const free = isFree(it, g.group);
-                const purp = classify(it.name);
-                const label = isLocal ? "Local" : free ? "Free" : "Cloud";
-                const labelColor = isLocal ? "var(--ok)" : free ? "#7ee787" : "var(--accent)";
+                const tags = [];
+                if (CAPS.coding(it)) tags.push("coding");
+                if (CAPS.reasoning(it)) tags.push("reasoning");
+                if (CAPS.vision(it)) tags.push("vision");
+                if (CAPS.agentic(it)) tags.push("agentic");
+                if (!tags.length && CAPS.fast(it)) tags.push("fast");
+                const hostLabel = isLocal ? "Local" : free ? "Free" : "Cloud";
+                const hostColor = isLocal ? "var(--ok)" : free ? "#7ee787" : "var(--accent)";
                 return (
-                  <div
-                    key={it.id}
-                    className={`model-row ${it.id === value ? "sel" : ""}`}
-                    onClick={() => { onChange(it.id); setOpen(false); }}
-                  >
+                  <div key={it.id} title={it.name} className={`model-row ${it.id === value ? "sel" : ""}`} onClick={() => { onChange(it.id); setOpen(false); }} style={{ gap: 9 }}>
+                    <Logo name={it.name} prov={it.prov || g.group} />
                     <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                    {purp !== "general" && purp !== "embeddings" && <span className="badge" style={{ background: "transparent", border: "1px solid var(--line)", color: PURPOSE_COLOR[purp] }}>{purp}</span>}
-                    <span className="badge" style={{ background: "transparent", border: "1px solid var(--line)", color: labelColor }}>{label}</span>
-                    {it.id === value && <Check size={15} className="check" />}
+                    {tags.slice(0, 3).map((t) => <span key={t} style={pill(PURPOSE_COLOR[t])}>{t}</span>)}
+                    <span style={pill(hostColor)}>{hostLabel}</span>
+                    {it.id === value && <Check size={15} className="check" style={{ flex: "none" }} />}
                   </div>
                 );
               })}
