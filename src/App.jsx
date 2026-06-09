@@ -533,7 +533,9 @@ export default function App() {
                   <div className="hero-inner">
                     {agentCtx ? (
                       <div className="hero-greet hero-agent">
-                        <span className="hero-agent-ic"><Bot size={26} /></span>
+                        <span className="hero-agent-ic" style={agentCtx.identity ? { background: `${agentCtx.identity.color}22`, borderColor: `${agentCtx.identity.color}66`, color: agentCtx.identity.color } : undefined}>
+                          {agentCtx.identity ? <span style={{ fontSize: 22 }}>{agentCtx.identity.glyph}</span> : <Bot size={26} />}
+                        </span>
                         <div>
                           <h1 className="greeting">{agentCtx.name}</h1>
                           <div className="hero-agent-sub">{agentCtx.description || "Custom agent"} · ready when you are</div>
@@ -551,7 +553,8 @@ export default function App() {
                     )}
                     {agentCtx && (
                       <div className="hero-opts">
-                        <span className="chip agent-chip"><Bot size={13} /> {agentCtx.name}
+                        <span className="chip agent-chip" style={agentCtx.identity ? { color: agentCtx.identity.color, borderColor: `${agentCtx.identity.color}66`, background: `${agentCtx.identity.color}1f` } : undefined}>
+                          {agentCtx.identity ? <span>{agentCtx.identity.glyph}</span> : <Bot size={13} />} {agentCtx.name}
                           <button className="agent-chip-x" title="Detach agent" onClick={clearAgent}><X size={12} /></button>
                         </span>
                       </div>
@@ -596,7 +599,7 @@ export default function App() {
                   )}
                   {agentCtx && (
                     <div className="folder-bar agent-bar">
-                      <Bot size={14} />
+                      {agentCtx.identity ? <span style={{ color: agentCtx.identity.color }}>{agentCtx.identity.glyph}</span> : <Bot size={14} />}
                       <span className="path">{agentCtx.name}</span>
                       <span style={{ color: "var(--text-2)" }}>· custom agent</span>
                       <button className="btn ghost" style={{ padding: "3px 7px", marginLeft: "auto" }} title="Detach agent" onClick={clearAgent}><X size={12} /></button>

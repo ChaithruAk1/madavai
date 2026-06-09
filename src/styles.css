@@ -1475,6 +1475,65 @@ textarea.model-search { line-height: 1.5; }
 .ag-summary-name svg { color: var(--accent); }
 .ag-model-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
 
+/* ===== Agent Studio (build-by-chat + live bench) ===== */
+.ags-face { display: inline-flex; align-items: center; justify-content: center; border-radius: 11px; flex: none; line-height: 1; }
+.ags-face-btn { background: none; border: none; padding: 0; cursor: pointer; }
+.ags-face-btn:hover .ags-face { filter: brightness(1.25); }
+.ags-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 18px; }
+.ags-card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); text-align: left; }
+.ags-card-top { display: flex; align-items: center; gap: 11px; }
+.ags-card-id { min-width: 0; }
+.ags-card-name { font-size: 14.5px; font-weight: 600; color: var(--text-0); }
+.ags-card-role { font-size: 12px; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ags-new { align-items: flex-start; cursor: pointer; border-style: dashed; border-color: var(--line-2); background: transparent; transition: border-color 0.12s, background 0.12s; }
+.ags-new:hover { border-color: var(--accent-line); background: var(--accent-weak); }
+.ags-face-new { width: 34px; height: 34px; background: var(--accent-weak); border: 1px dashed var(--accent-line); color: var(--accent); border-radius: 11px; }
+.ags-crew { margin-top: 30px; }
+.ags-crew-head { font-size: 13.5px; font-weight: 600; color: var(--text-0); margin-bottom: 12px; }
+.ags-crew-cat { margin-bottom: 14px; }
+.ags-crew-label { font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px; }
+.ags-crew-row { display: flex; flex-wrap: wrap; gap: 9px; }
+.ags-persona { display: inline-flex; align-items: center; gap: 9px; padding: 8px 13px 8px 9px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); cursor: pointer; text-align: left; transition: border-color 0.12s, background 0.12s; }
+.ags-persona:hover { border-color: var(--accent-line); background: var(--accent-weak); }
+.ags-persona-name { font-size: 12.5px; font-weight: 600; color: var(--text-0); }
+.ags-persona-role { font-size: 11px; color: var(--text-2); }
+.ags-persona.sm { padding: 6px 10px 6px 7px; }
+
+/* studio room */
+.ags-studio { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 14px 18px 16px; gap: 12px; }
+.ags-topbar { display: flex; align-items: center; gap: 10px; }
+.ags-name { flex: 0 1 260px; background: transparent; border: none; border-bottom: 1px solid transparent; outline: none; color: var(--text-0); font-size: 16px; font-weight: 600; padding: 4px 2px; }
+.ags-name:focus { border-bottom-color: var(--accent-line); }
+.ags-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 9px; }
+.ags-split { display: grid; grid-template-columns: minmax(330px, 5fr) minmax(330px, 6fr); gap: 14px; flex: 1; min-height: 0; }
+@media (max-width: 980px) { .ags-split { grid-template-columns: 1fr; } }
+.ags-pane { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); overflow: hidden; }
+.ags-bench { border-color: var(--accent-line); background: linear-gradient(180deg, var(--accent-weak), transparent 90px), var(--bg-2); }
+.ags-pane-head { display: flex; align-items: center; gap: 7px; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--text-0); border-bottom: 1px solid var(--line); }
+.ags-pane-head svg { color: var(--accent); }
+.ags-pane-sub { font-weight: 400; color: var(--text-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ags-bench-reset { margin-left: auto; background: none; border: none; color: var(--text-2); cursor: pointer; display: inline-flex; }
+.ags-bench-reset:hover { color: var(--text-0); }
+.ags-chat { flex: 1; min-height: 0; padding: 14px; display: flex; flex-direction: column; gap: 9px; }
+.ags-msg { align-self: flex-start; max-width: 88%; padding: 8px 12px; border-radius: 12px; background: var(--bg-1); border: 1px solid var(--line); color: var(--text-0); font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; display: inline-flex; gap: 6px; align-items: center; }
+.ags-msg.me { align-self: flex-end; background: var(--accent-weak); border-color: var(--accent-line); }
+.ags-bench-reply { display: flex; align-items: flex-start; gap: 8px; max-width: 92%; }
+.ags-bench-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: var(--text-1); font-size: 12.5px; margin: auto; max-width: 320px; }
+.ags-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.ags-input input { flex: 1; background: var(--bg-1); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; color: var(--text-0); font-size: 13px; outline: none; }
+.ags-input input:focus { border-color: var(--accent-line); }
+.ags-crew-inline { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+.ags-bp-toggle { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; border-top: 1px solid var(--line); width: 100%; padding: 8px 14px; color: var(--text-2); font-size: 12px; cursor: pointer; text-align: left; }
+.ags-bp-toggle:hover { color: var(--text-0); }
+.ags-bp { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 6px; max-height: 46%; }
+.ags-bp label { font-size: 10.5px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 6px; }
+.ags-bp input, .ags-bp textarea { background: var(--bg-1); border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; color: var(--text-0); font-size: 12.5px; outline: none; resize: vertical; }
+.ags-bp textarea { font-family: var(--mono); line-height: 1.5; }
+.ags-bp input:focus, .ags-bp textarea:focus { border-color: var(--accent-line); }
+.ags-bp-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.ags-bp-tool { cursor: pointer; background: var(--bg-1); }
+.ags-bp-tool.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-weak); }
+
 /* agent hero (session opened from the Agents launcher) */
 .hero-agent { align-items: center; gap: 14px; text-align: left; }
 .hero-agent-ic { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 14px; background: var(--accent-weak); border: 1px solid var(--accent-line); color: var(--accent); flex: none; }

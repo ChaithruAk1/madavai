@@ -35012,6 +35012,26 @@ Clarified first (Integrate = model binding via selector; all capabilities, per-a
 - **Engine**: desktop `session-manager.cjs` `_agentSys`/`_agentExtras` → systemOverride + connectors/skills filtered per agent across chat/tool-loop/cowork/SDK paths; web `webBridge.js` `agentBlock()` + Files-toggle gating of the file agent.
 - **Limits**: reopened conversations don't re-attach the agent; web connectors/skills are prompt-level (MCP is desktop-only); NOT compile-checked (sandbox VM down) → run + eyeball.
 
+### 🧑 User — "looks copied from Anthropic — make it innovative, other-provider inspired; backend 100% same" → 🤖 "Agent Studio" REDESIGN BUILT
+Chose via questions: build-by-chat + live preview, full visual identity, personas/crew templates. Full detail MEMORY.md §11ag follow-up 3.
+- **Studio room replaces the 4-step stepper**: Designer chat (left, completeOnce → `{reply,config}` live-updates the draft; collapsible Blueprint with raw config + model pin) | **Bench** (right, live multi-turn test chat with the draft agent). Top bar: cycling identity face, inline name, ModelPicker, Save, "Put to work".
+- **Identity**: `agent.identity {color,glyph}` (additive field, engines ignore) on cards, Studio, hero, bar, chip. Personas: Scout/Radar/Sentinel/Concierge/Bridger/Clausewise/Retroscribe/Schema/Quant grouped Research/Ops/Docs/Data — same configs, new presentation. Backend calls byte-identical.
+- Earlier same session: model selector added throughout the flow; hero agent-identity header (user thought Run "just opened chat"); Save diagnostics (Saving…/Saved ✓/red error) — **Save "nothing happens" bug still open, awaiting user's console/VITE output**; NIM 404 diagnosed as provider model issue, not agent wiring.
+
 ### Open / unresolved
-- Verify Agents on web + desktop; roadmap: Scheduler-run agents, CLI `--agent`, agent re-attach on reopen.
+- **Save button dead — awaiting console/[VITE] output to diagnose.** Verify Agent Studio on web + desktop (not compile-checked).
+- Roadmap: Scheduler-run agents, CLI `--agent`, agent re-attach on reopen.
 - Carried: GitHub file-picker modal; "+" menu Skills submenu; Collaborate progress panel; model selector bug; pre-launch secret rotation + Anthropic path removal.
+
+## Session — 2026-06-09 (Agent Studio: agentic-only model filter)
+
+Same session as the Agent Studio work above; one addition after the redesign. Full detail in MEMORY.md §11ag follow-up 4.
+
+### 🧑 User — "For Agents, filter the model picker to agentic models only; don't disturb the global selector" → 🤖 BUILT
+- New opt-in `agenticOnly` prop on ModelPicker: pre-filters to tool-calling-capable models (real `tools` flag from the OpenRouter catalog, name-based fallback for providers outside it); catalog pre-fetched as soon as an agentic picker mounts so the filter is accurate on first open.
+- Redundant Agentic chip hidden in this mode; an "agent-ready only" pill explains the shorter list.
+- Applied to all three Agent Studio pickers (list header, Studio top bar, Blueprint pin). **Global selector untouched** (prop defaults to false).
+- Caveat: providers outside the OpenRouter catalog (LM Studio/Ollama/NIM) rely on name heuristics, so some tool-capable local models may be hidden; a "show all" escape toggle was offered, not built.
+
+### Open / unresolved
+- Unchanged from the block above (Save button bug, Agent Studio verification, carried items). Plus: optional "show all" toggle for agenticOnly pickers. Not compile-checked → rebuild + eyeball.

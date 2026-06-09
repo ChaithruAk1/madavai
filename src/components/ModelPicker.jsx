@@ -42,7 +42,9 @@ function Logo({ name, prov }) {
 }
 
 // `groups` are provider-derived: [{ group: providerName, items: [{id:"pid::model", name, prov, badge}] }]
-export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh }) {
+// `agenticOnly`: opt-in pre-filter to tool-calling-capable models (used by Agent Studio —
+// agents need function calling). The default global picker behavior is unchanged.
+export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh, agenticOnly = false }) {
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -71,7 +73,9 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
-  useEffect(() => { if (open && !orCat && bridge.getOpenRouterCatalog) bridge.getOpenRouterCatalog().then(setOrCat).catch(() => {}); }, [open]); // eslint-disable-line
+  // Catalog gives real tool-calling data for the Agentic detection; agenticOnly pickers
+  // need it immediately (not just on open) so the filter is accurate from the first render.
+  useEffect(() => { if ((open || agenticOnly) && !orCat && bridge.getOpenRouterCatalog) bridge.getOpenRouterCatalog().then(setOrCat).catch(() => {}); }, [open, agenticOnly]); // eslint-disable-line
 
   const current = useMemo(() => {
     for (const g of source) for (const it of g.items) if (it.id === value) return it;
@@ -89,6 +93,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const groups = source
     .map((g) => ({ ...g, items: g.items.filter((it) => {
       if (!(it.name + it.id).toLowerCase().includes(q.toLowerCase())) return false;
+      if (agenticOnly && !CAPS.agentic(it)) return false; // Agent Studio: tool-capable models only
       if (maker !== "all" && makerOf(it, g.group) !== maker) return false;
       const free = isFree(it, g.group);
       if (cost === "free" && !free) return false;
@@ -131,9 +136,13 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
               <button key={k} onClick={() => setCost(k)} style={chipStyle(cost === k)}>{label}</button>
             ))}
             <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "2px 4px" }} />
-            {[["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"], ["agentic", "Agentic"]].map(([k, label]) => (
+            {(agenticOnly
+              ? [["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"]]
+              : [["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"], ["agentic", "Agentic"]]
+            ).map(([k, label]) => (
               <button key={k} onClick={() => setCaps((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; })} style={chipStyle(caps.has(k))}>{label}</button>
             ))}
+            {agenticOnly && <span style={pill(PURPOSE_COLOR.agentic)}>agent-ready only</span>}
             <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-3)", fontVariantNumeric: "tabular-nums" }}>{shown} of {total}</span>
           </div>
 
