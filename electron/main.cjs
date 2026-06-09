@@ -447,6 +447,7 @@ ipcMain.handle("brainedge:track", (_e, type, meta) => auth.track(type, meta, aut
 ipcMain.handle("brainedge:adminStats", (_e, adminKey) => auth.adminGet("stats", adminKey, authBase()));
 ipcMain.handle("brainedge:adminUsers", (_e, adminKey) => auth.adminGet("users", adminKey, authBase()));
 ipcMain.handle("brainedge:adminAction", (_e, id, action, adminKey) => auth.adminAction(id, action, adminKey, authBase()));
+ipcMain.handle("brainedge:scoreQuiz", (_e, batch) => auth.scoreQuiz(batch, authBase()));
 
 // Mobile link — continue a Let's Collaborate session from Telegram.
 const mobileLink = require("./mobile-link.cjs");

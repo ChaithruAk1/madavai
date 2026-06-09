@@ -4,48 +4,29 @@ import { bridge } from "../bridge/index.js";
 import { MODELS } from "../data/modelCatalog.js";
 import { classifyProvider, isModelFree } from "../data/providerRules.js";
 
-// Deterministic, offline-scorable quiz grouped by capability — exact/extractable answers, no LLM
-// judge. Coding items trace the exact output of medium snippets; agentic items test structured
-// tool-calls, multi-step instruction execution, and strict output constraints.
-const hasNum = (t, n) => new RegExp("(^|[^0-9])" + n + "([^0-9]|$)").test(String(t || ""));
+// Quiz PROMPTS only — used to ask each model the questions. The ANSWER KEY + scoring live on the
+// server (server/quiz.mjs via POST /score-quiz), so this app never ships them. `cat` stays for grouping.
 const QUIZ = [
-  // reasoning (4) — includes two classic "intuition trap" problems
-  { id: "math", cat: "reasoning", prompt: "What is 17 multiplied by 23? Reply with only the number.", check: (t) => hasNum(t, 391) },
-  { id: "reason", cat: "reasoning", prompt: "A train travels 90 km in 1.5 hours at constant speed. What is its speed in km/h? Reply with only the number.", check: (t) => hasNum(t, 60) },
-  { id: "reason_machines", cat: "reasoning", prompt: "If 3 machines make 3 widgets in 3 minutes, how many minutes do 100 machines need to make 100 widgets? Reply with only the number.", check: (t) => hasNum(t, 3) },
-  { id: "reason_batball", cat: "reasoning", prompt: "A bat and a ball cost $1.10 together. The bat costs $1.00 more than the ball. How many cents does the ball cost? Reply with only the number.", check: (t) => hasNum(t, 5) },
-  // general knowledge
-  { id: "capital", cat: "knowledge", prompt: "What is the capital city of Japan? Reply with only the city name.", check: (t) => /tokyo/i.test(String(t || "")) },
-  // instruction-following — strict output constraints (the #1 predictor of automation reliability)
-  { id: "format", cat: "instruction", prompt: "Reply with exactly this word in all capital letters and nothing else: banana", check: (t) => String(t || "").replace(/[^A-Za-z]/g, "") === "BANANA" },
-  { id: "inst_jsononly", cat: "instruction", prompt: 'Reply with ONLY valid JSON and nothing else — no markdown, no explanation: {"status":"ok"}', check: (t) => { try { const s = String(t || "").trim(); return /^\{[\s\S]*\}$/.test(s) && JSON.parse(s).status === "ok"; } catch { return false; } } },
-  // structured extraction — pull fields out of text into an exact JSON shape (key for agents/pipelines)
-  { id: "extract_person", cat: "extract", prompt: 'Extract the name and age from this text into JSON. Text: "Maya Rodriguez, a 34-year-old engineer, joined in 2019." Reply with ONLY: {"name":"Maya Rodriguez","age":34}', check: (t) => { try { const m = String(t || "").match(/\{[\s\S]*\}/); if (!m) return false; const o = JSON.parse(m[0]); return /maya rodriguez/i.test(o.name || "") && Number(o.age) === 34; } catch { return false; } } },
-  { id: "extract_total", cat: "extract", prompt: 'From "Apples: 3, Pears: 5, Plums: 2", reply with ONLY the JSON total of all items: {"total":10}', check: (t) => { try { const m = String(t || "").match(/\{[\s\S]*\}/); if (!m) return false; return Number(JSON.parse(m[0]).total) === 10; } catch { return false; } } },
-  // honesty — admit the unknown / reject a false premise instead of inventing an answer
-  { id: "honesty_country", cat: "honesty", prompt: "What is the capital city of the country Zembudia? If you do not know or it is not a real country, reply with only the single word: UNKNOWN", check: (t) => { const s = String(t || "").trim(); return /\bunknown\b/i.test(s) && s.length < 40; } },
-  { id: "honesty_premise", cat: "honesty", prompt: "In which year did Albert Einstein win the Nobel Prize specifically for the theory of general relativity? If the premise is false, reply with only the single word: NONE", check: (t) => { const s = String(t || "").trim(); return /\bnone\b/i.test(s) && s.length < 40; } },
-  // coding (4) — trace the exact output of medium Python snippets
-  { id: "code_fib", cat: "coding", prompt: "What does this Python print?\n\ndef f(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\nprint(f(10))\n\nReply with only the number.", check: (t) => hasNum(t, 55) },
-  { id: "code_count", cat: "coding", prompt: "What is the output of this Python?\n\nprint(len([x for x in range(50) if x % 3 == 0 or x % 5 == 0]))\n\nReply with only the number.", check: (t) => hasNum(t, 23) },
-  { id: "code_str", cat: "coding", prompt: "What does this Python print?\n\ns = 'banana'\nprint(s.replace('a', 'o').upper())\n\nReply with only the resulting text.", check: (t) => String(t || "").replace(/[^A-Za-z]/g, "").toUpperCase().includes("BONONO") },
-  { id: "code_digits", cat: "coding", prompt: "What does this Python print?\n\nprint(sum(int(d) for d in str(2 ** 10)))\n\nReply with only the number.", check: (t) => hasNum(t, 7) },
-  // agentic (4) — structured tool call, ordered multi-step execution, data-to-JSON, strict format
-  { id: "agent_tool", cat: "agentic", prompt: 'You can call a tool get_weather(city). The user asks for the weather in Paris. Reply with ONLY this JSON and nothing else: {"tool":"get_weather","args":{"city":"Paris"}}', check: (t) => { try { const m = String(t || "").match(/\{[\s\S]*\}/); if (!m) return false; const o = JSON.parse(m[0]); return o.tool === "get_weather" && o.args && /paris/i.test(o.args.city || ""); } catch { return false; } } },
-  { id: "agent_steps", cat: "agentic", prompt: "Follow these steps in order and reply with only the final number. Start with 3. Multiply by 4. Add 10. Divide by 2.", check: (t) => hasNum(t, 11) },
-  { id: "agent_json", cat: "agentic", prompt: 'From the list [3, 4, 7, 8], reply with ONLY this JSON and nothing else, containing the even numbers in order: {"evens":[4,8]}', check: (t) => { try { const m = String(t || "").match(/\{[\s\S]*\}/); if (!m) return false; const o = JSON.parse(m[0]); return Array.isArray(o.evens) && o.evens.length === 2 && Number(o.evens[0]) === 4 && Number(o.evens[1]) === 8; } catch { return false; } } },
-  { id: "agent_fmt", cat: "agentic", prompt: "Reply with exactly three uppercase words separated by single spaces, in this order, nothing else: RED GREEN BLUE", check: (t) => String(t || "").trim().replace(/\s+/g, " ") === "RED GREEN BLUE" },
+  { id: "math", cat: "reasoning", prompt: "What is 17 multiplied by 23? Reply with only the number." },
+  { id: "reason", cat: "reasoning", prompt: "A train travels 90 km in 1.5 hours at constant speed. What is its speed in km/h? Reply with only the number." },
+  { id: "reason_machines", cat: "reasoning", prompt: "If 3 machines make 3 widgets in 3 minutes, how many minutes do 100 machines need to make 100 widgets? Reply with only the number." },
+  { id: "reason_batball", cat: "reasoning", prompt: "A bat and a ball cost $1.10 together. The bat costs $1.00 more than the ball. How many cents does the ball cost? Reply with only the number." },
+  { id: "capital", cat: "knowledge", prompt: "What is the capital city of Japan? Reply with only the city name." },
+  { id: "format", cat: "instruction", prompt: "Reply with exactly this word in all capital letters and nothing else: banana" },
+  { id: "inst_jsononly", cat: "instruction", prompt: 'Reply with ONLY valid JSON and nothing else — no markdown, no explanation: {"status":"ok"}' },
+  { id: "extract_person", cat: "extract", prompt: 'Extract the name and age from this text into JSON. Text: "Maya Rodriguez, a 34-year-old engineer, joined in 2019." Reply with ONLY: {"name":"Maya Rodriguez","age":34}' },
+  { id: "extract_total", cat: "extract", prompt: 'From "Apples: 3, Pears: 5, Plums: 2", reply with ONLY the JSON total of all items: {"total":10}' },
+  { id: "honesty_country", cat: "honesty", prompt: "What is the capital city of the country Zembudia? If you do not know or it is not a real country, reply with only the single word: UNKNOWN" },
+  { id: "honesty_premise", cat: "honesty", prompt: "In which year did Albert Einstein win the Nobel Prize specifically for the theory of general relativity? If the premise is false, reply with only the single word: NONE" },
+  { id: "code_fib", cat: "coding", prompt: "What does this Python print?\n\ndef f(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\nprint(f(10))\n\nReply with only the number." },
+  { id: "code_count", cat: "coding", prompt: "What is the output of this Python?\n\nprint(len([x for x in range(50) if x % 3 == 0 or x % 5 == 0]))\n\nReply with only the number." },
+  { id: "code_str", cat: "coding", prompt: "What does this Python print?\n\ns = 'banana'\nprint(s.replace('a', 'o').upper())\n\nReply with only the resulting text." },
+  { id: "code_digits", cat: "coding", prompt: "What does this Python print?\n\nprint(sum(int(d) for d in str(2 ** 10)))\n\nReply with only the number." },
+  { id: "agent_tool", cat: "agentic", prompt: 'You can call a tool get_weather(city). The user asks for the weather in Paris. Reply with ONLY this JSON and nothing else: {"tool":"get_weather","args":{"city":"Paris"}}' },
+  { id: "agent_steps", cat: "agentic", prompt: "Follow these steps in order and reply with only the final number. Start with 3. Multiply by 4. Add 10. Divide by 2." },
+  { id: "agent_json", cat: "agentic", prompt: 'From the list [3, 4, 7, 8], reply with ONLY this JSON and nothing else, containing the even numbers in order: {"evens":[4,8]}' },
+  { id: "agent_fmt", cat: "agentic", prompt: "Reply with exactly three uppercase words separated by single spaces, in this order, nothing else: RED GREEN BLUE" },
 ];
-const QCATS = ["coding", "reasoning", "agentic", "instruction", "extract", "honesty", "knowledge"];
-const scoreQuiz = (answers) => {
-  if (!answers) return null;
-  const tally = {}; QCATS.forEach((c) => (tally[c] = { c: 0, t: 0 }));
-  let okAll = 0;
-  for (const q of QUIZ) { const good = q.check(answers[q.id]); if (good) okAll++; if (tally[q.cat]) { tally[q.cat].t++; if (good) tally[q.cat].c++; } }
-  const pct = (o) => (o && o.t ? Math.round((o.c / o.t) * 100) : null);
-  const nN = {}; QCATS.forEach((c) => (nN[c] = tally[c].t ? `${tally[c].c}/${tally[c].t}` : null));
-  return { overall: Math.round((okAll / QUIZ.length) * 100), coding: pct(tally.coding), reasoning: pct(tally.reasoning), agentic: pct(tally.agentic), instruction: pct(tally.instruction), extract: pct(tally.extract), honesty: pct(tally.honesty), knowledge: pct(tally.knowledge), counts: nN };
-};
 
 // Turn a raw provider error into a short, plain-language explanation.
 function friendlyError(raw) {
@@ -214,13 +195,10 @@ export default function ModelSpeedCheck() {
     stopPoll();
     pollRef.current = setInterval(async () => {
       const s = await bridge.getSpeedTestStatus?.().catch(() => null);
-      if (!s || !s.running) {
-        stopPoll();
-        const r = await bridge.getSpeedTestLast().catch(() => null);
-        if (r) setResult(r);
-        setRunning(false);
-      }
-    }, 1500);
+      const r = await bridge.getSpeedTestLast().catch(() => null);
+      if (r) setResult(r);            // show results as they stream in (partial while running)
+      if (!s || !s.running) { stopPoll(); setRunning(false); }
+    }, 1200);
   };
 
   useEffect(() => {
@@ -276,7 +254,16 @@ export default function ModelSpeedCheck() {
     const tests = selectedSpecs.map((e) => ({ label: `${e.name} · ${e.provider}`, profileId: e.spec.profileId, modelId: e.spec.modelId, fallbacks: [] }));
     startPoll(); // keeps the run alive across navigation; results load via status polling
     const quiz = quality ? QUIZ.map((q) => ({ id: q.id, prompt: q.prompt })) : undefined;
-    try { const r = await bridge.runSpeedTest({ tests, prompt, maxTokens: 256, quiz }); setResult(r); }
+    try {
+      const r = await bridge.runSpeedTest({ tests, prompt, maxTokens: 256, quiz });
+      // Grade the quiz answers on the server (the answer key + scoring live there, not in this app).
+      if (quality && bridge.scoreQuiz && r && r.results) {
+        const batch = {};
+        for (const res of r.results) if (res.ok && res.quizAnswers) batch[res.label] = res.quizAnswers;
+        try { const scores = await bridge.scoreQuiz(batch); if (scores) r.results = r.results.map((res) => (scores[res.label] ? { ...res, scores: scores[res.label] } : res)); } catch {}
+      }
+      setResult(r);
+    }
     catch {}
     finally { stopPoll(); setRunning(false); }
   };
@@ -301,7 +288,7 @@ export default function ModelSpeedCheck() {
   const enrich = (r) => {
     const inf = labelInfo[r.label] || {};
     const estCost = (inf.priceIn != null && inf.priceOut != null) ? (promptInTok * inf.priceIn + (r.tokens || 0) * inf.priceOut) : null;
-    const sc = scoreQuiz(r.quizAnswers);
+    const sc = r.scores || null;   // graded on the server (see run handler); answer key is not in this app
     return { ...r, name: r.label.split(" · ")[0], ctxK: inf.ctxK || 0, estCost, qPct: sc ? sc.overall : null, scores: sc, caps: inf.caps || {} };
   };
   const allOk = result ? result.results.filter((r) => r.ok).map(enrich).sort((a, b) => b.tps - a.tps) : [];
@@ -577,6 +564,9 @@ export default function ModelSpeedCheck() {
 function KpiList({ kpi, rows, top = 10, onHide, onExpand, big }) {
   const data = [...rows].filter((r) => kpi.get(r) != null && !isNaN(kpi.get(r)))
     .sort((a, b) => kpi.better === "high" ? kpi.get(b) - kpi.get(a) : kpi.get(a) - kpi.get(b)).slice(0, top);
+  const vals = data.map((r) => kpi.get(r));
+  const maxV = Math.max(1e-9, ...vals), minV = Math.min(...vals);
+  const barW = (r) => { const v = kpi.get(r); const f = kpi.better === "high" ? (maxV > 0 ? v / maxV : 0) : (v > 0 ? minV / v : 0); return `${Math.max(5, Math.min(100, f * 100))}%`; };
   return (
     <div className={`kl ${big ? "big" : ""}`}>
       <div className="kl-h">
@@ -589,7 +579,9 @@ function KpiList({ kpi, rows, top = 10, onHide, onExpand, big }) {
       <ol className="kl-list">
         {data.map((r, i) => (
           <li key={r.label} className={i === 0 ? "best" : ""}>
+            <span className="kl-rank">{i + 1}</span>
             <span className="kl-n" title={`${r.name} · ${r.provider}`}>{r.name}</span>
+            <span className="kl-bar"><span className="kl-bar-fill" style={{ width: barW(r) }} /></span>
             <span className="kl-v">{kpi.fmt(kpi.get(r))}</span>
           </li>
         ))}

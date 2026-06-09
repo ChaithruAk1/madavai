@@ -13,13 +13,13 @@ const usage = require("./usage-store.cjs");
 const fs = require("fs");
 const os = require("os");
 
-// Combine the user's custom instructions with the chosen default response language (Settings).
+// Combine a natural-tone safeguard + the user's custom instructions + the chosen response language.
+const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
 function withLang(cfg) {
   const gi = cfg.globalInstructions || "";
   const lang = cfg.responseLanguage;
-  if (!lang || lang === "model") return gi;
-  const line = `Always respond in ${lang}, regardless of the language of the question.`;
-  return gi ? `${line}\n\n${gi}` : line;
+  const langLine = (lang && lang !== "model") ? `Always respond in ${lang}, regardless of the language of the question.` : "";
+  return [BEHAVIOR, langLine, gi].filter(Boolean).join("\n\n");
 }
 const path = require("path");
 const errorExplainer = require("./error-explainer.cjs");

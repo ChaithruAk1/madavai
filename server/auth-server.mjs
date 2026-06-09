@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { URL } from "node:url";
 import { makeStore } from "./store.mjs";
+import { scoreQuiz, scoreBatch } from "./quiz.mjs";
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
 // Real environment variables (e.g. set in PowerShell or on the host) always win.
@@ -285,6 +286,16 @@ const server = http.createServer(async (req, res) => {
     await store.logEvent({ userId: pl.sub, type: String(body.type).slice(0, 40), meta: body.meta || null });
     store.patchUser(pl.sub, { lastSeenAt: new Date().toISOString() }).catch(() => {});
     return json(res, 200, { ok: true });
+  }
+
+  // POST /score-quiz (Bearer) -> grade speed-check answers server-side (the answer key + scoring stay
+  // off the client). Body { batch: { label: {id:text} } } -> { scores: { label: scoresObj } }.
+  if (p === "/score-quiz" && req.method === "POST") {
+    if (rateLimited(req, "score", 120, 60000)) return json(res, 429, { error: "rate limited" });
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
+    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    if (b.batch) return json(res, 200, { scores: scoreBatch(b.batch) });
+    return json(res, 200, { score: scoreQuiz(b.answers || b) });
   }
 
   // POST /proxy/chat (Bearer) — forward a streaming chat to the user's provider. Lets the WEB app reach

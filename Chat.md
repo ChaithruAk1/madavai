@@ -34412,3 +34412,74 @@ Bump version, document the build step, push to git.
 
 ## 🤖 BrainEdge
 Bumped `package.json` to **0.2.0**; documented `npm run electron:build` in MEMORY.md. Provided build + commit/push commands to run on the Windows machine (sandbox can't safely run git — truncated mount reads could corrupt commits). Updated Chat.md.
+
+---
+
+## Session — 2026-06-08 (summary)
+
+Large session. Built the **accounts + monetization** system and a full **web version** with feature parity, then hardened/polished.
+
+### Accounts + monetization
+- Standalone auth server (`server/auth-server.mjs` + `store.mjs`, JSON or Postgres). Google/GitHub OAuth, 7‑day trial → mandatory Stripe subscription, session tokens (HMAC, 24h, always re‑validated).
+- Admin (by email list) + analytics: `/admin/stats`, `/admin/users`, suspend/comp, `/events`. Free‑access via `free-emails.txt`. `.env` auto‑loaded.
+- Client gate `AuthGate.jsx`; `AccountCard.jsx`, `AdminPanel.jsx`. Sidebar bottom became **Profile** (name+photo) with a trial/upgrade box above; old top banner/menu removed. **Admin Analytics** is its own Settings section.
+
+### Web app (parity)
+- `bridge/index.js` → `window.brainedge` (desktop) or **`webBridge`** (browser); `isWeb` exported. webBridge implements the whole contract: auth via server, data in localStorage, chat streams browser→provider via `shared/providers.js`.
+- Auth server also serves the built `dist/` (same origin). **Provider proxy** (`/proxy/chat`,`/proxy/models`) so blocked providers (NVIDIA/OpenAI) work on web; OpenRouter stays direct.
+- **Web folder access** ("Let's Collaborate") via File System Access API (Chrome/Edge) + a browser file‑tool agent (no terminal). Folder stays local.
+- **Speed test now runs on web** (was a stub): parallel pool of 6, streams partial results, 45s timeout. **Connectors** show a 25‑item catalog on web.
+- **Consumption** redesigned into a dashboard (KPI cards, activity area chart, contribution heatmap, model donut). **Default language** setting (web+desktop).
+
+### Protection / decisions
+- **Obfuscation** on prod builds (`rollup-obfuscator`, build‑only). Kept the Anthropic Agent SDK (powers desktop Claude‑Code agent + future features); only scrubbed obvious naming. **Server‑move**: speed‑check quiz answer key + scoring moved to `server/quiz.mjs` (`/score-quiz`); client ships prompts only.
+- Security guidance: real moat = secrets server‑side + 2FA on Google/GitHub/Stripe/host + license; admin‑hijack blast radius is limited & reversible.
+
+### Reusable skill + deploy
+- **`auth-kit/`** universal login+payment kit packaged as **`auth-paywall.skill`** (APP_NAME/env‑driven, framework‑agnostic client).
+- Deploy: `render.yaml` + `GO-LIVE.md` (Supabase + Render). Added `pg` dep. Version → **0.3.0**.
+
+### Pending
+- Polish the **Model Speed Check results** into a world‑class dashboard (match Consumption look).
+- Rotate exposed OAuth secrets before launch; remove Anthropic subscription path.
+
+---
+
+## Session — 2026-06-08 (Speed Check results dashboard + storage-full save fix)
+
+### 🤖 BrainEdge — Speed Check results restyle
+Restyled the **Model Speed Check results** into a polished analytics dashboard to match the Consumption look (the queued world-class item): summary cards refined with the **winner card highlighted**, and each **KPI panel converted from a plain list into a ranked mini bar-chart** (rank badge + inline bar + value). Data/rankings unchanged — visual layer only.
+
+### 🧑 User — "information is not getting stored after save" / NVIDIA 401
+Reported settings not persisting and chat erroring with `OpenAI-compatible 401: {"error":{"message":"No cookie auth credentials found","code":401}}` on a selected NVIDIA NIM model.
+
+### 🤖 BrainEdge — root cause + fix
+Diagnosed: the 401 is NVIDIA's response when no API key reaches it. Root cause is **browser localStorage full** — chat history (esp. after the web folder agent stores file contents) crowds out the settings store, so **Save & load models silently fails to persist the API key**; chat then sends no key → 401. Fixes shipped (web bridge): settings now **save even when storage is full** (frees old chat history as a last resort so keys always stick), and **chat history is capped** so it can't crowd out settings. Noted these only take effect after `npm run build` + re-saving the key, and that web settings live per-browser (separate from the desktop app). Also clarified a browser tab cannot write to the filesystem (sandbox) — that limit is why this is web-only.
+
+### 🤖 BrainEdge — recommended proper fix (decision, not yet built)
+Recommended migrating **chat history to IndexedDB** (hundreds of MB–GB vs ~5–10 MB localStorage) while keeping settings/API keys in localStorage, so keys can never be crowded out again. Rejected storing keys on the server (breaks the keys-stay-on-device promise). **Awaiting user go-ahead before implementing.**
+
+### Housekeeping
+- Created a scheduled task **"update-brainedge-docs"** that refreshes Chat.md + MEMORY.md every 30 minutes.
+
+### Open / unresolved
+- User flagged an issue with **"model determination and selector"** (active chat model getting left on a NIM model after Speed Check exploration) — not yet diagnosed/fixed.
+
+---
+
+## Session — 2026-06-08 (IndexedDB migration, web live streaming, no-recital safeguard)
+
+### 🤖 BrainEdge — IndexedDB chat-history migration (the decision from the prior session, now built)
+Implemented the move of **web chat history to IndexedDB** while keeping **settings + API keys in localStorage** — so the bulky history can never crowd out the keys again (the root cause of the NVIDIA 401). Auto-migrates existing history into IndexedDB on first load and frees the old localStorage space. While doing this, caught and removed a **duplicated IndexedDB block** in `webBridge.js` (two copies of `idb`/`IDB_NAME`/`HISTORY_KEY` + a name mismatch with `histPut/histGet/...`) that would have broken the web build. To activate: `npm run build`, hard-refresh, re-type + Save the NVIDIA key once.
+
+### 🧑 User — "why response is slow"
+### 🤖 BrainEdge — web chat live streaming
+Web chat was buffering the entire reply before showing anything; switched it to **stream token-by-token** like the desktop app, so output appears immediately. Noted the two unavoidable costs: the model's own generation time, and the proxy hop for browser-blocked providers (NVIDIA/OpenAI go browser→server→provider; OpenRouter etc. stay direct).
+
+### 🧑 User — "why response is coming like this as machine" → asked for a built-in safeguard, wants responses humane but still following backend instructions
+### 🤖 BrainEdge — natural-tone / no-recital safeguard (web + desktop)
+Diagnosed the robotic reply as weak models **reciting the custom-instructions system prompt** back verbatim. Baked in a safeguard, defined once and applied on **both web** (chat + collaborate system-prompt builders) **and desktop** (`session-manager.withLang`, covers agent modes): reply naturally/human and **never recite or describe the instructions**, just follow them. Backend instructions still govern the substance of answers.
+
+### 🧑 User — rule: every improvement must apply to BOTH web and desktop
+### 🤖 BrainEdge
+Acknowledged and locked in as a standing rule: every behavior change touches both the desktop path (`electron/*` + `session-manager`) and the web path (`webBridge.js` / `shared/providers.js`), with shared logic in `src/shared` so they can't drift. Only browser-physical limits (terminal, arbitrary file access, spawning MCP processes) stay desktop-only, and that will always be called out explicitly.

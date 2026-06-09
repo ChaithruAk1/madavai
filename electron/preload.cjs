@@ -110,6 +110,7 @@ contextBridge.exposeInMainWorld("brainedge", {
   adminStats: (adminKey) => ipcRenderer.invoke("brainedge:adminStats", adminKey),
   adminUsers: (adminKey) => ipcRenderer.invoke("brainedge:adminUsers", adminKey),
   adminAction: (id, action, adminKey) => ipcRenderer.invoke("brainedge:adminAction", id, action, adminKey),
+  scoreQuiz: (batch) => ipcRenderer.invoke("brainedge:scoreQuiz", batch),
   getMobileLink: () => ipcRenderer.invoke("brainedge:getMobileLink"),
   setMobileLink: (link) => ipcRenderer.invoke("brainedge:setMobileLink", link),
   clearMobileLink: () => ipcRenderer.invoke("brainedge:clearMobileLink"),

@@ -349,3 +349,37 @@ with feature parity**.
 - Web: `npm run build` → `node server/auth-server.mjs` → http://127.0.0.1:8787/ (needs `server/.env` with OAuth).
 - Desktop: `node server/auth-server.mjs` (window 1) + `npm run electron:dev` (window 2).
 - Free the port if EADDRINUSE: `Get-NetTCPConnection -LocalPort 8787 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`
+
+### 11b. Update — 2026-06-08 (later, after Section 11)
+- **Consumption dashboard** rebuilt: KPI cards, interactive activity area chart, GitHub-style contribution heatmap, model token-share donut, highlights. webBridge.getUsage now computes byDay/models/streaks/peakHour from history (persistSession records model). Pure SVG, no deps. CSS: `.cons-*` in styles.css.
+- **Admin Analytics** is now its OWN section in Settings (admins only) — moved out of the Profile page. Profile page also had its manual Account fields + "Link your profile" OAuth-id block removed.
+- **Default language** dropdown (Settings → Profile → Appearance): `responseLanguage` → injected into system prompt on web (`coworkSystem`/`systemPrompt`) and desktop (`session-manager.withLang`).
+- **Web speed test fixed**: was a stub → now real. Runs models in a **parallel pool of 6**, streams **partial results** (webBridge keeps `_lastSpeed`/`_speedRunning`; UI `startPoll` shows partials every 1.2s), 45s per-call timeout. Quiz graded server-side via `/score-quiz`.
+- **Connectors on web**: 25-item curated catalog (gallery preview; actually connecting MCP is desktop-only).
+- Reminder: with the answer-quality quiz ON, web speed test makes ~20 calls/model — pick few models.
+
+### 11c. KNOWN OPEN ITEMS
+- ~~Speed Check **results** still need the world-class dashboard polish (match Consumption).~~ DONE — see 11d.
+- Connector **icons** may not render on web for catalog items (Connectors.jsx maps known names → icons; unknowns blank) — minor.
+- Rotate exposed OAuth secrets; remove Anthropic subscription path before launch.
+
+### 11d. Update — 2026-06-08 (later)
+- **Speed Check results dashboard DONE**: restyled to match Consumption — summary cards polished with the **winner card highlighted**, and each KPI panel changed from a plain list to a **ranked mini bar-chart** (rank badge + inline bar + value). Visual layer only; rankings/data unchanged. (Clears the 11c open item.)
+- **Web settings storage-full bug FIXED**: symptom was settings "not stored after save" and chat returning NVIDIA `401 "No cookie auth credentials found"`. Root cause: browser **localStorage full** (chat history, esp. after the web folder agent stores file contents) → `Save & load models` silently failed to persist the API key → chat sent no key → 401. Fix (web bridge): settings now **save even when storage is full** (evicts old chat history as a last resort so keys always stick) + **chat history is capped** so it can't crowd out settings. Effective only after `npm run build` + re-saving the key. Web settings are per-browser (separate from desktop).
+- **DECISION (pending build):** proper long-term fix = move **chat history to IndexedDB** (hundreds of MB–GB) while keeping settings/keys in localStorage, so keys can never be crowded out. Rejected server-side key storage (breaks keys-stay-on-device). Awaiting user go-ahead.
+- **Housekeeping:** scheduled task **"update-brainedge-docs"** created — auto-refreshes Chat.md + MEMORY.md every 30 min.
+
+### 11e. NEW OPEN ITEMS
+- ~~Implement the **IndexedDB chat-history migration** (decided above) once user approves.~~ DONE — see 11f.
+- User flagged **"model determination and selector"** — active chat model gets left on a NIM model after exploring models in Speed Check, causing the 401 confusion. Needs diagnosis: likely the model picker should not repoint the active chat profile during Speed Check exploration, or should restore the prior selection afterward. **STILL OPEN.**
+
+### 11f. Update — 2026-06-08 (later — IndexedDB migration, web streaming, no-recital safeguard)
+- **IndexedDB chat-history migration DONE** (clears the 11e item): web **chat history now lives in IndexedDB**, while **settings + API keys stay in localStorage** — bulky history can no longer crowd out the keys (the NVIDIA 401 root cause). Auto-migrates existing history to IndexedDB on first load and frees old localStorage. Caught + removed a **duplicate IndexedDB block** in `webBridge.js` (two copies of `idb`/`IDB_NAME`/`HISTORY_KEY` + `histPut/histGet` name mismatch) that would have broken the web build. Activate via `npm run build` + hard-refresh + re-Save the NVIDIA key once.
+- **Web chat live streaming**: web chat was buffering the whole reply; now streams **token-by-token** like desktop. Unavoidable costs remain: model generation time + the proxy hop for browser-blocked providers (NVIDIA/OpenAI = browser→server→provider; OpenRouter etc. stay direct).
+- **Natural-tone / no-recital safeguard (web + desktop)**: weak models were reciting the custom-instructions system prompt verbatim ("response coming like a machine"). Added a safeguard, defined once, applied on **web** (chat + collaborate system-prompt builders) **and desktop** (`session-manager.withLang`): reply naturally/human and **never recite/describe the instructions, just follow them**. Backend instructions still govern answer substance.
+- **STANDING RULE (locked in by user):** every improvement must land on **BOTH web and desktop** — touch the desktop path (`electron/*` + `session-manager`) and the web path (`webBridge.js` / `shared/providers.js`); put shared logic in `src/shared` so they can't drift. Only true browser-physical limits (terminal, arbitrary file access, spawning MCP processes) stay desktop-only, and must be called out explicitly when they do.
+
+### 11g. STILL-OPEN ITEMS
+- **Model determination / selector** bug (carried from 11e): active chat model gets stranded on a NIM model after Speed Check exploration → 401 confusion. Not yet diagnosed/fixed.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only).
+- Still queued from 11/11d: Consumption + Speed Check polish are done; server-move of quiz grading is done. Remaining product polish per backlog as needed.

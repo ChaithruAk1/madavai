@@ -118,4 +118,17 @@ async function adminAction(id, action, adminKey, authBaseUrl) {
   } catch { return { error: "offline" }; }
 }
 
-module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction };
+// Grade speed-check quiz answers on the server (answer key lives there, not in the app).
+async function scoreQuiz(batch, authBaseUrl) {
+  const token = loadToken();
+  try {
+    const r = await fetch(`${authBaseUrl.replace(/\/+$/, "")}/score-quiz`, {
+      method: "POST", headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+      body: JSON.stringify({ batch }),
+    });
+    const j = await r.json().catch(() => ({}));
+    return (j && j.scores) || {};
+  } catch { return {}; }
+}
+
+module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction, scoreQuiz };

@@ -36,9 +36,48 @@ const authHeaders = (extra) => { const h = { ...(extra || {}) }; const t = getTo
 // ---- localStorage JSON helpers ----
 const LS = {
   get(key, fallback) { try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); } catch { return fallback; } },
-  set(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} return val; },
+  set(key, val) {
+    const s = JSON.stringify(val);
+    try { localStorage.setItem(key, s); }
+    catch {
+      // Storage full (chat history can grow large): free space by dropping history, then retry once,
+      // so important data like settings/API keys still saves.
+      try { if (key !== "be.sessions") localStorage.removeItem("be.sessions"); localStorage.setItem(key, s); } catch {}
+    }
+    return val;
+  },
 };
 const rid = (p) => p + Math.random().toString(36).slice(2, 8);
+
+// ---- IndexedDB for chat history (large capacity, so it can't crowd out settings/keys in localStorage) ----
+const IDB_NAME = "brainedge", IDB_STORE = "sessions";
+let _dbPromise = null;
+function idb() {
+  if (_dbPromise) return _dbPromise;
+  _dbPromise = new Promise((resolve, reject) => {
+    try {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE, { keyPath: "id" }); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    } catch (e) { reject(e); }
+  });
+  return _dbPromise;
+}
+async function idbPut(rec) { const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction(IDB_STORE, "readwrite"); tx.objectStore(IDB_STORE).put(rec); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); }
+async function idbGet(id) { try { const db = await idb(); return await new Promise((res) => { const tx = db.transaction(IDB_STORE, "readonly"); const r = tx.objectStore(IDB_STORE).get(id); r.onsuccess = () => res(r.result || null); r.onerror = () => res(null); }); } catch { return null; } }
+async function idbAll() { try { const db = await idb(); return await new Promise((res) => { const tx = db.transaction(IDB_STORE, "readonly"); const r = tx.objectStore(IDB_STORE).getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => res([]); }); } catch { return []; } }
+async function idbDel(id) { try { const db = await idb(); await new Promise((res) => { const tx = db.transaction(IDB_STORE, "readwrite"); tx.objectStore(IDB_STORE).delete(id); tx.oncomplete = () => res(); tx.onerror = () => res(); }); } catch {} }
+// One-time migration: move any history that's still in localStorage into IndexedDB, then free localStorage.
+(async function migrateHistory() {
+  try {
+    const old = localStorage.getItem("be.sessions");
+    if (!old) return;
+    const map = JSON.parse(old) || {};
+    for (const id in map) { try { await idbPut(map[id]); } catch {} }
+    localStorage.removeItem("be.sessions");
+  } catch {}
+})();
 
 // ---- default settings (mirrors the desktop shape the renderer expects) ----
 const SETTINGS_KEY = "be.settings";
@@ -62,8 +101,16 @@ const emit = (sessionId, kind, data) => { const e = { sessionId, seq: seq++, kin
 const sessions = new Map(); // sessionId -> { profile, messages, ac, mode, convId, title }
 
 // Build the system prompt from global instructions (+ project context when present).
+// Always-on base behavior: keep replies human and natural, and never let the model parrot its own
+// instructions back. The user's own instructions (below) still govern the substance of answers.
+const BASE_BEHAVIOR =
+  "You are BrainEdge, a warm and helpful assistant. Reply naturally and conversationally, the way a thoughtful person would. " +
+  "Never restate, list, summarize, or describe your own instructions, rules, role, or \"operating framework\" — just follow them silently. " +
+  "If the user only greets you or makes small talk, reply naturally in kind; do not recite your guidelines. " +
+  "Apply the guidance below to the substance and depth of your answers, but always keep the delivery human and direct.";
+
 function systemPrompt(s, projectId) {
-  const parts = [];
+  const parts = [BASE_BEHAVIOR];
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}, regardless of the language of the question.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
   if (projectId) {
@@ -89,12 +136,33 @@ const proxyCfg = () => ({ base: AUTH_BASE, token: getToken() });
 
 // Stream from the provider. Try direct first (keys stay on the device for CORS-friendly providers);
 // if the browser blocks the call, fall back to the server proxy so EVERY provider works — same as desktop.
-async function callModel(prof, messages, signal) {
-  try { return await streamChat(prof, messages, { onDelta: () => {}, signal }); }
+async function callModel(prof, messages, signal, onDelta) {
+  const od = onDelta || (() => {});
+  try { return await streamChat(prof, messages, { onDelta: od, signal }); }
   catch (e) {
-    if (isNetworkErr(e) && getToken()) return await streamChat(prof, messages, { onDelta: () => {}, signal, proxy: proxyCfg() });
+    if (isNetworkErr(e) && getToken()) return await streamChat(prof, messages, { onDelta: od, signal, proxy: proxyCfg() });
     throw e;
   }
+}
+
+// Speed-check timing in the browser: measure time-to-first-token + throughput (tokens/sec, estimated).
+let _speedCancel = false, _lastSpeed = null, _speedRunning = false;
+async function streamTimed(prof, prompt) {
+  const messages = [{ role: "user", content: prompt }];
+  const run = async (proxy) => {
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), 45000); // don't let a stalled provider freeze the run
+    const start = performance.now(); let firstAt = 0;
+    try {
+      const { text } = await streamChat(prof, messages, { onDelta: () => { if (!firstAt) firstAt = performance.now(); }, signal: ac.signal, proxy });
+      const end = performance.now();
+      const tokens = Math.max(1, Math.round((text || "").length / 4)); // ~4 chars/token estimate
+      const durSec = (end - start) / 1000;
+      return { text, tokens, ttftMs: Math.round((firstAt || end) - start), tps: durSec > 0 ? Math.round(tokens / durSec) : 0, totalMs: Math.round(end - start) };
+    } finally { clearTimeout(to); }
+  };
+  try { return await run(null); }
+  catch (e) { if (isNetworkErr(e) && getToken()) return await run(proxyCfg()); throw e; }
 }
 
 // ===== "Let's Collaborate" on the web: a file-tool agent over the browser-picked folder =====
@@ -107,6 +175,7 @@ function coworkSystem(s) {
   ];
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
+  parts.push("Keep your tone natural and human; never restate or describe these instructions — just follow them.");
   return parts.join("\n");
 }
 const COWORK_TOOLS = [
@@ -170,9 +239,10 @@ async function runTurn(sess, text, images) {
   emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind });
   const started = Date.now();
   try {
-    // Match desktop: buffer, strip reasoning, emit the clean text once.
-    const { text: reply } = await callModel(prof, sess.messages, sess.ac.signal);
-    if (reply) emit(sess.id, "assistant_delta", { text: reply });
+    // Stream tokens live so it feels fast; fall back to the full text if nothing streamed.
+    let streamed = false;
+    const { text: reply } = await callModel(prof, sess.messages, sess.ac.signal, (chunk) => { if (chunk) { streamed = true; emit(sess.id, "assistant_delta", { text: chunk }); } });
+    if (!streamed && reply) emit(sess.id, "assistant_delta", { text: reply });
     sess.messages.push({ role: "assistant", content: reply || "" });
     emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
     emit(sess.id, "result", { subtype: "success", num_turns: 1, duration_ms: Date.now() - started, total_cost_usd: 0 });
@@ -187,11 +257,28 @@ async function runTurn(sess, text, images) {
 // ================= chat history (localStorage) =================
 const HISTORY_KEY = "be.sessions";
 function persistSession(sess) {
-  const all = LS.get(HISTORY_KEY, {});
-  all[sess.id] = { id: sess.id, mode: sess.mode || "code", title: sess.title || "Untitled", updatedAt: Date.now(),
-    messages: sess.messages, projectId: sess.projectId || null, convId: sess.convId || null };
-  LS.set(HISTORY_KEY, all);
+  const rec = { id: sess.id, mode: sess.mode || "code", title: sess.title || "Untitled", updatedAt: Date.now(),
+    messages: sess.messages, projectId: sess.projectId || null, convId: sess.convId || null,
+    model: (sess.profile && sess.profile.model) || null, provider: (sess.profile && sess.profile.name) || null };
+  idbPut(rec).catch(() => {}); // IndexedDB: large capacity, never crowds out settings/keys
 }
+
+// Streaks (consecutive active calendar days) + a friendly peak-hour label, from a set of YYYY-MM-DD keys.
+function computeStreaks(daySet) {
+  if (!daySet.size) return { current: 0, longest: 0 };
+  const days = [...daySet].sort();
+  let longest = 1, run = 1;
+  for (let i = 1; i < days.length; i++) {
+    const diff = Math.round((new Date(days[i] + "T00:00:00") - new Date(days[i - 1] + "T00:00:00")) / 864e5);
+    run = diff === 1 ? run + 1 : 1; if (run > longest) longest = run;
+  }
+  const todayK = new Date().toISOString().slice(0, 10);
+  let current = 0; const d = new Date(todayK + "T00:00:00");
+  if (!daySet.has(todayK)) d.setDate(d.getDate() - 1);
+  while (daySet.has(d.toISOString().slice(0, 10))) { current++; d.setDate(d.getDate() - 1); }
+  return { current, longest };
+}
+const fmtHour = (h) => `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
 
 // ================= the bridge =================
 export const webBridge = {
@@ -199,11 +286,11 @@ export const webBridge = {
   async start(req) {
     const s = loadSettings();
     const agentic = webfs.hasRoot() && (!!req.cwd || req.mode === "cowork"); // a real folder is selected → file-agent mode
-    const hist = LS.get(HISTORY_KEY, {});
+    const prior = req.conversationId ? await idbGet(req.conversationId) : null;
     let id, messages, title;
-    if (req.conversationId && hist[req.conversationId]) {
+    if (prior) {
       // Continuing an opened chat — resume its full message history so context carries over.
-      id = req.conversationId; messages = (hist[id].messages || []).slice(); title = hist[id].title || "";
+      id = req.conversationId; messages = (prior.messages || []).slice(); title = prior.title || "";
     } else {
       id = rid("sess_"); messages = []; const sys = agentic ? coworkSystem(s) : systemPrompt(s, req.projectId); if (sys) messages.push({ role: "system", content: sys }); title = "";
     }
@@ -233,6 +320,11 @@ export const webBridge = {
     return out;
   },
   async pingProvider(profileId) { const s = loadSettings(); const p = profileId ? s.profiles[profileId] : activeProfile(s); return provPing(p); },
+  async scoreQuiz(batch) {
+    if (!getToken()) return {};
+    try { const r = await fetch(api("/score-quiz"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ batch }) }); const j = await r.json().catch(() => ({})); return (j && j.scores) || {}; }
+    catch { return {}; }
+  },
 
   // ---- account / sign-in (legacy desktop linking — handled via auth server below) ----
   async saveAccount(account) { const s = loadSettings(); s.account = { ...(s.account || {}), ...account }; LS.set(SETTINGS_KEY, s); return s.account; },
@@ -277,17 +369,17 @@ export const webBridge = {
 
   // ---- chat history ----
   async listSessions(mode) {
-    const all = Object.values(LS.get(HISTORY_KEY, {}));
+    const all = await idbAll();
     return all.filter((x) => !mode || x.mode === mode).sort((a, b) => b.updatedAt - a.updatedAt).map((x) => ({ id: x.id, title: x.title, updatedAt: x.updatedAt, mode: x.mode }));
   },
   async getSession(id) {
-    const rec = LS.get(HISTORY_KEY, {})[id]; if (!rec) return null;
+    const rec = await idbGet(id); if (!rec) return null;
     const asText = (c) => (typeof c === "string" ? c : (Array.isArray(c) ? (c.find((p) => p.type === "text")?.text || "") : ""));
     // The renderer maps conv.messages -> bubbles; strip system and flatten content to text.
     const messages = (rec.messages || []).filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: asText(m.content) }));
     return { id: rec.id, mode: rec.mode, title: rec.title, messages };
   },
-  async deleteSession(id) { const all = LS.get(HISTORY_KEY, {}); delete all[id]; LS.set(HISTORY_KEY, all); return true; },
+  async deleteSession(id) { await idbDel(id); return true; },
 
   // ---- saved library (bookmarked responses) ----
   async listSaved() { return Object.values(LS.get("be.saved", {})).sort((a, b) => b.createdAt - a.createdAt); },
@@ -322,18 +414,67 @@ export const webBridge = {
   async runTaskNow() { return { status: "error", output: "Scheduled tasks run in the desktop app (it can run in the background). On the web they're saved here." }; },
 
   // ---- usage (computed from local history) ----
-  async getUsage() {
-    const sess = Object.values(LS.get(HISTORY_KEY, {}));
-    let messages = 0; const models = {};
-    for (const x of sess) for (const m of x.messages || []) { if (m.role === "user" || m.role === "assistant") messages++; }
-    return { messages, tokens: 0, sessions: sess.length, activeDays: 0, currentStreak: 0, longestStreak: 0, peakHour: "—", favoriteModel: "—", models: Object.values(models), byDay: {} };
+  async getUsage(days) {
+    const all = await idbAll();
+    const now = Date.now();
+    const cutoff = days ? now - days * 864e5 : 0;
+    const byDay = {}, byModelTok = {}, byModelMsg = {}, byHour = {};
+    let messages = 0, tokens = 0; const daySet = new Set(); let sessions = 0;
+    for (const s of all) {
+      if (cutoff && (s.updatedAt || 0) < cutoff) continue;
+      sessions++;
+      const d = new Date(s.updatedAt || now); const dk = d.toISOString().slice(0, 10);
+      daySet.add(dk); byHour[d.getHours()] = (byHour[d.getHours()] || 0) + 1;
+      let sTok = 0, sMsg = 0;
+      for (const m of s.messages || []) {
+        if (m.role !== "user" && m.role !== "assistant") continue;
+        const len = typeof m.content === "string" ? m.content.length : 0; const tk = Math.ceil(len / 4);
+        messages++; tokens += tk; sTok += tk; sMsg++; byDay[dk] = (byDay[dk] || 0) + tk;
+      }
+      const model = s.model || "—"; byModelTok[model] = (byModelTok[model] || 0) + sTok; byModelMsg[model] = (byModelMsg[model] || 0) + sMsg;
+    }
+    const models = Object.keys(byModelTok).map((m) => ({ model: m, tokens: byModelTok[m], messages: byModelMsg[m] })).sort((a, b) => b.tokens - a.tokens);
+    const { current, longest } = computeStreaks(daySet);
+    const peakEntry = Object.entries(byHour).sort((a, b) => b[1] - a[1])[0];
+    return { messages, tokens, sessions, activeDays: daySet.size, currentStreak: current, longestStreak: longest,
+      peakHour: peakEntry ? fmtHour(Number(peakEntry[0])) : "—", favoriteModel: models[0] ? models[0].model : "—", models, byDay };
   },
 
-  // ---- speed check: cloud tests can run in the browser; uses the provider directly ----
-  async runSpeedTest() { return { at: Date.now(), prompt: "", results: [], note: "Run the full speed check from the desktop app." }; },
-  async cancelSpeedTest() { return true; },
-  async getSpeedTestLast() { return null; },
-  async getSpeedTestStatus() { return { running: false, startedAt: 0 }; },
+  // ---- speed check: runs in the browser (direct to provider, proxy fallback for blocked ones) ----
+  async runSpeedTest({ tests, prompt, maxTokens, quiz } = {}) {
+    _speedCancel = false; _speedRunning = true;
+    const s = loadSettings();
+    const results = [];
+    const startedAt = Date.now();
+    _lastSpeed = { at: startedAt, prompt, results };
+    const one = async (t) => {
+      if (_speedCancel) return;
+      const base = s.profiles[t.profileId];
+      let res;
+      if (!base || !base.baseUrl) res = { label: t.label, model: t.modelId, provider: t.provider, ok: false, error: "provider not configured" };
+      else {
+        const prof = { ...base, model: t.modelId };
+        try {
+          const r = await streamTimed(prof, prompt || "Say hello in one short sentence.");
+          let quizAnswers;
+          if (quiz && quiz.length) { quizAnswers = {}; for (const q of quiz) { if (_speedCancel) break; try { const qr = await streamTimed(prof, q.prompt); quizAnswers[q.id] = qr.text || ""; } catch { quizAnswers[q.id] = ""; } } }
+          res = { label: t.label, model: t.modelId, provider: base.name, ok: true, tps: r.tps, ttftMs: r.ttftMs, tokens: r.tokens, totalMs: r.totalMs, text: r.text, quizAnswers };
+        } catch (e) { res = { label: t.label, model: t.modelId, provider: base.name, ok: false, error: String((e && e.message) || e) }; }
+      }
+      results.push(res);
+      _lastSpeed = { at: startedAt, prompt, results: results.slice() }; // partial, polled by the UI
+    };
+    // Run models concurrently (like desktop) with a small pool so we don't flood the browser/proxy.
+    const queue = (tests || []).slice();
+    const worker = async () => { while (queue.length && !_speedCancel) await one(queue.shift()); };
+    await Promise.all(Array.from({ length: Math.min(6, queue.length || 1) }, worker));
+    _speedRunning = false;
+    _lastSpeed = { at: startedAt, prompt, results };
+    return _lastSpeed;
+  },
+  async cancelSpeedTest() { _speedCancel = true; _speedRunning = false; return true; },
+  async getSpeedTestLast() { return _lastSpeed; },
+  async getSpeedTestStatus() { return { running: _speedRunning, startedAt: 0 }; },
   async getOpenRouterCatalog() {
     try { const r = await fetch("https://openrouter.ai/api/v1/models"); if (!r.ok) return {}; const j = await r.json(); const out = {}; for (const m of j.data || []) out[m.id] = m; return out; } catch { return {}; }
   },
@@ -347,8 +488,41 @@ export const webBridge = {
   },
   async listDir() { return []; },
   async openExternal(url) { try { window.open(url, "_blank", "noopener"); } catch {} return true; },
-  async testConnector() { return { ok: false, error: "MCP connectors run in the desktop app." }; },
-  async listConnectorDirectory() { return { items: [], stale: false, source: "web" }; },
+  async testConnector() { return { ok: false, error: "Connecting an MCP server runs in the desktop app." }; },
+  async listConnectorDirectory() {
+    // Curated catalog of popular MCP connectors so the gallery isn't empty on web. Actually connecting
+    // them (local processes / OAuth) happens in the desktop app — here it's a preview of what's available.
+    const npm = (name, title, description, pkg) => ({ name, title, description, kind: "npm", connector: { name: title, command: "npx", args: ["-y", pkg], env: {}, enabled: true }, env: [] });
+    const remote = (name, title, description, url) => ({ name, title, description, kind: "remote", connector: { name: title, url, transport: "http", enabled: true }, env: [] });
+    const items = [
+      remote("notion", "Notion", "Search and update your Notion workspace.", "https://mcp.notion.com/mcp"),
+      npm("github", "GitHub", "Issues, PRs, and code search across repos.", "@modelcontextprotocol/server-github"),
+      npm("slack", "Slack", "Read and post messages in your channels.", "@modelcontextprotocol/server-slack"),
+      npm("gdrive", "Google Drive", "Search and read your Drive files.", "@modelcontextprotocol/server-gdrive"),
+      npm("gmail", "Gmail", "Read, search, and draft emails.", "@gongrzhe/server-gmail-autoauth-mcp"),
+      npm("gcal", "Google Calendar", "View and create calendar events.", "@modelcontextprotocol/server-google-calendar"),
+      npm("filesystem", "Filesystem", "Read and write files in a folder.", "@modelcontextprotocol/server-filesystem"),
+      npm("fetch", "Web Fetch", "Fetch and read web pages on demand.", "@modelcontextprotocol/server-fetch"),
+      npm("memory", "Memory", "Persistent knowledge-graph memory.", "@modelcontextprotocol/server-memory"),
+      npm("postgres", "Postgres", "Query a PostgreSQL database.", "@modelcontextprotocol/server-postgres"),
+      npm("sqlite", "SQLite", "Query a local SQLite database.", "@modelcontextprotocol/server-sqlite"),
+      npm("puppeteer", "Puppeteer", "Automate a headless browser.", "@modelcontextprotocol/server-puppeteer"),
+      npm("brave", "Brave Search", "Web search via the Brave API.", "@modelcontextprotocol/server-brave-search"),
+      remote("linear", "Linear", "Issues and projects in Linear.", "https://mcp.linear.app/sse"),
+      npm("jira", "Jira & Confluence", "Issues, boards, and pages in Atlassian.", "mcp-atlassian"),
+      npm("sentry", "Sentry", "Inspect errors and issues.", "@sentry/mcp-server"),
+      remote("stripe", "Stripe", "Payments, customers, and invoices.", "https://mcp.stripe.com"),
+      npm("figma", "Figma", "Read designs, frames, and components.", "figma-developer-mcp"),
+      npm("obsidian", "Obsidian", "Read and write notes in your vault.", "mcp-obsidian"),
+      npm("airtable", "Airtable", "Read and update Airtable bases.", "airtable-mcp-server"),
+      npm("todoist", "Todoist", "Manage tasks and projects.", "@abhiz123/todoist-mcp-server"),
+      remote("asana", "Asana", "Tasks and projects in Asana.", "https://mcp.asana.com/sse"),
+      npm("discord", "Discord", "Read and send Discord messages.", "mcp-discord"),
+      npm("time", "Time", "Time zones and current time.", "@modelcontextprotocol/server-time"),
+      npm("everything", "Everything", "Reference server (demos all features).", "@modelcontextprotocol/server-everything"),
+    ];
+    return { items, stale: false, source: "web" };
+  },
   async listSkills() { return []; },
   async createSkill() { return { error: "Skills run in the desktop app." }; },
   async importSkillFolder() { return { error: "Available in the desktop app." }; },
