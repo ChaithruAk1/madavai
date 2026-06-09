@@ -129,7 +129,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
         <div className="sb-recents scroll">
           {recents.length === 0 && <div className="sb-empty">No saved chats yet.</div>}
           {recents.length > 0 && shown.length === 0 && <div className="sb-empty">No matches.</div>}
-          {shown.map((it) => (
+          {shown.slice(0, 100).map((it) => (
             <div key={it.id} className={`sb-rec ${it.id === activeConvId ? "active" : ""}`} onClick={() => onOpenSession(it.id)} title={it.title}>
               <span className="sb-rec-title">{it.title || "Untitled"}</span>
               <button className="sb-rec-del" title="Delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(it.id); }}><Trash2 size={12} /></button>

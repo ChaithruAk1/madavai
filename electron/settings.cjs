@@ -34,7 +34,8 @@ function mapSecrets(s, fn) {
 
 const DEFAULTS = {
   activeProfileId: "p_local",
-  agents: [], // user-built agents (Agents builder): { id, name, description, instructions, tools, model }
+  agents: [], // user-built agents (Agent Studio): { id, name, description, instructions, tools, model, identity }
+  teams: [],  // agent teams (multi-agent): { id, name, identity, mode: "relay"|"manager", members: [agentId] }
   connectors: [],
   skillsDir: "",
   skillsDirs: [],
@@ -79,19 +80,30 @@ const DEFAULTS = {
   },
 };
 
+// mtime-based cache: load() is called on every IPC/turn — skip re-reading an unchanged file.
+let _cache = null, _cacheMtime = 0;
 function load() {
   try {
-    const raw = fs.readFileSync(file(), "utf8");
+    const f = file();
+    const mt = fs.statSync(f).mtimeMs;
+    if (_cache && mt === _cacheMtime) return _cache;
+    const raw = fs.readFileSync(f, "utf8");
     const data = JSON.parse(raw);
     // shallow-merge defaults so new fields appear for old config files
     const merged = { ...DEFAULTS, ...data, profiles: { ...DEFAULTS.profiles, ...(data.profiles || {}) } };
     if (!Array.isArray(merged.skillsDirs)) merged.skillsDirs = [];
     if (!Array.isArray(merged.agents)) merged.agents = [];
+    if (!Array.isArray(merged.teams)) merged.teams = [];
     if (merged.skillsDirs.length === 0 && merged.skillsDir) merged.skillsDirs = [merged.skillsDir]; // migrate single → list
     if (merged.profiles.p_proxy) delete merged.profiles.p_proxy; // free-claude-code proxy removed
     if (!merged.profiles[merged.activeProfileId]) merged.activeProfileId = Object.keys(merged.profiles)[0];
     if (merged.activeProfileId === "p_proxy") merged.activeProfileId = Object.keys(merged.profiles)[0];
+    // Light schema guard: a corrupted file shouldn't crash callers with wrong types.
+    if (typeof merged.profiles !== "object" || !merged.profiles) merged.profiles = { ...DEFAULTS.profiles };
+    if (!Array.isArray(merged.connectors)) merged.connectors = [];
+    if (!Array.isArray(merged.disabledSkills)) merged.disabledSkills = [];
     mapSecrets(merged, decStr); // decrypt secrets for in-app use
+    _cache = merged; _cacheMtime = fs.statSync(file()).mtimeMs;
     return merged;
   } catch {
     return DEFAULTS;
@@ -104,6 +116,7 @@ function save(settings) {
   const onDisk = JSON.parse(JSON.stringify(settings));
   mapSecrets(onDisk, encStr);
   fs.writeFileSync(file(), JSON.stringify(onDisk, null, 2), "utf8");
+  _cache = null; // invalidate the read cache — next load() re-reads what we just wrote
   return settings;
 }
 

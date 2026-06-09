@@ -55,7 +55,11 @@ const LS = {
     return val;
   },
 };
-const rid = (p) => p + Math.random().toString(36).slice(2, 8);
+// Crypto-strength ids (unpredictable; falls back to Math.random only if the browser lacks crypto).
+const rid = (p) => {
+  try { const a = new Uint8Array(8); crypto.getRandomValues(a); return p + Array.from(a, (b) => b.toString(16).padStart(2, "0")).join(""); }
+  catch { return p + Math.random().toString(36).slice(2, 10); }
+};
 
 // ---- IndexedDB for chat history (large capacity, so it can't crowd out settings/keys in localStorage) ----
 const IDB_NAME = "brainedge", IDB_STORE = "sessions";
@@ -137,6 +141,109 @@ function agentBlock(a) {
   return `You are "${a.name || "a custom agent"}", an agent the user built in BrainEdge.` +
     (a.description ? ` Purpose: ${a.description}` : "") +
     `\n\nAgent instructions (always follow):\n${a.instructions}`;
+}
+
+// ===== Agent teams on the web (multi-agent: relay + manager) =====
+// Members run instruction-level here (browser can't spawn MCP/terminal — desktop runs them
+// with full tools). Same UiEvent shapes as desktop so the chat timeline renders identically.
+function memberSys(m) {
+  return `You are "${m.name}", one agent on a team inside BrainEdge.` +
+    (m.description ? ` Purpose: ${m.description}` : "") +
+    `\n\nAgent instructions (always follow):\n${m.instructions || ""}` +
+    `\n\nYou receive a task (possibly with work from teammates). Do YOUR part thoroughly and reply with your complete work product as plain text — a teammate or coordinator consumes it next, so be complete and self-contained.`;
+}
+async function runTeamTurn(sess, text) {
+  const s = loadSettings();
+  const prof = activeProfile(s);
+  if (!prof || !prof.baseUrl || !prof.model) { emit(sess.id, "error", { message: "No provider/model configured — pick one in the model selector." }); emit(sess.id, "result", { subtype: "error" }); return; }
+  const team = sess.team;
+  const members = (team.members || []).slice(0, 6);
+  const rid2 = () => rid("team_");
+  const profFor = (m) => {
+    if (m.model && m.model.includes("::")) { const i = m.model.indexOf("::"); const p = s.profiles[m.model.slice(0, i)]; if (p) return { ...p, model: m.model.slice(i + 2) }; }
+    return prof;
+  };
+  sess.ac = new AbortController();
+  emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind, mode: "team" });
+  if (!sess.title) sess.title = text.slice(0, 60);
+  const started = Date.now();
+  try {
+    let plan = members.map((m) => ({ member: m, task: "" }));
+    if (team.mode === "manager") {
+      const roster = members.map((m) => `- ${m.name}: ${m.description || (m.instructions || "").slice(0, 120)}`).join("\n");
+      const planId = rid2();
+      emit(sess.id, "tool_use", { id: planId, name: `Team plan — ${team.name || "your team"}`, input: { mission: text }, auto: true });
+      try {
+        const { text: pt } = await callModel(prof, [
+          { role: "system", content: `You are the coordinator of an agent team. Team roster:\n${roster}\n\nSplit the user's mission into one focused sub-task per useful member (skip members that add nothing). Reply with ONLY a JSON array, no prose: [{"member":"<exact member name>","task":"<specific, self-contained sub-task>"}]` },
+          { role: "user", content: text },
+        ], sess.ac.signal);
+        const i = pt.indexOf("["); const j = pt.lastIndexOf("]");
+        const arr = i >= 0 && j > i ? JSON.parse(pt.slice(i, j + 1)) : null;
+        if (Array.isArray(arr) && arr.length) {
+          const mapped = arr.slice(0, 6)
+            .map((p) => ({ member: members.find((m) => m.name === p.member) || members.find((m) => (p.member || "").toLowerCase().includes(m.name.toLowerCase())), task: String(p.task || "") }))
+            .filter((p) => p.member);
+          if (mapped.length) plan = mapped;
+        }
+        emit(sess.id, "tool_result", { id: planId, output: plan.map((p, k) => `${k + 1}. ${p.member.name} — ${p.task || "full mission"}`).join("\n") });
+      } catch (e) {
+        emit(sess.id, "tool_result", { id: planId, output: "(planning failed — relay order: " + String((e && e.message) || e) + ")" });
+      }
+    }
+    // Managed → parallel fan-out (independent sub-tasks, all members at once);
+    // Relay → strictly in order, each member seeing prior teammates' work.
+    let outputs = [];
+    if (team.mode === "manager") {
+      outputs = await Promise.all(plan.map((step) => {
+        const stepId = rid2();
+        emit(sess.id, "tool_use", { id: stepId, name: `${step.member.name} (teammate)`, input: { task: step.task || "full mission" }, auto: true });
+        const task = `MISSION (from the user):\n${text}` + (step.task ? `\n\nYOUR ASSIGNED SUB-TASK (do only this part):\n${step.task}` : "");
+        return callModel(profFor(step.member), [{ role: "system", content: memberSys(step.member) }, { role: "user", content: task }], sess.ac.signal)
+          .then((r) => (r && r.text) || "")
+          .catch((e) => { if (e && e.name === "AbortError") throw e; return "(member failed: " + String((e && e.message) || e) + ")"; })
+          .then((out) => {
+            emit(sess.id, "tool_result", { id: stepId, output: (out || "(no output)").slice(0, 4000) });
+            return { name: step.member.name, text: out || "(no output)" };
+          });
+      }));
+    } else {
+      for (const step of plan) {
+        // Trim each teammate's contribution so the hand-off context can't balloon past limits.
+        const prior = outputs.map((o) => `=== Work from ${o.name} ===\n${String(o.text).slice(0, 12000)}`).join("\n\n");
+        const task = `MISSION (from the user):\n${text}` +
+          (prior ? `\n\nWORK FROM YOUR TEAMMATES SO FAR:\n${prior}` : "");
+        const stepId = rid2();
+        emit(sess.id, "tool_use", { id: stepId, name: `${step.member.name} (teammate)`, input: { task: "mission + teammates' work" }, auto: true });
+        let out = "";
+        try { const r = await callModel(profFor(step.member), [{ role: "system", content: memberSys(step.member) }, { role: "user", content: task }], sess.ac.signal); out = (r && r.text) || ""; }
+        catch (e) { if (e && e.name === "AbortError") throw e; out = "(member failed: " + String((e && e.message) || e) + ")"; }
+        outputs.push({ name: step.member.name, text: out || "(no output)" });
+        emit(sess.id, "tool_result", { id: stepId, output: (out || "(no output)").slice(0, 4000) });
+      }
+    }
+    let finalText = "";
+    if (team.mode === "manager" && outputs.length > 1) {
+      const body = outputs.map((o) => `=== ${o.name} ===\n${String(o.text).slice(0, 12000)}`).join("\n\n");
+      const { text: ft } = await callModel(prof, [
+        { role: "system", content: "You are the coordinator of an agent team. Synthesize your team's work into ONE clear, complete answer to the user's mission. Credit no one; just deliver the result. Do not mention the team mechanics." },
+        { role: "user", content: `Mission:\n${text}\n\nTeam output:\n${body}` },
+      ], sess.ac.signal, (d) => emit(sess.id, "assistant_delta", { text: d }));
+      finalText = ft;
+    } else {
+      finalText = (outputs[outputs.length - 1] || {}).text || "(the team produced no output)";
+      emit(sess.id, "assistant_delta", { text: finalText });
+    }
+    sess.messages.push({ role: "user", content: text });
+    sess.messages.push({ role: "assistant", content: finalText });
+    emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
+    emit(sess.id, "result", { subtype: "success", duration_ms: Date.now() - started });
+    persistSession(sess);
+  } catch (e) {
+    if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
+    emit(sess.id, "error", { message: String((e && e.message) || e) });
+    emit(sess.id, "result", { subtype: "error" });
+  }
 }
 
 function userContent(text, images) {
@@ -320,6 +427,8 @@ async function runTurn(sess, text, images) {
   sess.profile = prof;
   if (!prof || !prof.baseUrl) { emit(sess.id, "error", { message: "No provider configured. Open Settings → add a provider and API key." }); emit(sess.id, "result", { subtype: "error" }); return; }
   if (!prof.model) { emit(sess.id, "error", { message: "No model selected. Pick a model from the model picker." }); emit(sess.id, "result", { subtype: "error" }); return; }
+  // Agent team bound to this session → multi-agent run (relay/manager).
+  if (sess.team) return runTeamTurn(sess, text);
   // Folder selected → run the file-tool agent (collaborate). Tool calling needs an OpenAI-style provider.
   if (sess.agentic && webfs.hasRoot() && prof.kind !== "anthropic") return runAgentTurn(sess, text, images, prof);
   sess.messages.push({ role: "user", content: userContent(text, images) });
@@ -349,7 +458,15 @@ function persistSession(sess) {
   const rec = { id: sess.id, mode: sess.mode || "code", title: sess.title || "Untitled", updatedAt: Date.now(),
     messages: sess.messages, projectId: sess.projectId || null, convId: sess.convId || null,
     model: (sess.profile && sess.profile.model) || null, provider: (sess.profile && sess.profile.name) || null };
-  idbPut(rec).catch(() => {}); // IndexedDB: large capacity, never crowds out settings/keys
+  // Surface save failures instead of losing history silently: warn once per session in the
+  // chat (as a system-style event) + always in the console, then keep running.
+  idbPut(rec).catch((e) => {
+    console.warn("[brainedge] chat history save failed:", e);
+    if (!persistSession._warned) {
+      persistSession._warned = true;
+      try { emit(sess.id, "error", { message: "⚠ This browser is blocking history storage (private mode or full disk?). Your chat continues, but it won't be saved." }); } catch {}
+    }
+  });
 }
 
 // Streaks (consecutive active calendar days) + a friendly peak-hour label, from a set of YYYY-MM-DD keys.
@@ -390,7 +507,8 @@ export const webBridge = {
       if (ab) sys = sys ? `${ab}\n\n${sys}` : ab; // agent identity leads; base behavior/tool guidance follows
       if (sys) messages.push({ role: "system", content: sys }); title = "";
     }
-    const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, convId: id, title, agentic, cwd: req.cwd || null, agent };
+    const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, convId: id, title, agentic, cwd: req.cwd || null, agent,
+      team: (req.team && Array.isArray(req.team.members) && req.team.members.length) ? req.team : null };
     sessions.set(id, sess);
     runTurn(sess, req.prompt || "", req.images); // fire and forget; streams events
     return { sessionId: id, conversationId: id };

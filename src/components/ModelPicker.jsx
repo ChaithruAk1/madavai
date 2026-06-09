@@ -103,6 +103,16 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     }) }))
     .filter((g) => g.items.length);
   const shown = groups.reduce((n, g) => n + g.items.length, 0);
+  // Render cap: 250 rows max in the DOM (filters/search still cover everything) — keeps the
+  // dropdown instant even with 500+ models loaded.
+  const MAX_RENDER = 250;
+  let _n = 0;
+  const renderGroups = groups.map((g) => {
+    if (_n >= MAX_RENDER) return null;
+    const items = g.items.slice(0, MAX_RENDER - _n); _n += items.length;
+    return { ...g, items };
+  }).filter(Boolean);
+  const truncated = shown > _n;
 
   const doRefresh = async () => { if (!onRefresh) return; setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); } };
 
@@ -152,7 +162,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
             </div>
           )}
 
-          {groups.map((g) => (
+          {renderGroups.map((g) => (
             <div key={g.group}>
               <div className="model-group" style={{ display: "flex", alignItems: "center", gap: 7 }}>
                 <Logo prov={g.group} /> {g.group} · {g.items.length}
@@ -180,6 +190,11 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
               })}
             </div>
           ))}
+          {truncated && (
+            <div className="model-group" style={{ textTransform: "none", color: "var(--text-2)", padding: "10px 12px" }}>
+              Showing the first {MAX_RENDER} of {shown} — type in the search box to narrow down.
+            </div>
+          )}
         </div>
       )}
     </div>

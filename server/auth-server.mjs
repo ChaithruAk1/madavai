@@ -29,6 +29,18 @@ const PORT = +(process.env.PORT || 8787);
 const BASE = process.env.AUTH_BASE_URL || `http://127.0.0.1:${PORT}`;
 const SECRET = process.env.SESSION_SECRET || "dev-insecure-secret-change-me";
 const ADMIN_KEY = process.env.ADMIN_KEY || "dev-admin-key";
+// PRODUCTION GUARD: refuse to start with factory-default secrets outside local dev.
+// "Production" = NODE_ENV=production, a PaaS marker (Render sets RENDER), or a non-loopback base URL.
+const IS_PROD = process.env.NODE_ENV === "production" || !!process.env.RENDER || !/127\.0\.0\.1|localhost/.test(BASE);
+if (IS_PROD) {
+  const bad = [];
+  if (SECRET === "dev-insecure-secret-change-me") bad.push("SESSION_SECRET");
+  if (ADMIN_KEY === "dev-admin-key") bad.push("ADMIN_KEY");
+  if (bad.length) {
+    console.error(`[auth-server] FATAL: refusing to start in production with default ${bad.join(" + ")}. Set strong values (e.g. "openssl rand -hex 32") and restart.`);
+    process.exit(1);
+  }
+}
 const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 7);
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24h; re-validated online so bans still bite quickly
 // Extra redirect targets allowed besides loopback (your web app origin), comma-separated.
@@ -79,8 +91,15 @@ const isFreeEmail = (email) => !!email && emailSet("FREE_EMAILS", FREE_EMAILS_FI
 const isAdminEmail = (email) => !!email && emailSet("ADMIN_EMAILS", ADMIN_EMAILS_FILE).has(email.toLowerCase());
 
 // Admin endpoints accept EITHER the x-admin-key header OR a signed-in admin-email user's session.
+// Hardened: timing-safe key compare + a strict per-IP rate limit so the key can't be brute-forced.
+function safeEq(a, b) {
+  const A = Buffer.from(String(a)); const B = Buffer.from(String(b));
+  return A.length === B.length && crypto.timingSafeEqual(A, B);
+}
 async function adminOk(req) {
-  if (ADMIN_KEY && (req.headers["x-admin-key"] || "") === ADMIN_KEY) return true;
+  if (rateLimited(req, "admin", 30, 60000)) return false; // 30 admin calls/min/IP — humans never exceed this
+  const hdr = req.headers["x-admin-key"] || "";
+  if (ADMIN_KEY && hdr && safeEq(hdr, ADMIN_KEY)) return true;
   const pl = verify(bearer(req)); if (!pl) return false;
   const u = await store.getUser(pl.sub); return !!(u && isAdminEmail(u.email));
 }

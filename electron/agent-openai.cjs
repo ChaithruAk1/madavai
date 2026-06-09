@@ -3,7 +3,14 @@
 // in-process, against the active external model. Emits the same UiEvents as the SDK path.
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execSync, exec } = require("child_process");
+// Async shell runner — keeps the main process responsive (execSync froze the whole app for up to 30s).
+const execAsync = (command, opts) => new Promise((resolve) => {
+  exec(command, opts, (err, stdout, stderr) => {
+    if (err && !stdout) return resolve("ERROR: " + String((stderr || err.message || err)).slice(0, 4000));
+    resolve(String(stdout || "") + (stderr ? "\n[stderr] " + String(stderr).slice(0, 1000) : ""));
+  });
+});
 const { streamChatTools, stripReasoning } = require("./providers.cjs");
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
@@ -74,7 +81,7 @@ function inside(cwd, p) {
   return abs;
 }
 
-function execTool(cwd, name, args) {
+async function execTool(cwd, name, args) {
   switch (name) {
     case "list_dir": {
       const dir = inside(cwd, args.path || ".");
@@ -95,7 +102,7 @@ function execTool(cwd, name, args) {
       return "edited " + args.path;
     }
     case "run_bash":
-      return String(execSync(args.command, { cwd, encoding: "utf8", timeout: 30000 })).slice(0, 8000);
+      return (await execAsync(args.command, { cwd, encoding: "utf8", timeout: 30000 })).slice(0, 8000);
     case "find_files": {
       const out = [];
       walkFiles(cwd, cwd, 6, (rel) => { if (rel.toLowerCase().includes(String(args.pattern || "").toLowerCase())) out.push(rel); });

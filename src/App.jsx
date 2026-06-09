@@ -18,6 +18,7 @@ import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import StudioLauncher from "./components/StudioLauncher.jsx";
 import Agents from "./components/Agents.jsx";
+import TeamOps from "./components/TeamOps.jsx";
 import TerminalPanel from "./components/TerminalPanel.jsx";
 import EnvPicker from "./components/EnvPicker.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
@@ -53,9 +54,13 @@ export default function App() {
   const [chatMode, setChatMode] = useState("chat"); // last primary mode → drives the Recents list
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [agentCtx, setAgentCtx] = useState(null); // active custom agent for this session ({id,name,instructions,tools,model})
+  const [teamCtx, setTeamCtx] = useState(null);   // active agent team ({name,mode,members:[agents]})
+  const [teamRun, setTeamRun] = useState(null);   // live mission state for TeamOps: { startedAt, steps, plan, synth, finished }
   const sessionRef = useRef(null);
   const studioSeed = useRef(null); // pending Studio starter prompt, sent once we're in chat mode
   const agentSeed = useRef(null);  // pending { agent, prompt } from the Agents launcher
+  const teamSeed = useRef(null);   // pending team from the Teams launcher
+  const permQueue = useRef([]);    // pending permission requests (parallel team members can overlap)
   const chatRef = useRef(null);
   const streamOpen = useRef(false);
   const lastInfoRef = useRef(null); // real {model, provider, kind} from the backend init event
@@ -118,20 +123,43 @@ export default function App() {
       case "tool_use":
         streamOpen.current = false; setStreaming(false);
         if (HIDDEN_TOOLS.has(e.data.name)) break; // internal plumbing — don't surface to the user
+        // Team mission tracking → drives the Mission Control (TeamOps) panel.
+        if (/\(teammate\)$/.test(e.data.name || "")) {
+          const member = e.data.name.replace(/\s*\(teammate\)$/, "");
+          setTeamRun((r) => r ? { ...r, steps: r.steps.some((s) => s.name === member)
+            ? r.steps.map((s) => s.name === member ? { ...s, status: "working", evId: e.data.id } : s)
+            : [...r.steps, { name: member, status: "working", evId: e.data.id }],
+            plan: r.plan && r.plan.status !== "done" ? { ...r.plan, status: "done" } : r.plan } : r);
+        } else if (/^Team plan/.test(e.data.name || "")) {
+          setTeamRun((r) => r ? { ...r, plan: { status: "working", evId: e.data.id } } : r);
+        }
         setTimeline((tl) => [...tl, { type: "tool", id: e.data.id, name: e.data.name, input: e.data.input, auto: e.data.auto, status: "run" }]);
         break;
       case "tool_result":
+        setTeamRun((r) => {
+          if (!r) return r;
+          if (r.plan && r.plan.evId === e.data.id) return { ...r, plan: { ...r.plan, status: "done", output: e.data.output } };
+          if (r.steps.some((s) => s.evId === e.data.id)) {
+            const steps = r.steps.map((s) => s.evId === e.data.id ? { ...s, status: /^\(member failed/.test(e.data.output || "") ? "failed" : "done", output: e.data.output } : s);
+            const allDone = steps.every((s) => s.status === "done" || s.status === "failed");
+            return { ...r, steps, synth: allDone && r.plan ? "working" : r.synth };
+          }
+          return r;
+        });
         setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, output: e.data.output, status: "ok" } : it));
         break;
       case "permission_request":
-        setPerm(e.data);
+        // Queue requests: parallel team members can ask at the same time — show one
+        // modal at a time and feed the next when the current one is resolved.
+        setPerm((cur) => { if (cur) { permQueue.current.push(e.data); return cur; } return e.data; });
         break;
       case "permission_denied":
-        setPerm(null);
+        setPerm((cur) => (cur && cur.toolUseId === e.data.id) ? (permQueue.current.shift() || null) : cur);
         setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, status: "deny" } : it));
         break;
       case "result":
         streamOpen.current = false; setStreaming(false); setBusy(false);
+        setTeamRun((r) => r ? { ...r, finished: true, synth: r.synth === "working" ? "done" : r.synth } : r);
         setHistRefresh((n) => n + 1); // refresh the saved-chat list (new title / new convo)
         break;
       case "error":
@@ -197,15 +225,17 @@ export default function App() {
     send(newText, item.images || []);
   };
 
-  const send = async (text, images = [], agentOv = null) => {
+  const send = async (text, images = [], agentOv = null, teamOv = null) => {
     const ag = agentOv || agentCtx; // explicit override beats state (avoids a stale closure on seeded launches)
+    const tm = teamOv || teamCtx;
+    if (tm) setTeamRun({ startedAt: Date.now(), steps: tm.members.map((m) => ({ name: m.name, status: "queued", identity: m.identity })), plan: tm.mode === "manager" ? { status: "queued" } : null, synth: null, finished: false });
     setTimeline((tl) => [...tl, { type: "message", role: "user", text, images }]);
     setBusy(true);
     streamOpen.current = false;
     if (!sessionRef.current) {
       const req = projectCtx
         ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId, images }
-        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined };
+        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined, team: tm || undefined };
       const { sessionId, conversationId } = await bridge.start(req);
       sessionRef.current = sessionId;
       if (!projectCtx && conversationId) setActiveConvId(conversationId);
@@ -220,12 +250,12 @@ export default function App() {
     if (!conv) return;
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
-    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); setTeamCtx(null); setTeamRun(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   // Start a fresh chat — also returns to the chat surface if we're in a tool/settings view.
   const newSession = () => {
     if (!PRIMARY.includes(mode)) setMode(chatMode);
-    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); setTeamCtx(null); setTeamRun(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const removeSession = async (id) => {
     await bridge.deleteSession(id);
@@ -345,7 +375,7 @@ export default function App() {
     if (behavior === "allow") {
       setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === perm.toolUseId ? { ...it, status: "run" } : it));
     }
-    setPerm(null);
+    setPerm(permQueue.current.shift() || null); // next pending request, if a parallel member is waiting
   };
 
   const switchMode = (m) => {
@@ -359,6 +389,7 @@ export default function App() {
       const c = modeCacheRef.current[m];
       setProjectCtx(null); setCoworkProj(null);
       if (!agentSeed.current) setAgentCtx(null); // manual navigation drops the agent; a pending launch keeps it
+      if (!teamSeed.current) { setTeamCtx(null); setTeamRun(null); }
       setTimeline(c ? c.timeline : []);
       setActiveConvId(c ? c.convId : null);
       sessionRef.current = null;
@@ -455,6 +486,20 @@ export default function App() {
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const clearAgent = () => { setAgentCtx(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
 
+  // Launch a team: fresh chat session bound to the team; Mission Control opens alongside.
+  const startTeamSession = (team) => {
+    teamSeed.current = team;
+    modeCacheRef.current.chat = { convId: null, timeline: [] };
+    switchMode("chat");
+  };
+  useEffect(() => {
+    if (teamSeed.current && mode === "chat") {
+      const team = teamSeed.current; teamSeed.current = null;
+      setAgentCtx(null); setTeamCtx(team); setTeamRun(null);
+    }
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  const clearTeam = () => { setTeamCtx(null); setTeamRun(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
+
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   const controlsRow = (
     <div className="ctrl-row">
@@ -515,7 +560,7 @@ export default function App() {
         ) : isConsumption ? (
           <Consumption />
         ) : isAgents ? (
-          <Agents onLaunch={startAgentSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
+          <Agents onLaunch={startAgentSession} onLaunchTeam={startTeamSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
         ) : isStudio ? (
           <StudioLauncher onStart={startStudio} />
         ) : isTerminal ? (
@@ -531,7 +576,21 @@ export default function App() {
               {timeline.length === 0 ? (
                 <div className="hero scroll">
                   <div className="hero-inner">
-                    {agentCtx ? (
+                    {teamCtx ? (
+                      <div className="hero-greet hero-agent">
+                        <span className="tops-faces">
+                          {teamCtx.members.slice(0, 4).map((m, i) => (
+                            <span key={i} className="hero-agent-ic" style={{ marginLeft: i ? -12 : 0, width: 40, height: 40, ...(m.identity ? { background: `${m.identity.color}22`, borderColor: `${m.identity.color}66`, color: m.identity.color } : {}) }}>
+                              <span style={{ fontSize: 18 }}>{(m.identity && m.identity.glyph) || "✦"}</span>
+                            </span>
+                          ))}
+                        </span>
+                        <div>
+                          <h1 className="greeting">{teamCtx.name}</h1>
+                          <div className="hero-agent-sub">{teamCtx.members.length} agents · {teamCtx.mode === "manager" ? "a coordinator splits and merges the work" : "work flows down the line"} — brief them once, watch them go</div>
+                        </div>
+                      </div>
+                    ) : agentCtx ? (
                       <div className="hero-greet hero-agent">
                         <span className="hero-agent-ic" style={agentCtx.identity ? { background: `${agentCtx.identity.color}22`, borderColor: `${agentCtx.identity.color}66`, color: agentCtx.identity.color } : undefined}>
                           {agentCtx.identity ? <span style={{ fontSize: 22 }}>{agentCtx.identity.glyph}</span> : <Bot size={26} />}
@@ -620,6 +679,7 @@ export default function App() {
               )}
             </div>
             {artifact && <ArtifactPanel artifact={artifact} onClose={() => setArtifact(null)} />}
+            {teamCtx && !artifact && <TeamOps team={teamCtx} run={teamRun} onClose={clearTeam} />}
           </div>
         )}
       </div>

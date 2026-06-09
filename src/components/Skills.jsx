@@ -1,6 +1,6 @@
 import { useEffect, useState, createElement } from "react";
 import { FolderPlus, FolderUp, Upload, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
-import { bridge } from "../bridge/index.js";
+import { bridge, isWeb } from "../bridge/index.js";
 
 // --- tiny markdown renderer (headings, bold, inline code, bullets, fenced code) ---
 function inline(t, k0 = 0) {
@@ -40,6 +40,9 @@ export default function Skills() {
   const [newName, setNewName] = useState("");
   const [status, setStatus] = useState("");
   const [showFolders, setShowFolders] = useState(false);
+
+  // Honest signposting on web: skill folders live on a real disk, which a browser can't manage.
+  const webNote = isWeb ? "Skill folders, import and creation need the desktop app — the browser can't manage files on your computer." : "";
 
   const refresh = async () => {
     const cfg = await bridge.getSettings();
@@ -88,6 +91,7 @@ export default function Skills() {
 
   return (
     <div className="skills2">
+      {webNote && <div className="ag-hint" style={{ padding: "10px 14px 0", width: "100%", flexBasis: "100%" }}>🖥️ {webNote}</div>}
       <aside className="sk-list">
         <div className="sk-list-head">
           <span className="sk-list-title">Skills</span>

@@ -12,6 +12,8 @@ const sstore = require("./sessions-store.cjs");
 const usage = require("./usage-store.cjs");
 const fs = require("fs");
 const os = require("os");
+const crypto = require("crypto");
+const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
 
 // Combine a natural-tone safeguard + the user's custom instructions + the chosen response language.
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
@@ -68,13 +70,15 @@ class SessionManager {
     this.sessions = new Map();           // sessionId -> { mode, cwd, history, controller, sdkSessionId }
     this.permissions = new Map();        // requestId -> resolve(PermissionResult)
     this.holds = new Map();              // sessionId -> SDK Query (for interrupt)
+    this._turns = new Map();             // sessionId -> live turn stats (per-session: overlapping turns can't corrupt each other)
   }
 
   _send(sessionId, kind, data) {
-    if (this._curTurn) {
-      if (kind === "assistant_delta") { this._curTurn.replyChars += ((data && data.text) || "").length; this._curTurn.replyText += (data && data.text) || ""; }
-      else if (kind === "result") { usage.append({ ...this._curTurn, at: Date.now() }); this._persistTurn(sessionId); this._curTurn = null; }
-      else if (kind === "error") { this._persistTurn(sessionId); this._curTurn = null; }
+    const t = this._turns.get(sessionId);
+    if (t) {
+      if (kind === "assistant_delta") { t.replyChars += ((data && data.text) || "").length; t.replyText += (data && data.text) || ""; }
+      else if (kind === "result") { usage.append({ ...t, at: Date.now() }); this._persistTurn(sessionId); this._turns.delete(sessionId); }
+      else if (kind === "error") { this._persistTurn(sessionId); this._turns.delete(sessionId); }
     }
     this.rawEmit({ sessionId, seq: seq++, kind, data });
   }
@@ -83,11 +87,12 @@ class SessionManager {
   // Project mode persists separately (projects-store), so it has no chatConvId here.
   _persistTurn(sessionId) {
     const s = this.sessions.get(sessionId);
-    if (!s || !s.chatConvId || !this._curTurn) return;
+    const t = this._turns.get(sessionId);
+    if (!s || !s.chatConvId || !t) return;
     const conv = sstore.getSession(s.chatConvId);
     if (!conv) return;
-    const u = (this._curTurn.userText || "").trim();
-    const a = (this._curTurn.replyText || "").trim();
+    const u = (t.userText || "").trim();
+    const a = (t.replyText || "").trim();
     if (u) conv.messages.push({ role: "user", content: u });
     if (a) conv.messages.push({ role: "assistant", content: a });
     if ((!conv.title || conv.title === "New task") && u) conv.title = u.slice(0, 60);
@@ -96,9 +101,10 @@ class SessionManager {
   }
 
   async start(req) {
-    const sessionId = "sess_" + Math.random().toString(36).slice(2, 9);
+    const sessionId = newId("sess_");
     const s = { mode: req.mode, cwd: req.cwd, history: [], controller: null, sdkSessionId: null, permMode: req.permissionMode || "default" };
     if (req.agent && req.agent.instructions) s.agent = req.agent; // custom agent: { name, description, instructions, tools }
+    if (req.team && Array.isArray(req.team.members) && req.team.members.length) s.team = req.team; // agent team: { name, mode: "relay"|"manager", members: [agent objects] }
     if (req.mode === "project") {
       s.projectId = req.projectId;
       s.conversationId = req.conversationId;
@@ -111,7 +117,8 @@ class SessionManager {
       s.chatConvId = conv.id;
       if (req.projectId) s.projectId = req.projectId; // Cowork task scoped to a project
       // Seed the model context from saved messages so reopened chats continue coherently.
-      if (conv.messages && conv.messages.length) s.history = conv.messages.map((m) => ({ role: m.role, content: m.content }));
+      // Cap at the newest 200 messages — a giant history would balloon RAM and every request.
+      if (conv.messages && conv.messages.length) s.history = conv.messages.slice(-200).map((m) => ({ role: m.role, content: m.content }));
     }
     this.sessions.set(sessionId, s);
     await this._turn(sessionId, req.prompt, req.images);
@@ -169,13 +176,14 @@ class SessionManager {
       return;
     }
 
-    this._curTurn = { sessionId, model: profile.model, provider: profile.name, mode: s.mode, promptChars: (userText || "").length, replyChars: 0, replyText: "", userText: userText || "" };
+    this._turns.set(sessionId, { sessionId, model: profile.model, provider: profile.name, mode: s.mode, promptChars: (userText || "").length, replyChars: 0, replyText: "", userText: userText || "" });
 
     // Subscription forces the SDK for chat/project too (raw /v1/messages can't use plan creds).
     if (subMode && (s.mode === "project" || !AGENT_MODES.has(s.mode))) {
       return this._chatViaSdk(sessionId, userText, profile, images);
     }
 
+    if (s.team) return this._teamTurn(sessionId, userText, profile);
     if (s.mode === "project") return this._projectTurn(sessionId, userText, profile, images);
     if (AGENT_MODES.has(s.mode)) return this._agentTurn(sessionId, userText, profile, images);
 
@@ -221,6 +229,153 @@ class SessionManager {
       sessionId, prompt: userText, mode: "chat", cwd: s.cwd || null, profile, permMode: s.permMode || "default",
       resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds,
     });
+  }
+
+  // ---- agent teams (multi-agent: relay pipelines + manager orchestration) ----
+  // A member can pin its own model ("pid::model") — resolve it, else use the session profile.
+  _memberProfile(member, fallback) {
+    if (member.model && member.model.includes("::")) {
+      const i = member.model.indexOf("::");
+      const p = settings.load().profiles[member.model.slice(0, i)];
+      if (p) return { ...p, model: member.model.slice(i + 2) };
+    }
+    return fallback;
+  }
+
+  _memberSys(member) {
+    return `You are "${member.name}", one agent on a team inside BrainEdge.` +
+      (member.description ? ` Purpose: ${member.description}` : "") +
+      `\n\nAgent instructions (always follow):\n${member.instructions || ""}` +
+      `\n\nYou receive a task (possibly with work from teammates). Do YOUR part thoroughly and reply with your complete work product as plain text — a teammate or coordinator consumes it next, so be complete and self-contained.`;
+  }
+
+  // Run one member to completion, capturing its final text. Member tool calls and
+  // permission prompts are forwarded to the UI; its prose is captured, not streamed.
+  async _runMember(member, task, profile, cfg, emit, signal, s) {
+    const prof = this._memberProfile(member, profile);
+    const t = member.tools || {};
+    let buf = "";
+    if (prof.kind === "anthropic") {
+      const { text } = await streamChat(prof, [{ role: "system", content: this._memberSys(member) }, { role: "user", content: task }], { signal, onDelta: () => {} });
+      return text || "";
+    }
+    const innerEmit = (e) => {
+      if (e.kind === "assistant_delta") { buf += (e.data && e.data.text) || ""; return; }
+      if (e.kind === "assistant_message" || e.kind === "result" || e.kind === "init") return; // member lifecycle stays internal
+      emit(e); // tool_use / tool_result / permission_request / permission_denied / error → visible
+    };
+    await runOpenAIAgentTurn({
+      prompt: task,
+      mode: (t.files || t.shell) && s.cwd ? "cowork" : "chat",
+      cwd: (t.files || t.shell) ? (s.cwd || null) : null,
+      profile: prof, permMode: s.permMode || "default",
+      history: [], emit: innerEmit, permissions: this.permissions, signal,
+      connectors: t.connectors ? (cfg.connectors || []) : [],
+      skillsDir: t.skills ? (cfg.skillsDirs || []) : [],
+      disabledSkills: cfg.disabledSkills || [],
+      systemOverride: this._memberSys(member),
+    });
+    return buf.trim();
+  }
+
+  async _teamTurn(sessionId, userText, profile) {
+    const s = this.sessions.get(sessionId);
+    const team = s.team;
+    const cfg = settings.load();
+    const emit = (e) => this._send(sessionId, e.kind, e.data);
+    const controller = new AbortController();
+    s.controller = controller;
+    const signal = controller.signal;
+    emit({ kind: "init", data: { model: profile.model, provider: profile.name, kind: profile.kind, mode: "team" } });
+    const started = Date.now();
+    const members = team.members.slice(0, 6); // hard cap — cost discipline
+    const rid = () => newId("team_");
+    try {
+      // 1) Plan. Relay = everyone in order, work flows down the line.
+      //    Manager = a coordinator assigns each member a specific sub-task first.
+      let plan = members.map((m) => ({ member: m, task: "" }));
+      if (team.mode === "manager") {
+        const roster = members.map((m) => `- ${m.name}: ${m.description || m.instructions.slice(0, 120)}`).join("\n");
+        const planId = rid();
+        emit({ kind: "tool_use", data: { id: planId, name: `Team plan — ${team.name || "your team"}`, input: { mission: userText }, auto: true } });
+        try {
+          const { text } = await streamChat(profile, [
+            { role: "system", content: `You are the coordinator of an agent team. Team roster:\n${roster}\n\nSplit the user's mission into one focused sub-task per useful member (skip members that add nothing). Reply with ONLY a JSON array, no prose: [{"member":"<exact member name>","task":"<specific, self-contained sub-task>"}]` },
+            { role: "user", content: userText },
+          ], { signal, onDelta: () => {} });
+          const i = text.indexOf("["); const j = text.lastIndexOf("]");
+          const arr = i >= 0 && j > i ? JSON.parse(text.slice(i, j + 1)) : null;
+          if (Array.isArray(arr) && arr.length) {
+            plan = arr.slice(0, 6)
+              .map((p) => ({ member: members.find((m) => m.name === p.member) || members.find((m) => (p.member || "").toLowerCase().includes(m.name.toLowerCase())), task: String(p.task || "") }))
+              .filter((p) => p.member);
+            if (!plan.length) plan = members.map((m) => ({ member: m, task: "" }));
+          }
+          emit({ kind: "tool_result", data: { id: planId, output: plan.map((p, i2) => `${i2 + 1}. ${p.member.name} — ${p.task || "full mission"}`).join("\n") } });
+        } catch (e) {
+          emit({ kind: "tool_result", data: { id: planId, output: "(planning failed — falling back to relay order: " + String(e.message || e) + ")" } });
+        }
+      }
+
+      // 2) Execute. Managed → PARALLEL FAN-OUT: sub-tasks are independent, so every member
+      //    works at the same time and the coordinator merges. Relay → strictly in order,
+      //    each member receiving all prior teammates' work (that chaining is the point).
+      let outputs = [];
+      if (team.mode === "manager") {
+        const jobs = plan.map((step) => {
+          const stepId = rid();
+          emit({ kind: "tool_use", data: { id: stepId, name: `${step.member.name} (teammate)`, input: { task: step.task || "full mission" }, auto: true } });
+          const task = `MISSION (from the user):\n${userText}` + (step.task ? `\n\nYOUR ASSIGNED SUB-TASK (do only this part):\n${step.task}` : "");
+          return this._runMember(step.member, task, profile, cfg, emit, signal, s)
+            .catch((e) => { if (e.name === "AbortError") throw e; return "(member failed: " + String(e.message || e) + ")"; })
+            .then((text) => {
+              emit({ kind: "tool_result", data: { id: stepId, output: (text || "(no output)").slice(0, 4000) } });
+              return { name: step.member.name, text: text || "(no output)" };
+            });
+        });
+        outputs = await Promise.all(jobs);
+        if (signal.aborted) throw Object.assign(new Error("interrupted"), { name: "AbortError" }); // don't synthesize after a mid-flight stop
+      } else {
+        for (const step of plan) {
+          if (signal.aborted) throw Object.assign(new Error("interrupted"), { name: "AbortError" });
+          // Trim each teammate's contribution so the hand-off context can't balloon past limits.
+          const prior = outputs.map((o) => `=== Work from ${o.name} ===\n${String(o.text).slice(0, 12000)}`).join("\n\n");
+          const task = `MISSION (from the user):\n${userText}` +
+            (prior ? `\n\nWORK FROM YOUR TEAMMATES SO FAR:\n${prior}` : "");
+          const stepId = rid();
+          emit({ kind: "tool_use", data: { id: stepId, name: `${step.member.name} (teammate)`, input: { task: "mission + teammates' work" }, auto: true } });
+          let text = "";
+          try { text = await this._runMember(step.member, task, profile, cfg, emit, signal, s); }
+          catch (e) { if (e.name === "AbortError") throw e; text = "(member failed: " + String(e.message || e) + ")"; }
+          outputs.push({ name: step.member.name, text: text || "(no output)" });
+          emit({ kind: "tool_result", data: { id: stepId, output: (text || "(no output)").slice(0, 4000) } });
+        }
+      }
+
+      // 3) Deliver. Relay → the last member's work IS the deliverable.
+      //    Manager → the coordinator synthesizes everything into one answer (streamed).
+      let finalText = "";
+      if (team.mode === "manager" && outputs.length > 1) {
+        const body = outputs.map((o) => `=== ${o.name} ===\n${String(o.text).slice(0, 12000)}`).join("\n\n");
+        const { text } = await streamChat(profile, [
+          { role: "system", content: "You are the coordinator of an agent team. Synthesize your team's work into ONE clear, complete answer to the user's mission. Credit no one; just deliver the result. Do not mention the team mechanics." },
+          { role: "user", content: `Mission:\n${userText}\n\nTeam output:\n${body}` },
+        ], { signal, onDelta: (d) => emit({ kind: "assistant_delta", data: { text: d } }) });
+        finalText = text;
+      } else {
+        finalText = (outputs[outputs.length - 1] || {}).text || "(the team produced no output)";
+        emit({ kind: "assistant_delta", data: { text: finalText } });
+      }
+      s.history.push({ role: "user", content: userText });
+      s.history.push({ role: "assistant", content: finalText });
+      emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
+      emit({ kind: "result", data: { subtype: "success", num_turns: plan.length + 1, duration_ms: Date.now() - started } });
+    } catch (err) {
+      if (err.name === "AbortError") emit({ kind: "result", data: { subtype: "interrupted", duration_ms: Date.now() - started } });
+      else emit({ kind: "error", data: await this._friendlyError(err) });
+    } finally {
+      s.controller = null;
+    }
   }
 
   // ---- chat transport ----

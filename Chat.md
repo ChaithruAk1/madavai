@@ -35018,9 +35018,21 @@ Chose via questions: build-by-chat + live preview, full visual identity, persona
 - **Identity**: `agent.identity {color,glyph}` (additive field, engines ignore) on cards, Studio, hero, bar, chip. Personas: Scout/Radar/Sentinel/Concierge/Bridger/Clausewise/Retroscribe/Schema/Quant grouped Research/Ops/Docs/Data — same configs, new presentation. Backend calls byte-identical.
 - Earlier same session: model selector added throughout the flow; hero agent-identity header (user thought Run "just opened chat"); Save diagnostics (Saving…/Saved ✓/red error) — **Save "nothing happens" bug still open, awaiting user's console/VITE output**; NIM 404 diagnosed as provider model issue, not agent wiring.
 
+### 🧑 User — "build the multi-agent ecosystem; non-devs; feel like a factory of 100+; agentic-only models in Agent pickers" → 🤖 TEAMS + MISSION CONTROL BUILT
+Full detail MEMORY.md §11ag-2. Backend pattern reused, both platforms.
+- **Teams**: Relay line (work flows member→member) or Managed (coordinator plans sub-tasks → members execute → synthesized deliverable). Desktop `_teamTurn`/`_runMember` (real tools + permissions forwarded, per-member pinned models); web `runTeamTurn` (prompt-level members). Member steps render as `"<Name> (teammate)"` tool cards.
+- **Mission Control** (`TeamOps.jsx`): live right-hand factory panel — member stations with glow-pulse working state, scanning bars, rotating verbs, rail connectors, plan + assembly stations, elapsed clock, "n/m stations cleared".
+- **Studio**: Agents|Teams tabs, team cards w/ stacked faces, plain-language team builder (mode cards, ordered line-up, add-from-bench). `settings.teams`; `agenticOnly` ModelPicker prop applied to all Studio pickers (global selector untouched).
+- Limits: web members tool-less; sequential execution; teams don't re-attach on reopen; ~N+2 model calls per mission. Not compile-checked.
+
+### 🧑 User — "parallel fan-out next; 5 test examples; never feel like an Anthropic copy (borrow Teamly-style concepts)" → 🤖 PARALLEL FAN-OUT BUILT
+- Managed teams now run all members **simultaneously** (Promise.all, sub-task-only prompts), coordinator merges after the join; Relay stays sequential by design. Mission Control shows multiple glowing stations + "N agents on the floor". **Permission queue** added in App.jsx (parallel members asking at once previously deadlocked the modal). Web + desktop. Cost note: parallel saves wall-clock, not tokens; watch rate limits.
+- Originality directive logged as standing: AI-workforce metaphor (hire/crew/bench/Mission Control), keep borrowing market-wide concepts (workforce roles, run history/KPIs, org chart as next steps).
+- Gave 5 test scenarios (solo instruction agent, solo file agent, relay pipeline, managed parallel, mixed-model managed).
+
 ### Open / unresolved
-- **Save button dead — awaiting console/[VITE] output to diagnose.** Verify Agent Studio on web + desktop (not compile-checked).
-- Roadmap: Scheduler-run agents, CLI `--agent`, agent re-attach on reopen.
+- **Save button dead — awaiting console/[VITE] output to diagnose.** Verify Agent Studio + Teams + Mission Control + parallel fan-out on web + desktop (not compile-checked).
+- Roadmap: agent-as-tool (`call_agent`), Scheduler-run agents/teams, CLI `--agent`, re-attach on reopen; workforce-metaphor expansion (roles/departments/KPIs/org chart).
 - Carried: GitHub file-picker modal; "+" menu Skills submenu; Collaborate progress panel; model selector bug; pre-launch secret rotation + Anthropic path removal.
 
 ## Session — 2026-06-09 (Agent Studio: agentic-only model filter)
@@ -35035,3 +35047,31 @@ Same session as the Agent Studio work above; one addition after the redesign. Fu
 
 ### Open / unresolved
 - Unchanged from the block above (Save button bug, Agent Studio verification, carried items). Plus: optional "show all" toggle for agenticOnly pickers. Not compile-checked → rebuild + eyeball.
+
+## Session — 2026-06-09 (E2E agent test plan → TEST-AGENTS.md)
+
+### 🧑 User — "test entire agent concept e2e: agent, relay team, managed team, and all three together" → 🤖 TEST-AGENTS.md WRITTEN
+Created **TEST-AGENTS.md** in the repo root: a ~30-minute six-scenario E2E script with exact copy-paste prompts, per-step pass/fail criteria, a score card, and a troubleshooting map. **Scenario 0** = Save-path smoke test, gating everything (the dead-Save bug is unresolved and agents/teams both persist through that path — stop if it fails). **1–2** solo agents (build-by-chat → Bench → deploy; files + permissions via Quant). **3** Relay line (stations clear one at a time). **4** Managed parallel fan-out (all four stations must glow simultaneously — one-by-one = fan-out broke). **5** grand finale: one mission through all three architectures (solo profile → Managed parallel launch kit → Relay blog post; 8 agents, 3 stages; final output must carry stage-1 data). Noted honestly: stages chain by pasting outputs between sessions — automatic chaining is the `call_agent` roadmap item. No source code touched. Full restart required before testing (engine changes live in the main process).
+
+### Open / unresolved
+- Run TEST-AGENTS.md (Scenario 0 first — Save bug still awaiting console/[VITE] output). Otherwise unchanged from the blocks above.
+
+## Session — 2026-06-09 22:12 (Agent Guide page: storytelling overview + two-pane redesign + polish; global icon theming; full code review kicked off)
+
+### 🧑 User — "clicking Agents should open an overview/guide page — concepts, types, flow diagrams, storytelling, simulations, continue-to-create option" → 🤖 AGENT GUIDE BUILT
+Full detail MEMORY.md §11ag-4 (guide entry + follow-ups).
+- First-visit **Guide** view in `Agents.jsx` (localStorage `be.agentsGuideSeen`; reopenable): hero "Meet your AI workforce" + 5 chapters — 01 agent anatomy (Identity→Instructions→Capabilities→Model flow diagram), 02 solo agent journey, 03 Relay assembly line, 04 Managed coordinator fan-out, 05 the 5 TEST-AGENTS.md scenarios as launchable **simulations** (sim 1 pre-fills the Designer input; team sims open the Teams tab). Diagrams are pure themed CSS/markup, no images. Continuation CTAs throughout.
+
+### 🧑 User — "no long scroll — split into two sections, make it interactive" → 🤖 TWO-PANE GUIDE
+- LEFT = story: intro + clickable **chapter rail** (01–04, ✓ on read chapters), one chapter on stage with slide-in animation, Back/Next pager with progress dots; last Next becomes "Create your first agent". RIGHT = **Flight school**: simulation cards in one column; the sim matching the current chapter gets a glow ring. Panes scroll independently; stacks <980px.
+
+### 🧑 User — polish round (6 items) → 🤖 ALL DONE
+- "Ready to hire?" card removed; guide scroll clamped (no dead space past the panes); "Create your first agent" moved to the guide header; tabs renamed **Agent** (single-person icon) / **Agents Team** (group icon); **Agent Guide** repositioned as a tab-styled button before them with an animated page-turning book icon; **model selection mandatory** before creating an agent (blocking message + pulsing picker) and the Studio ModelPicker styled accent-solid like "Put to work".
+- Follow-up: tab counts removed; Agent Guide given a **standing violet highlight** (deliberately not the accent — reads "learning", not "selected"); **global icon theming** — all lucide icons app-wide take the theme accent, with inversion exceptions on accent-solid surfaces and danger-red deletes. Caveat: app-wide repaint, eyeball for accent-on-accent spots.
+- Provenance answer logged: Designer/Bench from GPT-Builder, identity/personas from Gems/Poe, Anthropic concepts engine-only; multi-agent UX from CrewAI/AutoGen/LangGraph + Lindy/Relevance "AI workforce" framing. Flagged gap: no per-agent knowledge files (Projects covers it at workspace level only).
+
+### 🧑 User — "Opus 4.8 built everything except Agents — run a full code review, report only, save a code-review summary" → 🤖 IN PROGRESS at time of this update
+Six-part deliverable requested: (1) non-technical analysis of weak spots (efficiency/security/UX/quality/UI), (2) fix plan as a yes/no questionnaire, (3) features Opus missed, (4) half-baked Claude-inspired solutions, (5) detailed agent-driven zero-bug testing strategy pre-production, (6) world-class UI/UX recommendations. Report only — no action until user confirms; token-optimized; 4 review subagents launched. **Results not yet recorded here — next docs update should capture the summary doc + findings.**
+
+### Open / unresolved
+- Code review report pending (session still running). Run TEST-AGENTS.md — Scenario 0 (Save bug) still gates everything. Agents/Teams/Guide still not compile-checked → full restart + eyeball (renderer-only changes need refresh only). Carried items unchanged (GitHub file-picker modal, "+" Skills submenu, pre-launch secret rotation, etc.).

@@ -340,7 +340,15 @@ ipcMain.handle("brainedge:importSkillZip", async () => {
     }
     const target = path.join(dest, path.basename(src).replace(/\.(zip|skill)$/i, ""));
     if (process.platform === "win32") {
-      execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -Force -LiteralPath '${zip}' -DestinationPath '${target}'`]);
+      // Injection-safe extraction: tar.exe (built into Win10+) takes real argv — no shell string to escape.
+      fs.mkdirSync(target, { recursive: true });
+      try {
+        execFileSync("tar", ["-xf", zip, "-C", target]);
+      } catch {
+        // Fallback: PowerShell with single quotes escaped ('' is the PS escape) so a crafted filename can't break out.
+        const q = (s) => String(s).replace(/'/g, "''");
+        execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -Force -LiteralPath '${q(zip)}' -DestinationPath '${q(target)}'`]);
+      }
     } else {
       execFileSync("unzip", ["-o", zip, "-d", target]);
     }

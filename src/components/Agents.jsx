@@ -4,7 +4,7 @@
 // run on the model from the model selector (optionally pinned per agent — never an API key).
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
 
@@ -82,9 +82,49 @@ function Face({ identity, size = 34, fontSize }) {
   );
 }
 
-export default function Agents({ onLaunch, groups, activeValue, onSelectModel, onRefresh }) {
+const GUIDE_SEEN_KEY = "be.agentsGuideSeen";
+
+// Simulations — guided missions the user can run to learn each architecture.
+const SIMULATIONS = [
+  { n: 1, kind: "agent", title: "Your first hire", arch: "Solo agent", time: "5 min",
+    story: "Meet Briefly — a specialist who turns walls of text into three sharp bullets. Build it by describing it, interview it on the Bench, then hand it real work.",
+    steps: ["Tell the Designer what Briefly does (we'll pre-fill it)", "Paste any paragraph on the Bench — expect exactly 3 bullets", "Put to work → paste a long article in the real session"],
+    designer: "An agent called Briefly that turns any text into exactly 3 bullet points, max 15 words each, no intro or outro." },
+  { n: 2, kind: "agent", title: "Hands on the files", arch: "Solo agent + tools", time: "5 min",
+    story: "Quant doesn't chat — it opens your folder, reads your data, and answers with real numbers. Watch tool cards appear and approve its moves.",
+    steps: ["Hire Quant from the crew (Agents tab)", "Put to work → pick a folder with a CSV", "Ask: \"profile the data — 3 most interesting findings\""] },
+  { n: 3, kind: "teams", title: "The assembly line", arch: "Relay team", time: "7 min",
+    story: "Digger researches. Drafter writes. Polisher perfects. Each hands their work to the next — watch the stations clear one by one in Mission Control.",
+    steps: ["Build Digger, Drafter, Polisher (one Designer sentence each)", "New team → Relay line → order them", "Brief: \"a blog post on why small businesses should adopt AI agents\""] },
+  { n: 4, kind: "teams", title: "The factory floor", arch: "Managed team · parallel", time: "7 min",
+    story: "Four specialists, one coordinator, zero waiting. The mission splits, every station lights up AT ONCE, and one finished launch kit comes out the other end.",
+    steps: ["Build Adsmith, Faqster, Socialite, Mailwright", "New team → Managed → add all four", "Brief: \"launch kit for BeanBox, a coffee subscription\" — watch all 4 glow simultaneously"] },
+  { n: 5, kind: "teams", title: "The grand finale", arch: "All three together", time: "8 min",
+    story: "One mission, eight agents, three architectures. Briefly profiles the customer → the Launch Crew fans out in parallel → the Blog Line polishes it into the final post.",
+    steps: ["Run Briefly: \"3 bullets: target customer for a premium coffee subscription\"", "Brief Launch Crew with those bullets pasted in", "Brief Blog Line with the launch kit pasted in — the post should carry stage-1 details"] },
+];
+
+// Lightweight flow-diagram pieces (pure CSS/markup, theme-aware).
+const Node = ({ color = "var(--accent)", glyph, label, sub, dashed }) => (
+  <div className={`agg-node ${dashed ? "dashed" : ""}`}>
+    <span className="agg-node-face" style={{ background: `color-mix(in srgb, ${color} 14%, transparent)`, borderColor: `color-mix(in srgb, ${color} 45%, transparent)`, color }}>{glyph}</span>
+    <span className="agg-node-label">{label}</span>
+    {sub && <span className="agg-node-sub">{sub}</span>}
+  </div>
+);
+const Arrow = ({ label }) => <div className="agg-arrow">{label && <span>{label}</span>}<ArrowRight size={15} /></div>;
+
+export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, onSelectModel, onRefresh }) {
   const [agents, setAgents] = useState([]);
-  const [view, setView] = useState("list");         // "list" | "studio"
+  const [teams, setTeams] = useState([]);
+  const [tab, setTab] = useState("agents");         // "agents" | "teams"
+  const [view, setView] = useState(() => {          // "guide" | "list" | "studio" | "team"
+    try { return localStorage.getItem(GUIDE_SEEN_KEY) ? "list" : "guide"; } catch { return "guide"; }
+  });
+  const [chapter, setChapter] = useState(0);        // guide: which story chapter is on stage (0-3)
+  const [needModel, setNeedModel] = useState(false); // gate: a model must be selected before building agents
+  const [tdraft, setTdraft] = useState(null);       // team being edited: { id, name, identity, mode, members: [agentId] }
+  const [tErr, setTErr] = useState("");
   const [draft, setDraft] = useState(blankAgent());
   const [blueprintOpen, setBlueprintOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -105,7 +145,7 @@ export default function Agents({ onLaunch, groups, activeValue, onSelectModel, o
   const [tBusy, setTBusy] = useState(false);
   const tEndRef = useRef(null);
 
-  useEffect(() => { bridge.getSettings().then((s) => setAgents((s && s.agents) || [])).catch(() => {}); }, []);
+  useEffect(() => { bridge.getSettings().then((s) => { setAgents((s && s.agents) || []); setTeams((s && s.teams) || []); }).catch(() => {}); }, []);
   useEffect(() => { dEndRef.current && dEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [dMsgs, dBusy]);
   useEffect(() => { tEndRef.current && tEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [tMsgs, tBusy]);
 
@@ -134,7 +174,50 @@ export default function Agents({ onLaunch, groups, activeValue, onSelectModel, o
 
   const removeAgent = async (id) => { await persist(agents.filter((a) => a.id !== id)); };
 
+  // ---- teams (multi-agent) ----
+  const persistTeams = async (next) => {
+    const cur = await bridge.getSettings();
+    await bridge.saveSettings({ ...cur, teams: next });
+    setTeams(next);
+  };
+  const newTeam = () => {
+    const id = "team_" + Math.random().toString(36).slice(2, 9);
+    setTdraft({ id, name: "", identity: autoIdentity(id), mode: "relay", members: [], createdAt: Date.now() });
+    setTErr(""); setView("team");
+  };
+  const editTeam = (t) => { setTdraft({ ...t, members: [...t.members] }); setTErr(""); setView("team"); };
+  const removeTeam = async (id) => { await persistTeams(teams.filter((t) => t.id !== id)); };
+  const saveTeam = async (closeAfter) => {
+    if (!tdraft.members.length) { setTErr("Add at least one agent to the team."); return false; }
+    setTErr("");
+    try {
+      const t = { ...tdraft, name: tdraft.name.trim() || "Untitled team", updatedAt: Date.now() };
+      const next = teams.some((x) => x.id === t.id) ? teams.map((x) => (x.id === t.id ? t : x)) : [...teams, t];
+      await persistTeams(next);
+      setTdraft(t);
+      if (closeAfter) setView("list");
+      return true;
+    } catch (e) { setTErr("Save failed: " + String((e && e.message) || e)); return false; }
+  };
+  // Resolve member ids → live agent objects (so agent edits always flow into the team).
+  const resolveTeam = (t) => ({ ...t, members: t.members.map((id) => agents.find((a) => a.id === id)).filter(Boolean) });
+  const launchTeam = async (t) => {
+    const full = resolveTeam(t);
+    if (!full.members.length) { setTErr("This team has no surviving members — add agents first."); return; }
+    onLaunchTeam && onLaunchTeam(full);
+  };
+  const toggleMember = (aid) => setTdraft((d) => ({ ...d, members: d.members.includes(aid) ? d.members.filter((x) => x !== aid) : [...d.members, aid] }));
+  const moveMember = (i, dir) => setTdraft((d) => {
+    const m = [...d.members]; const j = i + dir;
+    if (j < 0 || j >= m.length) return d;
+    [m[i], m[j]] = [m[j], m[i]];
+    return { ...d, members: m };
+  });
+
+  const hasModel = !!(activeValue && activeValue.split("::")[1]);
+
   const openStudio = (agent) => {
+    if (!hasModel) { setNeedModel(true); setView("list"); return; } // agents run on a model — pick one first
     const a = agent ? { ...agent, tools: { ...agent.tools }, identity: agent.identity || autoIdentity(agent.id) } : blankAgent();
     setDraft(a);
     setDMsgs(agent ? [{ role: "designer", text: `${a.name} is loaded. Tell me what to change — instructions, capabilities, tone, anything.` }]
@@ -217,27 +300,225 @@ export default function Agents({ onLaunch, groups, activeValue, onSelectModel, o
 
   const canRun = !!draft.instructions.trim();
 
-  // ---------------- list ("Your crew") ----------------
+  useEffect(() => { if (hasModel) setNeedModel(false); }, [hasModel]);
+
+  const leaveGuide = (next) => {
+    try { localStorage.setItem(GUIDE_SEEN_KEY, "1"); } catch {}
+    setView(next || "list");
+  };
+  const runSimulation = (sim) => {
+    try { localStorage.setItem(GUIDE_SEEN_KEY, "1"); } catch {}
+    if (sim.kind === "agent" && sim.designer) { openStudio(null); setDInput(sim.designer); }
+    else if (sim.kind === "agent") { setTab("agents"); setView("list"); }
+    else { setTab("teams"); setView("list"); }
+  };
+
+  // ---------------- guide (two-pane interactive: chapters left, simulations right) ----------------
+  if (view === "guide") {
+    const chapters = [
+      {
+        title: "What an agent is made of", sub: "anatomy",
+        lead: <>Four parts, all in plain language — no code anywhere. You describe the agent to a <b>Designer</b> in your own words; it assembles all four. You can interview your agent on a live <b>Bench</b> before it ever touches real work.</>,
+        note: <>No API keys, ever — agents run on whatever model your selector points at, or a model you pin per agent.</>,
+        diagram: (
+          <div className="agg-flow">
+            <Node glyph="✦" label="Identity" sub="name, face, purpose" />
+            <Arrow />
+            <Node color="#8b7cf6" glyph="¶" label="Instructions" sub="how it thinks & answers" />
+            <Arrow />
+            <Node color="#f4a261" glyph="⚙" label="Capabilities" sub="files · terminal · connectors · skills" />
+            <Arrow />
+            <Node color="#5fb573" glyph="◇" label="Model" sub="any model from your selector" />
+          </div>
+        ),
+      },
+      {
+        title: "The solo agent — your specialist", sub: "solo",
+        lead: <>Brief it once, it delivers. A solo agent answers in chat — or, with Files and Terminal switched on, it works inside a folder of yours: reading data, editing documents, running analysis. Every risky move asks your permission first.</>,
+        note: <>Try it: simulation 1 on the right builds your first specialist in five minutes.</>,
+        diagram: (
+          <div className="agg-flow">
+            <Node glyph="🧑" color="var(--text-1)" label="You" sub="one brief" />
+            <Arrow label="brief" />
+            <Node glyph="✦" label="Agent" sub="thinks · uses its tools" />
+            <Arrow label="deliver" />
+            <Node glyph="✓" color="#5fb573" label="Deliverable" sub="answer, file, report" />
+          </div>
+        ),
+      },
+      {
+        title: "The Relay team — an assembly line", sub: "relay",
+        lead: <>Some work is a chain: research <i>then</i> write <i>then</i> polish. A Relay team runs your agents <b>in order</b> — each one receives everything its teammates produced and adds its own craft. The last station's work is your deliverable.</>,
+        note: <><Zap size={12} /> Watch it live: Mission Control shows each station lighting up, finishing, and passing the baton.</>,
+        diagram: (
+          <div className="agg-flow">
+            <Node glyph="◆" color="#13c2d6" label="Digger" sub="researches" />
+            <Arrow label="hands off" />
+            <Node glyph="✺" color="#8b7cf6" label="Drafter" sub="writes" />
+            <Arrow label="hands off" />
+            <Node glyph="❖" color="#e76f81" label="Polisher" sub="perfects" />
+            <Arrow />
+            <Node glyph="✓" color="#5fb573" label="Final post" />
+          </div>
+        ),
+      },
+      {
+        title: "The Managed team — a factory floor", sub: "managed · parallel",
+        lead: <>Some work splits: a launch needs ads <i>and</i> FAQs <i>and</i> emails — none depends on the other. A Managed team has a <b>Coordinator</b> that gives every agent its own slice and runs them <b>all at the same time</b>, then welds the pieces into one deliverable. Five agents in parallel feels like a department, not a chatbot.</>,
+        note: <><GitMerge size={12} /> All stations glow at once in Mission Control — that's the parallel fan-out.</>,
+        diagram: (
+          <div className="agg-flow agg-fan">
+            <Node glyph="🧭" color="var(--accent)" label="Coordinator" sub="splits the mission" />
+            <div className="agg-fan-mid">
+              <div className="agg-fan-branch"><Arrow /><Node glyph="◆" color="#13c2d6" label="Adsmith" sub="working…" /></div>
+              <div className="agg-fan-branch"><Arrow /><Node glyph="✺" color="#8b7cf6" label="Faqster" sub="working…" /></div>
+              <div className="agg-fan-branch"><Arrow /><Node glyph="♟" color="#f4a261" label="Socialite" sub="working…" /></div>
+              <div className="agg-fan-branch"><Arrow /><Node glyph="☄" color="#e76f81" label="Mailwright" sub="working…" /></div>
+            </div>
+            <div className="agg-fan-end"><Arrow label="merge" /><Node glyph="✓" color="#5fb573" label="Launch kit" sub="one deliverable" /></div>
+          </div>
+        ),
+      },
+    ];
+    const ch = chapters[chapter];
+    return (
+      <div className="agg-wrap">
+        {/* LEFT — the story, one chapter at a time */}
+        <div className="agg-left scroll">
+          <div className="agg-tophead">
+            <div className="agg-kicker"><BookOpen size={13} className="agg-book" /> A 3-minute guide</div>
+            <button className="btn primary" onClick={() => { leaveGuide("list"); openStudio(null); }}><Plus size={14} /> Create your first agent</button>
+          </div>
+          <h1 className="agg-h1">Meet your AI workforce</h1>
+          <p className="agg-intro">
+            Most people use AI one question at a time. Here you <b>build specialists once and put
+            them to work forever</b> — each with a name, a face, its own instructions and tools.
+            Build one in a minute. Then build a team of them.
+          </p>
+
+          <div className="agg-rail">
+            {chapters.map((c, i) => (
+              <button key={i} className={`agg-rail-item ${chapter === i ? "on" : ""} ${chapter > i ? "read" : ""}`} onClick={() => setChapter(i)}>
+                <span className="agg-rail-n">{chapter > i ? <Check size={11} /> : `0${i + 1}`}</span>
+                <span className="agg-rail-t">{c.title.split(" — ")[0]}</span>
+                <span className="agg-rail-s">{c.sub}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="agg-stage" key={chapter}>
+            <h2>{ch.title}</h2>
+            <p>{ch.lead}</p>
+            {ch.diagram}
+            <div className="agg-note">{ch.note}</div>
+          </div>
+
+          <div className="agg-pager">
+            <button className="btn ghost" disabled={chapter === 0} onClick={() => setChapter((c) => c - 1)}>← Back</button>
+            <span className="agg-pager-dots">{chapters.map((_, i) => <span key={i} className={chapter === i ? "on" : ""} />)}</span>
+            {chapter < chapters.length - 1
+              ? <button className="btn primary" onClick={() => setChapter((c) => c + 1)}>Next <ArrowRight size={13} /></button>
+              : <button className="btn primary" onClick={() => { leaveGuide("list"); openStudio(null); }}><Plus size={13} /> Create your first agent</button>}
+          </div>
+        </div>
+
+        {/* RIGHT — flight school: simulations + hire CTA */}
+        <div className="agg-right scroll">
+          <div className="agg-right-head">
+            <div className="agg-kicker" style={{ marginBottom: 8 }}><Play size={12} /> Flight school</div>
+            <h2>Fly the simulations</h2>
+            <p>Five guided missions, easiest first. Each one teaches an architecture by running it for real.</p>
+          </div>
+          <div className="agg-sims">
+            {SIMULATIONS.map((s) => (
+              <div key={s.n} className={`agg-sim ${chapter >= 2 && s.kind === "teams" ? "lit" : chapter < 2 && s.kind === "agent" ? "lit" : ""}`}>
+                <div className="agg-sim-head">
+                  <span className="agg-sim-n">{s.n}</span>
+                  <div>
+                    <div className="agg-sim-title">{s.title}</div>
+                    <div className="agg-sim-meta">{s.arch} · {s.time}</div>
+                  </div>
+                </div>
+                <p className="agg-sim-story">{s.story}</p>
+                <ol className="agg-sim-steps">{s.steps.map((st, i) => <li key={i}>{st}</li>)}</ol>
+                <button className="btn ghost agg-sim-go" onClick={() => runSimulation(s)}><Play size={12} /> {s.kind === "agent" && s.designer ? "Start — Designer pre-filled" : s.kind === "teams" ? "Open Teams" : "Open Agents"}</button>
+              </div>
+            ))}
+          </div>
+          <div className="ag-hint" style={{ margin: "16px 0 8px" }}>Reopen this guide any time — <BookOpen size={11} style={{ verticalAlign: "-2px" }} /> Agent Guide lives next to the Studio tabs.</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------- list ("Your crew" + "Teams") ----------------
   if (view === "list") {
     return (
       <div className="agents-page scroll">
         <div className="ag-head">
           <div>
             <h2 className="ag-title">Agent Studio</h2>
-            <p className="ag-sub">Build agents by talking to a designer, test them live, then put them to work. They run on whatever model your selector is on.</p>
+            <p className="ag-sub">Build agents by talking to a designer, test them live, then put them to work — solo or as a team. They run on whatever model your selector is on.</p>
           </div>
           <div className="ag-head-right">
-            <ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} agenticOnly />
+            <span className={`ags-mp ${needModel ? "need" : ""}`}>
+              <ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} agenticOnly />
+            </span>
           </div>
         </div>
+        {needModel && <div className="ag-err" style={{ marginBottom: 10 }}>Pick a model first — your agents will run on it. (Top right.)</div>}
 
-        {agents.length > 3 && (
+        <div className="ags-tabs">
+          <button className="ags-tab ags-guide-tab" title="How agents work" onClick={() => setView("guide")}><BookOpen size={13} className="agg-book" /> Agent Guide</button>
+          <span className="ags-tab-div" />
+          <button className={`ags-tab ${tab === "agents" ? "on" : ""}`} onClick={() => setTab("agents")}><User size={13} /> Agent</button>
+          <button className={`ags-tab ${tab === "teams" ? "on" : ""}`} onClick={() => setTab("teams")}><Users size={13} /> Agents Team</button>
+        </div>
+
+        {tab === "teams" && (
+          <>
+            <div className="ags-grid">
+              <button className="ags-card ags-new" onClick={newTeam}>
+                <span className="ags-face ags-face-new"><Plus size={20} /></span>
+                <div className="ags-card-name">New team</div>
+                <div className="ag-card-desc">Put agents together — they hand work down the line, or a coordinator runs them.</div>
+              </button>
+              {teams.map((t) => {
+                const members = resolveTeam(t).members;
+                return (
+                  <div key={t.id} className="ags-card">
+                    <div className="ags-card-top">
+                      <span className="tops-faces">
+                        {members.slice(0, 4).map((m, i) => <span key={m.id} style={{ marginLeft: i ? -8 : 0 }}><Face identity={m.identity || autoIdentity(m.id)} size={30} /></span>)}
+                        {!members.length && <Face identity={t.identity} size={30} />}
+                      </span>
+                      <div className="ags-card-id">
+                        <div className="ags-card-name">{t.name || "Untitled team"}</div>
+                        <div className="ags-card-role">{t.mode === "manager" ? "Managed" : "Relay line"} · {members.length} agent{members.length === 1 ? "" : "s"}{members.length ? " — " + members.map((m) => m.name).join(", ") : ""}</div>
+                      </div>
+                    </div>
+                    <div className="ag-card-actions">
+                      <button className="btn primary" disabled={!members.length} onClick={() => launchTeam(t)}><Rocket size={13} /> Brief the team</button>
+                      <button className="btn ghost" onClick={() => editTeam(t)}><Pencil size={13} /> Edit</button>
+                      <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {tErr && <div className="ag-err">{tErr}</div>}
+            {agents.length === 0 && <div className="ag-hint" style={{ marginTop: 14 }}>Teams are made of agents — build a couple of agents first (Agents tab).</div>}
+          </>
+        )}
+
+        {tab === "agents" && agents.length > 3 && (
           <div className="ag-tpl-search" style={{ maxWidth: 320 }}>
             <Search size={13} />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search your agents" />
           </div>
         )}
 
+        {tab === "agents" && (
         <div className="ags-grid">
           <button className="ags-card ags-new" onClick={() => openStudio(null)}>
             <span className="ags-face ags-face-new"><Plus size={20} /></span>
@@ -265,8 +546,9 @@ export default function Agents({ onLaunch, groups, activeValue, onSelectModel, o
             </div>
           ))}
         </div>
+        )}
 
-        {agents.length === 0 && (
+        {tab === "agents" && agents.length === 0 && (
           <div className="ags-crew">
             <div className="ags-crew-head">…or hire from the crew</div>
             {PERSONA_CATS.map((cat) => (
@@ -291,6 +573,78 @@ export default function Agents({ onLaunch, groups, activeValue, onSelectModel, o
     );
   }
 
+  // ---------------- team builder ----------------
+  if (view === "team" && tdraft) {
+    const memberObjs = tdraft.members.map((id) => agents.find((a) => a.id === id)).filter(Boolean);
+    return (
+      <div className="agents-page scroll">
+        <div className="ags-topbar">
+          <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>
+          <Face identity={tdraft.identity} size={30} />
+          <input className="ags-name" value={tdraft.name} placeholder="Name your team…" onChange={(e) => setTdraft({ ...tdraft, name: e.target.value })} />
+          <div className="ags-topbar-right">
+            {tErr && <span className="ag-err" style={{ margin: 0 }}>{tErr}</span>}
+            <button className="btn ghost" onClick={() => saveTeam(true)}>Save & close</button>
+            <button className="btn primary" disabled={!memberObjs.length} onClick={async () => { if (await saveTeam(false)) launchTeam(tdraft); }}><Rocket size={13} /> Brief the team</button>
+          </div>
+        </div>
+
+        <div className="ag-field" style={{ marginTop: 14 }}>
+          <label>How they work</label>
+          <div className="ags-modes">
+            <button className={`ags-mode ${tdraft.mode === "relay" ? "on" : ""}`} onClick={() => setTdraft({ ...tdraft, mode: "relay" })}>
+              <span className="ags-mode-top"><Zap size={15} /> Relay line</span>
+              <span className="ag-tool-note">Agents work one after another — each picks up the previous one's work. Great for research → draft → polish.</span>
+            </button>
+            <button className={`ags-mode ${tdraft.mode === "manager" ? "on" : ""}`} onClick={() => setTdraft({ ...tdraft, mode: "manager" })}>
+              <span className="ags-mode-top"><GitMerge size={15} /> Managed</span>
+              <span className="ag-tool-note">A coordinator splits your mission into sub-tasks, assigns each agent its piece, then merges everything into one deliverable.</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="ag-field" style={{ marginTop: 10 }}>
+          <label>The line-up {tdraft.mode === "relay" ? "(order matters — work flows top to bottom)" : ""}</label>
+          {memberObjs.length > 0 && (
+            <div className="ags-lineup">
+              {memberObjs.map((a, i) => (
+                <div key={a.id} className="ags-lineup-row">
+                  <span className="ags-lineup-n">{i + 1}</span>
+                  <Face identity={a.identity || autoIdentity(a.id)} size={26} />
+                  <span className="ags-lineup-name">{a.name}</span>
+                  <span className="ags-lineup-role">{a.description}</span>
+                  <span className="ags-lineup-acts">
+                    {tdraft.mode === "relay" && <button className="btn ghost" title="Earlier" disabled={i === 0} onClick={() => moveMember(i, -1)}>↑</button>}
+                    {tdraft.mode === "relay" && <button className="btn ghost" title="Later" disabled={i === memberObjs.length - 1} onClick={() => moveMember(i, 1)}>↓</button>}
+                    <button className="btn ghost ag-del" title="Remove" onClick={() => toggleMember(a.id)}><Trash2 size={12} /></button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="ag-hint" style={{ marginTop: memberObjs.length ? 8 : 0 }}>{memberObjs.length ? "Add more from your bench:" : "Pick who's on this team:"}</div>
+          <div className="ags-crew-row" style={{ marginTop: 6 }}>
+            {agents.filter((a) => !tdraft.members.includes(a.id)).map((a) => (
+              <button key={a.id} className="ags-persona" onClick={() => toggleMember(a.id)}>
+                <Face identity={a.identity || autoIdentity(a.id)} size={26} />
+                <div>
+                  <div className="ags-persona-name">{a.name || "Untitled"}</div>
+                  <div className="ags-persona-role">{(a.description || "").slice(0, 44)}</div>
+                </div>
+                <Plus size={13} style={{ color: "var(--text-2)" }} />
+              </button>
+            ))}
+            {!agents.length && <div className="ag-hint">No agents yet — build some in the Agents tab first.</div>}
+          </div>
+        </div>
+
+        <div className="ag-hint" style={{ marginTop: 16 }}>
+          Teams run in chat: brief them once, watch every agent work live in Mission Control, and get one finished deliverable. Up to 6 agents run per mission.
+        </div>
+      </div>
+    );
+  }
+
   // ---------------- studio (build-by-chat + live bench) ----------------
   return (
     <div className="ags-studio">
@@ -302,7 +656,7 @@ export default function Agents({ onLaunch, groups, activeValue, onSelectModel, o
         <div className="ags-topbar-right">
           {saved && <span className="ag-saved"><Check size={12} /> Saved</span>}
           {saveErr && <span className="ag-err" style={{ margin: 0 }}>{saveErr}</span>}
-          <ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} agenticOnly />
+          <span className="ags-mp"><ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} agenticOnly /></span>
           <button className="btn ghost" disabled={saveBusy} onClick={() => saveDraft(false)}>{saveBusy ? "Saving…" : "Save"}</button>
           <button className="btn primary" disabled={!canRun || saveBusy} onClick={launch}><Rocket size={13} /> Put to work</button>
         </div>
@@ -335,7 +689,7 @@ export default function Agents({ onLaunch, groups, activeValue, onSelectModel, o
           <div className="ags-input">
             <input value={dInput} placeholder='e.g. "make it review code for security issues and report in a table"'
               onChange={(e) => setDInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") designerSend(); }} />
-            <button className="ag-gen" disabled={dBusy || !dInput.trim()} onClick={designerSend}><ArrowUp size={14} /></button>
+            <button className="ag-gen" aria-label="Send to designer" disabled={dBusy || !dInput.trim()} onClick={designerSend}><ArrowUp size={14} /></button>
           </div>
 
           {/* blueprint: the raw config, always one click away */}
@@ -395,7 +749,7 @@ export default function Agents({ onLaunch, groups, activeValue, onSelectModel, o
           <div className="ags-input">
             <input value={tInput} placeholder={canRun ? `Test ${draft.name.trim() || "the agent"}…` : "Build the agent first"} disabled={!canRun}
               onChange={(e) => setTInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") benchSend(); }} />
-            <button className="ag-gen" disabled={tBusy || !tInput.trim() || !canRun} onClick={benchSend}><Send size={13} /></button>
+            <button className="ag-gen" aria-label="Send test message" disabled={tBusy || !tInput.trim() || !canRun} onClick={benchSend}><Send size={13} /></button>
           </div>
         </div>
       </div>

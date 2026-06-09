@@ -6,7 +6,20 @@ const path = require("path");
 
 const file = () => path.join(app.getPath("userData"), "usage.jsonl");
 
-function append(ev) { try { fs.appendFileSync(file(), JSON.stringify(ev) + "\n"); } catch {} }
+// Append with rotation: the log can't grow forever. Past ~4MB we keep the newest ~20k lines
+// (months of heavy use) — older events age out instead of bloating disk and slowing summary().
+const MAX_BYTES = 4 * 1024 * 1024, KEEP_LINES = 20000;
+function append(ev) {
+  try {
+    const f = file();
+    fs.appendFileSync(f, JSON.stringify(ev) + "\n");
+    const st = fs.statSync(f);
+    if (st.size > MAX_BYTES) {
+      const lines = fs.readFileSync(f, "utf8").trim().split("\n");
+      fs.writeFileSync(f, lines.slice(-KEEP_LINES).join("\n") + "\n");
+    }
+  } catch {}
+}
 function readAll() {
   try {
     return fs.readFileSync(file(), "utf8").trim().split("\n").filter(Boolean)

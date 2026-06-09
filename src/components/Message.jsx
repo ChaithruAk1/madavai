@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { LayoutTemplate, Copy, Check, Pencil, RotateCcw } from "lucide-react";
 import ToolCard from "./ToolCard.jsx";
 import ThinkLogo from "./ThinkLogo.jsx";
+import Markdown from "../markdown.jsx";
 import { extractArtifacts } from "../artifacts.js";
 
 // Strip a leading raw-JSON blob some weak models prepend to their reply.
@@ -10,7 +11,7 @@ function cleanAssistant(t) {
   return t.replace(/^\s*\{[^{}]*\}\s*(?=[A-Za-z("'])/, "");
 }
 
-export default function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit }) {
+function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit }) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -45,7 +46,10 @@ export default function Message({ item, streaming, onOpenArtifact, userName, onR
             </div>
           </div>
         ) : (
-          <div className="content">{text}{streaming && <span className="cursor" />}</div>
+          <div className="content">
+            {isUser ? text : <Markdown text={text} />}
+            {streaming && <span className="cursor" />}
+          </div>
         )}
 
         {artifacts.map((a, i) => (
@@ -65,3 +69,8 @@ export default function Message({ item, streaming, onOpenArtifact, userName, onR
     </div>
   );
 }
+
+// Memoized: while streaming, only the LIVE message's props change — settled messages skip
+// re-rendering entirely, which keeps long conversations smooth during token streams.
+export default memo(Message, (prev, next) =>
+  prev.item === next.item && prev.streaming === next.streaming && prev.userName === next.userName);

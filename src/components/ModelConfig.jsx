@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Check, RefreshCw, Plug, Save } from "lucide-react";
 import ModelPicker from "./ModelPicker.jsx";
-import { bridge } from "../bridge/index.js";
+import { bridge, isWeb } from "../bridge/index.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 
@@ -135,6 +135,12 @@ export default function ModelConfig({ onChanged }) {
               <Field label="API key"><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder="leave blank for local" /></Field>
             )}
           </div>
+          {isWeb && (
+            <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 0" }}>
+              🔒 Your API keys stay in <b>this browser's storage</b> and go only to the provider — BrainEdge servers never see them.
+              Anyone with access to this browser profile could use them, so avoid shared computers.
+            </p>
+          )}
 
           {sel.kind === "anthropic" && (
             <>
