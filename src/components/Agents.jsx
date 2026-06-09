@@ -282,6 +282,22 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
     if (ok) onLaunch && onLaunch({ ...draft, name: draft.name.trim() || "Untitled agent" }, null);
   };
 
+  // Per-agent knowledge: text files the agent permanently knows (GPTs-style).
+  const knFileRef = useRef(null);
+  const addKnowledgeFiles = (files) => {
+    const list = Array.from(files || []).slice(0, 8);
+    for (const f of list) {
+      if (f.size > 1024 * 1024) { setSaveErr(`"${f.name}" is over 1MB — split it or trim it first.`); continue; }
+      const reader = new FileReader();
+      reader.onload = () => setDraft((d) => ({
+        ...d,
+        knowledge: [...(d.knowledge || []), { name: f.name, content: String(reader.result || "").slice(0, 200000) }].slice(0, 8),
+      }));
+      reader.readAsText(f);
+    }
+  };
+  const removeKnowledge = (i) => setDraft((d) => ({ ...d, knowledge: (d.knowledge || []).filter((_, x) => x !== i) }));
+
   const cycleIdentity = () => {
     const ci = ID_COLORS.indexOf((draft.identity || {}).color);
     const gi = ID_GLYPHS.indexOf((draft.identity || {}).glyph);
@@ -712,6 +728,19 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
                   );
                 })}
               </div>
+              <label>Knowledge ({(draft.knowledge || []).length}/8) — files this agent always knows</label>
+              <div className="ags-kn">
+                {(draft.knowledge || []).map((k, i) => (
+                  <span key={i} className="ag-pill" title={`${Math.round((k.content || "").length / 1000)}k chars`}>
+                    {k.name}
+                    <button className="agent-chip-x" aria-label={`Remove ${k.name}`} onClick={() => removeKnowledge(i)}><Trash2 size={10} /></button>
+                  </span>
+                ))}
+                <button className="ag-pill ags-bp-tool" onClick={() => knFileRef.current && knFileRef.current.click()}><Plus size={11} /> Add file</button>
+                <input ref={knFileRef} type="file" multiple accept=".txt,.md,.markdown,.csv,.json,.log,.yml,.yaml,.html,.xml,.js,.ts,.py" style={{ display: "none" }}
+                  onChange={(e) => { addKnowledgeFiles(e.target.files); e.target.value = ""; }} />
+              </div>
+              <div className="ag-hint" style={{ margin: 0 }}>Text files (md, txt, csv, json…). For PDFs, add them to a Project instead — Projects parse PDF/Word.</div>
               <label>Pinned model</label>
               <div className="ag-model-row">
                 <ModelPicker value={draft.model || undefined} groups={groups} onChange={(v) => setDraft({ ...draft, model: v })} onRefresh={onRefresh} agenticOnly />

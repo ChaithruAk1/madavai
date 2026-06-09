@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MessageSquare, Hash, Layers, CalendarDays, Flame, Clock, Cpu, Award, TrendingUp } from "lucide-react";
+import { MessageSquare, Hash, Layers, CalendarDays, Flame, Clock, Cpu, Award, TrendingUp, DollarSign } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const RANGES = [{ label: "7 days", days: 7 }, { label: "30 days", days: 30 }, { label: "All time", days: 0 }];
@@ -10,12 +10,38 @@ const DONUT_COLORS = ["#13c2d6", "#6e7bff", "#22a06b", "#e8893a", "#d6597b", "#b
 export default function Consumption() {
   const [days, setDays] = useState(7);
   const [d, setD] = useState(null);
+  const [prices, setPrices] = useState(null); // model id -> { prompt, completion } USD per token (OpenRouter catalog)
   useEffect(() => { let live = true; bridge.getUsage(days).then((x) => { if (live) setD(x); }); return () => { live = false; }; }, [days]);
-  if (!d) return <div className="empty"><div>Loading…</div></div>;
+  useEffect(() => { let live = true; bridge.getOpenRouterCatalog?.().then((c) => { if (live) setPrices(c || {}); }).catch(() => {}); return () => { live = false; }; }, []);
+
+  // Estimated spend: tokens × blended per-token price for models we have real pricing on.
+  // Honest about coverage — models without published pricing (local, NIM, unknown) are excluded.
+  const spend = useMemo(() => {
+    if (!d || !prices) return null;
+    let usd = 0, covered = 0, total = 0;
+    for (const m of d.models || []) {
+      total += m.tokens || 0;
+      const p = prices[m.model] || prices[(m.model || "").toLowerCase()];
+      const pr = p && p.pricing ? p.pricing : p;
+      const inP = pr && Number(pr.prompt), outP = pr && Number(pr.completion);
+      if (pr && (inP > 0 || outP > 0)) { usd += (m.tokens || 0) * (((inP > 0 ? inP : 0) + (outP > 0 ? outP : 0)) / 2); covered += m.tokens || 0; }
+    }
+    return { usd, pct: total ? Math.round((covered / total) * 100) : 0 };
+  }, [d, prices]);
+
+  if (!d) return (
+    <div className="skel-page">
+      <div className="skel" style={{ width: 220, height: 26 }} />
+      <div className="skel-row">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="skel" style={{ flex: 1, height: 86 }} />)}</div>
+      <div className="skel" style={{ height: 220 }} />
+      <div className="skel-row"><div className="skel" style={{ flex: 2, height: 180 }} /><div className="skel" style={{ flex: 1, height: 180 }} /></div>
+    </div>
+  );
 
   const cards = [
     { k: "Messages", v: fmt(d.messages), icon: MessageSquare, accent: true },
     { k: "Tokens (est.)", v: fmt(d.tokens), icon: Hash },
+    ...(spend && spend.pct > 0 ? [{ k: `Est. spend (${spend.pct}% priced)`, v: "$" + (spend.usd < 0.01 && spend.usd > 0 ? spend.usd.toFixed(4) : spend.usd.toFixed(2)), icon: DollarSign }] : []),
     { k: "Sessions", v: fmt(d.sessions), icon: Layers },
     { k: "Active days", v: fmt(d.activeDays), icon: CalendarDays },
     { k: "Current streak", v: d.currentStreak + "d", icon: Flame, accent: true },

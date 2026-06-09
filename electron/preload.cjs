@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld("brainedge", {
 
   // --- persisted chat history (Talk / Collaborate / Build) ---
   listSessions: (mode) => ipcRenderer.invoke("brainedge:listSessions", mode),
+  searchSessions: (q, mode) => ipcRenderer.invoke("brainedge:searchSessions", { q, mode }),
+  getAppVersion: () => ipcRenderer.invoke("brainedge:getAppVersion"),
   getSession: (id) => ipcRenderer.invoke("brainedge:getSession", id),
   deleteSession: (id) => ipcRenderer.invoke("brainedge:deleteSession", id),
 

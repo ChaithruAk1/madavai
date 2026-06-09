@@ -15,6 +15,14 @@ const os = require("os");
 const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
 
+// Per-agent knowledge docs → a capped reference block for the system prompt.
+function agentKnowledge(a) {
+  const docs = (a && Array.isArray(a.knowledge) ? a.knowledge : []).slice(0, 8);
+  if (!docs.length) return "";
+  return "\n\nAgent knowledge — reference material this agent always has (cite it when relevant):\n" +
+    docs.map((k) => `--- ${k.name || "doc"} ---\n${String(k.content || "").slice(0, 20000)}`).join("\n\n");
+}
+
 // Combine a natural-tone safeguard + the user's custom instructions + the chosen response language.
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
 function withLang(cfg) {
@@ -141,7 +149,8 @@ class SessionManager {
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
     return `You are "${a.name || "a custom agent"}", an agent the user built in BrainEdge.` +
       (a.description ? ` Purpose: ${a.description}` : "") + ` ${dateLine}` +
-      `\n\nAgent instructions (always follow):\n${a.instructions}`;
+      `\n\nAgent instructions (always follow):\n${a.instructions}` +
+      agentKnowledge(a);
   }
   // Connectors/skills config filtered by the agent's enabled tools.
   _agentExtras(s, cfg) {
@@ -249,6 +258,7 @@ class SessionManager {
     return `You are "${member.name}", one agent on a team inside BrainEdge.` +
       (member.description ? ` Purpose: ${member.description}` : "") +
       `\n\nAgent instructions (always follow):\n${member.instructions || ""}` +
+      agentKnowledge(member) +
       `\n\nYou receive a task (possibly with work from teammates). Do YOUR part thoroughly and reply with your complete work product as plain text — a teammate or coordinator consumes it next, so be complete and self-contained.`;
   }
 

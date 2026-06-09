@@ -195,6 +195,9 @@ const sstore = require("./sessions-store.cjs");
 ipcMain.handle("brainedge:listSessions", (_e, mode) => sstore.listSessions(mode));
 ipcMain.handle("brainedge:getSession", (_e, id) => sstore.getSession(id));
 ipcMain.handle("brainedge:deleteSession", (_e, id) => sstore.deleteSession(id));
+ipcMain.handle("brainedge:searchSessions", (_e, { q, mode }) => sstore.searchSessions(q, mode));
+// Update check: compares this build against a version JSON served by the auth server (or any URL).
+ipcMain.handle("brainedge:getAppVersion", () => { try { return app.getVersion(); } catch { return "0.0.0"; } });
 
 // ---- IPC: Saved library (bookmarked responses) ----
 // Each save is written to a local JSON store AND mirrored into an auto-created

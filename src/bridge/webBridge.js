@@ -135,12 +135,19 @@ function systemPrompt(s, projectId) {
   return parts.join("\n\n").trim();
 }
 
-// Custom agent (Agents builder): its identity + instructions, appended to the session system prompt.
+// Custom agent (Agents builder): identity + instructions + knowledge, for the session system prompt.
+function agentKnowledgeBlock(a) {
+  const docs = (a && Array.isArray(a.knowledge) ? a.knowledge : []).slice(0, 8);
+  if (!docs.length) return "";
+  return "\n\nAgent knowledge — reference material this agent always has (cite it when relevant):\n" +
+    docs.map((k) => `--- ${k.name || "doc"} ---\n${String(k.content || "").slice(0, 20000)}`).join("\n\n");
+}
 function agentBlock(a) {
   if (!a || !a.instructions) return "";
   return `You are "${a.name || "a custom agent"}", an agent the user built in BrainEdge.` +
     (a.description ? ` Purpose: ${a.description}` : "") +
-    `\n\nAgent instructions (always follow):\n${a.instructions}`;
+    `\n\nAgent instructions (always follow):\n${a.instructions}` +
+    agentKnowledgeBlock(a);
 }
 
 // ===== Agent teams on the web (multi-agent: relay + manager) =====
@@ -150,6 +157,7 @@ function memberSys(m) {
   return `You are "${m.name}", one agent on a team inside BrainEdge.` +
     (m.description ? ` Purpose: ${m.description}` : "") +
     `\n\nAgent instructions (always follow):\n${m.instructions || ""}` +
+    agentKnowledgeBlock(m) +
     `\n\nYou receive a task (possibly with work from teammates). Do YOUR part thoroughly and reply with your complete work product as plain text — a teammate or coordinator consumes it next, so be complete and self-contained.`;
 }
 async function runTeamTurn(sess, text) {
@@ -605,6 +613,29 @@ export const webBridge = {
     return { id: rec.id, mode: rec.mode, title: rec.title, messages };
   },
   async deleteSession(id) { await idbDel(id); return true; },
+  // Global search across message CONTENT (parity with desktop).
+  async searchSessions(q, mode) {
+    const needle = String(q || "").toLowerCase();
+    if (needle.length < 2) return [];
+    const asText = (c) => (typeof c === "string" ? c : (Array.isArray(c) ? (c.find((p) => p.type === "text")?.text || "") : ""));
+    const out = [];
+    for (const s of await idbAll()) {
+      if (mode && s.mode !== mode) continue;
+      let snippet = "";
+      if ((s.title || "").toLowerCase().includes(needle)) snippet = s.title;
+      else {
+        for (const m of s.messages || []) {
+          const c = asText(m.content);
+          const i = c.toLowerCase().indexOf(needle);
+          if (i >= 0) { snippet = c.slice(Math.max(0, i - 32), i + needle.length + 48).replace(/\s+/g, " "); break; }
+        }
+      }
+      if (snippet) out.push({ id: s.id, mode: s.mode, title: s.title, updatedAt: s.updatedAt, snippet });
+      if (out.length >= 50) break;
+    }
+    return out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  },
+  async getAppVersion() { return "web"; },
 
   // ---- saved library (bookmarked responses) ----
   async listSaved() { return Object.values(LS.get("be.saved", {})).sort((a, b) => b.createdAt - a.createdAt); },

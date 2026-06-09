@@ -27,4 +27,27 @@ function createSession(mode, cwd) { const s = { id: rand("ses_"), mode, cwd: cwd
 function saveSession(s) { ensure(); s.updatedAt = Date.now(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); return s; }
 function deleteSession(id) { try { fs.unlinkSync(file(id)); } catch {} return true; }
 
-module.exports = { listSessions, getSession, createSession, saveSession, deleteSession };
+// Global search: scan message CONTENT (not just titles) across all saved conversations.
+// Returns matches with a short snippet around the first hit. Case-insensitive.
+function searchSessions(q, mode) {
+  const needle = String(q || "").toLowerCase();
+  if (needle.length < 2) return [];
+  const out = [];
+  for (const s of raw()) {
+    if (mode && s.mode !== mode) continue;
+    let snippet = "";
+    if ((s.title || "").toLowerCase().includes(needle)) snippet = s.title;
+    else {
+      for (const m of s.messages || []) {
+        const c = typeof m.content === "string" ? m.content : "";
+        const i = c.toLowerCase().indexOf(needle);
+        if (i >= 0) { snippet = c.slice(Math.max(0, i - 32), i + needle.length + 48).replace(/\s+/g, " "); break; }
+      }
+    }
+    if (snippet) out.push({ id: s.id, mode: s.mode, title: s.title, updatedAt: s.updatedAt, snippet });
+    if (out.length >= 50) break;
+  }
+  return out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}
+
+module.exports = { listSessions, getSession, createSession, saveSession, deleteSession, searchSessions };

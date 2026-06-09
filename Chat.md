@@ -35108,3 +35108,27 @@ Six-part deliverable requested: (1) non-technical analysis of weak spots (effici
 
 ### Open / unresolved
 - Code review report pending (session still running). Run TEST-AGENTS.md — Scenario 0 (Save bug) still gates everything. Agents/Teams/Guide still not compile-checked → full restart + eyeball (renderer-only changes need refresh only). Carried items unchanged (GitHub file-picker modal, "+" Skills submenu, pre-launch secret rotation, etc.).
+
+## Session — 2026-06-09 (post-review continuation: §4 half-baked audit ALL FIXED + §3 missed features 7 of 8 BUILT)
+
+Continuation of the code-review session. The review COMPLETED (CODE-REVIEW-SUMMARY.md; fix waves 1–4 landed 16/17 — already logged above); the user then approved autonomous execution of the review's §4 half-baked audit and §3 missed-features list. Full detail MEMORY.md §11ag-7/§11ag-8. Both batches unverified → `npm install` then `npm run build` before commit.
+
+### 🤖 §4 half-baked audit — all observations fixed
+- **Model-selector stranding guarded** (both platforms): speed test snapshots active profile+model at start, restores after the run if anything moved them; console.warn names the culprit (main.cjs `_speedSnap`, webBridge `snap`).
+- **Agent/team re-attach on reopen BUILT**: conversation records carry `agent`/`team`; App.openSession restores agentCtx/teamCtx.
+- **Artifacts**: version-history dropdown (same-kind artifacts from the timeline) + CDN script onerror fallbacks — no more blank preview frames on strict networks.
+- **PDF/docx knowledge parsing BUILT (desktop)** via pdf-parse ^1.1.1 / mammoth ^1.8.0 (new deps — **`npm install` REQUIRED before next build**); image-only PDFs skipped with reason; web knowledge stays text-paste. Web cowork folder bar now signposts "file edits only on web".
+- Documented as deliberate, not bugs: Via Mobile single-session binding, Bench instructions-only, web team members prompt-only.
+
+### 🤖 §3 missed features — 7 of 8 BUILT
+- **Global content search** in the sidebar (3+ chars = deep search inside conversations with match snippets, both platforms; shorter = title filter).
+- **Conversation export** — download icon on every Recents row → Markdown file.
+- **Per-agent knowledge (GPTs-style)** — Blueprint "Knowledge" section, up to 8 text files (1MB/file, 200k-char cap), injected solo AND in teams, both platforms; PDFs route through Projects.
+- **Backup/restore** in Model configuration (full settings JSON incl. agents/teams; warns keys are readable; restore validates marker + confirm).
+- **Onboarding wizard** on first run with no keys: pick OpenRouter/Gemini/NIM/Local → paste key → live verify → free model auto-picked.
+- **Cost estimates** — Consumption "Est. spend (N% priced)" KPI from OpenRouter per-token pricing; honest coverage labeling.
+- **Update check** — server `GET /app-version` (APP_VERSION/APP_DOWNLOAD_URL env) + desktop sidebar "Update available" banner; deliberately notify-not-auto-install.
+- **#8 per-member team retry DEFERRED honestly** — needs a real engine API (re-run one member + patch deliverable); no fake re-run button shipped.
+
+### Open / unresolved
+- `npm install` → `npm run build` (these batches built on top of the green build but unverified; risk spots: Consumption spend memo, Sidebar update effect, Onboarding overlay z-order). Save-button bug still undiagnosed → gates TEST-AGENTS.md Scenario 0. Q16 monolith split waits for green build. Carried items unchanged (GitHub file-picker modal, "+" Skills submenu, Collaborate progress panel, pre-launch secret rotation + Anthropic-path removal, etc.). Commit from the user's own terminal only.

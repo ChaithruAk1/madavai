@@ -19,6 +19,7 @@ import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import StudioLauncher from "./components/StudioLauncher.jsx";
 import Agents from "./components/Agents.jsx";
 import TeamOps from "./components/TeamOps.jsx";
+import Onboarding from "./components/Onboarding.jsx";
 import TerminalPanel from "./components/TerminalPanel.jsx";
 import EnvPicker from "./components/EnvPicker.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
@@ -506,6 +507,10 @@ export default function App() {
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const clearTeam = () => { setTeamCtx(null); setTeamRun(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
 
+  // First-run onboarding: show until the user has any key'd provider (or explicitly skips).
+  const [obDismissed, setObDismissed] = useState(() => { try { return !!localStorage.getItem("be.onboarded"); } catch { return true; } });
+  const needsOnboarding = !obDismissed && settings && !Object.values(settings.profiles || {}).some((p) => (p.apiKey || "").length > 0);
+
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   const controlsRow = (
     <div className="ctrl-row">
@@ -517,6 +522,7 @@ export default function App() {
 
   return (
     <div className={`app-v ${sidebarOpen ? "" : "sb-collapsed"}`}>
+      {needsOnboarding && <Onboarding onDone={async () => { setObDismissed(true); try { const s2 = await bridge.getSettings(); setSettings(s2); loadModelsFor(s2); } catch {} }} />}
       <TopNav
         mode={mode}
         onSelect={switchMode}

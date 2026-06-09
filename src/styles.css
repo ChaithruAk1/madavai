@@ -1534,6 +1534,8 @@ textarea.model-search { line-height: 1.5; }
 .ags-bp-tools { display: flex; flex-wrap: wrap; gap: 6px; }
 .ags-bp-tool { cursor: pointer; background: var(--bg-1); }
 .ags-bp-tool.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-weak); }
+.ags-kn { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ags-kn .ag-pill { gap: 6px; }
 
 /* ===== Agents guide (two-pane: story chapters left, flight-school simulations right) ===== */
 .agg { max-width: 880px; }
@@ -1584,6 +1586,92 @@ textarea.model-search { line-height: 1.5; }
 .ags-mp .model-btn { background: var(--accent); border-color: var(--accent); color: #04121a; font-weight: 600; }
 .ags-mp .model-btn:hover { filter: brightness(1.08); }
 .ags-mp.need .model-btn { animation: tops-pulse 1s ease-in-out infinite; box-shadow: 0 0 0 4px var(--accent-weak), 0 0 22px var(--accent-weak); }
+
+/* ============================================================
+   WORLD-CLASS PASS — one design language for the whole app.
+   Tokens → motion → touch feedback → skeletons → empty states.
+   ============================================================ */
+:root {
+  /* motion: ONE easing curve + three durations, used everywhere */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);     /* confident decelerate (Linear/iOS feel) */
+  --dur-1: 120ms;   /* acknowledge: press, toggle */
+  --dur-2: 220ms;   /* move: hover, reveal, slide */
+  --dur-3: 380ms;   /* arrive: panels, pages */
+  /* type scale (1.125 modular) — stick to these, nothing ad-hoc */
+  --fs-xs: 11px; --fs-sm: 12.5px; --fs-base: 13.5px; --fs-md: 15px; --fs-lg: 17px; --fs-xl: 21px; --fs-2xl: 26px;
+}
+
+/* --- the 200ms rule: every interactive element acknowledges touch INSTANTLY --- */
+button, .chip, .nav-item, .sb-rec, .model-row, .ags-card, .ags-persona, .agg-sim, .ob-choice, .ag-tool, .ags-mode, .ags-tab, .agg-rail-item, .sk-item, .tn-tab {
+  transition: background-color var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease),
+              color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), transform var(--dur-1) var(--ease);
+}
+button:active:not(:disabled), .chip:active, .ags-tab:active, .nav-item:active { transform: scale(0.97); }
+.btn.primary:not(:disabled):hover, .send:not(:disabled):hover, .ag-gen:not(:disabled):hover { box-shadow: 0 4px 18px var(--accent-weak); transform: translateY(-1px); }
+
+/* --- cards lift to meet the cursor (subtle — 2px, no shadow carpet) --- */
+.ags-card:hover, .agg-sim:hover, .ob-choice:hover, .ag-card:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22); }
+:root[data-theme="light"] .ags-card:hover, :root[data-theme="light"] .agg-sim:hover { box-shadow: 0 8px 22px rgba(15, 20, 30, 0.10); }
+
+/* --- arrivals: messages rise in, panels slide in — one vocabulary --- */
+.msg { animation: rise-in var(--dur-3) var(--ease) both; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.artifact-wrap, .tops { animation: slide-in var(--dur-3) var(--ease) both; }
+@keyframes slide-in { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+.plus-menu, .slash-menu, .model-menu, .sb-acct-menu, .msg-menu { animation: pop-in var(--dur-2) var(--ease) both; transform-origin: bottom left; }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96) translateY(4px); } to { opacity: 1; transform: none; } }
+.repo-modal, .ob-card { animation: modal-in var(--dur-3) var(--ease) both; }
+@keyframes modal-in { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: none; } }
+.scrim { animation: fade-in var(--dur-2) var(--ease) both; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- streaming caret: alive, not epileptic --- */
+.cursor { display: inline-block; width: 8px; height: 15px; margin-left: 2px; vertical-align: -2px; border-radius: 2px; background: var(--accent); animation: caret 1.1s var(--ease) infinite; }
+@keyframes caret { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* --- skeleton loaders: structure appears first, then content (never a bare spinner) --- */
+.skel { position: relative; overflow: hidden; background: var(--bg-2); border-radius: 10px; min-height: 14px; }
+.skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent); animation: shimmer 1.4s var(--ease) infinite; }
+:root[data-theme="light"] .skel::after { background: linear-gradient(90deg, transparent, rgba(15, 20, 30, 0.06), transparent); }
+@keyframes shimmer { to { transform: translateX(100%); } }
+.skel-page { display: flex; flex-direction: column; gap: 14px; padding: 28px 30px; max-width: 980px; }
+.skel-row { display: flex; gap: 12px; }
+
+/* --- empty states teach the next step (never a dead end) --- */
+.sb-empty { padding: 14px 12px; line-height: 1.55; }
+
+/* --- typography discipline --- */
+.greeting { letter-spacing: -0.015em; }
+.cons-kpi-v, .tops-clock, .agg-sim-n, .ag-step-n { font-variant-numeric: tabular-nums; }
+::selection { background: var(--accent-weak); color: var(--text-0); }
+
+/* --- scrollbars that match the design, not the OS --- */
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb { border-radius: 99px; border: 2.5px solid transparent; background-clip: padding-box; }
+
+/* --- accessibility: honor reduced-motion users (world-class includes everyone) --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* ===== Onboarding (first run) ===== */
+.ob-card { width: min(560px, 92vw); background: var(--bg-1); border: 1px solid var(--line-2); border-radius: 18px; padding: 26px 28px; box-shadow: 0 24px 80px rgba(0,0,0,0.45); }
+.ob-h { margin: 12px 0 6px; font-size: 21px; color: var(--text-0); }
+.ob-p { margin: 0; color: var(--text-1); font-size: 13px; line-height: 1.6; }
+.ob-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 14px; }
+@media (max-width: 560px) { .ob-choices { grid-template-columns: 1fr; } }
+.ob-choice { text-align: left; display: flex; flex-direction: column; gap: 3px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); cursor: pointer; }
+.ob-choice.on { border-color: var(--accent-line); background: var(--accent-weak); }
+.ob-choice-l { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--text-0); }
+.ob-rec { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); border: 1px solid var(--accent-line); border-radius: 999px; padding: 1px 7px; }
+.ob-choice-s { font-size: 11.5px; color: var(--text-2); }
+.ob-ok { display: flex; align-items: center; gap: 7px; margin-top: 12px; color: var(--ok, #5fb573); font-size: 13px; }
+.ob-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; }
+
+/* deep-search snippets in Recents */
+.sb-rec-main { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
+.sb-rec-snip { font-size: 10.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ===== Markdown in chat bubbles ===== */
 .md { line-height: 1.65; }

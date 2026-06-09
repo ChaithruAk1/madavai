@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Check, RefreshCw, Plug, Save } from "lucide-react";
+import { useRef } from "react";
+import { Plus, Trash2, Check, RefreshCw, Plug, Save, Download, Upload } from "lucide-react";
 import ModelPicker from "./ModelPicker.jsx";
 import { bridge, isWeb } from "../bridge/index.js";
 
@@ -41,9 +42,15 @@ export default function ModelConfig({ onChanged }) {
   const [s, setS] = useState(null);
   const [selId, setSelId] = useState(null);
   const [status, setStatus] = useState("");
+  const restoreRef = useRef(null); // backup-restore file input (must sit above the early return — hooks rule)
 
   useEffect(() => { bridge.getSettings().then((cfg) => { setS(cfg); setSelId(cfg.activeProfileId); }); }, []);
-  if (!s || !selId) return <div className="empty"><div>Loading…</div></div>;
+  if (!s || !selId) return (
+    <div className="skel-page">
+      <div className="skel" style={{ width: 260, height: 26 }} />
+      <div className="skel-row"><div className="skel" style={{ width: 220, height: 340 }} /><div className="skel" style={{ flex: 1, height: 340 }} /></div>
+    </div>
+  );
 
   const profiles = Object.values(s.profiles);
   const sel = s.profiles[selId];
@@ -53,6 +60,30 @@ export default function ModelConfig({ onChanged }) {
   }).filter((g) => g.items.length);
 
   const persist = async (next) => { setS(next); await bridge.saveSettings(next); onChanged?.(next); };
+
+  // Backup/restore: the whole settings object (providers+keys+agents+teams+preferences) as one JSON file.
+  const backupAll = async () => {
+    const cur = await bridge.getSettings();
+    const blob = new Blob([JSON.stringify({ app: "brainedge", exportedAt: new Date().toISOString(), settings: cur }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `brainedge-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const restoreAll = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const j = JSON.parse(String(reader.result || ""));
+        if (!j || j.app !== "brainedge" || !j.settings || typeof j.settings.profiles !== "object") { setStatus("Not a BrainEdge backup file."); return; }
+        if (!window.confirm("Restore this backup? Your current providers, agents, teams and preferences will be REPLACED.")) return;
+        await persist(j.settings);
+        setSelId(j.settings.activeProfileId || Object.keys(j.settings.profiles)[0]);
+        setStatus("Backup restored.");
+      } catch { setStatus("Couldn't read that backup file."); }
+    };
+    reader.readAsText(file);
+  };
   const patch = (field, val) => persist({ ...s, profiles: { ...s.profiles, [selId]: { ...sel, [field]: val } } });
   const setField = (k, v) => persist({ ...s, [k]: v });
   const addProfile = () => { const id = "p_" + Math.random().toString(36).slice(2, 7); persist({ ...s, profiles: { ...s.profiles, [id]: BLANK(id) } }); setSelId(id); };
@@ -175,6 +206,19 @@ export default function ModelConfig({ onChanged }) {
           <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 14 }}>
             Every provider is always available — the model you pick in the top-bar selector decides which one runs.
           </p>
+
+          {/* Backup & restore — settings + agents + teams in one file. */}
+          <div style={{ marginTop: 22, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+            <div className="nav-label" style={{ paddingLeft: 0 }}>Backup &amp; restore</div>
+            <p style={{ color: "var(--text-2)", fontSize: 12, margin: "6px 0 10px" }}>
+              One file holds your providers, agents, teams and preferences. ⚠ The backup contains your API keys in readable form — store it somewhere private.
+            </p>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <button className="btn" onClick={backupAll}><Download size={14} /> Download backup</button>
+              <button className="btn" onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={14} /> Restore from backup</button>
+              <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
+            </div>
+          </div>
         </div>
       </div>
       </div>

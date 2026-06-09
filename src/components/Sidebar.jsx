@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const TOP = [
@@ -45,6 +45,27 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
 
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Desktop update check: compare this build against /app-version on the account server.
+  const [update, setUpdate] = useState(null); // { version, url }
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        if (!bridge.getAppVersion) return;
+        const mine = await bridge.getAppVersion();
+        if (!mine || mine === "web") return; // web updates itself on deploy
+        const s = await bridge.getSettings();
+        const base = (s && s.authBaseUrl) || "";
+        if (!base) return;
+        const r = await fetch(base.replace(/\/$/, "") + "/app-version");
+        const j = await r.json();
+        const newer = (a, b) => { const A = String(a).split(".").map(Number), B = String(b).split(".").map(Number); for (let i = 0; i < 3; i++) { if ((A[i] || 0) > (B[i] || 0)) return true; if ((A[i] || 0) < (B[i] || 0)) return false; } return false; };
+        if (live && j && j.version && newer(j.version, mine)) setUpdate(j);
+      } catch {}
+    })();
+    return () => { live = false; };
+  }, []);
+
   const upgrade = async () => {
     if (!bridge.billingCheckout) { onSelect("settings"); return; } // fall back to the Profile page
     setUpBusy(true);
@@ -84,7 +105,32 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   }, [historyMode, refreshKey]);
 
   const newLabel = { chat: "New chat", cowork: "New task", code: "New session" }[historyMode] || "New chat";
-  const shown = q ? recents.filter((it) => (it.title || "").toLowerCase().includes(q.toLowerCase())) : recents;
+
+  // Global DEEP search: 3+ characters searches message content everywhere (debounced),
+  // shorter queries filter visible titles like before.
+  const [deep, setDeep] = useState(null); // null = title filtering; array = content results w/ snippets
+  useEffect(() => {
+    const needle = q.trim();
+    if (needle.length < 3 || !bridge.searchSessions) { setDeep(null); return; }
+    const t = setTimeout(() => bridge.searchSessions(needle, historyMode).then((r) => setDeep(r || [])).catch(() => setDeep(null)), 250);
+    return () => clearTimeout(t);
+  }, [q, historyMode, refreshKey]);
+  const shown = deep !== null ? deep : (q ? recents.filter((it) => (it.title || "").toLowerCase().includes(q.toLowerCase())) : recents);
+
+  // Export a conversation as Markdown — readable anywhere, prints to PDF from any editor/browser.
+  const exportConv = async (id, title) => {
+    try {
+      const conv = await bridge.getSession(id);
+      if (!conv) return;
+      const md = `# ${conv.title || "Conversation"}\n\n_Exported from BrainEdge · ${new Date().toLocaleString()}_\n\n` +
+        (conv.messages || []).map((m) => `**${m.role === "user" ? "You" : "BrainEdge"}**\n\n${m.content}`).join("\n\n---\n\n");
+      const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${(title || conv.title || "chat").replace(/[^\w\- ]+/g, "").slice(0, 50) || "chat"}.md`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {}
+  };
 
   return (
     <aside className="sidebar glass">
@@ -127,16 +173,28 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search chats…" />
         </div>
         <div className="sb-recents scroll">
-          {recents.length === 0 && <div className="sb-empty">No saved chats yet.</div>}
-          {recents.length > 0 && shown.length === 0 && <div className="sb-empty">No matches.</div>}
+          {recents.length === 0 && <div className="sb-empty">Nothing here yet — your conversations will live here. Start one above ↑</div>}
+          {recents.length > 0 && shown.length === 0 && <div className="sb-empty">No matches{q.trim().length >= 3 ? " anywhere in your chats" : ""} — try different words.</div>}
           {shown.slice(0, 100).map((it) => (
             <div key={it.id} className={`sb-rec ${it.id === activeConvId ? "active" : ""}`} onClick={() => onOpenSession(it.id)} title={it.title}>
-              <span className="sb-rec-title">{it.title || "Untitled"}</span>
+              <span className="sb-rec-main">
+                <span className="sb-rec-title">{it.title || "Untitled"}</span>
+                {deep !== null && it.snippet && it.snippet !== it.title && <span className="sb-rec-snip">…{it.snippet}…</span>}
+              </span>
+              <button className="sb-rec-del" title="Export as Markdown" onClick={(e) => { e.stopPropagation(); exportConv(it.id, it.title); }}><Download size={12} /></button>
               <button className="sb-rec-del" title="Delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(it.id); }}><Trash2 size={12} /></button>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Update-available banner (desktop; appears only when the server announces a newer version) */}
+      {update && (
+        <div className="sb-upsell sb-t">
+          <div className="sb-upsell-row"><Download size={13} /> <span>Update available · v{update.version}</span></div>
+          <button className="sb-upsell-btn" onClick={() => { try { update.url ? bridge.openExternal?.(update.url) : null; } catch {} }}>{update.url ? "Download" : "See site"}</button>
+        </div>
+      )}
 
       {/* Trial / Upgrade box — sits directly above the Profile entry */}
       {st === "trialing" && (

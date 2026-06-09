@@ -531,6 +531,12 @@ const server = http.createServer(async (req, res) => {
   if (p === "/billing/cancel") return html(res, "<div><h2>Checkout canceled</h2><p>No charge was made. You can close this window.</p></div>");
 
   if (p === "/health") return json(res, 200, { ok: true });
+
+  // GET /app-version — desktop update check. Set APP_VERSION (e.g. "0.4.0") and
+  // APP_DOWNLOAD_URL when you publish a new installer; clients compare and show a banner.
+  if (p === "/app-version" && req.method === "GET") {
+    return json(res, 200, { version: process.env.APP_VERSION || "", url: process.env.APP_DOWNLOAD_URL || "" });
+  }
   // Anything else: serve the web app (GET) or 404 (other methods).
   if (req.method === "GET") return serveStatic(res, p);
   json(res, 404, { error: "not found" });
