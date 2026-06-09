@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput } from "lucide-react";
+import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput, Palette, Sparkles, Server } from "lucide-react";
 import ModelPicker from "./ModelPicker.jsx";
 import AccountCard from "../auth/AccountCard.jsx";
 import AdminPanel from "../auth/AdminPanel.jsx";
+import CliAccess from "./CliAccess.jsx";
 import { bridge } from "../bridge/index.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 const SECTIONS = [
   { id: "profile", label: "Profile", icon: User },
+  { id: "terminal", label: "Terminal access", icon: Server },
 ];
 
 export default function Settings({ onChanged }) {
@@ -87,70 +89,59 @@ export default function Settings({ onChanged }) {
 
       <div style={{ padding: 24, overflowY: "auto" }}>
         {section === "profile" && (
-          <div style={{ maxWidth: 480 }}>
-            <h2 style={{ margin: "0 0 16px", fontSize: 18 }}>Profile</h2>
+          <div className="prof">
+            <h2 style={{ margin: "0 0 16px", fontSize: 20 }}>Profile</h2>
             <AccountCard />
-            <Field label="Account server URL (advanced)">
-              <input className="model-search" value={s.authBaseUrl || ""} onChange={(e) => setField("authBaseUrl", e.target.value)} placeholder="http://127.0.0.1:8787  (or your deployed https URL)" />
-            </Field>
-            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 12 }}>Appearance</div>
-            <Field label="Theme">
-              <select className="model-search" value={s.theme || "dark"} onChange={(e) => setField("theme", e.target.value)}>
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
-                <option value="system">System (match OS)</option>
-              </select>
-            </Field>
-            <Field label="Default language">
-              <select className="model-search" value={s.responseLanguage || "model"} onChange={(e) => setField("responseLanguage", e.target.value)}>
-                <option value="model">Model default (let the model decide)</option>
-                <option value="English">English</option>
-                <option value="Spanish">Spanish</option>
-                <option value="French">French</option>
-                <option value="German">German</option>
-                <option value="Italian">Italian</option>
-                <option value="Portuguese">Portuguese</option>
-                <option value="Hindi">Hindi</option>
-                <option value="Arabic">Arabic</option>
-                <option value="Chinese">Chinese</option>
-                <option value="Japanese">Japanese</option>
-                <option value="Korean">Korean</option>
-                <option value="Russian">Russian</option>
-              </select>
-            </Field>
-            <Field label="Accent color">
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <button title="Default (multi-color)" onClick={() => setField("accent", "default")}
-                  style={{ width: 24, height: 24, borderRadius: "50%", cursor: "pointer",
-                    background: "linear-gradient(135deg, #9fb0ff, #38e8d0 55%, #b88cff)",
-                    border: (s.accent || "default") === "default" ? "2px solid var(--text-0)" : "2px solid transparent",
-                    boxShadow: "0 0 0 1px var(--line)" }} />
-                {["#6e7bff", "#7c5cff", "#38b2ac", "#22a06b", "#e8893a", "#d6597b", "#e0433f", "#2b8fd6"].map((c) => (
-                  <button key={c} title={c} onClick={() => setField("accent", c)}
-                    style={{ width: 24, height: 24, borderRadius: "50%", background: c, cursor: "pointer",
-                      border: (s.accent || "").toLowerCase() === c ? "2px solid var(--text-0)" : "2px solid transparent",
-                      boxShadow: "0 0 0 1px var(--line)" }} />
-                ))}
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-2)", cursor: "pointer" }}>
-                  <input type="color" value={s.accent || "#6e7bff"} onChange={(e) => setField("accent", e.target.value)}
-                    style={{ width: 28, height: 28, padding: 0, border: "none", background: "transparent", cursor: "pointer" }} />
-                  Custom
-                </label>
-              </div>
-            </Field>
 
-            <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6 }}>Instructions for BrainEdge</div>
-            <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
-              Applied to <b>every</b> conversation across the app (Chat, Code, Cowork, Projects) — like Claude's custom instructions. Tone, role, rules, things to always remember.
-            </p>
-            <textarea className="model-search" rows={6} style={{ resize: "vertical", fontFamily: "inherit" }}
-              value={s.globalInstructions || ""} onChange={(e) => setS({ ...s, globalInstructions: e.target.value })}
-              placeholder="e.g. Be concise. I'm a senior engineer — skip basics. Always show code diffs. Prefer TypeScript." />
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-              <button className="btn primary" onClick={async () => { await bridge.saveSettings(s); onChanged?.(s); setStatus("Saved ✓"); setTimeout(() => setStatus(""), 1500); }}>Save</button>
-              <span style={{ color: "var(--ok)", fontSize: 12 }}>{status}</span>
+            <div className="prof-card">
+              <div className="prof-card-h"><span className="prof-ico"><Palette size={15} /></span> Appearance</div>
+              <Field label="Theme">
+                <select className="model-search" value={s.theme || "dark"} onChange={(e) => setField("theme", e.target.value)}>
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                  <option value="system">System (match OS)</option>
+                </select>
+              </Field>
+              <Field label="Accent color">
+                <div className="prof-accents">
+                  <button className={`prof-acc ${(s.accent || "default") === "default" ? "on" : ""}`} onClick={() => setField("accent", "default")} title="Default (multi-color)">
+                    <span className="prof-acc-dot" style={{ background: "linear-gradient(135deg, #9fb0ff, #38e8d0 55%, #b88cff)" }} /> Default
+                  </button>
+                  <label className={`prof-acc ${(s.accent && s.accent !== "default") ? "on" : ""}`} title="Pick your own accent">
+                    <span className="prof-acc-dot" style={{ background: (s.accent && s.accent !== "default") ? s.accent : "var(--bg-1)" }} />
+                    Custom
+                    <input type="color" value={(s.accent && s.accent !== "default") ? s.accent : "#13c2d6"} onChange={(e) => setField("accent", e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
+                  </label>
+                </div>
+              </Field>
             </div>
 
+            <div className="prof-card">
+              <div className="prof-card-h"><span className="prof-ico"><Sparkles size={15} /></span> Instructions for BrainEdge</div>
+              <p className="prof-sub">Applied to <b>every</b> conversation (Chat, Code, Cowork, Projects) — tone, role, rules, and things to always remember.</p>
+              <textarea className="model-search" rows={6} style={{ resize: "vertical", fontFamily: "inherit" }}
+                value={s.globalInstructions || ""} onChange={(e) => setS({ ...s, globalInstructions: e.target.value })}
+                placeholder="e.g. Be warm and concise. I'm a senior engineer — skip the basics. Prefer TypeScript and show code diffs." />
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+                <button className="btn primary" onClick={async () => { await bridge.saveSettings(s); onChanged?.(s); setStatus("Saved ✓"); setTimeout(() => setStatus(""), 1500); }}><Save size={14} /> Save</button>
+                <span style={{ color: "var(--ok)", fontSize: 12 }}>{status}</span>
+              </div>
+            </div>
+
+            <details className="prof-adv">
+              <summary><Server size={13} /> Advanced</summary>
+              <Field label="Account server URL">
+                <input className="model-search" value={s.authBaseUrl || ""} onChange={(e) => setField("authBaseUrl", e.target.value)} placeholder="http://127.0.0.1:8787  (or your deployed https URL)" />
+              </Field>
+            </details>
+          </div>
+        )}
+
+        {section === "terminal" && (
+          <div style={{ maxWidth: 720 }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Terminal access</h2>
+            <p style={{ color: "var(--text-2)", fontSize: 13, margin: "0 0 16px" }}>Run BrainEdge as a coding agent in any terminal — like the desktop app, but in your shell. It's set up automatically for active subscribers using the provider and key you already configured; the controls below let you re-run or turn it off.</p>
+            <CliAccess />
           </div>
         )}
 

@@ -16,6 +16,9 @@ import ViaMobile from "./components/ViaMobile.jsx";
 import Consumption from "./components/Consumption.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
+import StudioLauncher from "./components/StudioLauncher.jsx";
+import TerminalPanel from "./components/TerminalPanel.jsx";
+import EnvPicker from "./components/EnvPicker.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
 import { PermissionPicker } from "./components/Topbar.jsx";
@@ -24,6 +27,8 @@ import { bridge, isWeb } from "./bridge/index.js";
 // On the web, local-folder access uses the File System Access API (Chrome/Edge only).
 const folderInChromeEdge = isWeb && !(typeof window !== "undefined" && typeof window.showDirectoryPicker === "function");
 const webFolderSupported = isWeb && typeof window !== "undefined" && typeof window.showDirectoryPicker === "function";
+// Internal tools we never surface as cards in the chat (plumbing, not user-facing).
+const HIDDEN_TOOLS = new Set(["load_skill"]);
 
 export default function App() {
   const [mode, setMode] = useState("chat");
@@ -39,6 +44,7 @@ export default function App() {
   const [coworkProj, setCoworkProj] = useState(null); // { id, name } when a Cowork task is scoped to a project
   const [online, setOnline] = useState(null);
   const [artifact, setArtifact] = useState(null);
+  const [repo, setRepo] = useState({ open: false, url: "", busy: false, err: "" });
   const [activeConvId, setActiveConvId] = useState(null);
   const [mobileLink, setMobileLink] = useState(null); // Telegram-linked session binding
   const [botRunning, setBotRunning] = useState(false); // Telegram bot online?
@@ -46,6 +52,7 @@ export default function App() {
   const [chatMode, setChatMode] = useState("chat"); // last primary mode → drives the Recents list
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const sessionRef = useRef(null);
+  const studioSeed = useRef(null); // pending Studio starter prompt, sent once we're in chat mode
   const chatRef = useRef(null);
   const streamOpen = useRef(false);
   const lastInfoRef = useRef(null); // real {model, provider, kind} from the backend init event
@@ -107,6 +114,7 @@ export default function App() {
         break;
       case "tool_use":
         streamOpen.current = false; setStreaming(false);
+        if (HIDDEN_TOOLS.has(e.data.name)) break; // internal plumbing — don't surface to the user
         setTimeline((tl) => [...tl, { type: "tool", id: e.data.id, name: e.data.name, input: e.data.input, auto: e.data.auto, status: "run" }]);
         break;
       case "tool_result":
@@ -291,6 +299,25 @@ export default function App() {
     if (typeof dir === "string" && dir) { setCwd(dir); sessionRef.current = null; setTimeline([]); setActiveConvId(null); }
     else if (dir && dir.error) { alert(dir.error); } // e.g. web: folder access is desktop-only
   };
+  // Connect a GitHub repo: clone it (desktop) and use it as the working folder for Build.
+  // window.prompt() is disabled in Electron, so we use an in-app input modal.
+  const addRepo = () => setRepo({ open: true, url: "", busy: false, err: "" });
+  const connectRepo = async () => {
+    const url = (repo.url || "").trim(); if (!url) return;
+    setRepo((r) => ({ ...r, busy: true, err: "" }));
+    const res = await (bridge.cloneRepo ? bridge.cloneRepo(url) : Promise.resolve({ error: "Not available." })).catch((e) => ({ error: String((e && e.message) || e) }));
+    if (res && res.folder) {
+      if (!PRIMARY.includes(mode)) setMode("code");
+      setCwd(res.folder); sessionRef.current = null; setTimeline([]); setActiveConvId(null);
+      setRepo({ open: false, url: "", busy: false, err: "" });
+    } else setRepo((r) => ({ ...r, busy: false, err: (res && res.error) || "Couldn't connect the repo." }));
+  };
+  // Use an already-available folder (a saved repo, or one the EnvPicker just cloned) as the Build workspace.
+  const useFolder = (folder) => {
+    if (!folder) return;
+    if (!PRIMARY.includes(mode)) setMode("code");
+    setCwd(folder); sessionRef.current = null; setTimeline([]); setActiveConvId(null);
+  };
 
   const stop = () => { if (sessionRef.current) bridge.interrupt(sessionRef.current); setBusy(false); };
 
@@ -380,11 +407,19 @@ export default function App() {
   const isViaMobile = mode === "viamobile";
   const isScheduler = mode === "scheduler";
   const isConsumption = mode === "consumption";
+  const isStudio = mode === "studio";
+  const isTerminal = mode === "terminal";
+  const startStudio = (prompt) => {
+    studioSeed.current = prompt || null;
+    modeCacheRef.current.chat = { convId: null, timeline: [] }; // fresh chat per Studio idea (don't restore the last one)
+    switchMode("chat");
+  };
+  useEffect(() => { if (mode === "chat" && studioSeed.current) { const seed = studioSeed.current; studioSeed.current = null; send(seed); } }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   const controlsRow = (
     <div className="ctrl-row">
-      {isAgentMode && <button className="chip" onClick={pickFolder}><FolderOpen size={13} /> {cwd || "Choose folder"}</button>}
+      {isAgentMode && <EnvPicker cwd={cwd} onPickFolder={pickFolder} onUseFolder={useFolder} onAddRepoUrl={addRepo} />}
       {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
       <ModelPicker value={activeValue} groups={pickerGroups} onChange={selectModel} onRefresh={refreshModels} />
     </div>
@@ -406,6 +441,21 @@ export default function App() {
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
       />
+      {repo.open && (
+        <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget && !repo.busy) setRepo({ open: false, url: "", busy: false, err: "" }); }}>
+          <div className="repo-modal">
+            <h3 style={{ margin: "0 0 6px", fontSize: 16 }}>Connect a GitHub repo</h3>
+            <p style={{ margin: "0 0 14px", color: "var(--text-2)", fontSize: 13 }}>Paste a public repo URL — BrainEdge clones it and works on it{isWeb ? ". (Cloning needs the desktop app.)" : "."}</p>
+            <input className="model-search" autoFocus value={repo.url} placeholder="https://github.com/user/repo"
+              onChange={(e) => setRepo((r) => ({ ...r, url: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") connectRepo(); }} />
+            {repo.err && <div className="repo-err">{repo.err}</div>}
+            <div className="repo-actions">
+              <button className="btn ghost" onClick={() => setRepo({ open: false, url: "", busy: false, err: "" })}>Cancel</button>
+              <button className="btn primary" disabled={repo.busy || !repo.url.trim()} onClick={connectRepo}>{repo.busy ? "Cloning…" : "Connect"}</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`}>
       <Sidebar active={mode} onSelect={switchMode}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
@@ -425,6 +475,10 @@ export default function App() {
           <Scheduler />
         ) : isConsumption ? (
           <Consumption />
+        ) : isStudio ? (
+          <StudioLauncher onStart={startStudio} />
+        ) : isTerminal ? (
+          <TerminalPanel cwd={cwd} />
         ) : isModels ? (
           <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
             tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : "models")} />
@@ -437,7 +491,7 @@ export default function App() {
                 <div className="hero scroll">
                   <div className="hero-inner">
                     <div className="hero-greet"><ThinkLogo size={40} animated={false} /><h1 className="greeting">{greeting}</h1></div>
-                    <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} cwd={cwd} controls={controlsRow} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
+                    <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {projectCtx && (
                       <div className="hero-opts">
                         <button className="chip" onClick={backToProjects}>← Projects</button>
@@ -490,7 +544,7 @@ export default function App() {
                       ))}
                     </div>
                   </div>
-                  <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} cwd={cwd} controls={controlsRow} />
+                  <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} />
                 </>
               )}
             </div>

@@ -2,7 +2,29 @@ import { useMemo, useState, useEffect } from "react";
 import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench } from "lucide-react";
 import { MODELS, CATEGORIES, freeInfo } from "../data/modelCatalog.js";
 import { classifyProvider, isModelFree } from "../data/providerRules.js";
+import { benchFor, AGENTIC_RANK, agenticTone, thinkingTone } from "../data/benchmarks.js";
+import { classify } from "./ModelPicker.jsx";
 import { bridge } from "../bridge/index.js";
+
+// Provider → domain, for real logos (served as site favicons). Unknown makers fall back to a monogram.
+const MAKER_DOMAIN = {
+  openai: "openai.com", anthropic: "anthropic.com", google: "google.com", "google-deepmind": "deepmind.com",
+  meta: "meta.ai", "meta-llama": "meta.ai", mistralai: "mistral.ai", mistral: "mistral.ai", deepseek: "deepseek.com",
+  qwen: "qwen.ai", alibaba: "alibabacloud.com", "x-ai": "x.ai", xai: "x.ai", nvidia: "nvidia.com", openrouter: "openrouter.ai",
+  cohere: "cohere.com", microsoft: "microsoft.com", perplexity: "perplexity.ai", moonshotai: "moonshot.ai",
+  moonshot: "moonshot.ai", stepfun: "stepfun.com", "stepfun-ai": "stepfun.com", "01-ai": "01.ai", databricks: "databricks.com",
+  ai21: "ai21.com", amazon: "amazon.com", ibm: "ibm.com", "ibm-granite": "ibm.com", arcee: "arcee.ai", "arcee-ai": "arcee.ai",
+  morph: "morphllm.com", kwaipilot: "kuaishou.com", allenai: "allenai.org", nous: "nousresearch.com", "nousresearch": "nousresearch.com",
+  liquid: "liquid.ai", inflection: "inflection.ai", reka: "reka.ai", thudm: "z.ai", zhipu: "z.ai", baidu: "baidu.com", minimax: "minimaxi.com",
+};
+function MakerLogo({ maker }) {
+  const [err, setErr] = useState(false);
+  const key = String(maker || "").toLowerCase().trim();
+  const domain = MAKER_DOMAIN[key] || MAKER_DOMAIN[key.split("/")[0]] || MAKER_DOMAIN[key.split("-")[0]];
+  if (domain && !err) return <img className="mo-logo" src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt="" width={16} height={16} loading="lazy" onError={() => setErr(true)} />;
+  const hue = [...key].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0) % 360;
+  return <span className="mo-logo mo-logofallback" style={{ background: `hsl(${hue} 55% 55% / .2)`, color: `hsl(${hue} 70% 72%)` }}>{(key.replace(/^[~@]/, "")[0] || "?").toUpperCase()}</span>;
+}
 
 // Each capability tag gets a distinct colour + a widely-recognised icon.
 const CAP_META = {
@@ -67,17 +89,58 @@ function hostsOf(m) {
 // Free/paid: provider-rule verdict wins when known, else fall back to the catalog's freeInfo.
 const isFree = (m) => (m._free != null ? m._free : freeInfo(m).has);
 
-const COLS = [
-  { key: "name", label: "Model", sort: (m) => m.name },
-  { key: "bestFor", label: "Best for", sort: (m) => m.bestFor },
-  { key: "ctx", label: "Context", sort: (m) => m.ctx },
-  { key: "host", label: "Host", sort: (m) => hostLabel(m) },
-  { key: "cost", label: "Cost", sort: (m) => (isFree(m) ? 0 : 1) },
-  { key: "thinking", label: "Reasoning", sort: (m) => String(m.thinking) },
-  { key: "vision", label: "Image", sort: (m) => Number(m.vision) },
-  { key: "size", label: "Params", sort: (m) => sizeNum(m.size) },
-  { key: "download", label: "Download available", sort: (m) => (dl(m).open ? 0 : 1) },
-];
+// Capability derivations (used for the dedicated ✓/✗ columns).
+const capCoding = (m) => !!(m.coding || m.cat === "Coding") || /cod(er|e)\b|coder|codestral|devstral|deepseek-coder/i.test((m.run || m.name || "") + " " + (m.bestForFull || ""));
+const capAgentic = (m) => !!(m.agentic || m.tools);
+
+// Real price (per 1M tokens, input / output) when the provider publishes it; else Free/Paid.
+const per1M = (v) => (v == null ? null : v * 1e6);
+function priceLabel(m) {
+  // OpenRouter returns -1 for variable/router pricing — don't render it as a giant negative number.
+  if ((m.priceIn != null && m.priceIn < 0) || (m.priceOut != null && m.priceOut < 0)) return { text: "Variable", free: false };
+  const pin = per1M(m.priceIn), pout = per1M(m.priceOut);
+  if (pin == null && pout == null) return { text: isFree(m) ? "Free" : "Paid", free: isFree(m) };
+  if ((pin || 0) === 0 && (pout || 0) === 0) return { text: "Free", free: true };
+  const f = (v) => (v == null ? "?" : v >= 1 ? "$" + v.toFixed(2) : "$" + v.toFixed(v >= 0.1 ? 2 : 3));
+  return { text: `${f(pin)} / ${f(pout)}`, free: false };
+}
+// A short, crisp "best for" — first sentence, capped.
+function crisp(m) {
+  let s = String(m.bestFor || "").replace(/\s+/g, " ").trim();
+  if (s.length > 160) s = s.slice(0, 159).trimEnd() + "…";
+  return s || "—";
+}
+// Design: each capability owns one accent that ONLY shows when present; absence is a quiet dash (no red noise).
+const CAP_TONE = { coding: "#3ecf8e", reasoning: "#b692f6", image: "#5aa0ff", agentic: "#f0883e" };
+function CapDot({ on, tone }) {
+  return on
+    ? <span className="cap-on" style={{ color: tone, background: tone + "22", borderColor: tone + "55" }}>✓</span>
+    : <span className="cap-off">–</span>;
+}
+// A stable color per maker — turns the left column into a scannable anchor.
+function makerColors(name) {
+  const s = String(name || "?"); let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  const hue = h % 360;
+  return { fg: `hsl(${hue} 70% 70%)`, bg: `hsl(${hue} 60% 60% / 0.16)` };
+}
+const initial = (m) => String(m.maker || m.name || "?").replace(/^[~@]/, "").slice(0, 1).toUpperCase();
+// Cost tier for color-coding (one calm green→amber scale).
+function costTier(m) {
+  const p = m.priceIn == null ? null : m.priceIn * 1e6;
+  if (isFree(m) || p === 0) return "free";
+  if (p == null) return "paid";
+  if (p <= 1) return "low"; if (p <= 5) return "mid"; return "high";
+}
+// Curated benchmark + qualitative behaviour (falls back to derived flags when not in the curated set).
+const sweFor = (m) => { const b = benchFor(m.run || m.name); return b ? b.swe : "—"; };
+const humanFor = (m) => { const b = benchFor(m.run || m.name); return b ? b.humaneval : "—"; };
+const agenticLabel = (m) => { const b = benchFor(m.run || m.name); if (b) return b.agentic; return capAgentic(m) ? "Yes" : "—"; };
+const thinkingLabel = (m) => { const b = benchFor(m.run || m.name); if (b) return b.thinking; return m.thinking === true ? "Always-on" : m.thinking === "toggle" ? "Toggle" : "—"; };
+const pctNum = (s) => { const n = parseFloat(String(s || "").replace(/[~%]/g, "")); return isNaN(n) ? -1 : n; };
+const relTime = (unixSec) => { if (!unixSec) return ""; const days = Math.floor((Date.now() - unixSec * 1000) / 864e5); if (days < 1) return "today"; if (days < 30) return days + "d ago"; if (days < 365) return Math.floor(days / 30) + "mo ago"; return (days / 365).toFixed(1) + "y ago"; };
+const THINK_RANK = { "Always-on": 2, "Toggle": 1, "No": 0, "—": -1 };
+
 
 function Stars({ value }) {
   const pct = Math.max(0, Math.min(100, (value / 5) * 100));
@@ -154,12 +217,22 @@ function missesFor(m) {
   return x.slice(0, 4);
 }
 
+// Flat, combinable filter chips. Each is a predicate; multiple active = AND.
+const FILTERS = [
+  { key: "local", label: "Local", test: (m) => hostLabel(m) !== "Cloud" },
+  { key: "cloud", label: "Cloud", test: (m) => hostLabel(m) !== "Local" },
+  { key: "free", label: "Free", test: (m) => isFree(m) },
+  { key: "agentic", label: "Agentic", test: (m) => capAgentic(m) },
+  { key: "coding", label: "Coding", test: (m) => capCoding(m) },
+  { key: "image", label: "Image", test: (m) => !!m.vision },
+  { key: "reasoning", label: "Reasoning", test: (m) => !!m.thinking },
+  { key: "fast", label: "Fast", test: (m) => /flash|mini|lite|haiku|tiny|small|turbo|nano/i.test(m.run || m.name || "") || (sizeNum(m.size) > 0 && sizeNum(m.size) <= 9) },
+  { key: "general", label: "General", test: (m) => (m.cat || "") === "General" },
+];
+
 export default function ModelsOverview({ activeModel }) {
   const [q, setQ] = useState("");
-  const [cat, setCat] = useState("All");
-  const [hostFilter, setHostFilter] = useState("All"); // All | local | cloud
-  const [caps, setCaps] = useState({ tools: false, vision: false, thinking: false, agentic: false, downloadable: false });
-  const [freeOnly, setFreeOnly] = useState(false);
+  const [active, setActive] = useState(() => new Set()); // active filter keys (AND-combined)
   const [sortKey, setSortKey] = useState("ctx");
   const [dir, setDir] = useState("desc");
   const [detail, setDetail] = useState(null);
@@ -167,7 +240,15 @@ export default function ModelsOverview({ activeModel }) {
   const [cfg, setCfg] = useState(null);
   const [orCat, setOrCat] = useState(null);
   const [dlMenu, setDlMenu] = useState(null); // model name whose download-source chooser is open
+  const [speedMap, setSpeedMap] = useState({}); // measured tokens/sec from the Speed Check, by model id
   const copy = (text, label) => { try { navigator.clipboard.writeText(text); setCopied(label); setTimeout(() => setCopied(""), 1400); } catch {} };
+
+  // Pull measured speeds from the last Speed Check run (real tokens/sec where the user has tested).
+  useEffect(() => { bridge.getSpeedTestLast?.().then((r) => {
+    if (!r || !r.results) return; const map = {};
+    for (const x of r.results) { if (x && x.model && x.ok && x.tps) map[norm(x.model)] = x.tps; }
+    setSpeedMap(map);
+  }).catch(() => {}); }, []);
 
   // Close the download chooser on any outside click or Escape.
   useEffect(() => {
@@ -223,6 +304,16 @@ export default function ModelsOverview({ activeModel }) {
             entry.bestFor = `${kind}${inf.size ? ` · ${inf.size}` : ""} · available via ${p.name} (details not published by the provider)`;
           }
         }
+        // Attach real pricing + capabilities from the OpenRouter catalog (works for matched & sparse rows).
+        if (orm) {
+          if (orm.priceIn != null) entry.priceIn = orm.priceIn;
+          if (orm.priceOut != null) entry.priceOut = orm.priceOut;
+          if (orm.tools) entry.tools = true;
+          if (orm.image) entry.vision = true;
+          if (orm.reasoning) entry.thinking = true;
+          if (orm.created) entry.created = orm.created;
+          if (orm.ctx && !entry.ctx) entry.ctx = orm.ctx;
+        }
         const thisFree = isModelFree({ profile: p, modelId: id, orFree: orm ? !!orm.free : null });
         const nkey = norm(entry.name);
         const dup = byName.get(nkey);
@@ -244,19 +335,28 @@ export default function ModelsOverview({ activeModel }) {
 
   const activeNorm = norm(activeModel);
   const isActive = (m) => activeNorm && (activeNorm.includes(norm(m.run)) || activeNorm.includes(norm(m.name)) || norm(m.run).includes(activeNorm));
+  const speedVal = (m) => speedMap[norm(m.run)] ?? speedMap[norm(m.name)] ?? null;
+
+  const COLS = [
+    { key: "name", label: "Model", sort: (m) => m.name },
+    { key: "bestFor", label: "Best for", sort: (m) => m.bestFor },
+    { key: "ctx", label: "Context", hint: "Maximum context window", sort: (m) => m.ctx },
+    { key: "cost", label: "Cost · $/1M", hint: "Price per 1M tokens (input / output).", sort: (m) => (m.priceIn != null ? m.priceIn : (isFree(m) ? -1 : 9e9)) },
+    { key: "swe", label: "SWE-bench", hint: "SWE-bench Verified — approximate, curated for well-known models.", sort: (m) => pctNum(sweFor(m)) },
+    { key: "humaneval", label: "HumanEval", hint: "HumanEval pass@1 — approximate, curated for well-known models.", sort: (m) => pctNum(humanFor(m)) },
+    { key: "speed", label: "Speed", hint: "Measured tokens/sec from your Speed Check. Run a speed test to fill this in.", sort: (m) => (speedVal(m) ?? -1) },
+    { key: "coding", label: "Coding", hint: "Strong at writing/editing code", sort: (m) => Number(capCoding(m)) },
+    { key: "thinking", label: "Thinking", hint: "Reasoning mode: Always-on, Toggle, or none.", sort: (m) => (THINK_RANK[thinkingLabel(m)] ?? -1) },
+    { key: "vision", label: "Image", hint: "Accepts image input", sort: (m) => Number(!!m.vision) },
+    { key: "agentic", label: "Agentic", hint: "Tool-calling / agent capability.", sort: (m) => (AGENTIC_RANK[agenticLabel(m)] ?? -1) },
+    { key: "host", label: "Host", sort: (m) => hostLabel(m) },
+    { key: "size", label: "Params", hint: "Parameter count. Blank when the provider doesn't publish it.", sort: (m) => sizeNum(m.size) },
+    { key: "download", label: "Download", hint: "Open-weight models you can download and run locally", sort: (m) => (dl(m).open ? 0 : 1) },
+  ];
 
   const rows = useMemo(() => {
     let r = allModels.filter((m) => {
-      if (cat !== "All" && m.cat !== cat) return false;
-      const hl = hostLabel(m);
-      if (hostFilter === "local" && hl === "Cloud") return false;   // keep Local + Cloud & Local
-      if (hostFilter === "cloud" && hl === "Local") return false;   // keep Cloud + Cloud & Local
-      if (caps.tools && !m.tools) return false;
-      if (caps.vision && !m.vision) return false;
-      if (caps.thinking && !m.thinking) return false;
-      if (caps.agentic && !m.agentic) return false;
-      if (caps.downloadable && !dl(m).open) return false;
-      if (freeOnly && !isFree(m)) return false;
+      for (const key of active) { const f = FILTERS.find((x) => x.key === key); if (f && !f.test(m)) return false; }
       if (q) { const t = (m.name + " " + m.maker + " " + m.bestFor + " " + m.run).toLowerCase(); if (!t.includes(q.toLowerCase())) return false; }
       return true;
     });
@@ -267,12 +367,12 @@ export default function ModelsOverview({ activeModel }) {
       return dir === "asc" ? cmp : -cmp;
     });
     return r;
-  }, [allModels, q, cat, hostFilter, caps, freeOnly, sortKey, dir]);
+  }, [allModels, q, active, sortKey, dir, speedMap]);
 
   const setSort = (key) => { if (sortKey === key) setDir((d) => (d === "asc" ? "desc" : "asc")); else { setSortKey(key); setDir(key === "ctx" || key === "vram" ? "desc" : "asc"); } };
-  const toggleCap = (k) => setCaps((c) => ({ ...c, [k]: !c[k] }));
-  const noFilters = cat === "All" && hostFilter === "All" && !freeOnly && !Object.values(caps).some(Boolean);
-  const resetFilters = () => { setCat("All"); setHostFilter("All"); setFreeOnly(false); setCaps({ tools: false, vision: false, thinking: false, agentic: false, downloadable: false }); };
+  const toggle = (key) => setActive((s) => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  const noFilters = active.size === 0;
+  const resetFilters = () => setActive(new Set());
 
   return (
     <div className="mo scroll">
@@ -281,6 +381,9 @@ export default function ModelsOverview({ activeModel }) {
           <h2 style={{ margin: 0, fontSize: 18 }}>Models overview</h2>
           <p style={{ color: "var(--text-2)", fontSize: 12, margin: "4px 0 0" }}>
             Models loaded on your configured providers (same as the top-bar selector). {rows.length} of {allModels.length} shown.
+          </p>
+          <p style={{ color: "var(--text-3)", fontSize: 11, margin: "3px 0 0" }}>
+            SWE‑bench &amp; HumanEval are approximate, curated figures for well‑known models (others show —). Speed is your measured tokens/sec from the Speed Check.
           </p>
         </div>
       </div>
@@ -293,18 +396,9 @@ export default function ModelsOverview({ activeModel }) {
         <div className="mo-chips">
           {/* "All" is a master reset; it highlights only when nothing is filtered. */}
           <button className={`mo-chip ${noFilters ? "on" : ""}`} onClick={resetFilters}>All</button>
-          {CATEGORIES.map((c) => (
-            <button key={c} className={`mo-chip ${cat === c ? "on" : ""}`} onClick={() => setCat(cat === c ? "All" : c)}>{c}</button>
+          {FILTERS.map((f) => (
+            <button key={f.key} className={`mo-chip ${active.has(f.key) ? "on" : ""}`} onClick={() => toggle(f.key)}>{f.label}</button>
           ))}
-          <span className="mo-sep" />
-          {["local", "cloud"].map((h) => (
-            <button key={h} className={`mo-chip ${hostFilter === h ? "on" : ""}`} onClick={() => setHostFilter(hostFilter === h ? "All" : h)}>{h === "local" ? "Local" : "Cloud"}</button>
-          ))}
-          <span className="mo-sep" />
-          <button className={`mo-chip ${caps.agentic ? "on" : ""}`} onClick={() => toggleCap("agentic")}>Agentic</button>
-          <button className={`mo-chip ${caps.vision ? "on" : ""}`} onClick={() => toggleCap("vision")}>Image</button>
-          <button className={`mo-chip ${caps.downloadable ? "on" : ""}`} onClick={() => toggleCap("downloadable")}>Download</button>
-          <button className={`mo-chip ${freeOnly ? "on" : ""}`} onClick={() => setFreeOnly((v) => !v)}>Free</button>
         </div>
       </div>
 
@@ -313,7 +407,7 @@ export default function ModelsOverview({ activeModel }) {
           <thead>
             <tr>
               {COLS.map((c) => (
-                <th key={c.key} onClick={() => setSort(c.key)} className={sortKey === c.key ? "sorted" : ""}>
+                <th key={c.key} onClick={() => setSort(c.key)} className={sortKey === c.key ? "sorted" : ""} title={c.hint || ""}>
                   <span>{c.label}</span>
                   {sortKey === c.key && (dir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                 </th>
@@ -323,17 +417,19 @@ export default function ModelsOverview({ activeModel }) {
           <tbody>
             {rows.map((m) => (
               <tr key={m.name} className={isActive(m) ? "active" : ""} onClick={() => setDetail(m)} style={{ cursor: "pointer" }}>
-                <td><div className="mo-name">{m.name}{isActive(m) && <span className="mo-activebadge">active</span>}</div><div className="mo-sub">{m.maker}{m.year ? " · " + m.year : ""}</div></td>
-                <td>
-                  <div className="mo-best" title={m.bestForFull || m.bestFor}>{m.bestFor}</div>
-                  <div className="mo-caps">{capsFor(m).map((c) => { const meta = CAP_META[c] || {}; const I = meta.icon; return <span key={c} className="mo-captag" style={meta.color ? { color: meta.color } : undefined}>{I && <I size={11} />}{c}</span>; })}</div>
-                </td>
-                <td className="mo-num">{fmtCtx(m.ctx)}</td>
-                <td><span className="mo-hosts">{hostsOf(m).map((h) => <span key={h} className={`mo-pill ${h === "Local" ? "local" : "cloud"}`}>{h}</span>)}</span></td>
-                <td><span className={`mo-cost ${isFree(m) ? "free" : "paid"}`}>{isFree(m) ? "Free" : "Paid"}</span></td>
-                <td><Cap v={m.thinking} /></td>
+                <td><div className="mo-name">{m.name}{isActive(m) && <span className="mo-activebadge">active</span>}</div><div className="mo-sub"><MakerLogo maker={m.maker} /> {m.maker}{m.year ? " · " + m.year : ""}</div></td>
+                <td><div className="mo-best">{m.bestForFull || m.bestFor}</div></td>
+                <td className="mo-num" title={m.ctx ? fmtCtx(m.ctx) + " tokens" : ""}>{fmtCtx(m.ctx)}</td>
+                <td>{(() => { const p = priceLabel(m); return <span className={`mo-cost ${p.free ? "free" : "paid"}`} title={p.free ? "Free to use" : "Per 1M tokens — input / output"}>{p.text}</span>; })()}</td>
+                <td className="mo-num">{sweFor(m)}</td>
+                <td className="mo-num">{humanFor(m)}</td>
+                <td className="mo-num" title={speedVal(m) != null ? "measured" : "run a Speed Check to measure"}>{speedVal(m) != null ? speedVal(m) + " t/s" : "—"}</td>
+                <td><Cap v={capCoding(m)} /></td>
+                <td><span className="mo-qual" style={{ color: thinkingTone(thinkingLabel(m)) }}>{thinkingLabel(m)}</span></td>
                 <td><Cap v={m.vision} /></td>
-                <td className="mo-num">{m.size && m.size !== "—" ? m.size : "—"}</td>
+                <td><span className="mo-qual" style={{ color: agenticTone(agenticLabel(m)) }}>{agenticLabel(m)}</span></td>
+                <td><span className="mo-hosts">{hostsOf(m).map((h) => <span key={h} className={`mo-pill ${h === "Local" ? "local" : "cloud"}`}>{h}</span>)}</span></td>
+                <td className="mo-num" title={m.size && m.size !== "—" ? "" : "Provider doesn't publish a parameter count"}>{m.size && m.size !== "—" ? m.size : "—"}</td>
                 <td>{dl(m).open
                   ? <div className="mo-dlwrap" onClick={(e) => e.stopPropagation()}>
                       <button className="mo-dlink" title="Open weights — choose a source" onClick={(e) => { e.stopPropagation(); setDlMenu(dlMenu === m.name ? null : m.name); }}><Download size={12} /> Download <ChevronDown size={11} /></button>
@@ -373,6 +469,7 @@ export default function ModelsOverview({ activeModel }) {
                 : <span className="mo-badge blue">{detail.host === "local" ? "Local" : detail.host} {detail.host === "local" ? "" : "API"}</span>}
               {detail.ctx ? <span className="mo-badge">{fmtCtx(detail.ctx)} context</span> : null}
               {detail.size !== "—" && <span className="mo-badge">{detail.size}</span>}
+              {detail.created && <span className="mo-badge gray">released {relTime(detail.created)}</span>}
               {detail.license !== "—" && <span className="mo-badge gray">{detail.license}</span>}
             </div>
             <div className="mo-badges">

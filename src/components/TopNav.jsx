@@ -10,12 +10,17 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
   const dot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   return (
     <header className="topnav glass">
-      <div className="tn-brand">
-        <ThinkLogo size={46} />
-        <div className="tn-brandtext">
-          <span className="tn-name">BrainEdge</span>
-          <span className="tn-by">by Chaithrodaya Sukruth</span>
-        </div>
+      <div className="tn-left">
+        <button className="tn-collapse" onClick={onToggleSidebar} title={(sidebarOpen ? "Collapse" : "Expand") + " sidebar (Ctrl+B)"}><PanelLeft size={18} /></button>
+        {sidebarOpen && (
+          <div className="tn-brand">
+            <ThinkLogo size={40} />
+            <div className="tn-brandtext">
+              <span className="tn-name">BrainEdge</span>
+              <span className="tn-by">by Chaithrodaya Sukruth</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <nav className="tn-tabs">
@@ -35,7 +40,6 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
           <span className="tn-statusdot" style={{ background: dot, boxShadow: online ? "0 0 7px var(--ok)" : "none" }} />
           {online === null ? "checking…" : online ? "online" : "offline"}
         </span>
-        <button className="tn-collapse" onClick={onToggleSidebar} title={(sidebarOpen ? "Collapse" : "Expand") + " sidebar (Ctrl+B)"}><PanelLeft size={18} /></button>
       </div>
     </header>
   );

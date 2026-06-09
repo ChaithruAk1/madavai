@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
-export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNewChat, onPickFolder, cwd, controls }) {
+export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNewChat, onPickFolder, onAddRepo, cwd, controls }) {
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]); // { name, content } | { name, image, dataUrl }
   const [skill, setSkill] = useState(null); // attached slash-command skill { name, description }
@@ -41,7 +41,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   // Built-in slash commands (run immediately on select, like Claude).
   const nav = (m) => { setMenuOpen(false); onNavigate && onNavigate(m); };
   const COMMANDS = [
-    { id: "new", desc: "Start a new chat", run: () => onNewChat && onNewChat() },
+    { id: "new", desc: mode === "cowork" ? "Start a new task" : mode === "code" ? "Start a new session" : "Start a new chat", run: () => onNewChat && onNewChat() },
     { id: "folder", desc: "Choose a working folder", run: () => onPickFolder && onPickFolder() },
     { id: "projects", desc: "Open Projects", run: () => nav("project") },
     { id: "skills", desc: "Manage skills", run: () => nav("skills") },
@@ -170,6 +170,8 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
 
   const placeholder = skill
     ? `Message for the ${skill.name} skill…`
+    : mode === "code" ? "Describe a coding task or ask a question…  ( / commands · @ files )"
+    : mode === "cowork" ? "Describe a task to work on together…  ( / commands · @ files )"
     : "How can I help you today?  ( / commands · @ files )";
   const canSend = !!text.trim() || files.length > 0 || !!skill;
 
@@ -250,7 +252,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                 <button className="plus-item" onClick={() => { setMenuOpen(false); setText((v) => (v ? v + " @" : "@")); setAtOpen(true); setAtQuery(""); setAtIdx(0); loadConnectors(); ref.current && ref.current.focus(); }}><AtSign size={15} /> Mention file / connector <span className="kbd">@</span></button>
                 <div className="plus-sep" />
                 <button className="plus-item" onClick={() => nav("project")}><FolderKanban size={15} /> Add to project <ChevronRight size={14} className="pm-chev" /></button>
-                <button className="plus-item" onClick={() => nav("project")}><Github size={15} /> Add from GitHub</button>
+                <button className="plus-item" onClick={() => { setMenuOpen(false); onAddRepo && onAddRepo(); }}><Github size={15} /> Connect a GitHub repo</button>
                 <div className="plus-sep" />
                 <button className="plus-item" onClick={() => nav("connectors")}><Plug size={15} /> Connectors <ChevronRight size={14} className="pm-chev" /></button>
                 <button className="plus-item" onClick={() => nav("settings")}><Palette size={15} /> Use style / instructions</button>

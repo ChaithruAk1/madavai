@@ -31,6 +31,14 @@ const setToken = (t) => { try { t ? localStorage.setItem(TOKEN_KEY, t) : localSt
     if (t) { setToken(t); u.searchParams.delete("token"); history.replaceState({}, "", u.pathname + (u.search || "") + u.hash); }
   } catch {}
 })();
+// Log an anonymous website visit (for admin visitor analytics). One stable id per browser.
+(function trackVisit() {
+  try {
+    let v = localStorage.getItem("be.visitor");
+    if (!v) { v = "v" + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem("be.visitor", v); }
+    fetch(api("/visit"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitorId: v }) }).catch(() => {});
+  } catch {}
+})();
 const authHeaders = (extra) => { const h = { ...(extra || {}) }; const t = getToken(); if (t) h.Authorization = "Bearer " + t; return h; };
 
 // ---- localStorage JSON helpers ----
@@ -171,7 +179,10 @@ function coworkSystem(s) {
     `You are BrainEdge, collaborating on the user's local folder "${webfs.rootLabel()}" directly from their browser.`,
     `Use the provided tools to list, read, write, and edit files. All paths are relative to the folder root (use "" for the root).`,
     `There is NO terminal on the web: you cannot run shell commands, install packages, run tests, or execute code. Make every change by reading and writing files.`,
-    `Inspect with list_dir/read_file before editing. When done, give a short summary of what you changed.`,
+    `You CAN access the web: use web_fetch(url) to read a page and web_search(query) to look things up (docs, APIs, references).`,
+    `For large independent chunks of work you may call spawn_subagent(task) to delegate to a focused helper that works on the same project and reports back.`,
+    `Every file change is checkpointed automatically, so the user can undo your edits — work confidently, but still inspect with list_dir/read_file before editing.`,
+    `When done, give a short summary of what you changed.`,
   ];
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
@@ -180,17 +191,87 @@ function coworkSystem(s) {
 }
 const COWORK_TOOLS = [
   { type: "function", function: { name: "list_dir", description: "List files and folders at a path relative to the project root. Use \"\" for the root.", parameters: { type: "object", properties: { path: { type: "string" } } } } },
+  { type: "function", function: { name: "list_files", description: "List ALL file paths in the project recursively (skips node_modules/.git).", parameters: { type: "object", properties: {} } } },
   { type: "function", function: { name: "read_file", description: "Read a UTF-8 text file's full contents.", parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } } },
+  { type: "function", function: { name: "search", description: "Search for text across all files. Returns matching paths with line numbers.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
   { type: "function", function: { name: "write_file", description: "Create or overwrite a text file with the given content.", parameters: { type: "object", properties: { path: { type: "string" }, content: { type: "string" } }, required: ["path", "content"] } } },
   { type: "function", function: { name: "edit_file", description: "Replace the first occurrence of `find` with `replace` in a file.", parameters: { type: "object", properties: { path: { type: "string" }, find: { type: "string" }, replace: { type: "string" } }, required: ["path", "find", "replace"] } } },
+  { type: "function", function: { name: "delete_file", description: "Delete a file.", parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } } },
+  { type: "function", function: { name: "web_fetch", description: "Fetch a web page and return its readable text. Use for docs, references, or any URL.", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } },
+  { type: "function", function: { name: "web_search", description: "Search the web and return result snippets for a query.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
+  { type: "function", function: { name: "spawn_subagent", description: "Delegate a focused sub-task to a helper agent that works on the same project and returns a summary. Use for independent chunks of work (e.g. 'write tests for X').", parameters: { type: "object", properties: { task: { type: "string", description: "Clear, self-contained instructions for the sub-agent." } }, required: ["task"] } } },
 ];
-async function executeTool(name, args) {
+// A minimal unified-style diff for showing edits in the tool card.
+function makeDiff(path, oldText, newText) {
+  if (!oldText) return `@@ ${path} (new file)\n` + (newText || "").split("\n").slice(0, 80).map((l) => "+" + l).join("\n");
+  const a = oldText.split("\n"), b = (newText || "").split("\n");
+  let s = 0; while (s < a.length && s < b.length && a[s] === b[s]) s++;
+  let e = 0; while (e < a.length - s && e < b.length - s && a[a.length - 1 - e] === b[b.length - 1 - e]) e++;
+  const del = a.slice(s, a.length - e), add = b.slice(s, b.length - e);
+  if (!del.length && !add.length) return `@@ ${path} (no changes)`;
+  const ctx = a.slice(Math.max(0, s - 2), s).map((l) => " " + l);
+  return [`@@ ${path}  (line ${s + 1})`, ...ctx, ...del.map((l) => "-" + l), ...add.map((l) => "+" + l)].join("\n");
+}
+// ---- checkpoints: snapshot a file's prior state before the agent changes it, so any edit can be undone ----
+const checkpoints = new Map(); // sessionId -> [{ id, ts, op, path, before, after }]
+function recordCheckpoint(sess, op, path, before, after) {
+  if (!sess) return;
+  const list = checkpoints.get(sess.id) || [];
+  const cp = { id: rid("ckpt_"), ts: Date.now(), op, path, before, after };
+  list.push(cp); checkpoints.set(sess.id, list);
+  emit(sess.id, "checkpoint", { id: cp.id, op, path }); // UI can offer an Undo affordance
+}
+
+// ---- web access for the agent: routes through the server proxy (browsers can't fetch arbitrary sites) ----
+async function webFetch({ url, query }) {
+  if (!getToken()) return "Web access needs sign-in.";
+  try {
+    const r = await fetch(api("/proxy/fetch"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url, query }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) return "Web request failed: " + (j.detail || j.error || r.status);
+    return `# ${j.url || query} (${j.status || ""})\n\n${j.text || "(no text)"}`;
+  } catch (e) { return "Web request failed: " + String((e && e.message) || e); }
+}
+
+// ---- subagent: a focused helper loop over the same project; returns a summary to the main agent ----
+const SUB_TOOLS = COWORK_TOOLS.filter((t) => t.function.name !== "spawn_subagent"); // no recursion
+async function runSubagent(sess, task, prof) {
+  if (!prof) return "(no provider for sub-agent)";
+  const sys = `You are a focused sub-agent inside the project folder "${webfs.rootLabel()}". Do ONLY the task below, then reply with a concise summary of what you did and any results. Use the file/web tools as needed.\n\nTASK:\n${task}`;
+  const msgs = [{ role: "system", content: sys }, { role: "user", content: task }];
+  const sig = sess && sess.ac ? sess.ac.signal : undefined;
+  const call = async () => {
+    try { return await streamChatTools(prof, msgs, SUB_TOOLS, { onDelta: () => {}, signal: sig }); }
+    catch (e) { if (isNetworkErr(e) && getToken()) return await streamChatTools(prof, msgs, SUB_TOOLS, { onDelta: () => {}, signal: sig, proxy: proxyCfg() }); throw e; }
+  };
+  for (let step = 0; step < 10; step++) {
+    const { content, toolCalls } = await call();
+    if (!toolCalls || !toolCalls.length) return content || "(sub-agent finished)";
+    msgs.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
+    for (const c of toolCalls) {
+      let a = {}; try { a = JSON.parse(c.arguments || "{}"); } catch {}
+      let out; try { out = await executeTool(c.name, a, { sess }); } catch (e) { out = "Error: " + String((e && e.message) || e); }
+      if (sess) emit(sess.id, "tool_result", { id: c.id, name: "↳ " + c.name, ok: true, output: String(out).slice(0, 2000) });
+      msgs.push({ role: "tool", tool_call_id: c.id, content: String(out).slice(0, 40000) });
+    }
+  }
+  return "(sub-agent reached its step limit)";
+}
+
+async function executeTool(name, args, ctx) {
+  const sess = ctx && ctx.sess;
   switch (name) {
     case "list_dir": return JSON.stringify(await webfs.listDir(args.path || ""));
+    case "list_files": { const f = await webfs.walk(); return f.length ? f.join("\n") : "(empty)"; }
     case "read_file": { const t = await webfs.readFile(args.path); return t.length > 60000 ? t.slice(0, 60000) + "\n…(truncated)" : t; }
-    case "write_file": await webfs.writeFile(args.path, args.content ?? ""); return "wrote " + args.path;
-    case "edit_file": await webfs.editFile(args.path, args.find, args.replace); return "edited " + args.path;
-    default: return "That tool isn't available on the web app (no terminal). Use list_dir/read_file/write_file/edit_file only.";
+    case "search": { const r = await webfs.search(args.query || ""); return r.length ? r.map((x) => `${x.path}:${x.line}: ${x.text}`).join("\n") : "No matches."; }
+    case "write_file": { let old = ""; try { old = await webfs.readFile(args.path); } catch {} await webfs.writeFile(args.path, args.content ?? ""); recordCheckpoint(sess, old ? "edit" : "create", args.path, old, args.content ?? ""); return makeDiff(args.path, old, args.content ?? ""); }
+    case "edit_file": { const before = await webfs.readFile(args.path); await webfs.editFile(args.path, args.find, args.replace); const after = await webfs.readFile(args.path); recordCheckpoint(sess, "edit", args.path, before, after); return makeDiff(args.path, before, after); }
+    case "delete_file": { let before = ""; try { before = await webfs.readFile(args.path); } catch {} await webfs.deleteFile(args.path); recordCheckpoint(sess, "delete", args.path, before, null); return "deleted " + args.path; }
+    case "web_fetch": return await webFetch({ url: args.url });
+    case "web_search": return await webFetch({ query: args.query });
+    case "spawn_subagent": return await runSubagent(sess, args.task || "", sess && sess.profile);
+    default: return "That tool isn't available on the web app (no terminal). Use the file/web tools.";
   }
 }
 async function callTools(prof, messages, onDelta, signal) {
@@ -211,7 +292,7 @@ async function runAgentTurn(sess, text, images, prof) {
       for (const c of toolCalls) {
         let args = {}; try { args = JSON.parse(c.arguments || "{}"); } catch {}
         emit(sess.id, "tool_use", { id: c.id, name: c.name, input: args, auto: true });
-        let out; try { out = await executeTool(c.name, args); } catch (e) { out = "Error: " + String((e && e.message) || e); }
+        let out; try { out = await executeTool(c.name, args, { sess }); } catch (e) { out = "Error: " + String((e && e.message) || e); }
         emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: true, output: String(out).slice(0, 8000) });
         sess.messages.push({ role: "tool", tool_call_id: c.id, content: String(out).slice(0, 60000) });
       }
@@ -305,6 +386,16 @@ export const webBridge = {
     runTurn(sess, text, images);
   },
   async interrupt(sessionId) { const sess = sessions.get(sessionId); if (sess && sess.ac) try { sess.ac.abort(); } catch {} },
+
+  // ---- checkpoints / undo for agent file edits ----
+  async listCheckpoints(sessionId) { return (checkpoints.get(sessionId) || []).map((c) => ({ id: c.id, ts: c.ts, op: c.op, path: c.path })).reverse(); },
+  async revertCheckpoint(sessionId, id) {
+    const list = checkpoints.get(sessionId) || []; const idx = list.findIndex((c) => c.id === id); if (idx < 0) return { error: "not found" };
+    for (let i = list.length - 1; i >= idx; i--) { const c = list[i]; try { if (c.op === "create") await webfs.deleteFile(c.path); else await webfs.writeFile(c.path, c.before || ""); } catch {} }
+    const reverted = list.length - idx; checkpoints.set(sessionId, list.slice(0, idx));
+    return { ok: true, reverted };
+  },
+  async undoLast(sessionId) { const list = checkpoints.get(sessionId) || []; if (!list.length) return { error: "nothing to undo" }; return webBridge.revertCheckpoint(sessionId, list[list.length - 1].id); },
   async setPermissionMode() {},
   resolvePermission() {}, // web chat has no tool-permission flow
   onEvent(cb) { listeners.add(cb); return () => listeners.delete(cb); },
@@ -398,6 +489,7 @@ export const webBridge = {
   async removeKnowledge(projectId, knId) { const all = LS.get("be.projects", {}); const p = all[projectId]; p.knowledge = (p.knowledge || []).filter((k) => k.id !== knId); LS.set("be.projects", all); return p; },
   async linkProjectFolder() { return { error: "Linking a local folder is available in the desktop app." }; },
   async linkGithub() { return { error: "Available in the desktop app." }; },
+  async cloneRepo() { return { error: "Cloning a GitHub repo needs the desktop app. On the web: open the repo on GitHub → Code → Download ZIP, unzip it, then use Choose folder." }; },
   async pullGithub() { return { error: "Available in the desktop app." }; },
   async unlinkProjectSource(projectId) { return LS.get("be.projects", {})[projectId] || null; },
   async listConversations(projectId) { return Object.values(LS.get("be.convs", {})).filter((c) => c.projectId === projectId).sort((a, b) => b.updatedAt - a.updatedAt); },
@@ -476,7 +568,29 @@ export const webBridge = {
   async getSpeedTestLast() { return _lastSpeed; },
   async getSpeedTestStatus() { return { running: _speedRunning, startedAt: 0 }; },
   async getOpenRouterCatalog() {
-    try { const r = await fetch("https://openrouter.ai/api/v1/models"); if (!r.ok) return {}; const j = await r.json(); const out = {}; for (const m of j.data || []) out[m.id] = m; return out; } catch { return {}; }
+    // Transform to the same shape the desktop catalog returns, so ModelsOverview reads one schema.
+    try {
+      const r = await fetch("https://openrouter.ai/api/v1/models"); if (!r.ok) return {};
+      const j = await r.json(); const out = {};
+      for (const m of j.data || []) {
+        const arch = m.architecture || {};
+        const inMod = Array.isArray(arch.input_modalities) ? arch.input_modalities : String(arch.modality || "").split(/[+,]/);
+        const pr = m.pricing || {}; const sp = Array.isArray(m.supported_parameters) ? m.supported_parameters : [];
+        out[m.id] = {
+          name: m.name || m.id,
+          ctx: m.context_length ? Math.round(m.context_length / 1000) : 0,
+          desc: (m.description || "").trim(),
+          image: inMod.includes("image"),
+          reasoning: sp.includes("reasoning") || sp.includes("include_reasoning"),
+          tools: sp.includes("tools") || sp.includes("tool_choice"),
+          created: m.created || null,
+          free: (String(pr.prompt) === "0" && String(pr.completion || "0") === "0") || /:free$/.test(m.id || ""),
+          priceIn: pr.prompt != null ? +pr.prompt : null,
+          priceOut: pr.completion != null ? +pr.completion : null,
+        };
+      }
+      return out;
+    } catch { return {}; }
   },
 
   // ---- desktop-only capabilities: clear, honest fallbacks ----
@@ -540,6 +654,17 @@ export const webBridge = {
   async setMobileLink(link) { return link || null; },
   async clearMobileLink() { return null; },
   async setKeepAwake(on) { return !!on; },
+  // Terminal access (CLI) is provisioned by the desktop app (it writes the local config + PATH entry).
+  async enableCli() { return { ok: false, error: "Open the BrainEdge desktop app to enable terminal access — the CLI runs on your computer, which a browser can't set up." }; },
+  async cliStatus() { return { node: { ok: false }, configured: false, onPath: false, web: true }; },
+  async disableCli() { return { ok: true }; },
+  // Embedded terminal needs a real shell on the user's machine — desktop only.
+  async termCreate() { return { error: "The embedded terminal runs in the desktop app." }; },
+  async termInput() { return true; },
+  async termResize() { return true; },
+  async termKill() { return true; },
+  onTermData() { return () => {}; },
+  onTermExit() { return () => {}; },
 };
 
 async function openBilling(kind) {

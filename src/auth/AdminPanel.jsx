@@ -1,14 +1,15 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 //
-// Admin-only analytics + user management. Gated by the admin key (x-admin-key) entered here and
-// validated server-side — normal users without the key get "forbidden" and see nothing.
+// Admin-only analytics + user management. Gated server-side (admin-email session or x-admin-key).
 import { useEffect, useState } from "react";
-import { ShieldCheck, RefreshCw, Ban, Check, Gift, Users } from "lucide-react";
+import { RefreshCw, Ban, Check, Gift, Users, Eye, UserPlus, TrendingUp, Activity, CreditCard, Sparkles, Globe } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
-const fmt = (iso) => { if (!iso) return "—"; const d = new Date(iso); const s = (Date.now() - d.getTime()) / 1000;
+const EVENT_LABEL = { signup: "Signed up", signin: "Signed in", subscribed: "Subscribed" };
+const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(Math.round(n ?? 0)));
+const ago = (iso) => { if (!iso) return "—"; const s = (Date.now() - new Date(iso).getTime()) / 1000;
   if (s < 60) return "just now"; if (s < 3600) return Math.floor(s / 60) + "m ago"; if (s < 86400) return Math.floor(s / 3600) + "h ago";
-  if (s < 7 * 86400) return Math.floor(s / 86400) + "d ago"; return d.toLocaleDateString(); };
+  if (s < 7 * 86400) return Math.floor(s / 86400) + "d ago"; return new Date(iso).toLocaleDateString(); };
 
 export default function AdminPanel() {
   const [key, setKey] = useState("");
@@ -25,59 +26,67 @@ export default function AdminPanel() {
       const [st, us] = await Promise.all([bridge.adminStats(key), bridge.adminUsers(key)]);
       if (st && st.error) { setErr(st.error === "forbidden" ? "Wrong admin key (server rejected it)." : st.error); setStats(null); setUsers(null); return; }
       setStats(st); setUsers((us && us.users) || []);
-      const s = await bridge.getSettings?.(); if (s) bridge.saveSettings?.({ ...s, adminKey: key }); // remember the key locally
+      const s = await bridge.getSettings?.(); if (s) bridge.saveSettings?.({ ...s, adminKey: key });
     } catch (e) { setErr(String(e && e.message || e)); }
     finally { setBusy(false); }
   };
-
   const act = async (id, action) => {
     await bridge.adminAction(id, action, key);
     const us = await bridge.adminUsers(key); setUsers((us && us.users) || []);
     const st = await bridge.adminStats(key); if (st && !st.error) setStats(st);
   };
-
-  // This panel only renders for admins, so the signed-in session already authorizes — auto-load.
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const C = stats && stats.counts; const F = stats && stats.last7d;
+  const C = stats && stats.counts, A = (stats && stats.audience) || {}, F = (stats && stats.last7d) || {}, S = (stats && stats.series) || [];
 
   return (
     <div className="adminp">
       <div className="adminp-keyrow">
         <input className="model-search" type="password" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Admin key (optional — your session already authorizes)" />
-        <button className="btn primary" disabled={busy} onClick={load}>{busy ? <RefreshCw size={14} className="spin" /> : <RefreshCw size={14} />} {busy ? "Loading…" : "Reload"}</button>
+        <button className="btn primary" disabled={busy} onClick={load}><RefreshCw size={14} className={busy ? "spin" : ""} /> {busy ? "Loading…" : "Reload"}</button>
       </div>
       {err && <div className="adminp-err">{err}</div>}
 
       {stats && (
         <>
-          <div className="adminp-cards">
-            <Stat label="Total users" v={C.total} />
-            <Stat label="Active 24h" v={C.active24h} accent />
-            <Stat label="Active 7d" v={C.active7d} />
-            <Stat label="New 7d" v={C.new7d} />
-            <Stat label="Trialing" v={C.trialing} />
-            <Stat label="Paying" v={C.paying} accent />
-            <Stat label="Complimentary" v={C.comp} />
-            <Stat label="Expired" v={C.expired} />
+          <div className="adminp-sec"><Globe size={13} /> Audience <span>last 7 days</span></div>
+          <div className="cons-kpis adminp-kpis">
+            <Stat icon={Eye} label="Visits" v={fmt(A.visits7d)} accent sub={`${fmt(A.visits24h)} today`} />
+            <Stat icon={Users} label="Unique visitors" v={fmt(A.uniqueVisitors)} />
+            <Stat icon={UserPlus} label="Signups" v={fmt(F.signup)} />
+            <Stat icon={TrendingUp} label="Visitor → signup" v={(A.conversion || 0) + "%"} accent />
+            <Stat icon={Activity} label="Active 24h" v={fmt(C.active24h)} />
           </div>
-          <div className="adminp-funnel">Last 7 days · <b>{F.signup}</b> signups · <b>{F.signin}</b> sign-ins · <b>{F.subscribed}</b> subscribed</div>
 
-          <div className="nav-label" style={{ paddingLeft: 0, marginTop: 10 }}><Users size={13} style={{ verticalAlign: "-2px" }} /> Users</div>
+          <div className="cons-panel">
+            <div className="cons-panel-h"><TrendingUp size={14} /> Traffic & signups <span className="cons-panel-sub">last 14 days</span></div>
+            <TrendChart series={S} />
+          </div>
+
+          <div className="adminp-sec"><Users size={13} /> Accounts</div>
+          <div className="cons-kpis adminp-kpis">
+            <Stat icon={Users} label="Total users" v={fmt(C.total)} />
+            <Stat icon={CreditCard} label="Paying" v={fmt(C.paying)} accent />
+            <Stat icon={Gift} label="Complimentary" v={fmt(C.comp)} />
+            <Stat icon={Sparkles} label="Trialing" v={fmt(C.trialing)} />
+            <Stat icon={Activity} label="Active 7d" v={fmt(C.active7d)} />
+          </div>
+
+          <Funnel visits={A.uniqueVisitors || 0} signups={F.signup || 0} subs={F.subscribed || 0} />
+
+          <div className="adminp-sec"><Users size={13} /> Users</div>
           <div className="adminp-table">
             <div className="adminp-tr adminp-th"><span>User</span><span>Status</span><span>Last seen</span><span>Actions</span></div>
             {users && users.map((u) => (
               <div key={u.id} className="adminp-tr">
                 <span className="adminp-user"><b>{u.name || u.email || u.id}</b><em>{u.email}</em></span>
                 <span><span className={`adminp-badge s-${u.status}`}>{u.status}{u.daysLeft != null ? ` · ${u.daysLeft}d` : ""}</span>{u.freeAccess && <span className="adminp-badge s-comp">comp</span>}</span>
-                <span className="adminp-seen">{fmt(u.lastSeenAt)}</span>
+                <span className="adminp-seen">{ago(u.lastSeenAt)}</span>
                 <span className="adminp-acts">
                   {u.suspended
                     ? <button title="Unsuspend" onClick={() => act(u.id, "unsuspend")}><Check size={13} /></button>
                     : <button title="Suspend / ban" onClick={() => act(u.id, "suspend")}><Ban size={13} /></button>}
-                  {u.freeAccess
-                    ? <button title="Remove free access" onClick={() => act(u.id, "uncomp")}><Gift size={13} /></button>
-                    : <button title="Grant free access" onClick={() => act(u.id, "comp")}><Gift size={13} /></button>}
+                  <button title={u.freeAccess ? "Remove free access" : "Grant free access"} onClick={() => act(u.id, u.freeAccess ? "uncomp" : "comp")}><Gift size={13} /></button>
                 </span>
               </div>
             ))}
@@ -86,11 +95,12 @@ export default function AdminPanel() {
 
           {stats.events && stats.events.length > 0 && (
             <>
-              <div className="nav-label" style={{ paddingLeft: 0, marginTop: 12 }}>Recent activity</div>
+              <div className="adminp-sec"><Activity size={13} /> Recent activity</div>
               <div className="adminp-events">
                 {stats.events.slice(0, 25).map((e, i) => (
-                  <div key={i} className="adminp-ev"><span className="adminp-ev-t">{e.type}</span><span className="adminp-ev-u">{e.userId || "—"}</span><span className="adminp-ev-d">{fmt(e.ts)}</span></div>
+                  <div key={i} className="adminp-ev"><span className={`adminp-ev-t t-${e.type}`}>{EVENT_LABEL[e.type] || e.type}</span><span className="adminp-ev-u">{e.email || "—"}</span><span className="adminp-ev-d">{ago(e.ts)}</span></div>
                 ))}
+                {stats.events.length === 0 && <div className="adminp-empty">No account activity yet.</div>}
               </div>
             </>
           )}
@@ -100,6 +110,70 @@ export default function AdminPanel() {
   );
 }
 
-function Stat({ label, v, accent }) {
-  return <div className={`adminp-card ${accent ? "accent" : ""}`}><div className="adminp-card-v">{v ?? 0}</div><div className="adminp-card-l">{label}</div></div>;
+function Stat({ icon: I, label, v, accent, sub }) {
+  return (
+    <div className={`cons-kpi ${accent ? "accent" : ""}`}>
+      <div className="cons-kpi-ico"><I size={16} /></div>
+      <div className="cons-kpi-v">{v}</div>
+      <div className="cons-kpi-k">{label}{sub ? <span className="adminp-kpi-sub"> · {sub}</span> : null}</div>
+    </div>
+  );
+}
+
+// Dual-line trend: visits (accent) + signups (accent-2) over the last 14 days.
+function TrendChart({ series }) {
+  const [hover, setHover] = useState(null);
+  if (!series.length) return <div className="cons-empty-sm">No data yet.</div>;
+  const W = 720, H = 180, pad = { l: 8, r: 8, t: 14, b: 22 };
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const max = Math.max(1, ...series.map((s) => Math.max(s.visits, s.signups)));
+  const x = (i) => pad.l + (series.length <= 1 ? iw / 2 : (i / (series.length - 1)) * iw);
+  const y = (v) => pad.t + ih - (v / max) * ih;
+  const path = (key) => series.map((s, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(s[key]).toFixed(1)}`).join(" ");
+  const onMove = (e) => { const r = e.currentTarget.getBoundingClientRect(); const px = ((e.clientX - r.left) / r.width) * W; let best = 0, bd = 1e9; series.forEach((s, i) => { const dd = Math.abs(x(i) - px); if (dd < bd) { bd = dd; best = i; } }); setHover(best); };
+  return (
+    <div className="cons-chart">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" onMouseMove={onMove} onMouseLeave={() => setHover(null)} style={{ width: "100%", height: H }}>
+        {[0.5, 1].map((g) => <line key={g} x1={pad.l} x2={W - pad.r} y1={pad.t + ih * (1 - g)} y2={pad.t + ih * (1 - g)} stroke="var(--line)" strokeWidth="1" />)}
+        <path d={path("visits")} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" />
+        <path d={path("signups")} fill="none" stroke="var(--accent-2)" strokeWidth="2" strokeLinejoin="round" />
+        {hover != null && <>
+          <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + ih} stroke="var(--accent-line)" strokeWidth="1" />
+          <circle cx={x(hover)} cy={y(series[hover].visits)} r="3" fill="var(--accent)" />
+          <circle cx={x(hover)} cy={y(series[hover].signups)} r="3" fill="var(--accent-2)" />
+        </>}
+      </svg>
+      <div className="adminp-legend"><span><i style={{ background: "var(--accent)" }} /> Visits</span><span><i style={{ background: "var(--accent-2)" }} /> Signups</span></div>
+      {hover != null && (
+        <div className="cons-tip" style={{ left: `${(x(hover) / W) * 100}%` }}>
+          <b>{series[hover].visits}</b> visits · <b>{series[hover].signups}</b> signups
+          <span>{new Date(series[hover].day + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Visitors → Signups → Subscribed funnel.
+function Funnel({ visits, signups, subs }) {
+  const max = Math.max(1, visits, signups, subs);
+  const rows = [
+    { label: "Unique visitors", v: visits, c: "var(--accent)" },
+    { label: "Signed up", v: signups, c: "var(--accent-2)" },
+    { label: "Subscribed", v: subs, c: "#22a06b" },
+  ];
+  return (
+    <div className="cons-panel">
+      <div className="cons-panel-h"><TrendingUp size={14} /> Conversion funnel <span className="cons-panel-sub">last 7 days</span></div>
+      <div className="adminp-funnelbars">
+        {rows.map((r) => (
+          <div className="adminp-frow" key={r.label}>
+            <span className="adminp-flabel">{r.label}</span>
+            <span className="adminp-ftrack"><span className="adminp-ffill" style={{ width: `${Math.max(3, (r.v / max) * 100)}%`, background: r.c }} /></span>
+            <span className="adminp-fval">{r.v}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

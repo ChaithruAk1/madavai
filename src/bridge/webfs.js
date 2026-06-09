@@ -73,3 +73,47 @@ export async function editFile(path, find, replace) {
   await writeFile(path, next);
   return true;
 }
+
+export async function deleteFile(path) {
+  if (!root) throw new Error("No folder selected");
+  const { dir, leaf } = await resolveParent(path);
+  await dir.removeEntry(leaf);
+  return true;
+}
+
+// Recursively list file paths (skips node_modules/.git and other dot-dirs). Capped for safety.
+export async function walk(maxFiles = 4000) {
+  if (!root) throw new Error("No folder selected");
+  const out = [];
+  async function rec(dir, prefix) {
+    for await (const [name, h] of dir.entries()) {
+      if (name === "node_modules" || name === ".git" || name.startsWith(".")) continue;
+      const path = prefix ? prefix + "/" + name : name;
+      if (h.kind === "directory") { if (out.length < maxFiles) await rec(h, path); }
+      else out.push(path);
+      if (out.length >= maxFiles) return;
+    }
+  }
+  await rec(root, "");
+  return out;
+}
+
+const TEXT_EXT = /\.(js|jsx|ts|tsx|mjs|cjs|css|scss|html|htm|json|md|txt|py|java|c|h|cpp|cs|go|rb|php|vue|svelte|yml|yaml|sh|xml|sql|toml|ini|env)$/i;
+
+// Search text across files (text files only). Returns [{path, line, text}].
+export async function search(query, maxMatches = 100) {
+  if (!root || !query) return [];
+  const q = query.toLowerCase();
+  const files = await walk();
+  const out = [];
+  for (const path of files) {
+    if (out.length >= maxMatches) break;
+    if (!TEXT_EXT.test(path)) continue;
+    let text; try { text = await readFile(path); } catch { continue; }
+    const lines = text.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].toLowerCase().includes(q)) { out.push({ path, line: i + 1, text: lines[i].trim().slice(0, 200) }); if (out.length >= maxMatches) break; }
+    }
+  }
+  return out;
+}

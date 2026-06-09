@@ -25,6 +25,8 @@ async function fetchAll() {
       desc: (m.description || "").trim(),
       image: inMod.includes("image"),
       reasoning: sp.includes("reasoning") || sp.includes("include_reasoning"),
+      tools: sp.includes("tools") || sp.includes("tool_choice"),
+      created: m.created || null, // unix seconds — model release date (relevance signal)
       free,
       priceIn: pr.prompt != null ? +pr.prompt : null,       // USD per input token
       priceOut: pr.completion != null ? +pr.completion : null, // USD per output token

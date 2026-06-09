@@ -131,4 +131,16 @@ async function scoreQuiz(batch, authBaseUrl) {
   } catch { return {}; }
 }
 
-module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction, scoreQuiz };
+// Mint a long-lived CLI token (tied to the live subscription) for "Enable terminal access".
+async function cliToken(authBaseUrl) {
+  const token = loadToken();
+  if (!token) return { error: "unauthenticated" };
+  try {
+    const r = await fetch(`${authBaseUrl.replace(/\/+$/, "")}/cli/token`, { method: "POST", headers: { Authorization: "Bearer " + token } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { error: (j && j.error) || ("server " + r.status) };
+    return j; // { token, status, daysLeft, email }
+  } catch { return { error: "offline" }; }
+}
+
+module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction, scoreQuiz, cliToken };

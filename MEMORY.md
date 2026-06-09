@@ -224,6 +224,31 @@ places), `ROADMAP.md` (3-phase plan), `README.md`, this `MEMORY.md`.
 
 ### Identity / ownership / legal
 - App name is **BrainEdge** (the earlier "Chai" tea theme was reverted). UI footer: "© 2026 BrainEdge · Proprietary".
+
+---
+
+## 11. ADDENDUM — 2026-06-08 (continued; newest authoritative state)
+
+### Web storage — FIXED properly (IndexedDB)
+- **Chat history now lives in IndexedDB**; **settings + API keys stay in localStorage** so a full history can never crowd out the keys (the root cause of the NVIDIA `401 "No cookie auth credentials"`). One-time auto-migration on first load moves old history to IndexedDB + frees localStorage. Touches `persistSession`, `start` resume, history accessors, `getUsage` in the web bridge. NOTE: a duplicate IndexedDB block was introduced and removed during the edit — if the web bundle ever fails to build, check for re-duplicated `idb`/`IDB_NAME`/`HISTORY_KEY`. Takes effect after `npm run build` + re-saving the key once.
+
+### Web chat now streams live
+- Web chat previously buffered the whole reply then dumped it (felt slow). Now **streams tokens live** like desktop; history writes are non-blocking/background. Standing speed rule: always stream, go direct browser→provider when allowed (OpenRouter), parallel speed tests. Irreducible: model gen time + the proxy hop required for browser-blocked providers (NVIDIA/OpenAI).
+
+### Natural-tone / no-recital safeguard (web + desktop)
+- Every message now carries a built-in rule: reply naturally/human, never recite or describe the instructions, just follow them. Fixes weak models parroting the user's custom-instruction block. Applied web-side (chat + collaborate, defined once) and desktop-side (`withLang`, covers agent modes). Backend instructions still govern answer substance.
+
+### Standing rule
+- **Every improvement must land on BOTH web and desktop** (desktop `electron/*` + `session-manager`; web `webBridge.js` / `shared/providers.js`; shared logic in `src/shared`). Only exception: browser-impossible actions (terminal, arbitrary files, MCP spawn) stay desktop-only and are called out.
+
+### Go-live
+- **`GO-LIVE-FINAL.md`** is the authoritative production runbook. Stack decisions: **Render** (always-on $7/mo), **Supabase Postgres**, **web-first launch** (desktop fast-follow), **launch with 7-day trial active + Stripe wired live within first week**, host URL day one + custom domain later. Code already production-ready for web (dev login off by default, dev sign-in only in dev builds, obfuscated bundle, Postgres built in). `release/setup.exe` is **stale** until `npm run electron:build`.
+
+### Open items
+- **Before launch (user's accounts):** rotate the Google/GitHub OAuth secrets pasted during testing; enable **2FA** on Google/GitHub/Stripe/host (admin = whoever logs in as owner email).
+- **Optional code, not yet done:** Redis-ready rate limiting (multi-server scale); remove the desktop Anthropic "use my subscription" toggle before shipping the desktop installer.
+- **Still unfixed:** the **model determination / selector** issue (active chat model left on a NIM model after Speed Check).
+- User is mid **top-to-bottom re-test** of the full app before going live (started at Profile & Settings).
 - **Copyright owner: Samskruthi Harish** (contact chaithru@gmail.com). Source files carry the header
   `// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.`
 - Legal files added: `LICENSE` (proprietary), `TERMS.md`, `TRADEMARKS.md`; `package.json` `"license":"UNLICENSED"`,
@@ -383,3 +408,165 @@ with feature parity**.
 - **Model determination / selector** bug (carried from 11e): active chat model gets stranded on a NIM model after Speed Check exploration → 401 confusion. Not yet diagnosed/fixed.
 - Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only).
 - Still queued from 11/11d: Consumption + Speed Check polish are done; server-move of quiz grading is done. Remaining product polish per backlog as needed.
+
+### 11h. Update — 2026-06-08 (later — Profile & Settings redesign + account menu)
+Pre-launch top-to-bottom re-test began at **Profile & Settings**. All edits here are shared code → web + desktop.
+- **Profile page redesigned**: flat list → **card layout with section icons** (Appearance, Instructions). "Account server URL (advanced)" moved into a collapsible **Advanced** section. **Accent picker reduced to Default + Custom only** (other preset swatches removed).
+- **New Claude-style account menu** at the sidebar bottom (own design, replaces the "View profile & settings" button): email header; **Settings · Language · Get help**; **Manage subscription / View plans** (item chosen by subscription status); **Log out**; footer with avatar/name/plan. The trigger now shows the **plan label** ("Complimentary", "Trial · Nd left").
+- **Default language moved** off the Profile page into the menu's **functional Language submenu**.
+- Removed the **empty duplicate "Manage subscription"** button from the Profile account card (working one is in the menu).
+- Files touched: Sidebar (account menu + state + handlers), the Profile/Settings section component, `AccountCard.jsx`, and Profile-card CSS in styles.css.
+
+### 11i. STILL-OPEN ITEMS (carried forward)
+- **Model determination / selector** bug — still open (unchanged from 11g/11e).
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path.
+- Re-test in progress, screen by screen (started at Profile & Settings).
+
+### 11j. Update — 2026-06-09 (Admin Analytics + visitor tracking, top-nav/account-menu restyle, collapsible nav, artifacts upgrade in progress)
+Re-test continued. All edits shared code → web + desktop.
+- **Admin Analytics redesigned + visitor tracking added.** New anonymous **`/visit`** endpoint (one stable id per browser), logged on every web load; `/admin/stats` extended with visitor metrics + a **14-day series**. Dashboard now has an Audience row (Visits 7d/today, Unique visitors, Signups, Visitor→signup conversion %, Active 24h), a **Traffic & signups trend chart** (14d), an Accounts row, a **Conversion funnel** (visitors→signed up→subscribed), user table + activity feed. Server changed → restart `node server/auth-server.mjs` + `npm run build`.
+- **Recent Activity feed fixed**: shows **email** (not internal id) + only real account events (Signed up/in/Subscribed) via a friendly event-name map; view/visit events still recorded quietly for counts.
+- **Profile/account-menu**: fixed a **double profile** (removed menu footer dupe); **restored "Manage subscription"** on the Profile card. Restyle "like Claude": account menu = **lighter elevated panel** with accent-highlighted items; account bar = **distinct shaded card**.
+- **Top-nav redesign**: toggle moved **far left next to logo**; logo+name **hide when collapsed**; collapsed sidebar is now a **thin ~60px icon rail** (nav icons + avatar; account menu pops out right) instead of fully hidden.
+- **Collapsible nav groups**: Interface & Models groups **collapsed by default**, open on click, **auto-collapse on navigating away**.
+- **Artifacts upgrade — IN PROGRESS.** BrainEdge already had a working artifacts panel (Preview/Code, HTML/SVG/code, "Open artifact" pill). Building the Claude-parity gap: **toolbar** (Copy/Download/Open-in-new-tab/Refresh), **Mermaid**, **Markdown** doc rendering, **React/JSX** live render (in-browser transpile). Detector + per-type preview builder + panel/toolbar upgraded; CSS + remaining wiring still landing. NOT yet built/verified.
+
+### 11k. STILL-OPEN ITEMS (carried forward)
+- **Artifacts upgrade** (toolbar + Mermaid + Markdown + React/JSX) mid-flight — finish CSS/wiring, then build + verify on web and desktop.
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path.
+- Re-test continues screen by screen.
+
+### 11l. Update — 2026-06-09 (artifacts finished + Studio launcher + dynamic New labels + hidden tools + Claude-Code Build screen)
+Re-test continued. All edits shared code → web + desktop.
+- **Artifacts upgrade FINISHED** (clears the 11k open item): preview engine now renders **HTML, SVG, Mermaid, Markdown, and React/JSX** (Tailwind + hooks, in-browser transpile) with a real **toolbar** (Preview/Code, Copy, Download, Open-in-new-tab, Refresh). Mermaid/React/Markdown load small libs from CDN inside the sandboxed preview frame — bundle locally if any desktop preview shows blank (preview frame isn't under the app's strict CSP).
+- **Studio** — new sidebar launcher (under Projects, `Shapes` icon), its **own** design (gradient title, cyan accent-gradient icon tiles, hover-glow, dashed "Blank canvas"). Categories: Apps & sites, Documents, Games, Tools, Visuals, Diagrams, Quizzes, Blank canvas. Picking a tile **seeds a fresh chat** with a tailored build prompt. Now a **two-step chip form** (option chips + details box) so the model builds directly without a question wall. De-"Claude'd" preview labels → **Web page / Diagram / Document / Component / Graphic** (no "artifacts" wording).
+- **Studio fresh-chat fix**: was restoring the cached chat (everything piled into one conversation) → now clears the cached chat before seeding so each idea gets its own new chat.
+- **Dynamic "New" label per mode**: **New chat** (Let's Chat) / **New task** (Let's Collaborate) / **New session** (Let's Build); `/new` command + Composer button match. Per-mode Recents history was already correct (list filters by mode).
+- **Hidden internal tools**: added a hidden-tools list so `load_skill`-style internal chatter no longer shows in the chat.
+- **Let's Build → Claude-Code feel**: task-oriented input ("Describe a coding task…") + a Claude-Code-style **"Choose a folder"** empty state for Build/Collaborate on **both** platforms. File agent (read/write/edit/search + permission modes) identical web/desktop. **Irreducible limit:** running terminal commands (npm/git/tests) is **desktop-only** (browser can't run a shell); web does all file work and says when a command needs desktop.
+
+### 11m. STILL-OPEN ITEMS (carried forward)
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only).
+- Possible next: multi-file edits, file-tree view, real edit **diffs** in tool cards (all web-compatible). Re-test continues screen by screen.
+
+> NOTE for the sandbox: the bash mount served a **truncated/stale tail of Chat.md** this run (showed the file ending ~6 sessions early). Confirmed via host Read/Grep — those are source of truth. Use host file tools, not bash tail, to find the true end of these docs.
+
+### 11n. Update — 2026-06-09 (later — GitHub connect fix, agent diffs/file tools, standalone CLI)
+- **GitHub repo connect FIXED**: "Connect a GitHub repo" was a no-op because `window.prompt()` is disabled in Electron → replaced with an **in-app input modal** (web + desktop). Desktop clones via a new clone endpoint and sets the repo as the working folder; web (no in-browser clone) instructs download + Choose folder. Entry point moved to the **+ menu**.
+- **Agent file tools expanded** (clears the "real edit diffs" possible-next from 11m): added **search-across-files, list-all-files, delete, and real colored edit diffs** in the tool cards.
+- **Folder-card revert** (user pref): removed the big connect-folder card; **"Choose folder" stays only as a chip in the chat input bar**; greeting empty state restored.
+- **NEW: BrainEdge CLI — third surface** (`cli/brainedge.mjs`, 198 lines, zero deps; `cli/README.md`). Standalone terminal coding agent like Claude Code on the **same engine**; `cd` into any folder + run `brainedge` (full power incl. shell — a real local program, unlike the browser). Tools: read/write/edit/search/list/**run_command**/load_skill. Slash: `/model` `/clear` `/skills` `/reload` `/init` (writes `BRAINEDGE.md`, auto-read like `CLAUDE.md`) `/cwd` `/cost` `/auto` `/help` `/exit`. Skills from `.brainedge/skills` or `~/.brainedge/skills`. Permission prompts unless `--yes`. Config `~/.brainedge/config.json` {baseUrl,apiKey,model,kind} or env. `bin: brainedge` in package.json; `npm link` to install. Parses clean. Transport is **openai-kind** today — **anthropic wire format extension queued**. Could later be auth-server/subscription-gated like the apps; distributable as npm package or `.exe`.
+
+### 11o. STILL-OPEN ITEMS (carried forward)
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only).
+- **CLI:** add anthropic wire format; optional subscription/account gating + npm/`.exe` distribution.
+- Chat.md was behind MEMORY.md — this run appended the 2026-06-09 CLI session to Chat.md; interim sessions remain summarized in §11e–11m.
+
+### 11p. Update — 2026-06-09 (later — CLI subscription gating + one-click "Enable terminal access")
+- **CLI is now subscription-gated** (advances the §11o "optional subscription/account gating" item): server gained `signCli` + **`/cli/token`** + **`/cli/verify`** in `server/auth-server.mjs`. A provisioned CLI carries a long-lived token and calls `/cli/verify` **on every startup** — refuses to run if the subscription is cancelled/expired or the user is banned; **offline = warn but don't block**; a self-configured CLI with no token stays **ungated**.
+- **One-click "Enable terminal access"** (desktop, **Settings → Terminal access**): detects Node, **reuses the provider + API key already in Settings** (no re-entry), mints the subscription-bound token, writes `~/.brainedge/config.json`, and puts a `brainedge` command on **PATH** without admin/npm (Windows: launcher in a user bin dir + User PATH via PowerShell; macOS/Linux: shim in `~/.local/bin`). New `electron/cli-install.cjs`; IPC + preload wiring; `auth.cjs` `cliToken`; `src/components/CliAccess.jsx` card (+ web fallback); `package.json` bundles the CLI into the packaged app via **`extraResources`**.
+- **Security note:** the CLI token lasts ~a year but is **re-validated online each launch** (revocation bites within one start). It is stored **plaintext** in `~/.brainedge/config.json` — a plain Node CLI can't use the OS keychain (the desktop session token still is encrypted). Acceptable for a per-user token; flagged.
+- Verification caveat: `cli-install.cjs` parses clean; larger edited files (server, main/preload) couldn't be fully checked via the sandbox (truncated reads) → confirm with a local `npm run build` + restart of the app **and** the auth server (new endpoints). Test: Settings → Terminal access → Enable → fresh terminal → `brainedge`; suspend your own user in Admin and relaunch to prove the gate refuses.
+
+### 11q. STILL-OPEN ITEMS (carried forward)
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only).
+- **CLI:** add the anthropic wire format; npm/`.exe` distribution.
+- Visible UI still to surface: **file-tree view** + **undo/checkpoint buttons** in the chat.
+
+### 11r. Update — 2026-06-09 (later — in-app terminal PTY upgrade + CLI rewrite to an Ink TUI, in progress)
+- **In-app Terminal → real PTY.** Rewrote `electron/terminal.cjs` as a **dual PTY/pipe** terminal: spawns a real PTY via **node-pty** when available, **falls back to the pipe shell** otherwise (panel never breaks). Header shows a **PTY** (green) / **compat** badge. With a true TTY, full-screen TUI programs (`vim`, and the `brainedge` CLI itself) render correctly inside the app and resize reflows. Added `node-pty` + `@electron/rebuild` deps, **`npm run rebuild`** (`electron-rebuild -f -w node-pty`), and **`asarUnpack` + `npmRebuild`** so installers ship the PTY with no build tools needed by end users. Caveat: node-pty compiles C++ → Windows needs **Visual Studio Build Tools** ("Desktop development with C++") for `npm run rebuild`; without it the terminal runs in compat mode.
+- **CLI rewrite to an Ink TUI — IN PROGRESS.** User: the BrainEdge CLI isn't as polished/efficient as Claude Code; "just replicate it." Set scope honestly — no byte-for-byte clone of Anthropic's closed source. Root cause (confidence high): the CLI is a Node **`readline`** prompt-loop, which can't do a persistent bottom input box or rich in-place re-render; Claude Code is a full-screen **Ink** (React-for-terminal) TUI with a custom line editor. So polishing readline can't reach parity → needs a new foundation. User chose the **Ink rewrite**. Building in 3 files: shared **UI-agnostic agent core** (`cli/agent-core.mjs`, ~14.8 KB, written), the **Ink UI**, and an **entry that falls back to the old REPL** (`cli/brainedge.mjs`) if Ink isn't installed. NOT yet finished or verified — Ink can't run in the sandbox, so it will need an interactive test pass on the user's machine.
+
+### 11s. STILL-OPEN ITEMS (carried forward)
+- **Ink CLI rewrite** mid-flight — finish the Ink UI + entry wiring, then test interactively (sandbox can't run Ink).
+- **node-pty PTY mode** unverified — needs `npm install` + `npm run rebuild` (+ VS Build Tools on Windows) on the user's machine; compat fallback otherwise.
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only).
+- CLI: add the anthropic wire format; npm/`.exe` distribution. Visible UI still to surface: file-tree view + undo/checkpoint buttons.
+
+### 11t. Update — 2026-06-09 07:40 (web Terminal signpost, full Claude-parity CLI slash commands, GUI model-picker filters, Let's Build reshape)
+Continuation of the Ink-CLI session; CLI + Build pushed toward Claude Code parity.
+- **Web Terminal panel finished**: desktop-only signpost card (browser can't run a shell) with a **"Get the desktop app"** button → `/download` on the app origin (placeholder URL, change when the download page ships).
+- **Full Claude-parity CLI slash commands (core in, UI wiring half-done).** Added to the shared agent core (`cli/agent-core.mjs`) + Ink UI: changeable **working dir** (for `/cd`, `/add-dir`), **session save/resume**, **single-shot completion** (powers `/compact`), **custom commands** (markdown command files, Claude `.claude/commands/`-style), and **ping/doctor** diagnostics. Fixed an ESM `require`→`spawn` import bug. Menu lists the new commands but **several actions aren't wired yet** — finishing the wiring is the immediate next step so the menu doesn't list dead commands. BrainEdge already had `/help /model /clear /skills /reload /init /undo /cwd /cost /auto /exit`.
+- **GUI model-selector filters**: **Cost chips** `All·Free·Paid` (Free = local + OpenRouter `:free`), **Best-for chips** `Any·Coding·Reasoning·Vision·Fast` (reuse existing name-based `classify()`), per-row purpose tag + **Free/Cloud/Local** badge, live **"X of Y"** count, combines with search. NOTE: Free/Paid + Best-for are **heuristics from the model id**, not authoritative — offered to wire the **OpenRouter catalog** (real pricing + modality) for exact values. Parity TODO: mirror these filters into the CLI `/model` picker.
+- **Let's Build reshape — IN PROGRESS.** User wants a Claude-style environment picker that connects **multiple GitHub repos/accounts** (pull repos from a connected account), **no remote control**. Key decision stated to user: BrainEdge has **no cloud compute backend** (local desktop / in-browser only), so a "Cloud / Default"-style option won't be faked — building **Local folder + multi GitHub repo/account** only. Reshaping current Build wiring; not finished/verified.
+
+### 11u. STILL-OPEN ITEMS (carried forward)
+- **CLI slash commands** half-wired — finish hooking `/compact /resume /cd /add-dir /memory /config /status /doctor` + custom commands to Ink-UI actions; mirror Free/Best-for filters into CLI `/model`.
+- **Let's Build environment-picker reshape** mid-flight (local folder + multi GitHub repo/account; no cloud, no remote control) — finish + verify.
+- **Ink CLI rewrite** + **node-pty PTY mode** still need interactive verification on the user's machine (sandbox can't run Ink/PTY).
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only). CLI: anthropic wire format; npm/`.exe` distribution; file-tree view + undo/checkpoint buttons still to surface.
+- Optional precision upgrade: OpenRouter catalog → authoritative Free/Paid + Vision in the model picker.
+
+---
+
+## 11v. Update — 2026-06-09 08:10 (Models Overview restyle rejected, Claude-style GitHub repo list, cost-display bug)
+- **Models Overview table restyle — REJECTED.** A design-director pass (red-✗ noise removed → capabilities light up only when present in semantic accents; maker monogram avatars; color-tiered cost; sticky blurred header; zebra; hover edge) was rejected by the user ("horrible"). Presentation only, no data change. Needs a different direction.
+- **Cost-display bug (found, NOT fixed):** Models Overview shows **`$-1,000,000,000`** for router models (`openrouter/auto`, `pareto-code`). OpenRouter encodes variable pricing as `-1`; code multiplies per-token price ×1,000,000 → −1e9. Fix = treat `-1` as "variable"/unpriced. Awaiting user direction on revert scope before editing code.
+- **GitHub repo connection rebuilt (Claude-style):** connect form replaced with a clean, **searchable, scrollable repo list** that pulls all repos from the connected account(s); account/token entry tucked away quietly; restyled professional. Continues the Let's Build environment-picker reshape (§11t/11u). Not yet verified.
+
+### 11w. STILL-OPEN ITEMS (carried forward)
+- **Models Overview**: pick a new restyle direction; fix the `$-1,000,000,000` router-price bug.
+- **GitHub repo list / Let's Build picker** — verify on web + desktop.
+- CLI slash commands half-wired; Ink CLI + node-pty need interactive verification on user's machine.
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only). CLI: anthropic wire format; npm/`.exe` distribution; file-tree view + undo/checkpoint buttons still to surface.
+
+### 11x. Update — 2026-06-09 08:40 (CLI slash-commands fully wired + scrolling slash menu + CLI /model filters)
+Records CLI completion that preceded the §11v 08:10 work (which jumped straight to Models Overview). Clears the §11u/11w "CLI slash commands half-wired" + "mirror filters into CLI /model" items.
+- **CLI slash commands FINISHED.** All the half-wired commands from §11t are now hooked to actions in the Ink TUI (verified in `cli/tui.mjs` case handlers): `/compact` (summarize→reset), `/resume`, `/cd`, `/add-dir`, `/memory`, `/status`, `/config`, `/doctor`, plus custom user commands (`core.COMMANDS`/`reloadCommands`), alongside existing `/model /clear /skills /reload /init /undo /cwd /cost /auto /exit /permissions /mcp /agents`.
+- **Scrolling slash menu.** The live `/` menu is now a navigable scrolling list (no 8-item cap): shows a count (`commands 3/22`) + ↑/↓ "more" markers, arrow keys scroll the highlight through every command, Enter runs, Tab fills for arguments, typing filters. No rebuild — just rerun `brainedge`.
+- **CLI /model Free/Best-for filters.** Mirrored the GUI picker filters into the CLI `/model` picker (`cli/tui.mjs`: `PURPOSES`/`COSTS`/`costOk`/`purpOk`, applied in the picker `view`): Cost (all/free/paid, free=`:free`) + Best-for (any/coding/reasoning/vision/fast), classified from the model id (heuristic, same caveat as GUI).
+
+### 11y. STILL-OPEN ITEMS (carried forward)
+- Ink CLI + node-pty PTY mode need interactive verification on the user's machine (sandbox can't run Ink/PTY).
+- **Let's Build environment-picker / GitHub repo list** — verify on web + desktop.
+- **Models Overview**: pick a new restyle direction (design pass rejected); fix the `$-1,000,000,000` router-price bug (treat `-1` as variable/unpriced).
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only). CLI: anthropic wire format; npm/`.exe` distribution; file-tree view + undo/checkpoint buttons still to surface.
+
+### 11z. Update — 2026-06-09 09:30 (Models Overview restyle reverted to plain format; router-price bug fixed)
+- **Models Overview restyle REVERTED** per user ("put back to previous format … revert only changes related to view"). Rolled back the rejected design pass — removed maker monogram avatars, colored capability dots/accents, color-tiered cost, context/host chips, and sticky/blurred/zebra/hover styling. **Standard ✓/✗ + plain cost/host text restored.** The data columns (cost, coding/reasoning/image/agentic, descriptions, params) were kept untouched. Plain format is the baseline again.
+- **`$-1,000,000,000` router-price bug FIXED** (clears the §11v/w/y open item): OpenRouter returns `-1` for variable/router pricing (`openrouter/auto`, `pareto-code`); the per-token ×1,000,000 math produced `-1e9`. Router models now display **"Variable"**.
+- **Benchmark/Speed columns — requested, NOT built (needs user decision).** User wants SWE-bench / HumanEval / Speed (est.) / qualitative Agentic-Thinking labels like a hand-curated comparison image. Reality (confidence high): no API in use (OpenRouter / provider `/models`) publishes benchmark scores or tokens/sec, so ~440 of 448 models would be blank. Proposed two honest paths, awaiting go-ahead: (1) a curated `benchmarks.js` of published scores + Agentic/Thinking levels for the ~30–50 well-known models; (2) a Speed (est.) column fed from the **existing Models Speed Check** measurements (real measured tokens/sec per tested model).
+
+### 11z'. STILL-OPEN ITEMS (carried forward)
+- **Benchmark/Speed columns** — decide between curated `benchmarks.js` and/or Speed-Check hookup, then build.
+- **Models Overview restyle** — still needs an accepted direction (plain format is the current baseline; the `$-1e9` bug is now fixed).
+- **Let's Build / GitHub repo list** — verify on web + desktop.
+- Ink CLI + node-pty PTY mode need interactive verification on the user's machine.
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only). CLI: anthropic wire format; npm/`.exe` distribution; file-tree view + undo/checkpoint buttons still to surface.
+
+### 11z''. Update — 2026-06-09 16:39 (Models Overview benchmark/Speed columns BUILT + filter-bar redesign + full Best-for text)
+User approved ("yes proceed") path 1+2 from §11z, so the columns were **built** (in the plain reverted table format — the rejected restyle did NOT return). Clears the §11z' "Benchmark/Speed columns" item.
+- **New `benchmarks.js`** — curated, real published figures for **~22 well-known model families** (Claude, GPT-4o/4.1, o1/o3, DeepSeek V3/R1, Qwen Coder/QwQ, Devstral, Codestral, Llama 3.3/4, Mistral Large, Gemini, Grok, Command-R, Nemotron), matched by model id, figures marked approximate (`~`).
+- **New Models Overview columns (all click-to-sort):** **SWE-bench** + **HumanEval** from `benchmarks.js` (matched rows show numbers, others "—", nothing fabricated); **Speed** fed live from the existing **Models Speed Check** measured tokens/sec (untested → "—"); **Thinking** + **Agentic** changed from ✓/✗ to **qualitative color-coded labels** (Always-on/Toggle green/blue; Best-in-class/Good/Partial/Moderate green→amber) with fallback to derived values. `COLS` moved into the component + a `speedMap` state loader/dependency so Speed sorts on measured data. Table now **scrolls horizontally**; one-line approximate/curated caveat under the title. Forward/fictional ids (GPT-5.4/5.5, Grok-4.20) stay "—" (no public data). Not compile-checked in sandbox → rebuild + eyeball.
+- **Filter bar redesigned** → single flat set of **combining toggles**: Local, Cloud, Free, Agentic, Coding, Image, Reasoning, Fast, General ("All" clears; toggles stack). Replaced the old chips; added filter defs + logic/helpers + chip-bar render.
+- **Best-for** now shows the **complete untruncated description in a dimmer secondary colour** (model name stays the anchor).
+- **Download counts — declined, not built.** No API in use returns per-model download/usage counts (screenshot counts come from marketplace backends, not API fields); refused to invent. Offered one real optional source — **Hugging Face `downloads` for open-weight models only**, fetched lazily per visible row (caveats: HF downloads ≠ provider usage; open models only; per-model call; HF rate-limits anon). Awaiting decision.
+
+### 11z'''. STILL-OPEN ITEMS (carried forward)
+- **Provider display name + logo** — NEW: user asked to show a provider's real display name + logo instead of the plain lowercase id (e.g. "openai"). Requested at session end, **not yet built.**
+- **Hugging Face downloads column** (open-weight only) — offered, awaiting go-ahead.
+- **Models Overview restyle** — still needs an accepted direction (plain format remains the baseline; benchmark/Speed/filter/Best-for work is layered on it).
+- **Let's Build / GitHub repo list** — verify on web + desktop.
+- Ink CLI + node-pty PTY mode need interactive verification on the user's machine.
+- **Model determination / selector** bug — still open.
+- Pre-launch: rotate exposed OAuth secrets; remove the Anthropic subscription/OAuth path (API-key only). CLI: anthropic wire format; npm/`.exe` distribution; file-tree view + undo/checkpoint buttons still to surface.
+
+### 11z''. Doc-maintenance — 2026-06-09 (Chat.md caught up to MEMORY.md)
+- **Chat.md was stale** (last entry 2026-06-08); the entire 2026-06-09 arc (§11f–§11z') existed only in MEMORY.md. Appended one consolidated **"## Session — 2026-06-09 (catch-up)"** block to the end of Chat.md summarizing that arc (IndexedDB/streaming/tone, Profile+account-menu, admin analytics+visitor tracking, nav redesign, artifacts upgrade, Studio, GitHub-connect fix + agent diffs, BrainEdge CLI + subscription gating + terminal access + PTY + Ink rewrite, CLI slash commands, Models Overview revert + router-price fix, benchmark columns pending). **Chat.md and MEMORY.md are now in sync.** No source code touched. No new project work this run — the latest BrainEdge work session ends at the §11z/§11z' state.
+
+### 11aa. Update — 2026-06-09 14:41 (Models Overview benchmark/Speed columns BUILT — clears the §11z'/§11z'' "pending" item)
+- User answered **"yes proceed"** on the two-path proposal from §11z, so the columns were **built** in the plain table format (the rejected restyle did NOT return).
+- **New `benchmarks.js`** — curated, real published figures for **~22 well-known model families** (Claude, GPT-4o/4.1, o1/o3, DeepSeek V3/R1, Qwen Coder/QwQ, Devstral, Codestral, Llama 3.3/4, Mistral Large, Gemini, Grok, Command-R, Nemotron); matched by id, marked approximate (`~`).
+- **Models Overview gained 5 sortable columns:** **SWE-bench** + **HumanEval** (from `benchmarks.js`; unmatched models show "—", no fabrication); **Speed** (fed from the existing Models Speed Check measured tokens/sec; untested = "—"); **Thinking** + **Agentic** are now **qualitative color-coded labels** (Always-on/Toggle; Best-in-class/Good/Partial/Moderate) replacing plain ✓/✗, with a fallback to derived values. Table scrolls horizontally; caveat line added under the title.
+- Implementation: `COLS` moved into the component; Speed-Check results loaded into state with a `speedMap` sort dependency.
+- **Honest limits:** forward/fictional catalog names (GPT-5.4/5.5, Grok-4.20) have no public data → "—" (no invented numbers); figures approximate. **Not compile-checked in sandbox** → rebuild + eyeball; extend the curated set if a wanted model shows "—".
+- **Still-open (unchanged):** Models Overview needs an accepted restyle direction (plain is baseline); Let's Build / GitHub repo list verify web+desktop; Ink CLI + node-pty interactive verification; model determination/selector bug; pre-launch — rotate OAuth secrets + remove Anthropic subscription/OAuth path; CLI anthropic wire format + npm/`.exe` distribution; file-tree view + undo/checkpoint buttons still to surface.

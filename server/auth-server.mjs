@@ -109,6 +109,14 @@ function verify(token) {
   if (!crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(good))) return null;
   try { const p = JSON.parse(Buffer.from(payload, "base64url").toString()); return p.exp > Date.now() ? p : null; } catch { return null; }
 }
+// Long-lived token for the CLI (the terminal can't re-auth interactively often). Still re-validated
+// online against the user's live subscription on every CLI start, so a cancellation/ban bites quickly.
+const CLI_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+function signCli(sub) {
+  const payload = b64u(JSON.stringify({ sub, cli: true, exp: Date.now() + CLI_TTL_MS }));
+  const mac = crypto.createHmac("sha256", SECRET).update(payload).digest("base64url");
+  return payload + "." + mac;
+}
 
 // ---- helpers ----
 const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type, x-admin-key", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" }); res.end(JSON.stringify(obj)); };
@@ -244,6 +252,25 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // POST /cli/token (Bearer session) — mint a long-lived CLI token. Called by the desktop app's
+  // "Enable terminal access" so the CLI can verify the subscription without re-login.
+  if (p === "/cli/token" && req.method === "POST") {
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
+    const user = await store.getUser(pl.sub); if (!user) return json(res, 401, { error: "unknown user" });
+    const st = statusOf(user);
+    return json(res, 200, { token: signCli(user.id), status: st.status, daysLeft: st.daysLeft, email: user.email });
+  }
+
+  // GET /cli/verify (Bearer CLI token) — the CLI calls this on startup to confirm an active subscription.
+  if (p === "/cli/verify" && req.method === "GET") {
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
+    const user = await store.getUser(pl.sub); if (!user) return json(res, 401, { error: "unknown user" });
+    const st = statusOf(user);
+    const ok = st.status === "active" || st.status === "trialing";
+    if (user.lastSeenAt == null || Date.now() - Date.parse(user.lastSeenAt || 0) > 5 * 60000) store.patchUser(user.id, { lastSeenAt: new Date().toISOString() }).catch(() => {});
+    return json(res, 200, { ok, status: st.status, daysLeft: st.daysLeft, email: user.email, name: user.name });
+  }
+
   // POST /auth/logout  (stateless tokens — client just drops it; here we no-op)
   if (p === "/auth/logout" && req.method === "POST") return json(res, 200, { ok: true });
 
@@ -285,6 +312,15 @@ const server = http.createServer(async (req, res) => {
     if (!body.type) return json(res, 400, { error: "type required" });
     await store.logEvent({ userId: pl.sub, type: String(body.type).slice(0, 40), meta: body.meta || null });
     store.patchUser(pl.sub, { lastSeenAt: new Date().toISOString() }).catch(() => {});
+    return json(res, 200, { ok: true });
+  }
+
+  // POST /visit (no auth) -> log an anonymous website visit, for visitor analytics.
+  if (p === "/visit" && req.method === "POST") {
+    if (rateLimited(req, "visit", 600, 60000)) return json(res, 200, { ok: true });
+    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    const v = String(b.visitorId || "").slice(0, 40) || "anon";
+    await store.logEvent({ userId: null, type: "visit", meta: { v } });
     return json(res, 200, { ok: true });
   }
 
@@ -345,6 +381,33 @@ const server = http.createServer(async (req, res) => {
     } catch (e) { return json(res, 502, { error: "proxy", detail: String((e && e.message) || e) }); }
   }
 
+  // POST /proxy/fetch (Bearer) — fetch a web page / search the web for the agent. Browsers can't fetch
+  // arbitrary sites (CORS), so the web app routes its web_fetch / web_search tools through here.
+  if (p === "/proxy/fetch" && req.method === "POST") {
+    if (rateLimited(req, "fetch", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
+    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    let target = String(b.url || "").trim();
+    if (b.query && !target) target = "https://duckduckgo.com/html/?q=" + encodeURIComponent(b.query); // simple web search
+    if (!/^https?:\/\//i.test(target)) return json(res, 400, { error: "http(s) url or query required" });
+    // SSRF guard: block private / loopback hosts.
+    try { const h = new URL(target).hostname; if (/^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.|::1)/i.test(h) || /\.(local|internal)$/i.test(h)) return json(res, 403, { error: "blocked host" }); } catch { return json(res, 400, { error: "bad url" }); }
+    try {
+      const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
+      const r = await fetch(target, { headers: { "User-Agent": "BrainEdge/1.0", Accept: "text/html,application/json,text/plain,*/*" }, redirect: "follow", signal: ac.signal }).finally(() => clearTimeout(to));
+      const ct = r.headers.get("content-type") || ""; const raw = (await r.text()).slice(0, 600000);
+      let text = raw;
+      if (/html/i.test(ct)) {
+        text = raw
+          .replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<\/(p|div|li|h[1-6]|tr|br)>/gi, "\n").replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+          .replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
+      }
+      return json(res, 200, { url: r.url, status: r.status, contentType: ct, text: text.slice(0, 40000) });
+    } catch (e) { return json(res, 502, { error: "fetch", detail: String((e && e.message) || e) }); }
+  }
+
   // GET /admin/users (x-admin-key) -> all users with computed status + last-seen.
   if (p === "/admin/users" && req.method === "GET") {
     if (!(await adminOk(req))) return json(res, 403, { error: "forbidden" });
@@ -371,10 +434,28 @@ const server = http.createServer(async (req, res) => {
       if (within(x.lastSeenAt, 7 * 864e5)) counts.active7d++;
       if (within(x.createdAt, 7 * 864e5)) counts.new7d++;
     }
-    const ev = await store.recentEvents(2000);
+    const ev = await store.recentEvents(5000);
     const last7d = { signup: 0, signin: 0, subscribed: 0 };
-    for (const e of ev) if (within(e.ts, 7 * 864e5) && last7d[e.type] !== undefined) last7d[e.type]++;
-    return json(res, 200, { counts, last7d, events: ev.slice(0, 60) });
+    const visitors = new Set(); let visits7d = 0, visits24h = 0;
+    const dayKey = (ts) => new Date(ts).toISOString().slice(0, 10);
+    const series = {}; // last 14 days: visits + signups per day (for the trend chart)
+    for (let i = 13; i >= 0; i--) { const k = dayKey(now - i * 864e5); series[k] = { day: k, visits: 0, signups: 0 }; }
+    for (const e of ev) {
+      if (within(e.ts, 7 * 864e5) && last7d[e.type] !== undefined) last7d[e.type]++;
+      if (e.type === "visit") {
+        if (within(e.ts, 7 * 864e5)) { visits7d++; if (e.meta && e.meta.v) visitors.add(e.meta.v); }
+        if (within(e.ts, 864e5)) visits24h++;
+      }
+      const k = dayKey(e.ts);
+      if (series[k]) { if (e.type === "visit") series[k].visits++; if (e.type === "signup") series[k].signups++; }
+    }
+    const audience = { visits7d, visits24h, uniqueVisitors: visitors.size,
+      conversion: visitors.size > 0 ? Math.round((last7d.signup / visitors.size) * 100) : 0 };
+    // Activity feed: real account events only (drop section "view" + anonymous "visit" noise), with email.
+    const umap = {}; for (const u of users) umap[u.id] = u.email || u.name || u.id;
+    const events = ev.filter((e) => e.type !== "view" && e.type !== "visit").slice(0, 50)
+      .map((e) => ({ ts: e.ts, type: e.type, email: e.userId ? (umap[e.userId] || e.userId) : null, meta: e.meta || null }));
+    return json(res, 200, { counts, last7d, audience, series: Object.values(series), events });
   }
 
   // POST /billing/checkout (Bearer) -> { url } : start a Stripe subscription Checkout.

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const TOP = [
   { id: "project", label: "Projects", icon: FolderKanban },
+  { id: "studio", label: "Studio", icon: Shapes },
+  { id: "terminal", label: "Terminal", icon: TerminalSquare },
 ];
 const INTERFACE = [
   { id: "skills", label: "Skills", icon: Puzzle },
@@ -24,8 +26,10 @@ const BOTTOM = [
 export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession }) {
   const [recents, setRecents] = useState([]);
   const [q, setQ] = useState("");
-  const [ifaceOpen, setIfaceOpen] = useState(true);
+  const [ifaceOpen, setIfaceOpen] = useState(false);
   const [modelsOpen, setModelsOpen] = useState(false);
+  // Groups are collapsed by default; auto-open only while you're inside one, and re-collapse when you leave.
+  useEffect(() => { setIfaceOpen(INTERFACE.some((t) => t.id === active)); setModelsOpen(MODELS.some((t) => t.id === active)); }, [active]);
   const [acct, setAcct] = useState(null);   // authMe() result: { user, status, daysLeft, subscription }
   const [upBusy, setUpBusy] = useState(false);
 
@@ -38,6 +42,8 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     return () => { live = false; clearInterval(iv); };
   }, [refreshKey]);
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const upgrade = async () => {
     if (!bridge.billingCheckout) { onSelect("settings"); return; } // fall back to the Profile page
     setUpBusy(true);
@@ -49,6 +55,19 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   const profileInitial = ((u && (u.name || u.email)) || "P").slice(0, 1).toUpperCase();
   const st = acct && acct.status;
   const plan = acct && acct.subscription && acct.subscription.plan;
+  const planLabel = st === "active" ? (plan || "Pro plan") : st === "trialing" ? `Trial · ${acct ? acct.daysLeft : 0}d left` : st === "expired" ? "Trial ended" : (acct ? "Account" : "Sign in");
+  const signOut = async () => { setMenuOpen(false); try { await bridge.authSignOut?.(); } catch {} try { location.reload(); } catch {} };
+  const manage = async () => { setMenuOpen(false); if (st === "active" && bridge.billingPortal) { try { await bridge.billingPortal(); } catch {} } else { upgrade(); } };
+  const getHelp = () => { setMenuOpen(false); try { bridge.openExternal?.("mailto:chaithru@gmail.com?subject=BrainEdge%20help"); } catch {} };
+
+  // Default-response-language picker, lives in the account menu now.
+  const [lang, setLang] = useState("model");
+  const [langOpen, setLangOpen] = useState(false);
+  useEffect(() => { bridge.getSettings?.().then((s) => { if (s) setLang(s.responseLanguage || "model"); }).catch(() => {}); }, []);
+  const setLanguage = async (v) => { setLang(v); try { const s = await bridge.getSettings(); await bridge.saveSettings({ ...s, responseLanguage: v }); } catch {} };
+  const LANGS = [["model", "Default (model decides)"], ["English", "English"], ["Spanish", "Spanish"], ["French", "French"], ["German", "German"], ["Italian", "Italian"], ["Portuguese", "Portuguese"], ["Hindi", "Hindi"], ["Arabic", "Arabic"], ["Chinese", "Chinese"], ["Japanese", "Japanese"], ["Korean", "Korean"], ["Russian", "Russian"]];
+  const isComp = acct && acct.subscription && acct.subscription.plan === "Complimentary";
+  const paidSub = acct && acct.subscription && acct.subscription.active && !isComp;
   const navBtn = (t) => {
     const I = t.icon;
     return (
@@ -63,7 +82,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     return () => { live = false; };
   }, [historyMode, refreshKey]);
 
-  const newLabel = historyMode === "chat" ? "New chat" : "New task";
+  const newLabel = { chat: "New chat", cowork: "New task", code: "New session" }[historyMode] || "New chat";
   const shown = q ? recents.filter((it) => (it.title || "").toLowerCase().includes(q.toLowerCase())) : recents;
 
   return (
@@ -131,23 +150,47 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
           <button className="sb-upsell-btn" disabled={upBusy} onClick={upgrade}>{upBusy ? "Opening…" : "Upgrade"}</button>
         </div>
       )}
-      {st === "active" && (
-        <div className="sb-upsell active sb-t">
-          <div className="sb-upsell-row"><Sparkles size={13} /> <span>{plan || "Pro"}</span></div>
-        </div>
-      )}
-
-      {/* Profile entry — replaces the old Settings button; opens the settings page (settings live inside Profile) */}
-      <button className={`sb-profile ${active === "settings" ? "active" : ""}`} onClick={() => onSelect("settings")} title="Profile & settings">
-        {u && u.avatar
-          ? <img className="sb-profile-av" src={u.avatar} alt="" />
-          : <span className="sb-profile-av sb-profile-ini">{profileInitial}</span>}
-        <span className="sb-t sb-profile-meta">
-          <span className="sb-profile-name">{profileName}</span>
-          <span className="sb-profile-sub">View profile & settings</span>
-        </span>
-        <SettingsIcon className="sb-t sb-profile-gear" size={14} />
-      </button>
+      {/* Account: avatar/name trigger + a Claude-style popover menu */}
+      <div style={{ position: "relative" }}>
+        {menuOpen && (
+          <>
+            <div className="sb-acct-scrim" onClick={() => setMenuOpen(false)} />
+            <div className="sb-acct-menu">
+              {u && u.email && <div className="sb-acct-email">{u.email}</div>}
+              <button className="sb-acct-item" onClick={() => { setMenuOpen(false); onSelect("settings"); }}><SettingsIcon size={15} /> Settings</button>
+              <button className="sb-acct-item" onClick={() => setLangOpen((o) => !o)}>
+                <Globe size={15} /> Language
+                <span style={{ marginLeft: "auto", color: "var(--text-2)", fontSize: 11 }}>{lang === "model" ? "Auto" : lang}</span>
+                <ChevronRight size={13} style={{ transition: "transform .15s", transform: langOpen ? "rotate(90deg)" : "none" }} />
+              </button>
+              {langOpen && (
+                <div className="sb-acct-sub">
+                  {LANGS.map(([v, label]) => (
+                    <button key={v} className={`sb-acct-subitem ${lang === v ? "on" : ""}`} onClick={() => setLanguage(v)}>{label}{lang === v ? "  ✓" : ""}</button>
+                  ))}
+                </div>
+              )}
+              <button className="sb-acct-item" onClick={getHelp}><HelpCircle size={15} /> Get help</button>
+              {(paidSub || (!isComp && (st === "trialing" || st === "expired"))) && <div className="sb-acct-div" />}
+              {paidSub
+                ? <button className="sb-acct-item" onClick={manage}><CreditCard size={15} /> Manage subscription</button>
+                : (!isComp && (st === "trialing" || st === "expired")) ? <button className="sb-acct-item" onClick={() => { setMenuOpen(false); upgrade(); }}><Sparkles size={15} /> View plans</button> : null}
+              <div className="sb-acct-div" />
+              <button className="sb-acct-item" onClick={signOut}><LogOut size={15} /> Log out</button>
+            </div>
+          </>
+        )}
+        <button className={`sb-profile ${menuOpen || active === "settings" ? "active" : ""}`} onClick={() => setMenuOpen((o) => !o)} title="Account">
+          {u && u.avatar
+            ? <img className="sb-profile-av" src={u.avatar} alt="" />
+            : <span className="sb-profile-av sb-profile-ini">{profileInitial}</span>}
+          <span className="sb-t sb-profile-meta">
+            <span className="sb-profile-name">{profileName}</span>
+            <span className="sb-profile-sub">{planLabel}</span>
+          </span>
+          <ChevronRight className="sb-t sb-profile-gear" size={14} style={{ transition: "transform .15s", transform: menuOpen ? "rotate(90deg)" : "none" }} />
+        </button>
+      </div>
       <div className="sb-copyright sb-t">© 2026 BrainEdge · Proprietary</div>
     </aside>
   );

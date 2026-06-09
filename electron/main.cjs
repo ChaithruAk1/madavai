@@ -394,6 +394,17 @@ ipcMain.handle("brainedge:linkGithub", async (_e, { projectId, url }) => {
     return { folder: target };
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
+// Clone a repo to work on directly in Build (not tied to a project) — returns the local folder.
+ipcMain.handle("brainedge:cloneRepo", async (_e, url) => {
+  if (!url) return { error: "Enter a repository URL." };
+  const repoName = (String(url).split("/").pop() || "repo").replace(/\.git$/, "");
+  const dest = path.join(app.getPath("userData"), "build-repos", repoName + "-" + Date.now().toString(36));
+  try {
+    fs.mkdirSync(dest, { recursive: true });
+    await pExecFile("git", ["clone", "--depth", "1", url, dest], { timeout: 180000 });
+    return { folder: dest };
+  } catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
+});
 ipcMain.handle("brainedge:pullGithub", async (_e, projectId) => {
   const p = store.getProject(projectId);
   if (!p || !p.folder) return { error: "No linked repo." };
@@ -448,6 +459,19 @@ ipcMain.handle("brainedge:adminStats", (_e, adminKey) => auth.adminGet("stats", 
 ipcMain.handle("brainedge:adminUsers", (_e, adminKey) => auth.adminGet("users", adminKey, authBase()));
 ipcMain.handle("brainedge:adminAction", (_e, id, action, adminKey) => auth.adminAction(id, action, adminKey, authBase()));
 ipcMain.handle("brainedge:scoreQuiz", (_e, batch) => auth.scoreQuiz(batch, authBase()));
+
+// Terminal access (CLI): one-click provisioning that reuses the user's provider keys + subscription.
+const cliInstall = require("./cli-install.cjs");
+ipcMain.handle("brainedge:enableCli", () => cliInstall.enableCli(authBase()));
+ipcMain.handle("brainedge:cliStatus", () => cliInstall.cliStatus());
+ipcMain.handle("brainedge:disableCli", () => cliInstall.disableCli());
+
+// Embedded terminal — a real shell inside the app (streams I/O to an xterm.js view).
+const terminal = require("./terminal.cjs");
+ipcMain.handle("brainedge:termCreate", (e, opts) => terminal.create(e.sender, opts || {}));
+ipcMain.handle("brainedge:termInput", (_e, { id, data }) => terminal.input(id, data));
+ipcMain.handle("brainedge:termResize", (_e, { id, cols, rows }) => terminal.resize(id, cols, rows));
+ipcMain.handle("brainedge:termKill", (_e, id) => terminal.kill(id));
 
 // Mobile link — continue a Let's Collaborate session from Telegram.
 const mobileLink = require("./mobile-link.cjs");
@@ -587,8 +611,18 @@ ipcMain.handle("brainedge:githubSignIn", async () => {
   } catch (e) { return { error: String((e && e.message) || e) }; }
 });
 
-app.on("before-quit", () => { mcp.disconnectAll(); });
+app.on("before-quit", () => { mcp.disconnectAll(); try { terminal.killAll(); } catch {} });
 
-app.whenReady().then(() => { createWindow(); reconcileMessaging(); });
+// Auto-provision terminal access for paying subscribers (silent). No-op if already set up, if no
+// provider is configured yet, or if the subscription isn't active (cliToken enforces that server-side).
+async function autoEnableCli() {
+  try {
+    const st = cliInstall.cliStatus();
+    if (st.configured && st.onPath) return;
+    const r = await cliInstall.enableCli(authBase());
+    if (r && r.ok) console.log("[cli] terminal access auto-enabled for subscriber");
+  } catch {}
+}
+app.whenReady().then(() => { createWindow(); reconcileMessaging(); setTimeout(autoEnableCli, 3000); });
 app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

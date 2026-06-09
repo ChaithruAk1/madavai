@@ -22,6 +22,9 @@ function describe(name, input = {}) {
   }
 }
 
+// Heuristic: does this tool output look like a unified diff we should color?
+function isDiff(s) { return /^@@ /m.test(s) && /^[+-]/m.test(s); }
+
 export default function ToolCard({ name, input, output, status }) {
   const [open, setOpen] = useState(false);
   const d = describe(name, input);
@@ -49,7 +52,11 @@ export default function ToolCard({ name, input, output, status }) {
           {!d.mono && input && Object.keys(input).length > 0 && (
             <pre className="mono-block dim">{JSON.stringify(input, null, 2)}</pre>
           )}
-          {output && <pre className="mono-block out">{output}</pre>}
+          {output && (isDiff(output)
+            ? <pre className="mono-block out diff">{output.split("\n").map((ln, i) => (
+                <div key={i} className={ln.startsWith("+") ? "d-add" : ln.startsWith("-") ? "d-del" : ln.startsWith("@@") ? "d-hunk" : ""}>{ln || " "}</div>
+              ))}</pre>
+            : <pre className="mono-block out">{output}</pre>)}
         </div>
       )}
     </div>

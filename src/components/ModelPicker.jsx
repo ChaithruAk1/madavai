@@ -13,14 +13,18 @@ export function classify(id) {
   return "general";
 }
 const PURPOSE_COLOR = { coding: "#7ee787", reasoning: "#d2a8ff", vision: "#79c0ff", fast: "#ffd479", embeddings: "#79c0ff", general: "var(--text-2)" };
+const chipStyle = (active) => ({ padding: "3px 11px", borderRadius: 999, fontSize: 11.5, lineHeight: 1.5, border: "1px solid " + (active ? "var(--accent)" : "var(--line)"), background: active ? "var(--accent)" : "transparent", color: active ? "#04121a" : "var(--text-2)", cursor: "pointer", fontWeight: active ? 600 : 400 });
 
 // `groups` are provider-derived: [{ group: providerName, items: [{id:"pid::model", name, prov, badge}] }]
 export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh }) {
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [cost, setCost] = useState("all");      // all | free | paid
+  const [purpose, setPurpose] = useState("any"); // any | coding | reasoning | vision | fast
   const [refreshing, setRefreshing] = useState(false);
   const ref = useRef(null);
+  const isFree = (it, groupName) => /local/i.test(it.prov || groupName || "") || /:free\b/.test((it.name || "").toLowerCase());
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -40,8 +44,16 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
 
   const total = source.reduce((n, g) => n + g.items.length, 0);
   const groups = source
-    .map((g) => ({ ...g, items: g.items.filter((it) => (it.name + it.id).toLowerCase().includes(q.toLowerCase())) }))
+    .map((g) => ({ ...g, items: g.items.filter((it) => {
+      if (!(it.name + it.id).toLowerCase().includes(q.toLowerCase())) return false;
+      const free = isFree(it, g.group);
+      if (cost === "free" && !free) return false;
+      if (cost === "paid" && free) return false;
+      if (purpose !== "any" && classify(it.name) !== purpose) return false;
+      return true;
+    }) }))
     .filter((g) => g.items.length);
+  const shown = groups.reduce((n, g) => n + g.items.length, 0);
 
   const doRefresh = async () => {
     if (!onRefresh) return;
@@ -71,9 +83,20 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
             )}
           </div>
 
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+            {[["all", "All"], ["free", "Free"], ["paid", "Paid"]].map(([k, label]) => (
+              <button key={k} onClick={() => setCost(k)} style={chipStyle(cost === k)}>{label}</button>
+            ))}
+            <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "2px 3px" }} />
+            {[["any", "Any"], ["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"]].map(([k, label]) => (
+              <button key={k} onClick={() => setPurpose(k)} style={chipStyle(purpose === k)}>{label}</button>
+            ))}
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-3)" }}>{shown} of {total}</span>
+          </div>
+
           {groups.length === 0 && (
             <div className="model-group" style={{ textTransform: "none", color: "var(--text-2)", padding: 10 }}>
-              No models. Open Settings, set a provider's Base URL + API key, then hit refresh.
+              No models match these filters. Clear a filter, or open Settings to add a provider.
             </div>
           )}
 
@@ -82,6 +105,10 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
               <div className="model-group">{g.group} · {g.items.length}</div>
               {g.items.map((it) => {
                 const isLocal = /local/i.test(it.prov || g.group || "");
+                const free = isFree(it, g.group);
+                const purp = classify(it.name);
+                const label = isLocal ? "Local" : free ? "Free" : "Cloud";
+                const labelColor = isLocal ? "var(--ok)" : free ? "#7ee787" : "var(--accent)";
                 return (
                   <div
                     key={it.id}
@@ -89,7 +116,8 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
                     onClick={() => { onChange(it.id); setOpen(false); }}
                   >
                     <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                    <span className="badge" style={{ background: "transparent", border: "1px solid var(--line)", color: isLocal ? "var(--ok)" : "var(--accent)" }}>{isLocal ? "Local" : "Cloud"}</span>
+                    {purp !== "general" && purp !== "embeddings" && <span className="badge" style={{ background: "transparent", border: "1px solid var(--line)", color: PURPOSE_COLOR[purp] }}>{purp}</span>}
+                    <span className="badge" style={{ background: "transparent", border: "1px solid var(--line)", color: labelColor }}>{label}</span>
                     {it.id === value && <Check size={15} className="check" />}
                   </div>
                 );
