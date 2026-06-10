@@ -1314,7 +1314,6 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     }
     return (
       <div className="agg-wrap">
-        {sageDock}
         {/* LEFT — the story, one chapter at a time */}
         <div className="agg-left scroll">
           <div className="agg-tophead">
@@ -1395,7 +1394,6 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   if (view === "list") {
     return (
       <div className="agents-page scroll">
-        {sageDock}
         <div className="ag-head">
           <div>
             <h2 className="ag-title">Agent Studio</h2>
@@ -1794,7 +1792,6 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     const memberObjs = tdraft.members.map((id) => agents.find((a) => a.id === id)).filter(Boolean);
     return (
       <div className="agents-page scroll">
-        {sageDock}
         <div className="ags-topbar">
           <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>
           <Face identity={tdraft.identity} size={30} />
@@ -1883,7 +1880,6 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const casting = dMsgs.length <= 1 && !draft.instructions;
   return (
     <div className="ags-studio" style={{ "--idc": (draft.identity && draft.identity.color) || "var(--accent)" }}>
-      {sageDock}
       {/* top bar: identity + name + actions */}
       <div className="ags-topbar">
         <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>

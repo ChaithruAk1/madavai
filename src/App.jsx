@@ -20,6 +20,7 @@ import StudioLauncher from "./components/StudioLauncher.jsx";
 import Agents from "./components/Agents.jsx";
 import TeamOps from "./components/TeamOps.jsx";
 import AgentOps from "./components/AgentOps.jsx";
+import SageDock from "./components/SageDock.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import UserGuide from "./components/UserGuide.jsx";
 // ADMIN-ONLY, BUILD-GATED: the Test Center UI (and the functional sweep it imports) is
@@ -866,6 +867,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Sage — the app-wide buddy: floats over every screen, never disturbs a running session */}
+      <SageDock mode={mode} onNavigate={switchMode} />
     </div>
   );
 }
