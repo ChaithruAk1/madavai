@@ -92,7 +92,7 @@ const READS = new Set(["list_dir", "read_file", "search_text", "find_files"]);
 const SAFE = (name) => READS.has(name) || name === "load_skill" || name === "browse_read"; // read-only, never needs approval
 function isAuto(permMode, name) {
   if (SAFE(name)) return true;
-  if (permMode === "bypass") return true;
+  if (permMode === "bypass" || permMode === "bypassPermissions") return true; // "act" autonomy
   if (name.startsWith("mcp__")) return false; // external connector tools always ask (unless bypass)
   if (permMode === "acceptEdits") return name === "write_file" || name === "edit_file"; // edits auto, bash still asks
   return false; // "default" → ask for every mutation; "plan" handled by isBlocked

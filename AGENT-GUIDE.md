@@ -98,6 +98,14 @@ The Agent tab supports **user-defined groups** (folders): create one with *New g
 ### Autonomy — decide once how much an agent may do without you
 Every agent has an **Autonomy** setting in its Blueprint, so you aren't prompted on every action: **Ask first** (default — pauses for permission on risky actions), **Act freely** (full autonomy, zero prompts — only for agents you fully trust; pair it with a browser allowlist and a safe working folder), and **Skip & decide** (never interrupts — risky actions are auto-declined instantly and the agent works around them or reports what it skipped). Reads are always allowed in every mode. Autonomy applies in chat, folder sessions, and team missions; headless runs (schedules, webhooks, swarms) were already fully autonomous by design.
 
+### Exactly where things live (use these precise labels)
+- **Enable web browsing for an agent:** Agents tab → open the agent (Put to work's pencil / "Open in Studio") → in the left Designer pane click **"Blueprint & capabilities"** to expand it → under the **Capabilities** row, toggle **Browser** on. When Browser is on, an **"Allowed sites"** field appears right below it — type comma- or line-separated domains.
+- **Default allowed sites for ALL agents (admin):** Settings → **Agent Browser** → "Default allowed sites".
+- **Autonomy (how often it asks permission):** same **Blueprint & capabilities** panel → **Autonomy** row → Ask first / Act freely / Skip & decide.
+- **Pin a model to an agent:** Blueprint & capabilities → **Pinned model**.
+- **Knowledge files:** Blueprint & capabilities → **Knowledge**.
+- **The browser is BrainEdge's own built-in window** — there is no Chrome/Safari/Firefox involved and nothing to install. Never reference other browsers or operating systems.
+
 ### Sage — the mentor who knows this whole guide
 **Ask Sage** (next to the Agent Guide, and a tab inside it) is a conversational mentor that knows everything in this guide and learns each release's new features automatically. It teaches with analogies and short stories, keeps answers brief, never invents features, and always ends with a concrete next step in the app.
 

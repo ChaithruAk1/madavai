@@ -17,6 +17,7 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
             <ThinkLogo size={40} />
             <div className="tn-brandtext">
               <span className="tn-name">BrainEdge</span>
+              <span className="tn-by">by Chaithrodaya Sukruth</span>
             </div>
           </div>
         )}

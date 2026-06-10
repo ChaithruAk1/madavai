@@ -4,7 +4,7 @@
 // run on the model from the model selector (optionally pinned per agent — never an API key).
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare, Minus, Smile } from "lucide-react";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
@@ -186,6 +186,25 @@ Reply with ONLY a JSON object, no prose, no code fence:
 Rules: 2-5 members. relay = a pipeline where work flows member to member in order (research → draft → polish). manager = independent slices done in parallel, then merged by a coordinator. Pick the mode that fits the work's shape. Invent a "new" member only when no roster agent or persona covers the role. budgetTokens: suggest a sensible cap in tokens (e.g. 60000) for manager teams, else 0.`;
 
 // ---- Sage, the agent mentor (Agent Guide chatbot) ----
+// Sage's face: a fixed, friendly human portrait — light skin, warm grey beard (a wise,
+// approachable mentor), and a uniform that ALWAYS wears the app's accent so he blends
+// with whatever theme is active. Instantly recognizable on the bubble, panel and tab.
+// A gallery of Sage looks the user can choose from (mid-30s, stylish, varied).
+const SAGE_LOOKS = [
+  { skin: "#eab68c", hair: "#2b2018", style: 0, beard: true,  glasses: false }, // dark hair, neat beard
+  { skin: "#f4cda6", hair: "#6e4a2a", style: 5, beard: false, glasses: true },  // brown fringe, glasses, clean
+  { skin: "#bd8458", hair: "#1a1a1a", style: 2, beard: true,  glasses: false }, // curly, beard
+  { skin: "#f4cda6", hair: "#c98a3a", style: 3, beard: false, glasses: false }, // blond top-knot, clean
+  { skin: "#d99e6f", hair: "#2b2018", style: 6, beard: true,  glasses: true },  // flat-top, beard + glasses
+  { skin: "#96603c", hair: "#101010", style: 1, beard: false, glasses: false }, // deep skin, short, clean
+  { skin: "#f4cda6", hair: "#7a3b22", style: 4, beard: false, glasses: false }, // auburn longer hair
+  { skin: "#eab68c", hair: "#8d8d8d", style: 0, beard: true,  glasses: true },  // the wise greying mentor
+];
+function SageFace({ size, look = SAGE_LOOKS[0] }) {
+  return <Portrait seed="Sage" color="var(--accent)" size={size} mood="hello" title="Sage"
+    skin={look.skin} hair={look.hair} beard={look.beard} glasses={look.glasses} style={look.style} />;
+}
+
 const MENTOR_STARTERS = [
   "I'm completely new — what can agents actually do for me?",
   "Relay vs Managed — which kind of team do I need?",
@@ -193,19 +212,26 @@ const MENTOR_STARTERS = [
   "How do I make an agent work overnight without me?",
   "What's safe to let an agent do on the web?",
 ];
-const MENTOR_SYS = () => `You are Sage, BrainEdge's agent mentor — a warm, endlessly patient teacher who lives inside the Agent Guide. Your job: help this person understand and master BrainEdge agents.
+const MENTOR_SYS = () => `You are Sage, BrainEdge's agent buddy — a warm, funny, endlessly patient friend who happens to know everything about BrainEdge agents. You're the helpful pal everyone wishes they had: upbeat, jovial, quick with a light joke or a playful aside, never dry or robotic. Your job: help this person understand and master BrainEdge agents, and make them smile while you do it.
 
-How you teach:
-- You are part mentor, part storyteller, part friend. For a new concept, open with one vivid everyday analogy or a two-sentence story, then give the concrete explanation.
-- Be warm, polite and encouraging — never condescending. If the user seems lost, slow down and check understanding with one gentle question.
-- Keep answers short by default (under ~180 words). Offer to go deeper instead of dumping everything at once.
-- ALWAYS end with one concrete next step they can take in the app right now (which screen, which button). When a Flight School simulation covers the topic, point them to it by chapter number.
-- Format simply: short paragraphs, occasional numbered steps. No markdown headers.
+Personality: friendly and human — talk like a clever, kind friend, not a manual. A dash of warmth and gentle humor is great (a small pun, a wink, an encouraging "nice one!"), but NEVER at the cost of clarity or length — the joke is seasoning, not the meal. Use the person's energy: playful if they're playful, focused if they're in a hurry.
+
+How you teach — KEEP IT KRISP:
+- Lead with the direct answer in ONE sentence. Then at most 2-3 short supporting sentences. Hard cap ~80 words total unless the user explicitly asks to "explain more" or "go deeper".
+- One small analogy is welcome ONLY when it genuinely clarifies — never force a story. Skip preamble entirely.
+- Warm, plain, encouraging. No markdown headers, no long bullet lists, no walls of text. At most one short numbered list (≤3 items) and only when steps are essential.
+- END with ONE concrete next step (which screen/button), a single line. Reference a Flight School chapter by number only if directly relevant.
+- If the answer is genuinely big, give the krisp version and offer: "Want the longer walkthrough?" — don't dump it unprompted.
 
 Hard rules:
 - The knowledge below is the complete truth about BrainEdge agents TODAY. Never invent a feature, button or behaviour that is not in it. If something isn't covered, say plainly that it doesn't exist yet (or that you're not sure) and suggest the closest real feature.
+- USE EXACT LABELS from the knowledge. The capabilities live under a panel literally called "Blueprint & capabilities" (not "Capabilities tab"). Never reference Chrome, Safari, Firefox or any operating system — the browser is BrainEdge's own built-in window and there is nothing to install. Never invent paths, tabs or button names.
 - If asked about things unrelated to BrainEdge agents, answer in one friendly sentence and gently steer back — you are the agent mentor.
 - This knowledge is refreshed with every release; trust it over anything else you believe.
+
+NAVIGATION — you can take the user straight to a screen. When they ask where to find or set something, OR would clearly benefit from going there, add ONE line at the very end of your reply, exactly:
+GOTO: <key>
+choosing <key> from: studio (the Agent Studio to build/edit an agent) · agents (the agent list) · teams · recruiter · floor · activity · guide. The app turns that line into a "Take me there" button — still give your short text answer above it, but you don't need to spell out the click-path when you add a GOTO. Use at most one GOTO per reply, and only when a real screen fits.
 
 THE KNOWLEDGE — the BrainEdge Agent Guide for the current release:
 ${AGENT_GUIDE_RAW}`;
@@ -466,6 +492,11 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [agentGroups, setAgentGroups] = useState([]);
   const [grpEdit, setGrpEdit] = useState(null);  // { id: groupId | "new", name } — inline name editor
   const [dragOver, setDragOver] = useState(null); // section currently hovered by a dragged agent
+  // Roster navigation: "folders" (default — browse by folder, scales to 100s of agents) or
+  // "flat" (every agent in one scroll). In folders mode, openFolder is the entered folder.
+  const [nav, setNav] = useState(() => { try { return localStorage.getItem("be.agents.nav") || "folders"; } catch { return "folders"; } });
+  const switchNav = (v) => { setNav(v); setOpenFolder(null); try { localStorage.setItem("be.agents.nav", v); } catch {} };
+  const [openFolder, setOpenFolder] = useState(null); // null = folder grid · groupId | "none" = inside a folder
   const [saveErr, setSaveErr] = useState("");
   const [saveBusy, setSaveBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -545,6 +576,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 
   // The Floor — whole-workforce live status (sessions + schedules + track record)
   const [floorTasks, setFloorTasks] = useState([]);
+  const [floorCollapsed, setFloorCollapsed] = useState(() => { try { return JSON.parse(localStorage.getItem("be.floor.collapsed") || "{}"); } catch { return {}; } });
+  const toggleFloorSec = (id) => setFloorCollapsed((c) => { const n = { ...c, [id]: !c[id] }; try { localStorage.setItem("be.floor.collapsed", JSON.stringify(n)); } catch {} return n; });
   const loadFloorTasks = () => { if (bridge.listTasks) bridge.listTasks().then((x) => setFloorTasks(x || [])).catch(() => {}); };
   useEffect(() => {
     if (view !== "list" || (tab !== "floor" && tab !== "activity")) return;
@@ -564,12 +597,172 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     return { state, last, scheduled };
   };
 
-  // Sage — the Agent Guide mentor chat
-  const [gMsgs, setGMsgs] = useState([]);           // { role: "user"|"mentor", text }
+  // Sage — the Agent Guide mentor chat. The thread persists so returning resumes it.
+  const [gMsgs, setGMsgs] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.thread") || "[]"); } catch { return []; } });
   const [gInput, setGInput] = useState("");
   const [gBusy, setGBusy] = useState(false);
   const gEndRef = useRef(null);
   useEffect(() => { gEndRef.current && gEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [gMsgs, gBusy]);
+  useEffect(() => { try { localStorage.setItem("be.sage.thread", JSON.stringify(gMsgs.slice(-40))); } catch {} }, [gMsgs]);
+  const newSageThread = () => { setGMsgs([]); setGInput(""); try { localStorage.removeItem("be.sage.thread"); } catch {} };
+  // Sage navigation: a "GOTO: <key>" line in a reply becomes a "Take me there" button.
+  const GOTO_DEST = { studio: "Agent Studio", agents: "your agents", teams: "Agents Team", recruiter: "the Recruiter", floor: "the Floor", activity: "Activity" };
+  const sageGoto = (m) => { const x = /(?:^|\n)\s*GOTO:\s*([a-z]+)/i.exec(m.text || ""); const k = x && x[1].toLowerCase(); return GOTO_DEST[k] ? k : null; };
+  const sageClean = (t) => String(t || "").replace(/(?:^|\n)\s*GOTO:\s*[a-z]+\s*$/i, "").trim();
+  const goSage = (k) => {
+    if (k === "studio") { leaveGuide("list"); openStudio(null); return; }
+    leaveGuide("list"); setTab(k === "agents" ? "agents" : k);
+  };
+  // Floating Sage — a quiet helper present on every agent screen. Shares the SAME thread
+  // (be.sage.thread) as the full Ask Sage tab, so the conversation is one continuous mentor.
+  const [sageOpen, setSageOpen] = useState(false);
+  const [sInput, setSInput] = useState("");
+  const [sageSeen, setSageSeen] = useState(() => { try { return localStorage.getItem("be.sage.docknudge") === "1"; } catch { return true; } });
+  // Free-drag position (persisted) + tuck-to-edge minimize.
+  const [sagePos, setSagePos] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.pos") || "null"); } catch { return null; } });
+  const [sageHidden, setSageHidden] = useState(() => { try { return localStorage.getItem("be.sage.hidden") === "1"; } catch { return false; } });
+  const [sageLook, setSageLook] = useState(() => { try { return Number(localStorage.getItem("be.sage.look")) || 0; } catch { return 0; } });
+  const [sageLookPick, setSageLookPick] = useState(false);
+  const sageLookObj = SAGE_LOOKS[sageLook] || SAGE_LOOKS[0];
+  const chooseSageLook = (i) => { setSageLook(i); setSageLookPick(false); try { localStorage.setItem("be.sage.look", String(i)); } catch {} };
+  const sagePosRef = useRef(sagePos);
+  const sEndRef = useRef(null);
+  useEffect(() => { if (sageOpen) sEndRef.current && sEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [gMsgs, gBusy, sageOpen]);
+  const openSageDock = () => { setSageOpen(true); setSageSeen(true); try { localStorage.setItem("be.sage.docknudge", "1"); } catch {} };
+  const sendSageDock = () => { const t = sInput.trim(); if (!t) return; guideAsk(t); setSInput(""); };
+  const hideSage = () => { setSageHidden(true); setSageOpen(false); try { localStorage.setItem("be.sage.hidden", "1"); } catch {} };
+  const showSage = () => { setSageHidden(false); try { localStorage.removeItem("be.sage.hidden"); } catch {} };
+  // The "need help?" greeting is quiet: it shows once on first ever visit (then never
+  // automatically again), occasionally peeks for a few seconds, and otherwise only on hover.
+  const [sagePeek, setSagePeek] = useState(() => { try { return localStorage.getItem("be.sage.greeted") !== "1"; } catch { return false; } });
+  useEffect(() => {
+    if (sagePeek) { try { localStorage.setItem("be.sage.greeted", "1"); } catch {} const t = setTimeout(() => setSagePeek(false), 5000); return () => clearTimeout(t); }
+  }, []);
+  useEffect(() => {
+    const id = setInterval(() => { setSagePeek(true); setTimeout(() => setSagePeek(false), 4000); }, 300000); // a brief peek every ~5 min
+    return () => clearInterval(id);
+  }, []);
+  // --- Proactive Sage: notice when the user seems stuck and offer a contextual idea. ---
+  // Honest heuristic (no surveillance): reads the CURRENT screen + obvious empty/idle
+  // signals, and after a quiet pause suggests the next helpful move. Dismissible; once
+  // dismissed for a context it won't nag again that session.
+  const [sageTip, setSageTip] = useState(null); // { msg, ask } | null
+  const tipDismissed = useRef({});
+  const tipFor = () => {
+    if (sageOpen || sageHidden) return null;
+    if (view === "studio" && !draft.instructions.trim())
+      return { id: "studio-empty", msg: "New here? Tell the Designer the job in plain words and I'll shape the agent — or want 3 example ideas?", ask: "I'm not sure what agent to build — give me 3 example agents I could create and what each is good for." };
+    if (view === "list" && tab === "agents" && agents.length === 0)
+      return { id: "no-agents", msg: "No agents yet — want a few ideas for a useful first hire?", ask: "Suggest 3 useful agents I could build first, with a one-line purpose each." };
+    if (view === "list" && tab === "recruit" && !rcProposal)
+      return { id: "recruit-idle", msg: "Describe the work in one line and I'll staff a whole team. Want an example brief?", ask: "Give me 2 example briefs I could give the Recruiter to staff a team." };
+    if (view === "list" && tab === "teams" && teams.length === 0 && agents.length >= 2)
+      return { id: "teams-none", msg: "You've got agents — want me to suggest a team you could form from them?", ask: "I have a few agents already. Suggest a team I could build from them and whether it should be Relay or Managed." };
+    return null;
+  };
+  useEffect(() => {
+    setSageTip(null);
+    const t = tipFor();
+    if (!t || tipDismissed.current[t.id]) return;
+    const timer = setTimeout(() => { if (!sageOpen && !sageHidden) setSageTip(t); }, 16000); // wait for a quiet pause
+    return () => clearTimeout(timer);
+  }, [view, tab, draft.instructions, agents.length, teams.length, rcProposal, sageOpen, sageHidden]);
+  const takeSageTip = () => { if (!sageTip) return; const ask = sageTip.ask; setSageTip(null); openSageDock(); guideAsk(ask); };
+  const dismissSageTip = () => { if (sageTip) { tipDismissed.current[sageTip.id] = true; setSageTip(null); } };
+  // Drag the bubble (from the FAB) or the panel (from its header) anywhere on screen.
+  const startSageDrag = (e) => {
+    if (e.target.closest(".sage-ico")) return; // header buttons aren't drag handles
+    const dock = e.currentTarget.closest(".sage-dock"); if (!dock) return;
+    const r = dock.getBoundingClientRect();
+    const fromFab = !!e.currentTarget.closest(".sage-fab");
+    const d = { ox: e.clientX - r.left, oy: e.clientY - r.top, sx: e.clientX, sy: e.clientY, moved: false };
+    const move = (ev) => {
+      if (Math.abs(ev.clientX - d.sx) + Math.abs(ev.clientY - d.sy) > 4) d.moved = true;
+      const pad = 8, sz = 60;
+      const p = {
+        left: Math.max(pad, Math.min(window.innerWidth - sz - pad, ev.clientX - d.ox)),
+        top: Math.max(pad, Math.min(window.innerHeight - sz - pad, ev.clientY - d.oy)),
+      };
+      sagePosRef.current = p; setSagePos(p);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (sagePosRef.current) { try { localStorage.setItem("be.sage.pos", JSON.stringify(sagePosRef.current)); } catch {} }
+      if (fromFab && !d.moved) openSageDock(); // a tap (not a drag) on the bubble opens it
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    e.preventDefault();
+  };
+  // Panel opens toward screen-center so it never spills off the edge.
+  const anchorTop = sagePos ? sagePos.top : (typeof window !== "undefined" ? window.innerHeight - 74 : 700);
+  const anchorLeft = sagePos ? sagePos.left : (typeof window !== "undefined" ? window.innerWidth - 74 : 1200);
+  const sageUp = anchorTop > (typeof window !== "undefined" ? window.innerHeight : 800) * 0.45;
+  const sageLeft = anchorLeft > (typeof window !== "undefined" ? window.innerWidth : 1400) * 0.5;
+  // The dock hides only on the full Ask Sage page (redundant there).
+  const sageDock = !(view === "guide" && guideView === "chat") && (
+    <div className={`sage-dock ${sageUp ? "up" : "down"} ${sageLeft ? "right" : "left"}`} style={sagePos ? { left: sagePos.left, top: sagePos.top, right: "auto", bottom: "auto" } : undefined}>
+      {sageHidden ? (
+        <button className="sage-tab" title="Show Sage" onClick={showSage}><SageFace size={30} look={sageLookObj} /></button>
+      ) : sageOpen ? (
+        <div className="sage-panel">
+          <div className="sage-panel-head" onPointerDown={startSageDrag} title="Drag to move">
+            <SageFace size={36} look={sageLookObj} />
+            <div className="sage-panel-id"><b>Sage</b><span>your agent buddy</span></div>
+            <button className={`sage-ico ${sageLookPick ? "on" : ""}`} title="Change Sage's look" onClick={() => setSageLookPick((p) => !p)}><Smile size={15} /></button>
+            {gMsgs.length > 0 && <button className="sage-ico" title="New conversation" onClick={newSageThread}><Plus size={14} /></button>}
+            <button className="sage-ico" title="Tuck away to the corner" onClick={hideSage}><Minus size={15} /></button>
+            <button className="sage-ico" title="Minimize" onClick={() => setSageOpen(false)}><X size={15} /></button>
+          </div>
+          {sageLookPick && (
+            <div className="sage-looks">
+              <span className="sage-looks-label">Pick a look for Sage</span>
+              <div className="sage-looks-row">
+                {SAGE_LOOKS.map((l, i) => (
+                  <button key={i} className={`sage-look ${i === sageLook ? "on" : ""}`} onClick={() => chooseSageLook(i)} title={`Look ${i + 1}`}>
+                    <SageFace size={42} look={l} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="sage-panel-msgs scroll">
+            {gMsgs.length === 0 && (
+              <div className="sage-hello">
+                <SageFace size={56} look={sageLookObj} />
+                <div>Hey, I'm <b>Sage</b> 👋 Your agent buddy. Ask me anything — I keep it short, throw in the odd bad joke, and I can whisk you straight to the right screen.</div>
+              </div>
+            )}
+            {gMsgs.map((m, i) => {
+              if (m.role === "user") return <div key={i} className="agsd-say">{m.text}</div>;
+              const dest = sageGoto(m);
+              return <div key={i} className="agsd-sheet">{sageClean(m.text)}{dest && <button className="btn primary aggc-goto" onClick={() => { setSageOpen(false); goSage(dest); }}><ArrowRight size={13} /> Take me to {GOTO_DEST[dest]}</button>}</div>;
+            })}
+            {gBusy && <div className="agsd-sheet agsd-busy"><Loader2 size={13} className="ag-spin" /> thinking…</div>}
+            <div ref={sEndRef} />
+          </div>
+          <div className="sage-panel-input">
+            <input value={sInput} placeholder="Ask Sage anything…" onChange={(e) => setSInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") sendSageDock(); }} />
+            <button className="agsd-send" aria-label="Ask Sage" disabled={gBusy || !sInput.trim()} onClick={sendSageDock}><ArrowUp size={15} /></button>
+          </div>
+        </div>
+      ) : (
+        <div className="sage-fab-wrap">
+          <button className="sage-fab" title="Ask Sage — drag to move me" onPointerDown={startSageDrag}>
+            <SageFace size={52} look={sageLookObj} />
+          </button>
+          <button className="sage-fab-hide" title="Tuck Sage away" onClick={hideSage}><X size={11} /></button>
+          {sageTip
+            ? <span className="sage-tip" onClick={takeSageTip}>
+                <span className="sage-tip-msg">{sageTip.msg}</span>
+                <button className="sage-tip-x" title="Dismiss" onClick={(e) => { e.stopPropagation(); dismissSageTip(); }}><X size={11} /></button>
+              </span>
+            : <span className={`sage-fab-nudge ${sagePeek ? "show" : ""}`}>I'm Sage, need help?</span>}
+        </div>
+      )}
+    </div>
+  );
   // When the tour chapter changes, bring the matching Flight School mission into view.
   useEffect(() => {
     if (view !== "guide") return;
@@ -1078,15 +1271,18 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               <button onClick={() => setGuideView("reference")}><BookOpen size={14} /> Do's &amp; don'ts</button>
               <button className="on"><GraduationCap size={14} /> Ask Sage</button>
             </div>
-            <div className="agg-kicker"><GraduationCap size={13} /> Sage — your agent mentor</div>
+            <div className="aggc-top">
+              <div className="agg-kicker"><GraduationCap size={13} /> Sage — your agent mentor</div>
+              {gMsgs.length > 0 && <button className="btn ghost aggc-new" onClick={newSageThread}><Plus size={13} /> New conversation</button>}
+            </div>
             <h1 className="aggc-h1">Ask anything about agents</h1>
-            <p className="agg-ref-sub">Sage knows the whole Agent Guide — every capability, every scenario — and learns the new ones each release. Ask in your own words; it teaches with stories, steps, and a next move you can take right away.</p>
+            <p className="agg-ref-sub">Sage knows the whole Agent Guide — every capability, every scenario — and learns the new ones each release. Ask in your own words; it answers krisp, points you to the exact screen, and can take you there.</p>
             <div className="aggc-chat scroll">
               {gMsgs.length === 0 && (
                 <div className="aggc-hello">
-                  <div className="aggc-hello-face"><GraduationCap size={22} /></div>
-                  <div className="aggc-hello-t">Hello, friend — I'm Sage.</div>
-                  <div className="aggc-hello-s">No question is too small. Start with one of these, or ask your own:</div>
+                  <SageFace size={64} look={sageLookObj} />
+                  <div className="aggc-hello-t">Hey, I'm Sage 👋</div>
+                  <div className="aggc-hello-s">Your agent buddy. No question is too small — start with one of these, or just ask:</div>
                   <div className="aggc-starters">
                     {MENTOR_STARTERS.map((s, i) => (
                       <button key={i} type="button" className="aggc-starter" disabled={gBusy} onClick={() => guideAsk(s)}>{s}</button>
@@ -1094,11 +1290,16 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                   </div>
                 </div>
               )}
-              {gMsgs.map((m, i) => (
-                m.role === "user"
-                  ? <div key={i} className="agsd-say">{m.text}</div>
-                  : <div key={i} className="agsd-sheet">{m.text}</div>
-              ))}
+              {gMsgs.map((m, i) => {
+                if (m.role === "user") return <div key={i} className="agsd-say">{m.text}</div>;
+                const dest = sageGoto(m);
+                return (
+                  <div key={i} className="agsd-sheet">
+                    {sageClean(m.text)}
+                    {dest && <button className="btn primary aggc-goto" onClick={() => goSage(dest)}><ArrowRight size={13} /> Take me to {GOTO_DEST[dest]}</button>}
+                  </div>
+                );
+              })}
               {gBusy && <div className="agsd-sheet agsd-busy"><Loader2 size={13} className="ag-spin" /> thinking of the best way to explain…</div>}
               <div ref={gEndRef} />
             </div>
@@ -1113,6 +1314,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     }
     return (
       <div className="agg-wrap">
+        {sageDock}
         {/* LEFT — the story, one chapter at a time */}
         <div className="agg-left scroll">
           <div className="agg-tophead">
@@ -1193,6 +1395,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   if (view === "list") {
     return (
       <div className="agents-page scroll">
+        {sageDock}
         <div className="ag-head">
           <div>
             <h2 className="ag-title">Agent Studio</h2>
@@ -1222,9 +1425,15 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 
         {/* Utility toolbar — icon-only, separate from the tabs; hover for what each does */}
         <div className="ags-utilrow">
-          <span className="ags-viewtoggle" role="group" aria-label="View">
-            <button className={layout === "tiles" ? "on" : ""} title="Tile view" aria-label="Tile view" onClick={() => switchLayout("tiles")}><LayoutGrid size={14} /></button>
-            <button className={layout === "list" ? "on" : ""} title="List view" aria-label="List view" onClick={() => switchLayout("list")}><List size={14} /></button>
+          {tab === "agents" && (
+            <span className="ags-viewtoggle" role="group" aria-label="Navigation">
+              <button className={nav === "folders" ? "on" : ""} title="Folder view — browse by folder" aria-label="Folder view" onClick={() => switchNav("folders")}><Folder size={14} /></button>
+              <button className={nav === "flat" ? "on" : ""} title="All agents — one list" aria-label="All agents" onClick={() => switchNav("flat")}><List size={14} /></button>
+            </span>
+          )}
+          <span className="ags-viewtoggle" role="group" aria-label="Layout">
+            <button className={layout === "tiles" ? "on" : ""} title="Tile layout" aria-label="Tile layout" onClick={() => switchLayout("tiles")}><LayoutGrid size={14} /></button>
+            <button className={layout === "list" ? "on" : ""} title="List layout" aria-label="List layout" onClick={() => switchLayout("list")}><List size={14} /></button>
           </span>
           {tab === "agents" && (
             grpEdit && grpEdit.id === "new"
@@ -1371,9 +1580,11 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
             { id: "sched", label: "On a schedule", cls: "warn", icon: <Clock size={13} />, items: sched },
             { id: "resting", label: "Resting — ready for work", cls: "dim", icon: <Moon size={13} />, items: resting },
           ];
+          // mood map: working → running, finished → cheer, resting → sleeping
+          const moodFor = (state) => state === "working" ? "running" : state === "happy" ? "cheer" : "sleeping";
           const tile = ({ a, state, last, scheduled: sch }) => (
             <div key={a.id} className={`flr-tile ${state} ${sch && state === "idle" ? "sched" : ""}`}>
-              <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={layout === "list" ? 48 : 66} mood={state === "working" ? "working" : state === "happy" ? "happy" : "hello"} title={a.name} />
+              <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={layout === "list" ? 48 : 66} mood={moodFor(state)} title={a.name} />
               <div className="flr-main">
                 <div className="flr-name">{agentName(a)}{sch && <Clock size={11} className="flr-sch" title="Runs on a schedule" />}</div>
                 <div className="flr-role">{a.description || "No description"}</div>
@@ -1400,8 +1611,12 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                   </div>
                   {groups.map((g) => g.items.length > 0 && (
                     <div key={g.id} className="flr-sec">
-                      <div className={`flr-sec-head ${g.cls}`}>{g.icon} {g.label} <span className="flr-sec-n">{g.items.length}</span></div>
-                      <div className={`flr-grid ${layout === "list" ? "flr-aslist" : ""}`}>{g.items.map(tile)}</div>
+                      <button type="button" className={`flr-sec-head ${g.cls}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFloorSec(g.id); }} aria-expanded={!floorCollapsed[g.id]}>
+                        <span className={`flr-sec-cx ${floorCollapsed[g.id] ? "" : "open"}`}>▸</span>
+                        {g.icon} {g.label} <span className="flr-sec-n">{g.items.length}</span>
+                        <span className="flr-sec-hint">{floorCollapsed[g.id] ? "show" : "hide"}</span>
+                      </button>
+                      {!floorCollapsed[g.id] && <div className={`flr-grid ${layout === "list" ? "flr-aslist" : ""}`}>{g.items.map(tile)}</div>}
                     </div>
                   ))}
                   <div className="ag-hint" style={{ marginTop: 12 }}>Live from real data: open sessions, schedules and each agent's track record. "Working" = active in the last 3 minutes; the colors follow the state.</div>
@@ -1443,21 +1658,66 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </div>
         )}
 
-        {tab === "agents" && (() => {
+        {/* FOLDER GRID — default landing when browsing by folder (scales to 100s of agents).
+            Only folders show; click to enter. Drop an agent on a folder to file it. */}
+        {tab === "agents" && nav === "folders" && openFolder === null && !q.trim() && (() => {
+          const known = new Set(agentGroups.map((g) => g.id));
+          const ungrouped = agents.filter((a) => !a.group || !known.has(a.group));
+          const folders = [
+            { id: "none", name: "Ungrouped", items: ungrouped },
+            ...agentGroups.map((g) => ({ id: g.id, name: g.name, items: agents.filter((a) => a.group === g.id) })),
+          ];
+          return (
+            <div className="ags-folders">
+              <button className="ags-folder ags-folder-new" onClick={() => openStudio(null)}>
+                <span className="ags-folder-ic new"><Plus size={20} /></span>
+                <div className="ags-folder-name">New agent</div>
+                <div className="ags-folder-sub">Describe it, shape it, test it</div>
+              </button>
+              {folders.map((f) => (
+                <button key={f.id} className={`ags-folder ${dragOver === f.id ? "drop" : ""}`}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(f.id); }}
+                  onDragLeave={() => setDragOver(null)}
+                  onDrop={(e) => { e.preventDefault(); setDragOver(null); const id = e.dataTransfer.getData("text/agent-id"); if (id) moveAgent(id, f.id === "none" ? null : f.id); }}
+                  onClick={() => setOpenFolder(f.id)}>
+                  <span className="ags-folder-ic"><Folder size={22} /></span>
+                  <span className="ags-folder-faces">
+                    {f.items.slice(0, 4).map((a, i) => <span key={a.id} style={{ marginLeft: i ? -10 : 0 }}><Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={26} /></span>)}
+                  </span>
+                  <div className="ags-folder-name">{f.name}</div>
+                  <div className="ags-folder-sub">{f.items.length} agent{f.items.length === 1 ? "" : "s"}</div>
+                </button>
+              ))}
+            </div>
+          );
+        })()}
+
+        {tab === "agents" && (nav === "flat" || openFolder !== null || q.trim()) && (() => {
           // Sections: the main roster first (agents with no group, incl. orphans of deleted
           // groups), then each user-defined group. Drop an agent anywhere to re-file it.
           const known = new Set(agentGroups.map((g) => g.id));
-          const sections = [
+          let sections = [
             { id: null, items: shownAgents.filter((a) => !a.group || !known.has(a.group)) },
             ...agentGroups.map((g) => ({ ...g, items: shownAgents.filter((a) => a.group === g.id) })),
           ];
+          // Inside a folder (and not searching): show only that folder's agents + a breadcrumb.
+          const inFolder = nav === "folders" && openFolder !== null && !q.trim();
+          if (inFolder) sections = sections.filter((s) => (openFolder === "none" ? s.id == null : s.id === openFolder));
           const searching = !!q.trim();
-          return sections.map((g) => ((searching && g.id && g.items.length === 0) ? null : (
+          return (<>
+            {inFolder && (
+              <div className="ags-crumb">
+                <button className="ags-crumb-back" onClick={() => setOpenFolder(null)}><ArrowRight size={14} style={{ transform: "rotate(180deg)" }} /> Folders</button>
+                <span className="ags-crumb-sep">/</span>
+                <span className="ags-crumb-cur">{openFolder === "none" ? "Ungrouped" : (agentGroups.find((g) => g.id === openFolder) || {}).name || "Folder"}</span>
+              </div>
+            )}
+            {sections.map((g) => ((searching && g.id && g.items.length === 0) ? null : (
             <div key={g.id || "none"} className={`ags-group ${dragOver === (g.id || "none") ? "drop" : ""}`}
               onDragOver={(e) => { e.preventDefault(); setDragOver(g.id || "none"); }}
               onDragLeave={() => setDragOver(null)}
               onDrop={(e) => { e.preventDefault(); setDragOver(null); const id = e.dataTransfer.getData("text/agent-id"); if (id) moveAgent(id, g.id); }}>
-              {g.id && (
+              {g.id && !inFolder && (
                 <div className="ags-group-head">
                   <Folder size={13} />
                   {grpEdit && grpEdit.id === g.id
@@ -1497,7 +1757,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                 </div>
               )}
             </div>
-          )));
+          )))}
+          </>);
         })()}
 
         {swarmAgent && <SwarmModal agent={swarmAgent} onClose={() => { setSwarmAgent(null); loadStats(); }} />}
@@ -1533,6 +1794,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     const memberObjs = tdraft.members.map((id) => agents.find((a) => a.id === id)).filter(Boolean);
     return (
       <div className="agents-page scroll">
+        {sageDock}
         <div className="ags-topbar">
           <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>
           <Face identity={tdraft.identity} size={30} />
@@ -1621,6 +1883,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const casting = dMsgs.length <= 1 && !draft.instructions;
   return (
     <div className="ags-studio" style={{ "--idc": (draft.identity && draft.identity.color) || "var(--accent)" }}>
+      {sageDock}
       {/* top bar: identity + name + actions */}
       <div className="ags-topbar">
         <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>

@@ -1382,6 +1382,7 @@ textarea.model-search { line-height: 1.5; }
   line-height: 1.3; padding-bottom: 2px;
   color: var(--accent); -webkit-text-fill-color: var(--accent); background: none;
 }
+.tn-by { font-size: 11px; font-weight: 500; color: var(--text-2); letter-spacing: .2px; margin-top: -1px; }
 /* Light mode: solid single-color wordmark, no shimmer animation. */
 :root[data-theme="light"] .tn-name { background: none; -webkit-text-fill-color: var(--text-0); color: var(--text-0); animation: none; }
 :root[data-theme="light"] .tn-by { background: none; -webkit-text-fill-color: var(--text-2); color: var(--text-2); animation: none; }
@@ -2010,7 +2011,7 @@ svg.lucide { color: var(--accent); }
 /* ===== Sage — the Agent Guide mentor chat ===== */
 .aggc-page { height: 100%; max-width: 820px; margin: 0 auto; padding: 30px clamp(20px, 3vw, 44px) 0; display: flex; flex-direction: column; min-height: 0; }
 .aggc-h1 { margin: 4px 0 8px; font-size: 26px; color: var(--text-0); letter-spacing: -0.01em; }
-.aggc-chat { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 10px 2px 12px; }
+.aggc-chat { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 10px 2px 12px; }
 .aggc-hello { margin: auto; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; max-width: 560px; }
 .aggc-hello-face { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 14px; background: var(--accent-weak); border: 1px solid var(--accent-line); color: var(--accent); }
 .aggc-hello-t { font-size: 16px; font-weight: 700; color: var(--text-0); }
@@ -2019,6 +2020,75 @@ svg.lucide { color: var(--accent); }
 .aggc-starter { padding: 9px 13px; border: 1px dashed var(--line-2); border-radius: 11px; background: transparent; color: var(--text-1); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; line-height: 1.5; transition: border-color var(--dur-1, 120ms) var(--ease, ease), background var(--dur-1, 120ms) var(--ease, ease), color var(--dur-1, 120ms) var(--ease, ease); }
 .aggc-starter:hover:not(:disabled) { border-style: solid; border-color: var(--accent-line); background: var(--accent-weak); color: var(--text-0); }
 .aggc-composer { margin: 0 0 18px; }
+.aggc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.aggc-new { padding: 5px 11px; font-size: 12px; }
+.aggc-goto { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 13px; font-size: 12.5px; }
+
+/* ===== Floating Sage — the quiet, draggable helper present on every agent screen ===== */
+.sage-dock { position: fixed; right: 22px; bottom: 22px; z-index: 50; }
+.sage-fab-wrap { position: relative; display: inline-flex; }
+/* tuck-away X — only on hover of the bubble */
+.sage-fab-hide { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text-2); cursor: pointer; opacity: 0; transition: opacity var(--dur-1,120ms) var(--ease,ease); }
+.sage-fab-wrap:hover .sage-fab-hide { opacity: 1; }
+.sage-fab-hide:hover { color: var(--text-0); border-color: var(--accent-line); }
+/* greeting bubble: hidden by default, shows on hover or when .show (first visit / occasional peek) */
+.sage-fab-nudge { opacity: 0; pointer-events: none; }
+.sage-fab-wrap:hover .sage-fab-nudge, .sage-fab-nudge.show { opacity: 1; }
+/* tucked-away edge tab — a slim portrait peeking from the corner; click to restore */
+.sage-tab { padding: 4px; border: 1px solid var(--accent-line); border-radius: 12px 12px 12px 4px; background: var(--bg-1); cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.3); opacity: 0.85; transition: opacity var(--dur-1,120ms) var(--ease,ease), transform var(--dur-1,120ms) var(--ease,ease); }
+.sage-tab:hover { opacity: 1; transform: translateY(-2px); }
+/* panel opens toward screen-center so it never spills off an edge */
+.sage-dock.up .sage-panel { position: absolute; bottom: 64px; }
+.sage-dock.down .sage-panel { position: absolute; top: 64px; }
+.sage-dock.right .sage-panel { right: 0; transform-origin: bottom right; }
+.sage-dock.left .sage-panel { left: 0; transform-origin: bottom left; }
+.sage-dock.down.right .sage-panel { transform-origin: top right; }
+.sage-dock.down.left .sage-panel { transform-origin: top left; }
+.sage-panel-head { cursor: grab; }
+.sage-panel-head:active { cursor: grabbing; }
+/* proactive tip — a warm contextual suggestion that gently slides in when you seem stuck */
+.sage-tip { position: absolute; right: calc(100% + 12px); bottom: 0; display: flex; align-items: flex-start; gap: 8px; width: 250px; padding: 11px 12px; background: var(--bg-1); border: 1px solid var(--accent-line); border-radius: 13px; box-shadow: 0 12px 34px rgba(0,0,0,0.4); cursor: pointer; animation: sage-nudge-in var(--dur-3,380ms) var(--ease,ease) both; }
+.sage-tip:hover { border-color: var(--accent); }
+.sage-tip-msg { font-size: 12.5px; line-height: 1.5; color: var(--text-0); }
+.sage-tip-x { flex: none; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: transparent; color: var(--text-2); cursor: pointer; margin: -2px -2px 0 0; }
+.sage-tip-x:hover { background: var(--bg-3); color: var(--text-0); }
+.sage-tip::after { content: ""; position: absolute; left: 100%; bottom: 18px; border: 6px solid transparent; border-left-color: var(--accent-line); }
+.sage-fab { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: none; background: none; border-radius: 14px; cursor: pointer;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.32), 0 0 0 4px var(--accent-weak);
+  animation: sage-breathe 4.5s ease-in-out infinite; transition: transform var(--dur-1,120ms) var(--ease,ease); }
+.sage-fab:hover { transform: translateY(-2px) scale(1.05); }
+.sage-fab .pt { display: block; }
+@keyframes sage-breathe { 0%,100% { box-shadow: 0 8px 26px rgba(0,0,0,0.32), 0 0 0 4px var(--accent-weak); } 50% { box-shadow: 0 8px 30px rgba(0,0,0,0.36), 0 0 0 8px color-mix(in srgb, var(--accent) 7%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .sage-fab { animation: none; } }
+.sage-fab-nudge { position: absolute; right: calc(100% + 12px); top: 50%; transform: translateY(-50%); white-space: nowrap; background: var(--bg-1); border: 1px solid var(--accent-line); color: var(--text-0); font-size: 12.5px; font-weight: 600; padding: 8px 13px; border-radius: 11px; box-shadow: 0 8px 22px rgba(0,0,0,0.3); animation: sage-nudge-in var(--dur-3,380ms) var(--ease,ease) both; }
+.sage-fab-nudge::after { content: ""; position: absolute; left: 100%; top: 50%; transform: translateY(-50%); border: 6px solid transparent; border-left-color: var(--accent-line); }
+@keyframes sage-nudge-in { from { opacity: 0; transform: translateY(-50%) translateX(6px); } to { opacity: 1; transform: translateY(-50%) translateX(0); } }
+.sage-panel { width: min(380px, 92vw); height: min(520px, 72vh); display: flex; flex-direction: column; background: var(--bg-1); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 70px rgba(0,0,0,0.5); overflow: hidden; animation: pop-in var(--dur-2,220ms) var(--ease,ease) both; transform-origin: bottom right; }
+.sage-panel-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 14px; border-bottom: 1px solid var(--line); }
+.sage-ava { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 10px; background: var(--accent-weak); border: 1px solid var(--accent-line); color: var(--accent); flex: none; }
+.sage-ava.lg { width: 44px; height: 44px; border-radius: 13px; }
+.sage-ava svg.lucide { color: var(--accent); }
+.sage-panel-id { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.sage-panel-id b { font-size: 13.5px; color: var(--text-0); }
+.sage-panel-id span { font-size: 11px; color: var(--text-2); }
+.sage-ico { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent; color: var(--text-2); cursor: pointer; }
+.sage-ico:hover { background: var(--bg-3); color: var(--text-0); }
+.sage-ico.on { background: var(--accent-weak); color: var(--accent); }
+/* look picker — choose Sage's face */
+.sage-looks { border-bottom: 1px solid var(--line); padding: 10px 12px 12px; }
+.sage-looks-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); margin-bottom: 8px; }
+.sage-looks-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sage-look { display: inline-flex; align-items: center; justify-content: center; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg-2); cursor: pointer; transition: border-color var(--dur-1,120ms) var(--ease,ease), transform var(--dur-1,120ms) var(--ease,ease); }
+.sage-look:hover { border-color: var(--line-2); transform: translateY(-1px); }
+.sage-look.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-weak); }
+.sage-panel-msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.sage-hello { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin: auto; max-width: 280px; color: var(--text-1); font-size: 12.5px; line-height: 1.5; }
+.sage-panel-msgs .agsd-sheet { font-size: 13.5px; }
+.sage-panel-msgs .agsd-say { font-size: 13px; }
+.sage-panel-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.sage-panel-input input { flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--line); border-radius: 11px; padding: 9px 12px; color: var(--text-0); font: inherit; font-size: 13px; outline: none; }
+.sage-panel-input input:focus { border-color: var(--accent-line); }
+@media (max-width: 760px) { .sage-dock { right: 14px; bottom: 14px; } }
 
 /* ===== Teams: tabs, builder, Mission Control (TeamOps) ===== */
 .ags-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
@@ -2182,6 +2252,27 @@ svg.lucide { color: var(--accent); }
 .ags-listrow[draggable="true"], .ags-card[draggable="true"] { cursor: grab; }
 .ags-listrow[draggable="true"]:active, .ags-card[draggable="true"]:active { cursor: grabbing; }
 
+/* ===== Folder view — the default roster landing; browse by folder, scales to 100s ===== */
+.ags-folders { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.ags-folder { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); cursor: pointer; text-align: left; transition: border-color var(--dur-1, 120ms) var(--ease, ease), background var(--dur-1, 120ms) var(--ease, ease), transform var(--dur-1, 120ms) var(--ease, ease); }
+.ags-folder:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.ags-folder.drop { border-color: var(--accent); background: var(--accent-weak); }
+.ags-folder-new { border-style: dashed; background: transparent; }
+.ags-folder-new:hover { border-color: var(--accent-line); }
+.ags-folder-ic { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; background: var(--accent-weak); color: var(--accent); margin-bottom: 6px; }
+.ags-folder-ic.new { background: var(--bg-3); }
+.ags-folder-faces { display: flex; align-items: center; margin-bottom: 4px; min-height: 26px; }
+.ags-folder-name { font-size: 14px; font-weight: 700; color: var(--text-0); }
+.ags-folder-sub { font-size: 11.5px; color: var(--text-2); }
+:root[data-theme="light"] .ags-folder { background: #fff; }
+
+/* breadcrumb shown when inside a folder */
+.ags-crumb { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; font-size: 13px; }
+.ags-crumb-back { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2); color: var(--text-1); font: inherit; font-size: 12.5px; cursor: pointer; }
+.ags-crumb-back:hover { border-color: var(--accent-line); color: var(--text-0); background: var(--accent-weak); }
+.ags-crumb-sep { color: var(--text-2); }
+.ags-crumb-cur { font-weight: 700; color: var(--text-0); }
+
 /* ===== Portraits — living agent faces (component: Portrait.jsx) ===== */
 .pt { display: block; border-radius: 12px; }
 .pt .pt-eyes { animation: pt-blink 4.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
@@ -2195,7 +2286,25 @@ svg.lucide { color: var(--accent); }
 /* hello — a beaming smile with a gentle, friendly head tilt (no waving) */
 .pt.hello .pt-headg { animation: pt-greet 3s ease-in-out infinite; }
 @keyframes pt-greet { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-2.5deg); } }
-@media (prefers-reduced-motion: reduce) { .pt .pt-eyes, .pt.working .pt-headg, .pt.happy, .pt.hello .pt-headg { animation: none; } }
+/* sleeping — slow breathing bob + drifting z's */
+.pt.sleeping .pt-headg { animation: pt-breathe 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 80%; }
+@keyframes pt-breathe { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(0.8px) rotate(2deg); } }
+.pt.sleeping .pt-zzz { animation: pt-zzz 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes pt-zzz { 0% { opacity: 0; transform: translateY(3px); } 40% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(-3px); } }
+/* running — lean forward + streaking motion lines */
+.pt.running .pt-headg { transform: translateX(0.6px) rotate(-2deg); transform-box: fill-box; transform-origin: 50% 80%; animation: pt-run 0.7s ease-in-out infinite; }
+@keyframes pt-run { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(0.8px) rotate(-2deg); } }
+.pt.running .pt-streaks { animation: pt-streak 0.6s linear infinite; }
+@keyframes pt-streak { 0% { opacity: 0.15; } 50% { opacity: 0.6; } 100% { opacity: 0.15; } }
+/* cheer — arms shake with joy + a pop */
+.pt.cheer { animation: pt-pop 0.55s var(--ease, ease) 1; }
+.pt.cheer .pt-arms { animation: pt-cheer 0.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 90%; }
+@keyframes pt-cheer { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .pt .pt-eyes, .pt.working .pt-headg, .pt.happy, .pt.hello .pt-headg,
+  .pt.sleeping .pt-headg, .pt.sleeping .pt-zzz, .pt.running .pt-headg, .pt.running .pt-streaks, .pt.cheer, .pt.cheer .pt-arms { animation: none; }
+  .pt.running .pt-headg { transform: rotate(-2deg); }
+}
 
 /* ===== The Recruiter — describe the mission, hire the team ===== */
 .rcr { border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); padding: 14px 16px; margin-bottom: 16px; }
@@ -2228,8 +2337,14 @@ svg.lucide { color: var(--accent); }
 .flr-r svg { color: var(--ok); }
 /* state sections: colored headers group the workforce by what it's doing */
 .flr-sec { margin-top: 16px; }
-.flr-sec-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 9px; }
+.flr-sec-head { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 9px; padding: 2px 0; }
 .flr-sec-head svg { flex: none; }
+.flr-sec-cx { display: inline-block; font-size: 10px; transition: transform var(--dur-2, 220ms) var(--ease, ease); opacity: 0.7; }
+.flr-sec-cx.open { transform: rotate(90deg); }
+.flr-sec-head:hover .flr-sec-cx { opacity: 1; }
+.flr-sec-hint { margin-left: 8px; font-size: 10px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-2); opacity: 0; transition: opacity var(--dur-1, 120ms) var(--ease, ease); }
+.flr-sec-head:hover .flr-sec-hint { opacity: 0.9; }
+.flr-sec-n { pointer-events: none; }
 .flr-sec-head.live { color: var(--accent); }
 .flr-sec-head.ok { color: var(--ok); } .flr-sec-head.ok svg { color: var(--ok); }
 .flr-sec-head.warn { color: var(--warn); } .flr-sec-head.warn svg { color: var(--warn); }
