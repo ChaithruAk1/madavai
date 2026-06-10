@@ -101,7 +101,7 @@ function isBlocked(permMode, name) {
   return permMode === "plan" && !SAFE(name); // plan = read-only (reads + load_skill allowed)
 }
 
-// Shared artifact-iteration rule (Studio "live preview" behaves like Claude artifacts):
+// Shared artifact-iteration rule (Studio "live preview" iterates in place like frontier chat products):
 // always emit the WHOLE file in one fenced block so it renders, and re-emit it whole on edits.
 const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
 
@@ -226,7 +226,7 @@ function askUserQuestion(emit, permissions, toolUseId, question, options) {
   });
 }
 
-async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null }) {
+async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, noShell = false }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
   const gi = globalInstructions ? `\n\nUser's custom instructions (always follow these):\n${globalInstructions}` : "";
   const sys = (systemOverride || SYSTEM(mode)) + gi + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
@@ -238,6 +238,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
 
   // Build the tool set. Chat gets skills + connectors only; agent modes also get file/shell tools.
   let tools = mode === "chat" ? [] : [...TOOLS];
+  // Hard tool gate: when the caller says no shell (e.g. webhook-triggered headless
+  // runs, or an agent whose Shell capability is off), run_bash is neither offered
+  // nor executable — the schema is removed AND execution is refused below.
+  if (noShell) tools = tools.filter((t) => t.function.name !== "run_bash");
   if (skills.length) tools.push(LOAD_SKILL_TOOL);
   if (allowAskUser) tools.push(ASK_USER_TOOL);
   if (callAgent && Array.isArray(roster) && roster.length) tools.push(callAgentTool(roster));
@@ -347,6 +351,15 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         }
         emit({ kind: "tool_result", data: { id: tc.id, output: String(out).slice(0, 4000) } });
         history.push({ role: "tool", tool_call_id: tc.id, content: String(out).slice(0, 16000) });
+        continue;
+      }
+
+      // Shell hard-gate: even if a model hallucinates the tool name, refuse it.
+      if (noShell && tc.name === "run_bash") {
+        const out = "(blocked: the shell is not available on this run)";
+        emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: args, auto: true } });
+        emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+        history.push({ role: "tool", tool_call_id: tc.id, content: out });
         continue;
       }
 

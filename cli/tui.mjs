@@ -1,6 +1,6 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 //
-// BrainEdge CLI — Ink (React-for-terminal) UI, modeled on Claude Code: a persistent rounded input box,
+// BrainEdge CLI — Ink (React-for-terminal) UI, modeled on top agent CLIs: a persistent rounded input box,
 // a floating slash-command menu, bordered permission panels, live streaming, a spinner you can interrupt
 // with Esc, and an arrow-key model picker. Written with React.createElement so it runs without a build.
 import React from "react";

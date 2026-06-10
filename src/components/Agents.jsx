@@ -4,9 +4,10 @@
 // run on the model from the model selector (optionally pinned per agent — never an API key).
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
+import "../studio-designer.css";
 
 const TOOL_DEFS = [
   { key: "files",      label: "Files",      icon: FolderOpen,     note: "Read, write, edit and search files in a working folder." },
@@ -158,6 +159,15 @@ ${JSON.stringify({ name: cfg.name, description: cfg.description, instructions: c
 Apply the user's message to the config (create it if empty, refine it if not). Reply with ONLY a JSON object, no prose, no code fence:
 {"reply":"one or two short, friendly sentences saying what you set up or changed (or ONE clarifying question if truly needed)","config":{"name":"...","description":"one sentence","instructions":"detailed second-person system instructions covering role, method, output format, and what it must never do","tools":{"files":false,"shell":false,"connectors":false,"skills":false,"browser":false}}}
 Tool meanings — files: read/write files in a working folder; shell: run terminal commands; connectors: external apps via MCP (mail, GitHub, Slack, web fetch…); skills: installed skill playbooks; browser: drive a real visible browser window (open pages, read, click, fill forms — for research on live sites, dashboards, web tasks). Enable only what the agent genuinely needs. Keep everything the user didn't ask to change.`;
+
+// One-tap refinements — each sends a crafted brief through the normal Designer flow.
+const REFINE_CHIPS = [
+  { label: "Sharpen",        msg: "Tighten the instructions: cut filler, make every rule concrete and testable, keep the agent's job razor-sharp." },
+  { label: "Guardrails",     msg: "Add clear guardrails: what this agent must never do, and how it should respond to requests outside its job." },
+  { label: "Output format",  msg: "Define an exact output format (structure, headings, length) and make the agent always answer in it." },
+  { label: "Edge cases",     msg: "Strengthen the instructions for messy input: empty, malformed, ambiguous or hostile content — say exactly how to handle each." },
+  { label: "Warmer tone",    msg: "Make the tone warmer and more human while staying professional and concise." },
+];
 
 // Identity dot used across the Studio.
 function Face({ identity, size = 34, fontSize }) {
@@ -391,6 +401,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [draft, setDraft] = useState(blankAgent());
   const [blueprintOpen, setBlueprintOpen] = useState(false);
   const [q, setQ] = useState("");
+  // Tiles vs list presentation of the roster (persisted per user).
+  const [layout, setLayout] = useState(() => { try { return localStorage.getItem("be.agents.layout") || "tiles"; } catch { return "tiles"; } });
+  const switchLayout = (v) => { setLayout(v); try { localStorage.setItem("be.agents.layout", v); } catch {} };
   const [saveErr, setSaveErr] = useState("");
   const [saveBusy, setSaveBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -432,6 +445,30 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   useEffect(() => { if (view === "list") loadRuns(); }, [view]);
   useEffect(() => { dEndRef.current && dEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [dMsgs, dBusy]);
   useEffect(() => { tEndRef.current && tEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [tMsgs, tBusy]);
+
+  // Drafting-table status (visual only): when the draft changes in the Studio, note which
+  // blueprint facet moved so the Designer header can pulse and show "Blueprint updated · …".
+  // Cleared after the fade — no other state machinery; all draft flows are untouched.
+  const [draftNote, setDraftNote] = useState(null); // { field, at } | null
+  const prevDraftRef = useRef(null);
+  useEffect(() => {
+    const p = prevDraftRef.current;
+    prevDraftRef.current = draft;
+    if (view !== "studio" || !p || p.id !== draft.id) return;
+    const field =
+      p.instructions !== draft.instructions ? "instructions"
+      : (p.description || "") !== (draft.description || "") ? "purpose"
+      : JSON.stringify(p.tools || {}) !== JSON.stringify(draft.tools || {}) ? "capabilities"
+      : (p.model || "") !== (draft.model || "") ? "model"
+      : ((p.knowledge || []).length !== (draft.knowledge || []).length) ? "knowledge"
+      : (p.name || "") !== (draft.name || "") ? "name"
+      : ((p.identity || {}).glyph !== (draft.identity || {}).glyph || (p.identity || {}).color !== (draft.identity || {}).color) ? "identity"
+      : null;
+    if (!field) return;
+    setDraftNote({ field, at: Date.now() });
+    const t = setTimeout(() => setDraftNote(null), 2200);
+    return () => clearTimeout(t);
+  }, [draft, view]);
 
   // Re-read settings from disk before every write (clobber-bug pattern).
   const persist = async (next) => {
@@ -533,8 +570,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   };
 
   // Talk to the designer → updated config + a conversational reply.
-  const designerSend = async () => {
-    const text = dInput.trim();
+  const designerSend = async (preset) => {
+    const text = (typeof preset === "string" ? preset : dInput).trim();
     if (!text || dBusy) return;
     setDInput(""); setDBusy(true);
     setDMsgs((m) => [...m, { role: "user", text }]);
@@ -561,8 +598,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   };
 
   // Test bench: run the agent's instructions directly (no tools — those activate in a real session).
-  const benchSend = async () => {
-    const text = tInput.trim();
+  const benchSend = async (preset) => {
+    const text = (typeof preset === "string" ? preset : tInput).trim();
     if (!text || tBusy || !draft.instructions.trim()) return;
     setTInput(""); setTBusy(true);
     const nextMsgs = [...tMsgs, { role: "user", text }];
@@ -576,6 +613,27 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       setTMsgs((m) => [...m, { role: "agent", text: "Error: " + String((e && e.message) || e) }]);
     } finally { setTBusy(false); }
   };
+
+  // Bench test ideas: one model call drafts three realistic test prompts for THIS agent.
+  const [testIdeas, setTestIdeas] = useState([]);
+  const [ideasBusy, setIdeasBusy] = useState(false);
+  useEffect(() => { setTestIdeas([]); }, [draft.id]);
+  const suggestTests = async () => {
+    if (ideasBusy || !draft.instructions.trim()) return;
+    setIdeasBusy(true);
+    try {
+      const r = await bridge.completeOnce([
+        { role: "system", content: 'You design test prompts for a custom AI agent. Given the agent\'s purpose and instructions, reply with ONLY a JSON object, no prose: {"tests":["...","...","..."]} — exactly three short, realistic messages a user would actually send this agent: one typical task WITH sample input inline, one harder/edge case, one that probes its limits or guardrails. Each under 200 characters.' },
+        { role: "user", content: `Agent: ${draft.name || "Untitled"}\nPurpose: ${draft.description || "(none)"}\nInstructions:\n${draft.instructions.slice(0, 3000)}` },
+      ]);
+      const out = extractJson(r && r.text);
+      const tests = (out && Array.isArray(out.tests) ? out.tests : []).map((t) => String(t).trim()).filter(Boolean).slice(0, 3);
+      setTestIdeas(tests.length ? tests : []);
+    } catch { /* quiet — the button stays available */ }
+    finally { setIdeasBusy(false); }
+  };
+  // Re-run the last bench question — compare behaviour after a blueprint change.
+  const lastBenchAsk = [...tMsgs].reverse().find((m) => m.role === "user");
 
   const launch = async () => {
     const ok = await saveDraft(false);
@@ -836,13 +894,18 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           <span className="ags-tab-div" />
           <button className={`ags-tab ${tab === "agents" ? "on" : ""}`} onClick={() => setTab("agents")}><User size={13} /> Agent</button>
           <button className={`ags-tab ${tab === "teams" ? "on" : ""}`} onClick={() => setTab("teams")}><Users size={13} /> Agents Team</button>
+          <span className="ags-viewtoggle" style={{ marginLeft: "auto" }} role="group" aria-label="View">
+            <button className={layout === "tiles" ? "on" : ""} title="Tile view" aria-label="Tile view" onClick={() => switchLayout("tiles")}><LayoutGrid size={13} /></button>
+            <button className={layout === "list" ? "on" : ""} title="List view" aria-label="List view" onClick={() => switchLayout("list")}><List size={13} /></button>
+          </span>
           {tab === "agents" && bridge.importAgent && (
-            <button className="ags-tab" style={{ marginLeft: "auto" }} title="Import a .agent file someone shared with you" onClick={importAgentFile}><Upload size={13} /> Import .agent</button>
+            <button className="ags-tab" title="Import a .agent file someone shared with you" onClick={importAgentFile}><Upload size={13} /> Import .agent</button>
           )}
         </div>
 
         {tab === "teams" && (
           <>
+            {layout === "tiles" ? (
             <div className="ags-grid">
               <button className="ags-card ags-new" onClick={newTeam}>
                 <span className="ags-face ags-face-new"><Plus size={20} /></span>
@@ -872,6 +935,35 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                 );
               })}
             </div>
+            ) : (
+            <div className="ags-listwrap">
+              <button className="ags-listrow ags-listrow-new" onClick={newTeam}>
+                <span className="ags-face ags-face-new" style={{ width: 30, height: 30 }}><Plus size={15} /></span>
+                <span className="ags-list-name">New team</span>
+                <span className="ags-list-desc">Put agents together — they hand work down the line, or a coordinator runs them.</span>
+              </button>
+              {teams.map((t) => {
+                const members = resolveTeam(t).members;
+                return (
+                  <div key={t.id} className="ags-listrow">
+                    <span className="tops-faces">
+                      {members.slice(0, 3).map((m, i) => <span key={m.id} style={{ marginLeft: i ? -8 : 0 }}><Face identity={m.identity || autoIdentity(m.id)} size={28} /></span>)}
+                      {!members.length && <Face identity={t.identity} size={28} />}
+                    </span>
+                    <div className="ags-list-main">
+                      <span className="ags-list-name">{t.name || "Untitled team"}</span>
+                      <span className="ags-list-desc">{t.mode === "manager" ? "Managed" : "Relay line"} · {members.length} agent{members.length === 1 ? "" : "s"}{members.length ? " — " + members.map((m) => m.name).join(", ") : ""}</span>
+                    </div>
+                    <div className="ags-list-acts">
+                      <button className="btn primary" disabled={!members.length} onClick={() => launchTeam(t)}><Rocket size={13} /> Brief the team</button>
+                      <button className="btn ghost" title="Edit" onClick={() => editTeam(t)}><Pencil size={13} /></button>
+                      <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            )}
             {tErr && <div className="ag-err">{tErr}</div>}
             {agents.length === 0 && <div className="ag-hint" style={{ marginTop: 14 }}>Teams are made of agents — build a couple of agents first (Agents tab).</div>}
           </>
@@ -884,7 +976,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </div>
         )}
 
-        {tab === "agents" && (
+        {tab === "agents" && layout === "tiles" && (
         <div className="ags-grid">
           <button className="ags-card ags-new" onClick={() => openStudio(null)}>
             <span className="ags-face ags-face-new"><Plus size={20} /></span>
@@ -915,6 +1007,43 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                 <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
                 <button className="btn ghost" onClick={() => openStudio(a)}><Pencil size={13} /> Open in Studio</button>
                 {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
+                {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
+                <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+        )}
+
+        {tab === "agents" && layout === "list" && (
+        <div className="ags-listwrap">
+          <button className="ags-listrow ags-listrow-new" onClick={() => openStudio(null)}>
+            <span className="ags-face ags-face-new" style={{ width: 30, height: 30 }}><Plus size={15} /></span>
+            <span className="ags-list-name">New agent</span>
+            <span className="ags-list-desc">Describe it, shape it, test it — all in one room.</span>
+          </button>
+          {shownAgents.map((a) => (
+            <div key={a.id} className="ags-listrow">
+              <Face identity={a.identity || autoIdentity(a.id)} size={30} />
+              <div className="ags-list-main">
+                <span className="ags-list-name">{a.name || "Untitled agent"}</span>
+                <span className="ags-list-desc" title={a.description || ""}>{a.description || "No description"}</span>
+              </div>
+              <div className="ags-list-pills">
+                {toolPills(a.tools)}
+                {a.model && <span className="ag-pill ag-pill-model"><Cpu size={11} /> {a.model.split("::")[1] || a.model}</span>}
+              </div>
+              {stats[a.id] && stats[a.id].missions > 0 && (
+                <span className="ags-list-stats" title={`${stats[a.id].missions} missions · ${stats[a.id].cleanPct}% clean · last ${rel(stats[a.id].lastAt)}`}>
+                  <BadgeCheck size={12} style={{ color: stats[a.id].cleanPct >= 80 ? "var(--ok)" : "var(--text-2)" }} />
+                  {stats[a.id].missions} · {stats[a.id].cleanPct}%
+                </span>
+              )}
+              <div className="ags-list-acts">
+                <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
+                <button className="btn ghost" title="Open in Studio" onClick={() => openStudio(a)}><Pencil size={13} /></button>
+                {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
+                {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
                 <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
               </div>
             </div>
@@ -1053,8 +1182,14 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   }
 
   // ---------------- studio (build-by-chat + live bench) ----------------
+  // Drafting-table derivations (render-only, no state): blueprint completeness — has a name →
+  // instructions → capabilities → model — drives the spine fill and the header meter;
+  // "casting" decides when the empty-state casting call shows (same condition as before).
+  const compSteps = [!!draft.name.trim(), !!draft.instructions.trim(), Object.values(draft.tools || {}).some(Boolean), !!draft.model];
+  const compDone = compSteps.filter(Boolean).length;
+  const casting = dMsgs.length <= 1 && !draft.instructions;
   return (
-    <div className="ags-studio">
+    <div className="ags-studio" style={{ "--idc": (draft.identity && draft.identity.color) || "var(--accent)" }}>
       {/* top bar: identity + name + actions */}
       <div className="ags-topbar">
         <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>
@@ -1069,38 +1204,95 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
         </div>
       </div>
 
+      {/* vitals: the agent's life so far — track record + what it carries (no new fetches; stats already loaded) */}
+      {draft.id && stats[draft.id] && stats[draft.id].missions > 0 && (
+        <div className="agsd-vitals">
+          <span className="agsd-vital"><BadgeCheck size={12} style={{ color: stats[draft.id].cleanPct >= 80 ? "var(--ok)" : "var(--text-2)" }} />
+            {stats[draft.id].missions} mission{stats[draft.id].missions === 1 ? "" : "s"} · {stats[draft.id].cleanPct}% clean · last {rel(stats[draft.id].lastAt)}</span>
+          {(draft.knowledge || []).length > 0 && <span className="agsd-vital"><BookOpen size={12} /> {(draft.knowledge || []).length} knowledge file{(draft.knowledge || []).length === 1 ? "" : "s"}</span>}
+          {draft.memory !== false && <span className="agsd-vital"><Brain size={12} /> learns across missions</span>}
+        </div>
+      )}
+
       <div className="ags-split">
-        {/* left — the designer */}
-        <div className="ags-pane ags-designer">
-          <div className="ags-pane-head"><Wand2 size={14} /> Designer <span className="ags-pane-sub">— shape the agent by talking</span></div>
-          <div className="ags-chat scroll">
-            {dMsgs.map((m, i) => (
-              <div key={i} className={`ags-msg ${m.role === "user" ? "me" : ""}`}>{m.text}</div>
-            ))}
-            {dBusy && <div className="ags-msg"><Loader2 size={13} className="ag-spin" /> shaping…</div>}
-            {dMsgs.length <= 1 && !draft.instructions && (
-              <div className="ags-crew-inline">
-                {PERSONAS.map((p) => (
-                  <button key={p.persona} className="ags-persona sm" onClick={() => hirePersona(p)}>
-                    <Face identity={autoIdentity(p.persona)} size={24} fontSize={12} />
-                    <div>
-                      <div className="ags-persona-name">{p.persona}</div>
-                      <div className="ags-persona-role">{p.role}</div>
-                    </div>
-                  </button>
-                ))}
+        {/* left — the designer's drafting table */}
+        <div className="agsd-pane">
+          {/* completeness spine — fills as the draft gains name → instructions → capabilities → model */}
+          <span className="agsd-spine" aria-hidden="true">
+            <span className="agsd-spine-fill" style={{ height: `${(compDone / compSteps.length) * 100}%` }} />
+          </span>
+
+          {/* drafting-table header: identity face (click to cycle) + live draft status */}
+          <div className="agsd-head">
+            <button type="button" className="agsd-id" title="Change look" onClick={cycleIdentity}>
+              <Face identity={draft.identity} size={32} />
+              {draftNote && <span key={draftNote.at} className="agsd-id-pulse" style={{ borderColor: (draft.identity && draft.identity.color) || "var(--accent)" }} aria-hidden="true" />}
+            </button>
+            <div className="agsd-head-main">
+              <div className="agsd-head-title"><Wand2 size={13} /> Designer</div>
+              <div className="agsd-head-sub" aria-live="polite">
+                {draftNote
+                  ? <span key={draftNote.at} className="agsd-sub-note">Blueprint updated · {draftNote.field}</span>
+                  : <span className="agsd-sub-idle">shape the agent by talking</span>}
               </div>
+            </div>
+            <span className="agsd-meter" title={`Blueprint ${compDone}/${compSteps.length} — name · instructions · capabilities · model`}>
+              {compSteps.map((on, i) => <i key={i} className={on ? "on" : ""} />)}
+            </span>
+          </div>
+
+          <div className="agsd-chat scroll">
+            {casting ? (
+              <div className="agsd-cast">
+                <div className="agsd-cast-title">Describe who you’re hiring…</div>
+                <div className="agsd-cast-sub">Say it in your own words — the blueprint fills itself in as you talk, and the spine on the left fills as the draft takes shape.</div>
+                <div className="agsd-cast-row">
+                  {PERSONAS.map((p) => (
+                    <button key={p.persona} type="button" className="agsd-cast-chip" title={p.desc} onClick={() => hirePersona(p)}>
+                      <span className="agsd-cast-dot" style={{ background: autoIdentity(p.persona).color }} />
+                      <span className="agsd-cast-name">{p.persona}</span>
+                      <span className="agsd-cast-role">{p.role}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="agsd-cast-hint">…or pull someone from the casting call — every persona is a full blueprint you can reshape.</div>
+              </div>
+            ) : (
+              <>
+                {dMsgs.map((m, i) => (
+                  m.role === "user"
+                    ? <div key={i} className="agsd-say">{m.text}</div>
+                    : <div key={i} className="agsd-sheet">{m.text}</div>
+                ))}
+                {dBusy && <div className="agsd-sheet agsd-busy"><Loader2 size={13} className="ag-spin" /> drafting…</div>}
+              </>
             )}
             <div ref={dEndRef} />
           </div>
-          <div className="ags-input">
+
+          {/* one-tap refinements — fill the dead space with the next useful move */}
+          {!casting && draft.instructions.trim() && (
+            <div className="agsd-quick" aria-label="Quick refinements">
+              <span className="agsd-quick-k">Refine</span>
+              {REFINE_CHIPS.map((c) => (
+                <button key={c.label} type="button" className="agsd-quick-chip" disabled={dBusy} title={c.msg} onClick={() => designerSend(c.msg)}>{c.label}</button>
+              ))}
+            </div>
+          )}
+
+          <div className="agsd-composer">
             <input value={dInput} placeholder='e.g. "make it review code for security issues and report in a table"'
               onChange={(e) => setDInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") designerSend(); }} />
-            <button className="ag-gen" aria-label="Send to designer" disabled={dBusy || !dInput.trim()} onClick={designerSend}><ArrowUp size={14} /></button>
+            <button type="button" className="agsd-send" aria-label="Send to designer" disabled={dBusy || !dInput.trim()} onClick={() => designerSend()}><ArrowUp size={15} /></button>
           </div>
 
           {/* blueprint: the raw config, always one click away */}
-          <button className="ags-bp-toggle" onClick={() => setBlueprintOpen((o) => !o)}><Hammer size={12} /> Blueprint {blueprintOpen ? "▾" : "▸"}</button>
+          <button className="agsd-bp-toggle" aria-expanded={blueprintOpen} onClick={() => setBlueprintOpen((o) => !o)}>
+            <Hammer size={12} />
+            <span className="agsd-bp-label">Blueprint</span>
+            <span className="agsd-bp-sum">{compDone} of {compSteps.length} set</span>
+            <span className="agsd-bp-cx">{blueprintOpen ? "▾" : "▸"}</span>
+          </button>
           {blueprintOpen && (
             <div className="ags-bp scroll">
               <label>Purpose</label>
@@ -1158,14 +1350,31 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
         <div className="ags-pane ags-bench">
           <div className="ags-pane-head">
             <FlaskConical size={14} /> Bench <span className="ags-pane-sub">— talk to {draft.name.trim() || "the agent"} right now</span>
-            {tMsgs.length > 0 && <button className="ags-bench-reset" title="Reset bench" onClick={() => setTMsgs([])}><RotateCcw size={12} /></button>}
+            {lastBenchAsk && <button className="ags-bench-reset" style={{ marginLeft: "auto" }} disabled={tBusy} title="Re-run the last test — compare the answer after a blueprint change" onClick={() => benchSend(lastBenchAsk.text)}><Play size={12} /></button>}
+            {tMsgs.length > 0 && <button className="ags-bench-reset" style={lastBenchAsk ? { marginLeft: 0 } : undefined} title="Reset bench" onClick={() => setTMsgs([])}><RotateCcw size={12} /></button>}
           </div>
           <div className="ags-chat scroll">
             {!draft.instructions.trim() && <div className="ags-bench-empty">Nothing to test yet — describe the agent to the designer first.</div>}
             {draft.instructions.trim() && tMsgs.length === 0 && (
               <div className="ags-bench-empty">
-                <Face identity={draft.identity} size={40} />
-                <div>{draft.name.trim() || "Your agent"} is live on the bench. Say something — instructions only here; files, terminal and connectors switch on in a real session.</div>
+                <span className="ags-bench-aura"><Face identity={draft.identity} size={44} /></span>
+                <div className="ags-bench-live"><i className="ags-live-dot" /> {draft.name.trim() || "Your agent"} is live on the bench</div>
+                <div>Say something — instructions only here; files, terminal and connectors switch on in a real session.</div>
+                {testIdeas.length === 0 && (
+                  <button type="button" className="btn ghost ags-ideas-btn" disabled={ideasBusy} onClick={suggestTests}>
+                    {ideasBusy ? <><Loader2 size={13} className="ag-spin" /> drafting tests…</> : <><Wand2 size={13} /> Suggest 3 test prompts</>}
+                  </button>
+                )}
+                {testIdeas.length > 0 && (
+                  <div className="ags-ideas" aria-label="Suggested tests">
+                    {testIdeas.map((t, i) => (
+                      <button key={i} type="button" className="ags-idea" disabled={tBusy} onClick={() => benchSend(t)}>
+                        <Play size={11} /> <span>{t}</span>
+                      </button>
+                    ))}
+                    <button type="button" className="ags-idea ags-idea-more" disabled={ideasBusy} title="Draft three different tests" onClick={suggestTests}>{ideasBusy ? <Loader2 size={12} className="ag-spin" /> : <RotateCcw size={11} />}</button>
+                  </div>
+                )}
               </div>
             )}
             {tMsgs.map((m, i) => (

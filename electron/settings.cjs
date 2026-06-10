@@ -45,7 +45,7 @@ const DEFAULTS = {
   googleClientId: "",
   googleClientSecret: "",
   githubClientId: "",
-  globalInstructions: "", // applied to every conversation, like Claude's custom instructions
+  globalInstructions: "", // custom instructions applied to every conversation
   responseLanguage: "model", // "model" = let the model decide; or a language name to force replies
   theme: "dark", // "dark" | "light" | "system"
   accent: "default", // "default" = original two-tone; or a hex for a monochrome accent

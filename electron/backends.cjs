@@ -1,4 +1,4 @@
-// Execution backends for Claude Code. Local runs in agent-openai's execTool; this module
+// Execution backends for the agent. Local runs in agent-openai's execTool; this module
 // provides the SSH backend so the agent's file/shell tools run on a remote host.
 const fs = require("fs");
 

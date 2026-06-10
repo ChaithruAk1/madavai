@@ -1,0 +1,351 @@
+/* ============================================================================
+   Model Speed Check — dashboard styles (prefix: .spx-)
+   Colors come exclusively from app theme variables so light/dark both work.
+   Motion uses the app tokens var(--ease), var(--dur-1/2/3) with fallbacks.
+   ========================================================================== */
+
+.spx-page { height: 100%; min-height: 0; overflow-y: auto; padding: 18px 28px 26px; box-sizing: border-box; }
+.spx-page > * { max-width: 1280px; }
+
+/* ---- shared primitives ------------------------------------------------- */
+.spx-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.spx-label {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-2);
+}
+.spx-card {
+  background: var(--bg-1); border: 1px solid var(--line); border-radius: 12px;
+}
+.spx-dim { color: var(--text-2); font-size: 11.5px; }
+
+/* ---- page header -------------------------------------------------------- */
+.spx-head { display: flex; align-items: baseline; gap: 12px; margin: 0 0 2px; flex-wrap: wrap; }
+.spx-head h2 { margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px; color: var(--text-0); }
+.spx-head h2 svg { color: var(--accent); }
+.spx-sub { color: var(--text-2); font-size: 12px; margin: 2px 0 14px; max-width: 860px; line-height: 1.55; }
+.spx-sub b { color: var(--text-1); font-weight: 600; }
+
+/* ---- layout grid -------------------------------------------------------- */
+.spx-grid { display: grid; grid-template-columns: 296px minmax(0, 1fr); gap: 18px; align-items: start; }
+.spx-grid.spx-pane-collapsed { grid-template-columns: minmax(0, 1fr); }
+
+/* ---- left pane: setup --------------------------------------------------- */
+.spx-left { position: sticky; top: 8px; display: flex; flex-direction: column; min-width: 0; }
+.spx-sec { margin: 14px 0 6px; display: flex; align-items: baseline; gap: 8px; }
+.spx-sec:first-child { margin-top: 0; }
+.spx-sec .spx-dim { margin-left: auto; font-size: 11px; color: var(--text-2); }
+
+.spx-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.spx-chip {
+  border: 1px solid var(--line); background: var(--bg-1); color: var(--text-1);
+  font-size: 11.5px; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  transition: border-color var(--dur-1, 120ms) var(--ease, ease), background var(--dur-1, 120ms) var(--ease, ease), color var(--dur-1, 120ms) var(--ease, ease);
+}
+.spx-chip:hover { border-color: var(--line-2); color: var(--text-0); }
+.spx-chip.spx-on { background: var(--accent-weak); border-color: var(--accent-line); color: var(--text-0); }
+
+.spx-textarea {
+  width: 100%; margin-top: 8px; resize: vertical; font-family: inherit; font-size: 12.5px;
+  background: var(--bg-1); color: var(--text-0); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 10px; line-height: 1.5; box-sizing: border-box;
+}
+.spx-textarea:focus { outline: none; border-color: var(--accent-line); }
+
+.spx-search {
+  display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--bg-1); padding: 6px 9px; margin: 8px 0 6px; color: var(--text-2);
+}
+.spx-search input { flex: 1; min-width: 0; background: none; border: none; outline: none; color: var(--text-0); font-size: 12px; }
+
+.spx-filters { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; margin: 4px 0 8px; }
+.spx-filters select {
+  width: 100%; background: var(--bg-1); color: var(--text-0); border: 1px solid var(--line);
+  border-radius: 8px; font-size: 11.5px; padding: 4px 6px;
+}
+.spx-actions { display: flex; align-items: center; gap: 6px; margin: 2px 0 8px; flex-wrap: wrap; }
+.spx-link {
+  background: none; border: none; padding: 2px 4px; cursor: pointer; font-size: 11.5px;
+  color: var(--text-2); border-radius: 6px;
+  transition: color var(--dur-1, 120ms) var(--ease, ease);
+}
+.spx-link:hover { color: var(--text-0); }
+.spx-check { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-1); cursor: pointer; user-select: none; }
+.spx-check input { accent-color: var(--accent); }
+
+.spx-models {
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg-1);
+  max-height: 320px; overflow: auto; padding: 4px;
+}
+.spx-model {
+  display: flex; align-items: center; gap: 8px; padding: 5px 7px; border-radius: 7px;
+  font-size: 12px; color: var(--text-1); cursor: pointer;
+  transition: background var(--dur-1, 120ms) var(--ease, ease);
+}
+.spx-model:hover { background: var(--bg-2); }
+.spx-model input { accent-color: var(--accent); flex: none; }
+.spx-model.spx-off { opacity: 0.45; cursor: default; }
+.spx-model-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-0); }
+.spx-model-prov { flex: none; font-size: 10px; color: var(--text-2); letter-spacing: 0.04em; }
+.spx-models-empty { padding: 14px 10px; font-size: 12px; color: var(--text-2); text-align: center; }
+
+.spx-run {
+  margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--accent-line); background: var(--accent); color: var(--bg-0);
+  transition: filter var(--dur-1, 120ms) var(--ease, ease), transform var(--dur-1, 120ms) var(--ease, ease), opacity var(--dur-1, 120ms) var(--ease, ease);
+}
+.spx-run:hover:not(:disabled) { filter: brightness(1.08); }
+.spx-run:active:not(:disabled) { transform: translateY(1px); }
+.spx-run:disabled { opacity: 0.45; cursor: default; }
+.spx-run.spx-stop { background: transparent; color: var(--danger); border-color: var(--danger); }
+
+/* ---- right column header ------------------------------------------------ */
+.spx-righthead { display: flex; align-items: center; gap: 9px; min-height: 30px; margin-bottom: 8px; }
+.spx-righthead .spx-dim { font-size: 11.5px; color: var(--text-2); }
+
+/* ---- empty state --------------------------------------------------------- */
+.spx-empty { padding: 44px 24px 52px; text-align: center; }
+.spx-empty-ic {
+  width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 16px; display: flex;
+  align-items: center; justify-content: center; color: var(--accent);
+  background: var(--accent-weak); border: 1px solid var(--accent-line);
+}
+.spx-empty h3 { margin: 0 0 6px; font-size: 17px; color: var(--text-0); }
+.spx-empty > p { margin: 0 auto 22px; max-width: 480px; font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+.spx-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 640px; margin: 0 auto 24px; }
+.spx-step { padding: 14px 12px; text-align: left; }
+.spx-step-n { font-size: 11px; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+.spx-step b { display: block; margin: 4px 0 3px; font-size: 12.5px; color: var(--text-0); }
+.spx-step span { font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
+.spx-empty .spx-run { width: auto; margin: 0 auto; padding: 10px 22px; }
+.spx-empty-hint { margin-top: 10px; font-size: 11.5px; color: var(--text-2); }
+
+/* ---- the race (while running) ------------------------------------------- */
+.spx-race { padding: 14px 16px 16px; margin-bottom: 16px; }
+.spx-race-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.spx-race-head .spx-dim { margin-left: auto; font-size: 11.5px; color: var(--text-2); }
+.spx-race-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none;
+  animation: spx-pulse 1.4s var(--ease, ease) infinite;
+}
+@keyframes spx-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.8); } }
+
+.spx-lane { display: grid; grid-template-columns: minmax(120px, 200px) minmax(0, 1fr) 86px 92px; gap: 10px; align-items: center; padding: 5px 0; }
+.spx-lane-name { font-size: 12px; color: var(--text-0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spx-lane-name small { color: var(--text-2); font-size: 10px; margin-left: 6px; }
+.spx-lane-track { position: relative; height: 8px; border-radius: 999px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
+.spx-lane-fill {
+  position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--accent);
+  transition: width var(--dur-3, 380ms) var(--ease, ease);
+}
+.spx-lane.spx-st-failed .spx-lane-fill { background: var(--danger); opacity: 0.55; }
+.spx-lane.spx-st-done .spx-lane-fill { background: var(--ok); }
+.spx-lane.spx-st-streaming .spx-lane-fill { width: 30%; animation: spx-slide 1.3s var(--ease, ease) infinite; }
+@keyframes spx-slide { 0% { left: -32%; } 100% { left: 102%; } }
+/* moving sheen on active lanes */
+.spx-lane.spx-st-streaming .spx-lane-track::after,
+.spx-lane.spx-st-scoring .spx-lane-track::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(var(--accent-rgb), 0.28) 50%, transparent 70%);
+  animation: spx-sheen 1.8s linear infinite;
+}
+@keyframes spx-sheen { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.spx-lane-tps { font-size: 12px; color: var(--text-1); text-align: right; }
+.spx-lane-tps i { font-style: normal; font-size: 10px; color: var(--text-2); }
+.spx-status {
+  justify-self: end; font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-2); background: var(--bg-2);
+}
+.spx-status.spx-st-streaming { color: var(--accent); border-color: var(--accent-line); background: var(--accent-weak); }
+.spx-status.spx-st-scoring { color: var(--warn); border-color: var(--warn); background: transparent; }
+.spx-status.spx-st-done { color: var(--ok); border-color: var(--ok); background: transparent; }
+.spx-status.spx-st-failed { color: var(--danger); border-color: var(--danger); background: transparent; }
+
+/* ---- hero band ----------------------------------------------------------- */
+.spx-hero { display: grid; grid-template-columns: minmax(260px, 1.35fr) minmax(0, 2fr); gap: 12px; margin-bottom: 16px; }
+.spx-winner {
+  position: relative; padding: 16px 18px; overflow: hidden;
+  background:
+    radial-gradient(420px 180px at 0% 0%, rgba(var(--accent-rgb), 0.14), transparent 70%),
+    var(--bg-1);
+  border: 1px solid var(--accent-line); border-radius: 12px;
+  animation: spx-rise var(--dur-3, 380ms) var(--ease, ease) both;
+}
+.spx-winner-tag { display: flex; align-items: center; gap: 6px; color: var(--accent); }
+.spx-winner-name { margin: 8px 0 4px; font-size: 21px; font-weight: 700; color: var(--text-0); line-height: 1.2; }
+.spx-winner-name small { font-size: 11px; font-weight: 500; color: var(--text-2); margin-left: 8px; }
+.spx-winner-why { font-size: 12px; color: var(--text-1); line-height: 1.5; margin: 0 0 14px; max-width: 420px; }
+.spx-winner-nums { display: flex; gap: 18px; flex-wrap: wrap; }
+.spx-winner-num b { display: block; font-size: 17px; font-weight: 700; color: var(--text-0); }
+.spx-winner-num b i { font-style: normal; font-size: 11px; font-weight: 500; color: var(--text-2); margin-left: 2px; }
+.spx-winner-num span { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-2); }
+
+.spx-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.spx-tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 11px 13px;
+  background: var(--bg-1); border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
+  text-align: left; color: inherit; font: inherit;
+  transition: border-color var(--dur-2, 220ms) var(--ease, ease), transform var(--dur-1, 120ms) var(--ease, ease), background var(--dur-2, 220ms) var(--ease, ease);
+}
+.spx-tile:hover { border-color: var(--accent-line); transform: translateY(-1px); }
+.spx-tile.spx-on { border-color: var(--accent-line); background: var(--accent-weak); }
+.spx-tile-h { display: flex; align-items: center; gap: 6px; }
+.spx-tile-h svg { color: var(--accent); }
+.spx-tile-v { font-size: 18px; font-weight: 700; color: var(--text-0); line-height: 1.25; }
+.spx-tile-v i { font-style: normal; font-size: 11px; font-weight: 500; color: var(--text-2); margin-left: 2px; }
+.spx-tile-s { font-size: 11px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+
+/* ---- section heads ------------------------------------------------------- */
+.spx-sechead { display: flex; align-items: baseline; gap: 9px; margin: 20px 0 8px; }
+.spx-sechead .spx-dim { font-size: 11px; color: var(--text-2); }
+
+/* ---- ranked bar chart ---------------------------------------------------- */
+.spx-chartcard { padding: 13px 15px 15px; }
+.spx-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg-2); margin-bottom: 12px; }
+.spx-seg button {
+  border: none; background: none; color: var(--text-2); font-size: 11.5px; font-weight: 600;
+  padding: 4px 11px; border-radius: 7px; cursor: pointer;
+  transition: color var(--dur-1, 120ms) var(--ease, ease), background var(--dur-2, 220ms) var(--ease, ease);
+}
+.spx-seg button:hover { color: var(--text-0); }
+.spx-seg button.spx-on { background: var(--bg-1); color: var(--text-0); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
+.spx-chart-body { position: relative; }
+.spx-bar-row {
+  position: absolute; left: 0; right: 0; height: 30px;
+  display: grid; grid-template-columns: 24px minmax(110px, 190px) minmax(0, 1fr) 96px; gap: 10px; align-items: center;
+  border: none; background: none; padding: 0 4px; cursor: pointer; color: inherit; font: inherit; text-align: left;
+  border-radius: 8px;
+  transition: transform var(--dur-3, 380ms) var(--ease, ease), background var(--dur-1, 120ms) var(--ease, ease);
+}
+.spx-bar-row:hover { background: var(--bg-2); }
+.spx-bar-row.spx-picked { background: var(--accent-weak); }
+.spx-rank {
+  width: 20px; height: 20px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 700; color: var(--text-2); background: var(--bg-2); border: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.spx-bar-row.spx-lead .spx-rank { color: var(--bg-0); background: var(--accent); border-color: var(--accent); }
+.spx-bar-name { font-size: 12px; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spx-bar-row.spx-lead .spx-bar-name { color: var(--text-0); font-weight: 600; }
+.spx-bar-track { height: 9px; border-radius: 999px; background: var(--bg-2); overflow: hidden; }
+.spx-bar-fill {
+  display: block; height: 100%; border-radius: 999px; background: var(--text-2); opacity: 0.5;
+  transition: width var(--dur-3, 380ms) var(--ease, ease), background var(--dur-2, 220ms) var(--ease, ease), opacity var(--dur-2, 220ms) var(--ease, ease);
+}
+.spx-bar-row.spx-lead .spx-bar-fill { background: var(--accent); opacity: 1; }
+.spx-bar-val { font-size: 12px; color: var(--text-1); text-align: right; }
+.spx-bar-val i { font-style: normal; font-size: 10px; color: var(--text-2); }
+.spx-bar-row.spx-lead .spx-bar-val { color: var(--text-0); font-weight: 600; }
+
+/* ---- scatter -------------------------------------------------------------- */
+.spx-scatter { padding: 13px 15px 11px; position: relative; }
+.spx-scatter svg { display: block; width: 100%; }
+.spx-quad { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; fill: var(--text-2); opacity: 0.7; }
+.spx-axis { font-size: 10px; fill: var(--text-2); }
+.spx-dot { cursor: pointer; }
+.spx-dot circle { fill: var(--text-2); opacity: 0.55; transition: opacity var(--dur-1, 120ms) var(--ease, ease); }
+.spx-dot.spx-hot circle, .spx-dot.spx-picked circle { fill: var(--accent); opacity: 0.95; }
+.spx-dot text { font-size: 9.5px; fill: var(--text-1); }
+.spx-dot.spx-hot text, .spx-dot.spx-picked text { fill: var(--text-0); font-weight: 600; }
+.spx-tip {
+  position: absolute; left: 14px; bottom: 10px; pointer-events: none;
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 8px; padding: 5px 9px;
+  font-size: 11px; color: var(--text-1); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+.spx-tip b { color: var(--text-0); }
+
+/* ---- detail table ---------------------------------------------------------- */
+.spx-table { overflow: hidden; }
+.spx-tr {
+  display: grid; grid-template-columns: 26px minmax(140px, 1.6fr) repeat(5, minmax(72px, 1fr)) 26px;
+  gap: 8px; align-items: center; padding: 7px 12px; border-top: 1px solid var(--line);
+  font-size: 12px; color: var(--text-1);
+}
+.spx-table.spx-cols-3 .spx-tr { grid-template-columns: 26px minmax(140px, 1.6fr) repeat(3, minmax(80px, 1fr)) 26px; }
+.spx-table.spx-cols-4 .spx-tr { grid-template-columns: 26px minmax(140px, 1.6fr) repeat(4, minmax(76px, 1fr)) 26px; }
+.spx-tr.spx-thead { border-top: none; padding: 9px 12px 7px; background: var(--bg-2); }
+.spx-tr.spx-thead span { font-size: 9.5px; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-2); }
+.spx-tr.spx-click { cursor: pointer; transition: background var(--dur-1, 120ms) var(--ease, ease); }
+.spx-tr.spx-click:hover { background: var(--bg-2); }
+.spx-tr.spx-picked { background: var(--accent-weak); }
+.spx-td-model { min-width: 0; }
+.spx-td-model b { display: block; font-weight: 600; color: var(--text-0); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spx-td-model small { font-size: 10px; color: var(--text-2); }
+.spx-cell { min-width: 0; }
+.spx-cell-v { display: block; color: var(--text-0); }
+.spx-cell-v i { font-style: normal; font-size: 10px; color: var(--text-2); }
+.spx-meter { display: block; height: 3px; border-radius: 999px; background: var(--bg-3); margin-top: 3px; overflow: hidden; }
+.spx-meter span { display: block; height: 100%; border-radius: 999px; background: var(--accent-line); transition: width var(--dur-3, 380ms) var(--ease, ease); }
+.spx-cell.spx-best .spx-cell-v { color: var(--accent); font-weight: 600; }
+.spx-cell.spx-best .spx-meter span { background: var(--accent); }
+.spx-chev { color: var(--text-2); display: flex; justify-content: center; }
+
+.spx-detail { border-top: 1px solid var(--line); background: var(--bg-2); padding: 12px 14px 14px; animation: spx-rise var(--dur-2, 220ms) var(--ease, ease) both; }
+.spx-detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)); gap: 9px 14px; margin-bottom: 10px; }
+.spx-fact span { display: block; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-2); }
+.spx-fact b { font-size: 13px; font-weight: 600; color: var(--text-0); }
+.spx-fact b i { font-style: normal; font-size: 10px; font-weight: 500; color: var(--text-2); }
+.spx-skills { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px 16px; }
+.spx-skill { display: grid; grid-template-columns: 14px minmax(70px, auto) minmax(0, 1fr) 38px; gap: 7px; align-items: center; font-size: 11px; color: var(--text-1); }
+.spx-skill svg { color: var(--text-2); }
+.spx-skill .spx-meter { margin: 0; height: 4px; }
+.spx-skill em { font-style: normal; text-align: right; color: var(--text-0); font-variant-numeric: tabular-nums; }
+
+/* ---- failed (quiet) -------------------------------------------------------- */
+.spx-failed { margin-top: 14px; }
+.spx-failed-h {
+  display: flex; align-items: center; gap: 7px; background: none; border: none; padding: 4px 2px;
+  cursor: pointer; font-size: 12px; color: var(--text-2); font-weight: 600;
+}
+.spx-failed-h:hover { color: var(--text-1); }
+.spx-failed-h svg { color: var(--danger); opacity: 0.75; }
+.spx-faillist { margin-top: 6px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.spx-failrow { display: flex; align-items: baseline; gap: 12px; padding: 6px 12px; font-size: 12px; border-top: 1px solid var(--line); }
+.spx-failrow:first-child { border-top: none; }
+.spx-failrow > span:first-child { color: var(--text-0); flex: none; }
+.spx-failrow > span:last-child { color: var(--text-2); font-size: 11.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- methodology ------------------------------------------------------------ */
+.spx-info-toggle {
+  display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 12px; margin: 0 0 14px; cursor: pointer;
+  font-size: 11.5px; color: var(--text-2);
+  transition: color var(--dur-1, 120ms) var(--ease, ease), border-color var(--dur-1, 120ms) var(--ease, ease);
+}
+.spx-info-toggle:hover { color: var(--text-0); border-color: var(--line-2); }
+.spx-info { padding: 4px 18px 14px; margin: -6px 0 16px; animation: spx-rise var(--dur-2, 220ms) var(--ease, ease) both; }
+.spx-info-sec { margin-top: 14px; }
+.spx-info-sec h4 { margin: 0 0 5px; font-size: 12.5px; color: var(--text-0); }
+.spx-info-sec p, .spx-info-sec li, .spx-info-sec dd { font-size: 12px; color: var(--text-2); line-height: 1.6; }
+.spx-info-sec p { margin: 0 0 6px; }
+.spx-info-sec b { color: var(--text-1); font-weight: 600; }
+.spx-rec { margin: 4px 0 6px; padding-left: 18px; }
+.spx-rec li { margin: 3px 0; }
+.spx-defs { margin: 4px 0 0; }
+.spx-defs > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; padding: 5px 0; border-top: 1px solid var(--line); }
+.spx-defs > div:first-child { border-top: none; }
+.spx-defs dt { font-size: 11.5px; font-weight: 600; color: var(--text-1); }
+.spx-defs dd { margin: 0; }
+
+/* ---- shared animations ------------------------------------------------------ */
+@keyframes spx-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.spx-anim { animation: spx-rise var(--dur-3, 380ms) var(--ease, ease) both; }
+
+/* ---- responsive --------------------------------------------------------------- */
+@media (max-width: 1080px) {
+  .spx-hero { grid-template-columns: 1fr; }
+  .spx-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .spx-grid { grid-template-columns: 1fr; }
+  .spx-left { position: static; }
+}
+
+/* ---- reduced motion ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .spx-page *, .spx-page *::before, .spx-page *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .spx-lane.spx-st-streaming .spx-lane-fill { width: 60%; left: 0; }
+}

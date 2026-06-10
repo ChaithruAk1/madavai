@@ -151,4 +151,4 @@ Turn on the speaker toggle next to the model picker. Click the mic, say *"give m
 | Checkpoints / resume | — | ✓ (team missions) | — | — |
 | Token budget meter | — | ✓ (team missions) | — | — |
 
-*Note: ask_user and call_agent run on the self-built tool loop (OpenAI-compatible providers — NIM, OpenRouter, local, DeepSeek, Gemini…). On Anthropic-SDK sessions the Claude Agent SDK's own subagent machinery applies instead.*
+*Note: ask_user and call_agent run on the self-built tool loop (OpenAI-compatible providers — NIM, OpenRouter, local, DeepSeek, Gemini…). On Anthropic-SDK sessions the Agent SDK's own subagent machinery applies instead.*

@@ -18,6 +18,31 @@ let state = { running: false, port: 0, error: "" };
 
 function newToken() { return crypto.randomBytes(24).toString("base64url"); }
 
+// Constant-time token check — sha256 both sides first so the buffers are always the
+// same length (timingSafeEqual throws on length mismatch, which itself leaks length).
+function tokenMatches(provided, expected) {
+  if (!provided || !expected) return false;
+  const a = crypto.createHash("sha256").update(String(provided)).digest();
+  const b = crypto.createHash("sha256").update(String(expected)).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
+// Tiny per-IP rate limiter: 30 requests per rolling minute.
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 60 * 1000;
+const rateMap = new Map(); // ip → array of request timestamps
+function rateLimited(ip) {
+  const now = Date.now();
+  // Prune stale IPs occasionally so the map can't grow unbounded.
+  if (rateMap.size > 500) {
+    for (const [k, v] of rateMap) { if (!v.length || now - v[v.length - 1] > RATE_WINDOW_MS) rateMap.delete(k); }
+  }
+  const hits = (rateMap.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
+  hits.push(now);
+  rateMap.set(ip, hits);
+  return hits.length > RATE_LIMIT;
+}
+
 function readBody(req, cb) {
   let buf = "";
   req.on("data", (c) => { buf += c; if (buf.length > 256 * 1024) req.destroy(); });
@@ -41,13 +66,27 @@ function reconcile(deps) {
   const port = Number(wh.port) || 8765;
   const token = wh.token || "";
   const host = wh.lan ? "0.0.0.0" : "127.0.0.1";
+  if (wh.lan) {
+    console.warn([
+      "",
+      "============================================================",
+      "[brainedge] WARNING: webhook triggers are bound to 0.0.0.0.",
+      "  Your agent workforce is reachable by EVERY device on this",
+      "  network. Anyone with the token can run agents headlessly.",
+      "  Disable webhooks.lan unless you trust the whole network.",
+      "============================================================",
+      "",
+    ].join("\n"));
+  }
 
   server = http.createServer((req, res) => {
     try {
       const u = new URL(req.url, "http://localhost");
+      const ip = (req.socket && req.socket.remoteAddress) || "?";
+      if (rateLimited(ip)) return send(res, 429, { ok: false, error: "rate limit exceeded (30 req/min)" });
       const auth = (req.headers.authorization || "").replace(/^Bearer\s+/i, "") || u.searchParams.get("token") || "";
       if (u.pathname === "/hook/ping") return send(res, 200, { ok: true, app: "BrainEdge" });
-      if (!token || auth !== token) return send(res, 401, { ok: false, error: "bad or missing token" });
+      if (!token || !tokenMatches(auth, token)) return send(res, 401, { ok: false, error: "bad or missing token" });
       const m = /^\/hook\/(agent|team|task)\/([\w.-]+)$/.exec(u.pathname);
       if (!m || req.method !== "POST") return send(res, 404, { ok: false, error: "unknown route" });
       const [, kind, id] = m;
@@ -75,7 +114,7 @@ function reconcile(deps) {
           // task
           const t = deps.taskStore.getTask(id);
           if (!t) return send(res, 404, { ok: false, error: "task not found" });
-          const run = await deps.taskRunner.runTask(prompt ? { ...t, prompt } : t);
+          const run = await deps.taskRunner.runTask({ ...t, ...(prompt ? { prompt } : {}), source: "webhook" });
           deps.taskStore.addRun(t.id, { ...run, source: "webhook" });
           deps.onRun && deps.onRun("task", t.id, run);
           return send(res, 200, { ok: run.status === "success", output: String(run.output || "").slice(0, 8000) });

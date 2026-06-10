@@ -1,4 +1,4 @@
-// Projects store — Claude-Projects-style workspaces persisted to disk.
+// Projects store — project workspaces persisted to disk.
 // A project has: name, custom instructions, knowledge (text/files injected as context),
 // and a set of conversations whose messages persist across restarts.
 const { app } = require("electron");

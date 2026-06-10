@@ -1,6 +1,6 @@
 # BrainEdge — renderer layout mock
 
-A runnable React mock of the desktop UI from `../claude-ui/ARCHITECTURE.md`. It renders the full
+A runnable React mock of the BrainEdge desktop UI. It renders the full
 layout — tab/mode shell, model picker, streaming message list, tool-call cards, and the permission
 modal — driven entirely by the **`UiEvent`** contract, so wiring it to the real Electron
 `SessionManager` later means swapping one line.
@@ -38,7 +38,7 @@ agent transport (tools/MCP/skills) is Phase 2.
 
 ## Try it
 
-1. Pick **Claude Code** mode → send a message → watch streaming + a `Grep` tool auto-run.
+1. Pick **Let's Build** mode → send a message → watch streaming + a `Grep` tool auto-run.
 2. The `Edit` tool triggers the **permission modal** — Decline to see the declined path, Allow to continue.
 3. Switch to **Cowork** mode → the same `Edit` runs without a prompt (`acceptEdits`).
 4. Open the **model picker** (top-right) to search/switch models.

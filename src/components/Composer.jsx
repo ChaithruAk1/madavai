@@ -41,7 +41,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   useEffect(() => { loadSkills(); loadConnectors(); }, []);
   useEffect(() => { if (cwd && bridge.listDir) bridge.listDir(cwd).then((l) => setDirFiles(l || [])).catch(() => setDirFiles([])); else setDirFiles([]); }, [cwd]);
 
-  // Built-in slash commands — inline ACTIONS you use in place (Claude-style), not navigation away.
+  // Built-in slash commands — inline ACTIONS you use in place, not navigation away.
   const nav = (m) => { setMenuOpen(false); onNavigate && onNavigate(m); };
   const COMMANDS = [
     { id: "add-files", desc: "Open the file picker", run: () => pickFiles() },

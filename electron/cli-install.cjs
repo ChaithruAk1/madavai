@@ -64,7 +64,7 @@ async function enableCli(authBaseUrl) {
   const tok = await auth.cliToken(authBaseUrl);
   if (tok.error) return { ok: false, error: tok.error === "unauthenticated" ? "Sign in first." : ("Couldn't authorize: " + tok.error) };
   const cfg = { baseUrl: prof.baseUrl, apiKey: prof.apiKey || "", model: prof.model, kind: prof.kind || "openai", authBaseUrl, token: tok.token };
-  try { fs.mkdirSync(path.dirname(configPath()), { recursive: true }); fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2)); }
+  try { fs.mkdirSync(path.dirname(configPath()), { recursive: true }); fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2), { mode: 0o600 }); }
   catch (e) { return { ok: false, error: "Couldn't write the config file: " + String(e.message || e) }; }
   const command = installCommand();
   return { ok: true, node, model: prof.model, provider: prof.name || "", subscription: tok.status, command };

@@ -1,6 +1,6 @@
 # BrainEdge CLI
 
-A terminal coding agent — like Claude Code, but on any provider. You `cd` into a project and run it;
+A terminal coding agent that works with any provider. You `cd` into a project and run it;
 no folder picker, full power (it can read/write/edit files **and run commands**).
 
 ## Setup (one time)
@@ -36,12 +36,12 @@ Without installing, you can also run it directly:
 node C:\Projects\ClaudeCodeUI\BrainEdge\cli\brainedge.mjs
 ```
 
-## Commands (Claude-Code style)
+## Commands
 
 - `/model [id]` — show or switch the model
 - `/clear` — start a fresh conversation
 - `/skills` — list skills · `/reload` — re-scan skills
-- `/init` — create a `BRAINEDGE.md` project guide (auto-read every session, like `CLAUDE.md`)
+- `/init` — create a `BRAINEDGE.md` project guide (auto-read every session; existing `CLAUDE.md`/`AGENTS.md` files are also read for compatibility)
 - `/cwd` — show the working folder · `/cost` — rough token estimate
 - `/auto` — toggle auto-approve (no confirmation prompts) · `/exit`
 

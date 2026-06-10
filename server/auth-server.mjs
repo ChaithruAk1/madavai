@@ -40,6 +40,10 @@ if (IS_PROD) {
     console.error(`[auth-server] FATAL: refusing to start in production with default ${bad.join(" + ")}. Set strong values (e.g. "openssl rand -hex 32") and restart.`);
     process.exit(1);
   }
+  if (process.env.ALLOW_DEV_LOGIN === "1") {
+    console.error(`[auth-server] FATAL: ALLOW_DEV_LOGIN=1 in production would let anyone sign in as any email without OAuth. Unset it and restart.`);
+    process.exit(1);
+  }
 }
 const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 7);
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24h; re-validated online so bans still bite quickly
@@ -131,14 +135,68 @@ function verify(token) {
 // Long-lived token for the CLI (the terminal can't re-auth interactively often). Still re-validated
 // online against the user's live subscription on every CLI start, so a cancellation/ban bites quickly.
 const CLI_TTL_MS = 365 * 24 * 60 * 60 * 1000;
-function signCli(sub) {
-  const payload = b64u(JSON.stringify({ sub, cli: true, exp: Date.now() + CLI_TTL_MS }));
+function signCli(sub, ver) {
+  const payload = b64u(JSON.stringify({ sub, cli: true, v: ver || 1, exp: Date.now() + CLI_TTL_MS }));
   const mac = crypto.createHmac("sha256", SECRET).update(payload).digest("base64url");
   return payload + "." + mac;
 }
 
 // ---- helpers ----
-const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type, x-admin-key", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" }); res.end(JSON.stringify(obj)); };
+const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); };
+
+// CORS allowlist: the server's own origin, the dev web/app ports, plus EXTRA_ORIGINS (comma list).
+// No Origin header (desktop app, curl, server-to-server) -> no CORS headers needed; unknown Origin -> none sent.
+const ALLOWED_ORIGINS = new Set([
+  new URL(BASE).origin,
+  "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:8787", "http://127.0.0.1:8787",
+  ...(process.env.EXTRA_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean),
+]);
+
+// Security headers on every response (set via setHeader so later writeHead calls merge with them).
+// CSP defaults to the strict API policy; HTML responses override it with HTML_CSP below.
+const API_CSP = "default-src 'none'; frame-ancestors 'none'";
+const HTML_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https:; img-src * data: blob:; media-src blob: data:; connect-src *; frame-src 'self' blob: data: about:; worker-src blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+function baseHeaders(req, res) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+  res.setHeader("Permissions-Policy", "camera=(), geolocation=(), payment=(), usb=()"); // mic stays on (push-to-talk)
+  res.setHeader("Content-Security-Policy", API_CSP);
+  if (req.headers["x-forwarded-proto"] === "https" || req.socket.encrypted) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, x-admin-key");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  }
+}
+
+// SSRF guard: true when a URL must NOT be fetched server-side (non-http(s), loopback, RFC1918,
+// link-local/cloud-metadata, or *.local / *.internal hostnames).
+function isForbiddenTarget(urlString) {
+  let t; try { t = new URL(urlString); } catch { return true; }
+  if (t.protocol !== "http:" && t.protocol !== "https:") return true;
+  const h = t.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (h === "localhost" || h === "::1" || h === "::" || h === "0.0.0.0" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return true;
+  if (/^::ffff:127\./.test(h)) return true; // IPv4-mapped loopback
+  const m4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m4) {
+    const a = +m4[1], b = +m4[2];
+    if (a === 0 || a === 127 || a === 10) return true;            // 0/8, loopback, 10/8
+    if (a === 172 && b >= 16 && b <= 31) return true;             // 172.16/12
+    if (a === 192 && b === 168) return true;                      // 192.168/16
+    if (a === 169 && b === 254) return true;                      // link-local / cloud metadata
+  }
+  return false;
+}
+// Is the CALLER the local machine? (desktop app talking to its own loopback server)
+function isLoopbackCaller(req) {
+  const a = req.socket.remoteAddress || "";
+  return a === "::1" || a.startsWith("127.") || a.startsWith("::ffff:127.");
+}
 
 // Static serving for the WEB app: serves the built Vite bundle (dist/) so the web app and the API
 // share one origin (no CORS, OAuth redirects come back here). SPA fallback to index.html.
@@ -146,24 +204,39 @@ const WEB_DIR = process.env.WEB_DIR || path.join(process.cwd(), "dist");
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".ico": "image/x-icon", ".webp": "image/webp", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".map": "application/json" };
 function serveStatic(res, p) {
   let rel = decodeURIComponent(p).replace(/^\/+/, "") || "index.html";
-  const file = path.join(WEB_DIR, rel);
-  if (!file.startsWith(WEB_DIR)) { res.writeHead(403); return res.end(); } // path-traversal guard
+  const root = path.resolve(WEB_DIR);
+  const file = path.resolve(WEB_DIR, rel);
+  if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403); return res.end(); } // path-traversal guard (boundary-aware)
   fs.readFile(file, (err, buf) => {
     if (err) {
       fs.readFile(path.join(WEB_DIR, "index.html"), (e2, idx) => {
         if (e2) return json(res, 404, { error: "not found" });
+        res.setHeader("Content-Security-Policy", HTML_CSP);
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(idx);
       });
       return;
     }
     const ext = file.slice(file.lastIndexOf("."));
-    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+    const type = MIME[ext] || "application/octet-stream";
+    if (type.startsWith("text/html")) res.setHeader("Content-Security-Policy", HTML_CSP);
+    res.writeHead(200, { "Content-Type": type });
     res.end(buf);
   });
 }
 const bearer = (req) => (req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
-const html = (res, body) => { res.writeHead(200, { "Content-Type": "text/html" }); res.end(`<!doctype html><meta charset=utf-8><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;display:grid;place-items:center;height:100vh;text-align:center">${body}</body>`); };
-const rawBody = (req) => new Promise((r) => { let d = ""; req.on("data", (c) => (d += c)); req.on("end", () => r(d)); });
+const html = (res, body) => { res.setHeader("Content-Security-Policy", HTML_CSP); res.writeHead(200, { "Content-Type": "text/html" }); res.end(`<!doctype html><meta charset=utf-8><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;display:grid;place-items:center;height:100vh;text-align:center">${body}</body>`); };
+// Body reader with a size cap: over the limit -> respond 413 and destroy the socket, resolve null
+// (callers must `if (raw === null) return;`). Default 1MB; /proxy/chat passes 8MB for vision payloads.
+const rawBody = (req, res, limit = 1024 * 1024) => new Promise((r) => {
+  let d = "", over = false;
+  req.on("data", (c) => {
+    if (over) return;
+    d += c;
+    if (d.length > limit) { over = true; d = ""; try { json(res, 413, { error: "payload too large" }); } catch {} req.destroy(); r(null); }
+  });
+  req.on("end", () => { if (!over) r(d); });
+  req.on("error", () => { if (!over) { over = true; r(null); } });
+});
 
 // ---- Stripe (REST; no SDK dependency) ----
 async function stripe(pathname, params) {
@@ -172,6 +245,15 @@ async function stripe(pathname, params) {
     body: new URLSearchParams(params),
   });
   return res.json();
+}
+// Webhook idempotency: remember processed Stripe event ids (insertion-ordered Set, capped at 1000).
+const seenStripeEvents = new Set();
+function stripeEventSeen(id) {
+  if (!id) return false;
+  if (seenStripeEvents.has(id)) return true;
+  seenStripeEvents.add(id);
+  if (seenStripeEvents.size > 1000) seenStripeEvents.delete(seenStripeEvents.values().next().value);
+  return false;
 }
 function verifyStripeSig(header, payload, secret) {
   try {
@@ -197,16 +279,18 @@ function rateLimited(req, bucket, max, windowMs) {
   if (!rec || now > rec.reset) { hits.set(key, { n: 1, reset: now + windowMs }); return false; }
   rec.n++; return rec.n > max;
 }
+const tooMany = (res, retryAfterSec) => { res.setHeader("Retry-After", String(retryAfterSec)); return json(res, 429, { error: "rate limited" }); };
 
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, BASE);
   const p = u.pathname;
+  baseHeaders(req, res); // security + (allowlisted) CORS headers on every response
   if (req.method === "OPTIONS") return json(res, 204, {});
+  if (p.startsWith("/auth/") && rateLimited(req, "auth", 30, 15 * 60000)) return tooMany(res, 900);
 
   // GET /auth/:provider/start?redirect=...&state=...
   let m = p.match(/^\/auth\/(google|github)\/start$/);
   if (m && req.method === "GET") {
-    if (rateLimited(req, "auth", 30, 60000)) return json(res, 429, { error: "rate limited" });
     const prov = OAUTH[m[1]];
     if (!prov.clientId) return json(res, 500, { error: `${m[1]} OAuth not configured on server` });
     const redirect = u.searchParams.get("redirect") || "";
@@ -277,13 +361,16 @@ const server = http.createServer(async (req, res) => {
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
     const user = await store.getUser(pl.sub); if (!user) return json(res, 401, { error: "unknown user" });
     const st = statusOf(user);
-    return json(res, 200, { token: signCli(user.id), status: st.status, daysLeft: st.daysLeft, email: user.email });
+    return json(res, 200, { token: signCli(user.id, user.tokenVersion || 1), status: st.status, daysLeft: st.daysLeft, email: user.email });
   }
 
   // GET /cli/verify (Bearer CLI token) — the CLI calls this on startup to confirm an active subscription.
   if (p === "/cli/verify" && req.method === "GET") {
+    if (rateLimited(req, "cliverify", 60, 15 * 60000)) return tooMany(res, 900);
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
     const user = await store.getUser(pl.sub); if (!user) return json(res, 401, { error: "unknown user" });
+    // Token-version revocation: tokens minted before /admin/users/:id/revoke-cli carry an older version.
+    if ((pl.v || 1) !== (user.tokenVersion || 1)) return json(res, 401, { error: "token revoked" });
     const st = statusOf(user);
     const ok = st.status === "active" || st.status === "trialing";
     if (user.lastSeenAt == null || Date.now() - Date.parse(user.lastSeenAt || 0) > 5 * 60000) store.patchUser(user.id, { lastSeenAt: new Date().toISOString() }).catch(() => {});
@@ -310,14 +397,16 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { token });
   }
 
-  // POST /admin/users/:id/(suspend|unsuspend|comp|uncomp)   header: x-admin-key
+  // POST /admin/users/:id/(suspend|unsuspend|comp|uncomp|revoke-cli)   header: x-admin-key
   // comp = give this user free access forever (no subscription needed); uncomp removes it.
-  m = p.match(/^\/admin\/users\/(.+)\/(suspend|unsuspend|comp|uncomp)$/);
+  // revoke-cli = bump the user's token version so all previously minted CLI tokens stop verifying.
+  m = p.match(/^\/admin\/users\/(.+)\/(suspend|unsuspend|comp|uncomp|revoke-cli)$/);
   if (m && req.method === "POST") {
     if (!(await adminOk(req))) return json(res, 403, { error: "forbidden" });
     const id = decodeURIComponent(m[1]); const user = await store.getUser(id);
     if (!user) return json(res, 404, { error: "no such user" });
     const action = m[2];
+    if (action === "revoke-cli") { const v = (user.tokenVersion || 1) + 1; await store.patchUser(id, { tokenVersion: v }); return json(res, 200, { ok: true, id, tokenVersion: v }); }
     if (action === "suspend" || action === "unsuspend") { await store.patchUser(id, { suspended: action === "suspend" }); return json(res, 200, { ok: true, id, suspended: action === "suspend" }); }
     await store.patchUser(id, { freeAccess: action === "comp" }); // comp / uncomp
     return json(res, 200, { ok: true, id, freeAccess: action === "comp" });
@@ -327,7 +416,8 @@ const server = http.createServer(async (req, res) => {
   if (p === "/events" && req.method === "POST") {
     if (rateLimited(req, "events", 300, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    let body = {}; try { body = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    const raw = await rawBody(req, res, 100 * 1024); if (raw === null) return;
+    let body = {}; try { body = JSON.parse(raw || "{}"); } catch {}
     if (!body.type) return json(res, 400, { error: "type required" });
     await store.logEvent({ userId: pl.sub, type: String(body.type).slice(0, 40), meta: body.meta || null });
     store.patchUser(pl.sub, { lastSeenAt: new Date().toISOString() }).catch(() => {});
@@ -337,7 +427,8 @@ const server = http.createServer(async (req, res) => {
   // POST /visit (no auth) -> log an anonymous website visit, for visitor analytics.
   if (p === "/visit" && req.method === "POST") {
     if (rateLimited(req, "visit", 600, 60000)) return json(res, 200, { ok: true });
-    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    const raw = await rawBody(req, res, 100 * 1024); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch {}
     const v = String(b.visitorId || "").slice(0, 40) || "anon";
     await store.logEvent({ userId: null, type: "visit", meta: { v } });
     return json(res, 200, { ok: true });
@@ -346,9 +437,10 @@ const server = http.createServer(async (req, res) => {
   // POST /score-quiz (Bearer) -> grade speed-check answers server-side (the answer key + scoring stay
   // off the client). Body { batch: { label: {id:text} } } -> { scores: { label: scoresObj } }.
   if (p === "/score-quiz" && req.method === "POST") {
-    if (rateLimited(req, "score", 120, 60000)) return json(res, 429, { error: "rate limited" });
+    if (rateLimited(req, "score", 60, 15 * 60000)) return tooMany(res, 900);
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    const raw = await rawBody(req, res); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch {}
     if (b.batch) return json(res, 200, { scores: scoreBatch(b.batch) });
     return json(res, 200, { score: scoreQuiz(b.answers || b) });
   }
@@ -358,9 +450,12 @@ const server = http.createServer(async (req, res) => {
   if (p === "/proxy/chat" && req.method === "POST") {
     if (rateLimited(req, "proxy", 120, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    const raw = await rawBody(req, res, 8 * 1024 * 1024); if (raw === null) return; // 8MB: vision payloads
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch {}
     const { kind, baseUrl, apiKey, model, messages } = b;
     if (!baseUrl || !model) return json(res, 400, { error: "baseUrl and model required" });
+    // SSRF guard — except a loopback caller (the desktop app) may use localhost providers (Ollama/LM Studio).
+    if (!isLoopbackCaller(req) && isForbiddenTarget(baseUrl)) return json(res, 403, { error: "blocked host" });
     try {
       let url, headers, payload;
       if (kind === "anthropic") {
@@ -376,7 +471,7 @@ const server = http.createServer(async (req, res) => {
         payload = { model, messages, stream: true };
       }
       const upstream = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
-      res.writeHead(upstream.status, { "Content-Type": upstream.headers.get("content-type") || "text/event-stream", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-cache" });
+      res.writeHead(upstream.status, { "Content-Type": upstream.headers.get("content-type") || "text/event-stream", "Cache-Control": "no-cache" });
       if (upstream.body) { const reader = upstream.body.getReader(); while (true) { const { done, value } = await reader.read(); if (done) break; res.write(Buffer.from(value)); } }
       return res.end();
     } catch (e) { if (!res.headersSent) return json(res, 502, { error: "proxy", detail: String((e && e.message) || e) }); try { res.end(); } catch {} }
@@ -386,9 +481,12 @@ const server = http.createServer(async (req, res) => {
   if (p === "/proxy/models" && req.method === "POST") {
     if (rateLimited(req, "proxy", 120, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    const raw = await rawBody(req, res); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch {}
     const { kind, baseUrl, apiKey } = b;
     if (!baseUrl) return json(res, 400, { error: "baseUrl required" });
+    // SSRF guard — except a loopback caller (the desktop app) may use localhost providers (Ollama/LM Studio).
+    if (!isLoopbackCaller(req) && isForbiddenTarget(baseUrl)) return json(res, 403, { error: "blocked host" });
     try {
       const bb = (baseUrl || "").replace(/\/$/, ""); const apib = /\/v\d|\/openai/.test(bb) ? bb : bb + "/v1";
       const headers = {};
@@ -405,15 +503,27 @@ const server = http.createServer(async (req, res) => {
   if (p === "/proxy/fetch" && req.method === "POST") {
     if (rateLimited(req, "fetch", 60, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
-    let b = {}; try { b = JSON.parse((await rawBody(req)) || "{}"); } catch {}
+    const rawReq = await rawBody(req, res); if (rawReq === null) return;
+    let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
     let target = String(b.url || "").trim();
     if (b.query && !target) target = "https://duckduckgo.com/html/?q=" + encodeURIComponent(b.query); // simple web search
     if (!/^https?:\/\//i.test(target)) return json(res, 400, { error: "http(s) url or query required" });
-    // SSRF guard: block private / loopback hosts.
-    try { const h = new URL(target).hostname; if (/^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.|::1)/i.test(h) || /\.(local|internal)$/i.test(h)) return json(res, 403, { error: "blocked host" }); } catch { return json(res, 400, { error: "bad url" }); }
+    // SSRF guard: block private / loopback / link-local hosts (re-checked on every redirect hop below).
+    if (isForbiddenTarget(target)) return json(res, 403, { error: "blocked host" });
     try {
       const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
-      const r = await fetch(target, { headers: { "User-Agent": "BrainEdge/1.0", Accept: "text/html,application/json,text/plain,*/*" }, redirect: "follow", signal: ac.signal }).finally(() => clearTimeout(to));
+      let r;
+      try {
+        for (let hop = 0; ; hop++) {
+          r = await fetch(target, { headers: { "User-Agent": "BrainEdge/1.0", Accept: "text/html,application/json,text/plain,*/*" }, redirect: "manual", signal: ac.signal });
+          if (![301, 302, 303, 307, 308].includes(r.status)) break;
+          const loc = r.headers.get("location");
+          if (!loc) break;
+          if (hop >= 5) return json(res, 502, { error: "too many redirects" });
+          target = new URL(loc, target).toString();
+          if (isForbiddenTarget(target)) return json(res, 403, { error: "blocked host" });
+        }
+      } finally { clearTimeout(to); }
       const ct = r.headers.get("content-type") || ""; const raw = (await r.text()).slice(0, 600000);
       let text = raw;
       if (/html/i.test(ct)) {
@@ -512,9 +622,11 @@ const server = http.createServer(async (req, res) => {
 
   // POST /billing/webhook : Stripe events flip subscriptionActive. Signed; raw body required.
   if (p === "/billing/webhook" && req.method === "POST") {
-    const raw = await rawBody(req);
-    if (STRIPE_WH && !verifyStripeSig(req.headers["stripe-signature"], raw, STRIPE_WH)) return json(res, 400, { error: "bad signature" });
+    const raw = await rawBody(req, res); if (raw === null) return;
+    // No webhook secret configured, or a bad/missing signature -> reject. Never process unverified events.
+    if (!STRIPE_WH || !verifyStripeSig(req.headers["stripe-signature"], raw, STRIPE_WH)) return json(res, 400, { error: "bad signature" });
     let evt; try { evt = JSON.parse(raw); } catch { return json(res, 400, { error: "bad json" }); }
+    if (stripeEventSeen(evt.id)) return json(res, 200, { received: true, duplicate: true }); // idempotency
     const obj = (evt.data && evt.data.object) || {};
     if (evt.type === "checkout.session.completed") {
       const u = await store.getUser(obj.client_reference_id);
@@ -532,6 +644,12 @@ const server = http.createServer(async (req, res) => {
 
   if (p === "/health") return json(res, 200, { ok: true });
 
+  // GET /.well-known/security.txt — vulnerability disclosure contact (RFC 9116).
+  if (p === "/.well-known/security.txt" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    return res.end("Contact: mailto:chaithru@gmail.com\nPreferred-Languages: en\nPolicy: Report vulnerabilities privately. No testing against production user data.\nExpires: 2027-06-10T00:00:00.000Z");
+  }
+
   // GET /app-version — desktop update check. Set APP_VERSION (e.g. "0.4.0") and
   // APP_DOWNLOAD_URL when you publish a new installer; clients compare and show a banner.
   if (p === "/app-version" && req.method === "GET") {
@@ -542,4 +660,6 @@ const server = http.createServer(async (req, res) => {
   json(res, 404, { error: "not found" });
 });
 
+server.headersTimeout = 65000;     // slow-loris guard
+server.requestTimeout = 300000;    // generous: /proxy/chat streams can run for minutes
 server.listen(PORT, () => console.log(`BrainEdge auth server on ${BASE}  (store ${store.kind} · trial ${TRIAL_DAYS}d · dev-login ${process.env.ALLOW_DEV_LOGIN === "1" ? "ON" : "off"} · stripe ${STRIPE_SECRET && STRIPE_PRICE ? "ON" : "off"})`));

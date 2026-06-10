@@ -22,10 +22,18 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
   };
   const openTab = () => {
     if (!artifact.previewable) return;
-    const blob = new Blob([artifactSrcDoc(artifact)], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener");
-    setTimeout(() => URL.revokeObjectURL(url), 8000);
+    // SECURITY: never give model-generated HTML a same-origin context (a Blob URL would let
+    // artifact JS read localStorage — API keys + auth token). Instead, open a minimal wrapper
+    // page whose only content is a sandboxed iframe (no allow-same-origin → opaque origin).
+    const escAttr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+    const escText = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const wrapperHtml = `<!doctype html><html><head><meta charset="utf-8"><title>${escText(artifact.title || "Artifact")}</title>` +
+      `<style>html,body{margin:0;padding:0;height:100%}iframe{border:0;width:100vw;height:100vh;display:block}</style></head>` +
+      `<body><iframe sandbox="allow-scripts allow-popups allow-forms allow-modals" srcdoc="${escAttr(artifactSrcDoc(artifact))}"></iframe></body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) return; // popup blocked
+    w.document.write(wrapperHtml);
+    w.document.close();
   };
 
   return (

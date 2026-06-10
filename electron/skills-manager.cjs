@@ -1,6 +1,6 @@
-// Skills — Claude-style progressive disclosure, across one or more skill folders.
+// Skills — progressive-disclosure skills format, across one or more skill folders.
 // A skill = a folder containing SKILL.md (YAML frontmatter name/description + body).
-// Discovery is recursive (Claude nests skills) and runs fresh each turn, so adding or
+// Discovery is recursive (skill folders can be nested) and runs fresh each turn, so adding or
 // editing a skill on disk is reflected in real time on the next message.
 const fs = require("fs");
 const path = require("path");

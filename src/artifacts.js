@@ -35,7 +35,7 @@ const CDN = {
   tailwind: "https://cdn.tailwindcss.com",
   mermaid: "https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js",
   marked: "https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js",
-  // Libraries commonly used by generated React artifacts (matches the set Claude provides).
+  // Libraries commonly used by generated React artifacts (the set frontier chat products preload).
   reactIs: "https://cdnjs.cloudflare.com/ajax/libs/react-is/18.3.1/umd/react-is.production.min.js",
   propTypes: "https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js",
   lodash: "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js",
@@ -110,7 +110,28 @@ code{background:#f4f4f5;padding:2px 5px;border-radius:4px;font-size:.9em}pre cod
 table{border-collapse:collapse;margin:1em 0}td,th{border:1px solid #e2e2e5;padding:6px 12px}img{max-width:100%}
 blockquote{border-left:3px solid #ddd;margin:1em 0;padding-left:14px;color:#555}a{color:#2563eb}</style>
 <body><div id="c"></div><script src="${CDN.marked}" ${CDN_FAIL}></script>
-<script>window.addEventListener("load",()=>{ if (window.marked) document.getElementById("c").innerHTML=marked.parse(${JSON.stringify(a.code)}); });</script></body>`;
+<script>
+// Defense-in-depth: sanitize marked's HTML output before it touches innerHTML —
+// strip active elements, on*-handlers and javascript: URLs (the iframe sandbox is layer one).
+function sanitizeHtml(html){
+  var t=document.createElement("template"); t.innerHTML=html;
+  var BAD={SCRIPT:1,IFRAME:1,OBJECT:1,EMBED:1};
+  (function walk(node){
+    var kids=Array.prototype.slice.call(node.children||[]);
+    for(var i=0;i<kids.length;i++){
+      var el=kids[i];
+      if(BAD[el.tagName]){ el.remove(); continue; }
+      var attrs=Array.prototype.slice.call(el.attributes||[]);
+      for(var j=0;j<attrs.length;j++){
+        var n=attrs[j].name, v=attrs[j].value;
+        if(/^on/i.test(n) || /^\\s*javascript:/i.test(v)) el.removeAttribute(n);
+      }
+      walk(el);
+    }
+  })(t.content);
+  return t.innerHTML;
+}
+window.addEventListener("load",()=>{ if (window.marked) document.getElementById("c").innerHTML=sanitizeHtml(marked.parse(${JSON.stringify(a.code).replace(/<\//g, "<\\/")})); });</script></body>`;
 
     case "react": {
       let comp = "App";

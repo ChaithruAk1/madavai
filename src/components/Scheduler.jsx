@@ -22,7 +22,7 @@ function rel(ts) {
   if (d < 86400000) return Math.floor(d / 3600000) + "h ago";
   return new Date(ts).toLocaleDateString();
 }
-// Lightweight natural-language → schedule for "Create with Claude".
+// Lightweight natural-language → schedule for the smart-create flow.
 function parseTime(t) {
   const m = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
   if (!m) return null;
@@ -249,8 +249,8 @@ function TaskModal({ draft, setDraft, projects, agents = [], teams = [], modelGr
   const sc = d.schedule || {};
   const pickFolder = async () => { const dir = await bridge.chooseFolder(); if (dir) setTarget({ type: "folder", folder: dir }); };
 
-  // "Create with Claude": infer name + schedule from the description as you type it in.
-  const applyClaude = () => {
+  // Smart create: infer name + schedule from the description as you type it in.
+  const applySmart = () => {
     const text = (d.prompt || d.description || "").trim();
     if (!text) return;
     const schedule = parseSchedule(text);
@@ -339,7 +339,7 @@ function TaskModal({ draft, setDraft, projects, agents = [], teams = [], modelGr
           {(sc.mode === "daily" || sc.mode === "weekly") && (
             <input className="model-search" type="time" style={{ marginBottom: 0, width: 120 }} value={sc.time || "09:00"} onChange={(e) => setSchedule({ time: e.target.value })} />
           )}
-          {d._claude && <button className="btn" onClick={applyClaude}><Sparkles size={13} /> Infer from description</button>}
+          {d._smart && <button className="btn" onClick={applySmart}><Sparkles size={13} /> Infer from description</button>}
         </div>
 
         <div className="pj-create-btns">

@@ -28,14 +28,14 @@ function buildOptions(mode, cwd, profile, canUseTool, permMode) {
   };
 }
 
-// Export the active profile to the env the bundled Claude Code binary reads.
+// Export the active profile to the env the bundled Agent SDK binary reads.
 function applyEnv(profile) {
   if (profile.kind !== "anthropic") return false;
   let useSubscription = false;
   try { useSubscription = !!require("./settings.cjs").load().anthropicUseSubscription; } catch {}
 
   if (useSubscription) {
-    // Subscription mode: bill the user's Claude plan (Agent-SDK credit pool) via the
+    // Subscription mode: bill the user's Anthropic plan (Agent-SDK credit pool) via the
     // OAuth creds stored by `claude login` (~/.claude). The bundled binary uses those
     // ONLY when no API key is present, so we must strip any key from the env.
     delete process.env.ANTHROPIC_API_KEY;
@@ -110,7 +110,7 @@ async function runAgentTurn({ prompt, mode, cwd, profile, resume, emit, permissi
   try {
     ({ query } = await getSdk());
   } catch (e) {
-    emit({ kind: "error", data: { code: "sdk_missing", message: "Claude Agent SDK not installed/loadable. Run: npm install @anthropic-ai/claude-agent-sdk@latest  (" + String(e.message || e) + ")" } });
+    emit({ kind: "error", data: { code: "sdk_missing", message: "Agent SDK not installed/loadable. Run: npm install @anthropic-ai/claude-agent-sdk@latest  (" + String(e.message || e) + ")" } });
     return resume || null;
   }
 

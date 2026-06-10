@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import { Zap, Play, Square, AlertCircle, Search, Gauge, Timer, Clock, DollarSign, CheckCircle2, Award, Boxes, PanelLeftClose, PanelLeftOpen, Code2, Brain, Wrench, Image, ChevronDown, ChevronRight, GripVertical, EyeOff, Plus, RotateCcw, Maximize2, X, Info, ListChecks, Braces, ShieldCheck, Wallet } from "lucide-react";
+import { Zap, Play, Square, AlertCircle, Search, Gauge, Timer, Clock, DollarSign, CheckCircle2, Award, Boxes, PanelLeftClose, PanelLeftOpen, Code2, Brain, Wrench, Image, ChevronDown, ChevronRight, Info, ListChecks, Braces, ShieldCheck, Wallet } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { MODELS } from "../data/modelCatalog.js";
 import { classifyProvider, isModelFree } from "../data/providerRules.js";
+import "../speedcheck.css";
 
 // Quiz PROMPTS only — used to ask each model the questions. The ANSWER KEY + scoring live on the
 // server (server/quiz.mjs via POST /score-quiz), so this app never ships them. `cat` stays for grouping.
@@ -57,50 +58,6 @@ const CAPS = [
   { key: "honesty", scoreKey: "honesty", label: "Honesty", icon: ShieldCheck },
   { key: "vision", scoreKey: null, label: "Image / vision", icon: Image },
 ];
-
-// "Best value" — reuses measured quality + known cost (no extra prompts): quality per dollar.
-function ValuePanel({ ok }) {
-  const rows = ok.filter((r) => r.qPct != null && r.estCost != null && r.estCost > 0)
-    .map((r) => ({ r, val: r.qPct / r.estCost })).sort((a, b) => b.val - a.val).slice(0, 5);
-  return (
-    <div className="cap">
-      <div className="cap-h"><Wallet size={13} /> Best value <span className="cap-sub">quality ÷ cost</span></div>
-      {rows.length === 0
-        ? <div className="cap-empty">Needs both a measured quality score and a known price.</div>
-        : <ol className="cap-list">{rows.map(({ r }) => <li key={r.label} title={`${r.qPct}% quality · ${fmtUsd(r.estCost)}/run · ${r.tps} tok/s · ${r.provider}`}><span className="cap-n">{r.name}</span><span className="cap-v">{r.qPct}% · {fmtUsd(r.estCost)}</span></li>)}</ol>}
-    </div>
-  );
-}
-
-// Top-5 models for a capability: ranked by MEASURED score when quality scoring is on,
-// otherwise by catalog tag + speed.
-function CapPanel({ cap, ok }) {
-  const I = cap.icon;
-  const scored = cap.scoreKey && ok.some((r) => r.scores && r.scores[cap.scoreKey] != null);
-  const nTests = cap.scoreKey ? QUIZ.filter((q) => q.cat === cap.scoreKey).length : 0;
-  let rows, fmt, tip, sub;
-  if (scored) {
-    // Rank by capability score, then break ties by overall quality, then speed.
-    rows = ok.filter((r) => r.scores && r.scores[cap.scoreKey] != null)
-      .sort((a, b) => (b.scores[cap.scoreKey] - a.scores[cap.scoreKey]) || ((b.qPct || 0) - (a.qPct || 0)) || (b.tps - a.tps)).slice(0, 5);
-    fmt = (r) => r.scores[cap.scoreKey] + "%";
-    tip = (r) => `${(r.scores.counts && r.scores.counts[cap.scoreKey]) || ""} correct · overall quality ${r.qPct}% · ${r.tps} tok/s · ${r.provider}`;
-    sub = `${nTests} tests`;
-  } else {
-    rows = ok.filter((r) => r.caps && r.caps[cap.key]).sort((a, b) => b.tps - a.tps).slice(0, 5);
-    fmt = (r) => r.tps + " tok/s";
-    tip = (r) => `tagged from catalog · ${r.tps} tok/s · ${r.provider}`;
-    sub = "tagged";
-  }
-  return (
-    <div className="cap">
-      <div className="cap-h"><I size={13} /> {cap.label} <span className="cap-sub">{sub}</span></div>
-      {rows.length === 0
-        ? <div className="cap-empty">{cap.scoreKey ? `Turn on “score answer quality” to rank by tested ${cap.label.toLowerCase()}.` : `No tested model is tagged ${cap.label.toLowerCase()}.`}</div>
-        : <ol className="cap-list">{rows.map((r) => <li key={r.label} title={tip(r)}><span className="cap-n">{r.name}</span><span className="cap-v">{fmt(r)}</span></li>)}</ol>}
-    </div>
-  );
-}
 
 const fmtCtx = (k) => (!k ? "—" : k >= 1000 ? (k / 1000) + "M" : k + "K");
 const fmtUsd = (v) => (v == null ? "—" : v < 0.01 ? "$" + v.toFixed(4) : "$" + v.toFixed(3));
@@ -180,12 +137,16 @@ export default function ModelSpeedCheck() {
   const [paneOpen, setPaneOpen] = useState(true);
   const [failOpen, setFailOpen] = useState(false);
   const [kpiLayout, setKpiLayout] = useState(() => { try { return JSON.parse(localStorage.getItem("brainedge.speedKpiLayout.v1")) || null; } catch { return null; } });
-  const dragKpi = useRef(null);
-  const [zoom, setZoom] = useState(null); // {kind:"kpi"|"scatter", ...}
+  const dragKpi = useRef(null); // eslint-disable-line no-unused-vars
+  const [zoom, setZoom] = useState(null); // {kind:"kpi"|"scatter", ...} // eslint-disable-line no-unused-vars
   const [tier, setTier] = useState("all"); // all | free | paid
   const [host, setHost] = useState("all"); // all | cloud | local
   const [provFilter, setProvFilter] = useState("all"); // provider name filter
   const [infoOpen, setInfoOpen] = useState(false);
+  // Presentation-only state for the dashboard (no effect on the run / data pipeline).
+  const [chartKpi, setChartKpi] = useState("tps");   // which KPI the big ranked chart shows
+  const [expanded, setExpanded] = useState(null);    // expanded detail-table row (label)
+  const [picked, setPicked] = useState(null);        // model highlighted from scatter / tiles (label)
 
   const pollRef = useRef(null);
   const stopPoll = () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
@@ -323,15 +284,7 @@ export default function ModelSpeedCheck() {
     });
   }, [kpiKeysStr]); // eslint-disable-line
   useEffect(() => { if (kpiLayout) { try { localStorage.setItem("brainedge.speedKpiLayout.v1", JSON.stringify(kpiLayout)); } catch {} } }, [kpiLayout]);
-  const toggleKpi = (key) => setKpiLayout((L) => (L || []).map((e) => e.key === key ? { ...e, hidden: !e.hidden } : e));
-  const reorderKpi = (fromKey, toKey) => setKpiLayout((L) => {
-    const arr = [...(L || [])]; const fi = arr.findIndex((e) => e.key === fromKey), ti = arr.findIndex((e) => e.key === toKey);
-    if (fi < 0 || ti < 0 || fi === ti) return L; const [m] = arr.splice(fi, 1); arr.splice(ti, 0, m); return arr;
-  });
-  const resetKpiLayout = () => setKpiLayout(KPIS.map((k) => ({ key: k.key, hidden: false })));
   const kpiByKey = Object.fromEntries(KPIS.map((k) => [k.key, k]));
-  const kpiVisible = (kpiLayout || KPIS.map((k) => ({ key: k.key, hidden: false }))).filter((e) => !e.hidden && kpiByKey[e.key]);
-  const kpiHidden = (kpiLayout || []).filter((e) => e.hidden && kpiByKey[e.key]);
   const pickBy = (sel, dir) => ok.length ? ok.reduce((a, b) => (dir === "high" ? sel(b) > sel(a) : sel(b) < sel(a)) ? b : a) : null;
   const fastest = pickBy((r) => r.tps, "high");
   const snappiest = pickBy((r) => r.ttftMs, "low");
@@ -339,220 +292,422 @@ export default function ModelSpeedCheck() {
   const cheapest = anyCost ? ok.filter((r) => r.estCost != null).reduce((a, b) => (b.estCost < a.estCost ? b : a)) : null;
   const smartest = anyQuality ? ok.filter((r) => r.qPct != null).reduce((a, b) => (b.qPct > a.qPct ? b : a)) : null;
 
+  /* ------------------------------------------------------------------ */
+  /* Presentation-only derivations (render layer — no data logic below)  */
+  /* ------------------------------------------------------------------ */
+
+  // Best value = measured quality per dollar (same definition as before: quality ÷ cost).
+  const bestValue = (anyCost && anyQuality)
+    ? (ok.filter((r) => r.qPct != null && r.estCost != null && r.estCost > 0)
+        .sort((a, b) => (b.qPct / b.estCost) - (a.qPct / a.estCost))[0] || null)
+    : null;
+  // Winner spotlight: quality first (speed as tiebreak) when measured; otherwise raw throughput.
+  const winner = anyQuality && smartest
+    ? [...ok].sort((a, b) => ((b.qPct || 0) - (a.qPct || 0)) || (b.tps - a.tps))[0]
+    : fastest;
+  const whyWon = !winner ? "" : (anyQuality && winner.qPct != null)
+    ? (winner === fastest
+      ? "Top graded quality and the highest throughput of this run — accurate and quick."
+      : `Highest graded quality of this run (${winner.qPct}% correct), with speed as the tiebreak.`)
+    : (winner === snappiest
+      ? "Highest throughput and the quickest first token — no contest this run."
+      : "Highest measured throughput of this run.");
+
+  // The big ranked chart follows chartKpi; fall back if that KPI vanished (e.g. quality off).
+  const chartK = kpiByKey[chartKpi] || kpiByKey.tps;
+  // The detail table sorts by the same KPI, so the tiles "sort/jump" everywhere at once.
+  const colVal = (k, r) => { const v = k.get(r); return (v == null || isNaN(v)) ? null : v; };
+  const tableRows = [...ok].sort((a, b) => {
+    const va = colVal(chartK, a), vb = colVal(chartK, b);
+    if (va == null && vb == null) return 0; if (va == null) return 1; if (vb == null) return -1;
+    return chartK.better === "high" ? vb - va : va - vb;
+  });
+  const tableCols = [kpiByKey.tps, kpiByKey.ttftMs, kpiByKey.totalMs, ...(anyQuality ? [kpiByKey.qPct] : []), ...(anyCost ? [kpiByKey.estCost] : [])];
+  const bestOf = {};
+  for (const k of tableCols) { const vals = ok.map((r) => colVal(k, r)).filter((v) => v != null); bestOf[k.key] = vals.length ? (k.better === "high" ? Math.max(...vals) : Math.min(...vals)) : null; }
+  const meterW = (k, v) => {
+    if (v == null) return "0%";
+    const vals = ok.map((r) => colVal(k, r)).filter((x) => x != null);
+    if (!vals.length) return "0%";
+    const max = Math.max(...vals), min = Math.min(...vals);
+    const f = k.better === "high" ? (max > 0 ? v / max : 0) : (v > 0 ? min / v : 0);
+    return `${Math.max(4, Math.min(100, f * 100))}%`;
+  };
+
+  // KPI hero tiles — each one jumps the chart + table to its metric and spotlights its model.
+  const tiles = [];
+  if (fastest) tiles.push({ id: "fast", icon: Gauge, h: "Fastest", v: String(fastest.tps), u: "tok/s", s: fastest.name, k: "tps", label: fastest.label });
+  if (smartest) tiles.push({ id: "qual", icon: Award, h: "Best quality", v: String(smartest.qPct), u: "%", s: smartest.name, k: "qPct", label: smartest.label });
+  if (bestValue) tiles.push({ id: "value", icon: Wallet, h: "Best value", v: `${bestValue.qPct}%`, u: ` · ${fmtUsd(bestValue.estCost)}`, s: bestValue.name, k: anyQuality ? "qPct" : "tps", label: bestValue.label });
+  if (cheapest && tiles.length < 4) tiles.push({ id: "cheap", icon: DollarSign, h: "Cheapest", v: fmtUsd(cheapest.estCost), u: "/run", s: cheapest.name, k: "estCost", label: cheapest.label });
+  if (snappiest && tiles.length < 4) tiles.push({ id: "snap", icon: Timer, h: "Quickest start", v: String(Math.round(snappiest.ttftMs)), u: "ms", s: snappiest.name, k: "ttftMs", label: snappiest.label });
+  if (quickest && tiles.length < 4) tiles.push({ id: "tot", icon: Clock, h: "Quickest overall", v: (quickest.totalMs / 1000).toFixed(1), u: "s", s: quickest.name, k: "totalMs", label: quickest.label });
+  const heroTiles = tiles.slice(0, 4);
+
+  const pickModel = (label) => {
+    setPicked((p) => (p === label ? null : label));
+    setExpanded(label);
+    requestAnimationFrame(() => {
+      const el = document.getElementById("spx-r-" + norm(label));
+      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  };
+  const jumpKpi = (key, label) => {
+    if (kpiByKey[key]) setChartKpi(key);
+    if (label) setPicked(label);
+    requestAnimationFrame(() => {
+      const el = document.getElementById("spx-chart-anchor");
+      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  };
+
+  // "The race" lanes while a run is in flight: selected models + whatever partial results exist.
+  const laneRows = (() => {
+    if (!running) return [];
+    const m = new Map();
+    for (const e of selectedSpecs) m.set(`${e.name} · ${e.provider}`, null);
+    const onlySelected = m.size > 0;
+    const rs = result && result.results ? result.results : [];
+    for (const r of rs) { if (!onlySelected || m.has(r.label)) m.set(r.label, r); }
+    return [...m.entries()].map(([label, r]) => ({ label, r }));
+  })();
+  const laneStatus = (r) => !r ? "streaming" : (r.ok ? (quality && !r.scores ? "scoring" : "done") : "failed");
+  const laneDone = laneRows.filter((l) => l.r).length;
+
+  // Scatter axes: speed vs quality when measured, otherwise responsiveness vs speed.
+  const scX = anyQuality ? kpiByKey.tps : kpiByKey.ttftMs;
+  const scY = anyQuality ? (kpiByKey.qPct || kpiByKey.tps) : kpiByKey.tps;
+  const scQuads = anyQuality
+    ? { tl: "smart, but slower", tr: "fast & smart", bl: "slow & shaky", br: "fast, less accurate" }
+    : { tl: "responsive & fast", tr: "fast, slow to start", bl: "responsive, lower throughput", br: "slow on both" };
+
+  const STATUS_TEXT = { streaming: "streaming", scoring: "scoring", done: "done", failed: "failed" };
+
   return (
-    <div className="sc-page">
-      <h2 style={{ margin: "0 0 4px", fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><Zap size={18} style={{ color: "var(--accent-2)" }} /> Models speed check</h2>
-      <p style={{ color: "var(--text-2)", fontSize: 12, margin: "4px 0 16px" }}>
-        Sends one prompt to each selected model (<b>cloud or local</b>) in parallel and compares <b>throughput</b> (tok/s), <b>time‑to‑first‑token</b>, <b>total time</b>, <b>estimated cost</b>, <b>context window</b>, measured <b>quality</b>, and <b>success rate</b> — so you can weigh speed against cost and capability. Filter by <b>Host</b> (Cloud/Local) and <b>Price</b> (Free/Paid). Cloud models need an API key; local ones (Ollama/LM Studio) just need to be running. Capped at 256 output tokens. Cost shows where pricing is known (OpenRouter); tip: click "Save &amp; load models" on each provider so models resolve to valid ids.
+    <div className="spx-page">
+      <div className="spx-head">
+        <h2><Zap size={18} /> Models speed check</h2>
+      </div>
+      <p className="spx-sub">
+        Sends one prompt to every selected model (<b>cloud or local</b>) in parallel and compares <b>throughput</b>, <b>time-to-first-token</b>, <b>total time</b>, <b>estimated cost</b>, <b>context window</b>, measured <b>quality</b>, and <b>success rate</b> — so you can weigh speed against cost and capability. Cloud models need an API key; local ones (Ollama / LM Studio) just need to be running. Replies are capped at 256 output tokens; cost shows where pricing is known (OpenRouter).
       </p>
 
-      <button className="sc-info-toggle" onClick={() => setInfoOpen((o) => !o)}>
-        {infoOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}<Info size={14} /> How this works — what's measured & how we arrive at each number
+      <button className="spx-info-toggle" onClick={() => setInfoOpen((o) => !o)}>
+        {infoOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}<Info size={14} /> How this works — what's measured &amp; how we arrive at each number
       </button>
       {infoOpen && (
-        <div className="sc-info">
-          <div className="sc-info-sec">
+        <div className="spx-info spx-card">
+          <div className="spx-info-sec">
             <h4>Which model should you pick?</h4>
             <p>There's no single "best" model — pick the one that fits your job. A fast, cheap model that gets the answer wrong is no use, so treat <b>quality as your minimum bar</b>, then optimise for what you care about:</p>
-            <ul className="sc-rec">
+            <ul className="spx-rec">
               <li><b>Chat / interactive assistant</b> → lowest <b>First token</b> + decent <b>Quality</b> (it should feel snappy and be correct). Raw throughput matters less.</li>
-              <li><b>Generating lots of code or text</b> → highest <b>Throughput</b> + best <b>Coding / Reasoning</b> score, then lowest <b>Cost</b>. First‑token barely matters.</li>
+              <li><b>Generating lots of code or text</b> → highest <b>Throughput</b> + best <b>Coding / Reasoning</b> score, then lowest <b>Cost</b>. First-token barely matters.</li>
               <li><b>Big documents or whole codebases</b> → largest <b>Context</b> first, then <b>Quality</b>.</li>
-              <li><b>High‑volume / production</b> → lowest <b>Cost</b> + high <b>success rate</b>, with quality as the floor.</li>
+              <li><b>High-volume / production</b> → lowest <b>Cost</b> + high <b>success rate</b>, with quality as the floor.</li>
             </ul>
-            <p>Quick way to read it: in the <b>Trade‑offs</b> charts, whichever model sits alone in the highlighted corner (top‑left = fast & responsive, top‑right = fast & accurate) is your winner for that priority.</p>
+            <p>Quick way to read it: in the <b>Trade-offs</b> chart, whichever model sits alone in the best-labelled corner (e.g. "fast &amp; smart") is your winner for that priority.</p>
           </div>
-          <div className="sc-info-sec">
+          <div className="spx-info-sec">
             <h4>How a test runs</h4>
             <p>Every model you select is sent the <b>same single prompt at the same time</b> (in parallel) and we time the streamed reply. Each reply is capped at <b>256 output tokens</b> to keep it fast and cheap. A model is testable if its cloud provider has an API key, or it's a local endpoint (Ollama / LM Studio) that's currently running. Results are sorted and the <b>top 15</b> are shown side by side.</p>
           </div>
-          <div className="sc-info-sec">
+          <div className="spx-info-sec">
             <h4>What each number means</h4>
-            <dl className="sc-defs">
-              <div><dt>Throughput (tok/s)</dt><dd>Output tokens ÷ generation time (from the first token to the last). If a reply arrives in one burst too fast to time, we fall back to the full round‑trip so the rate stays realistic. Higher is better.</dd></div>
+            <dl className="spx-defs">
+              <div><dt>Throughput (tok/s)</dt><dd>Output tokens ÷ generation time (from the first token to the last). If a reply arrives in one burst too fast to time, we fall back to the full round-trip so the rate stays realistic. Higher is better.</dd></div>
               <div><dt>First token (ms)</dt><dd>Time from sending the request to the <b>first</b> piece of the reply arriving — the responsiveness you feel. Lower is better.</dd></div>
-              <div><dt>Total time (s)</dt><dd>Full round‑trip for this one 256‑token reply: request sent → last token received. Lower is better.</dd></div>
+              <div><dt>Total time (s)</dt><dd>Full round-trip for this one 256-token reply: request sent → last token received. Lower is better.</dd></div>
               <div><dt>Context</dt><dd>The model's maximum context window, read from catalog / OpenRouter metadata. It's a capability, not a measurement.</dd></div>
-              <div><dt>Cost / run</dt><dd>Estimated cost of this single run = input tokens × input price + output tokens × output price, using OpenRouter's published per‑token pricing. Shows "—" when we don't have a price.</dd></div>
-              <div><dt>Quality &amp; the skills</dt><dd>Each model answers a set of <b>auto‑graded questions with exact answers</b> (no AI judge), grouped by skill: <b>reasoning</b>, <b>coding</b> (predict a Python snippet's output), <b>agentic</b> (tool‑call JSON, ordered steps), <b>instruction‑following</b> (obey strict output rules), <b>structured extraction</b> (text → exact JSON), and <b>honesty</b> (say UNKNOWN / reject a false premise instead of inventing). "Quality" is the overall % correct; each panel shows the % for just that skill (e.g. 3/4 = 75%). <b>Best value</b> ranks by quality ÷ cost.</dd></div>
+              <div><dt>Cost / run</dt><dd>Estimated cost of this single run = input tokens × input price + output tokens × output price, using OpenRouter's published per-token pricing. Shows "—" when we don't have a price.</dd></div>
+              <div><dt>Quality &amp; the skills</dt><dd>Each model answers a set of <b>auto-graded questions with exact answers</b> (no AI judge), grouped by skill: <b>reasoning</b>, <b>coding</b> (predict a Python snippet's output), <b>agentic</b> (tool-call JSON, ordered steps), <b>instruction-following</b> (obey strict output rules), <b>structured extraction</b> (text → exact JSON), and <b>honesty</b> (say UNKNOWN / reject a false premise instead of inventing). "Quality" is the overall % correct; the expanded row shows the % for each skill (e.g. 3/4 = 75%). <b>Best value</b> ranks by quality ÷ cost.</dd></div>
               <div><dt>Tokens &amp; "(est)"</dt><dd>Output token counts come from the provider's usage report when given; otherwise we estimate as characters ÷ 4 and mark it "(est)".</dd></div>
             </dl>
           </div>
-          <div className="sc-info-sec">
+          <div className="spx-info-sec">
             <h4>How the "best" is chosen</h4>
-            <p>In the table, the <b>best value in each column is highlighted</b> in cyan (highest for throughput / quality / context, lowest for time / cost). In <b>Best for…</b>, models are ranked by their <b>measured score for that skill</b>; ties are broken by overall quality, then by throughput — so the top isn't just the fastest model that passed a couple of questions.</p>
+            <p>In the table, the <b>best value in each column is highlighted</b> in the accent colour (highest for throughput / quality, lowest for time / cost). The spotlight winner is the model with the <b>best measured quality</b>, with ties broken by throughput — so the top isn't just the fastest model that passed a couple of questions. Without quality scoring, the fastest model wins.</p>
           </div>
-          <div className="sc-info-sec">
+          <div className="spx-info-sec">
             <h4>Good to know</h4>
-            <p>These are a <b>snapshot of one request</b> and vary run‑to‑run with network and provider load — run a few times for a feel. The <b>same model via OpenRouter vs its native API</b> can differ (extra hop), so test on the provider you actually care about. The quiz is a quick, deterministic <b>smoke test, not a full benchmark</b>. Nothing is fabricated — unknown values show "—" and estimates are marked.</p>
+            <p>These are a <b>snapshot of one request</b> and vary run-to-run with network and provider load — run a few times for a feel. The <b>same model via OpenRouter vs its native API</b> can differ (extra hop), so test on the provider you actually care about. The quiz is a quick, deterministic <b>smoke test, not a full benchmark</b>. Nothing is fabricated — unknown values show "—" and estimates are marked.</p>
           </div>
         </div>
       )}
 
-      <div className={`sc-grid ${paneOpen ? "" : "pane-collapsed"}`}>
+      <div className={`spx-grid ${paneOpen ? "" : "spx-pane-collapsed"}`}>
         {paneOpen && (
-        <div className="sc-left">
-          <div className="nav-label" style={{ paddingLeft: 0 }}>Prompt</div>
-          <div className="sc-presets">
+        <div className="spx-left">
+          <div className="spx-sec"><span className="spx-label">Prompt</span></div>
+          <div className="spx-presets">
             {PRESETS.map((p) => (
-              <button key={p.label} className={`mo-chip ${prompt === p.text ? "on" : ""}`} onClick={() => setPrompt(prompt === p.text ? "" : p.text)}>{p.label}</button>
+              <button key={p.label} className={`spx-chip ${prompt === p.text ? "spx-on" : ""}`} onClick={() => setPrompt(prompt === p.text ? "" : p.text)}>{p.label}</button>
             ))}
           </div>
-          <textarea className="model-search" rows={4} style={{ resize: "vertical", width: "100%", fontFamily: "inherit", marginTop: 8 }} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Type a prompt to send to every selected model…" />
+          <textarea className="spx-textarea" rows={4} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Type a prompt to send to every selected model…" />
 
-          <div className="sc-modelhead">
-            <span className="nav-label" style={{ padding: 0 }}>Models</span>
-            <span className="mo-sub">{testableAll.length} available · {sel.size} selected</span>
+          <div className="spx-sec">
+            <span className="spx-label">Models</span>
+            <span className="spx-dim spx-num">{testableAll.length} available · {sel.size} selected</span>
           </div>
-          <div className="sc-search">
+          <div className="spx-search">
             <Search size={13} />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter models…" />
           </div>
-          <div className="sc-tier">
-            <span className="sc-flabel">Provider</span>
-            <select className="model-search sc-provsel" value={provFilter} onChange={(e) => setProvFilter(e.target.value)}>
+          <div className="spx-filters">
+            <span className="spx-label">Provider</span>
+            <select value={provFilter} onChange={(e) => setProvFilter(e.target.value)}>
               <option value="all">All providers</option>
               {providerList.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
-            <span className="sc-fsep" />
-            <span className="sc-flabel">Host</span>
-            <select className="model-search sc-fsel" value={host} onChange={(e) => setHost(e.target.value)}>
+            <span className="spx-label">Host</span>
+            <select value={host} onChange={(e) => setHost(e.target.value)}>
               <option value="all">All</option>
               <option value="cloud">Cloud</option>
               <option value="local">Local</option>
             </select>
-            <span className="sc-fsep" />
-            <span className="sc-flabel">Price</span>
-            <select className="model-search sc-fsel" value={tier} onChange={(e) => setTier(e.target.value)}>
+            <span className="spx-label">Price</span>
+            <select value={tier} onChange={(e) => setTier(e.target.value)}>
               <option value="all">All</option>
               <option value="free">Free</option>
               <option value="paid">Paid</option>
             </select>
           </div>
-          <div className="sc-actions">
-            <button className="btn" onClick={selectAll}>Select all</button>
-            <button className="btn" onClick={clearAll}>Clear</button>
-            <label className="sc-toggle"><input type="checkbox" checked={showUnavail} onChange={(e) => setShowUnavail(e.target.checked)} /> Show unavailable</label>
+          <div className="spx-actions">
+            <button className="spx-link" onClick={selectAll}>Select all</button>
+            <button className="spx-link" onClick={clearAll}>Clear</button>
+            <span style={{ flex: 1 }} />
+            <label className="spx-check"><input type="checkbox" checked={showUnavail} onChange={(e) => setShowUnavail(e.target.checked)} /> Show unavailable</label>
           </div>
 
-          <div className="sc-models scroll">
-            {filtered.length === 0 && <div className="sb-empty" style={{ padding: "8px 10px" }}>No models. Configure a provider + key in Settings.</div>}
+          <div className="spx-models scroll">
+            {filtered.length === 0 && <div className="spx-models-empty">No models. Configure a provider + key in Settings.</div>}
             {filtered.map((e) => (
-              <label key={e.key} className={`sc-model ${e.spec ? "" : "off"}`} title={e.spec ? `via ${e.provider} · ${e.spec.modelId}` : "this provider has no key"}>
+              <label key={e.key} className={`spx-model ${e.spec ? "" : "spx-off"}`} title={e.spec ? `via ${e.provider} · ${e.spec.modelId}` : "this provider has no key"}>
                 <input type="checkbox" disabled={!e.spec} checked={sel.has(e.key)} onChange={() => toggle(e.key)} />
-                <span className="sc-model-name">{e.name}</span>
-                <span className="sc-model-prov">{e.provider}</span>
+                <span className="spx-model-name">{e.name}</span>
+                <span className="spx-model-prov">{e.provider}</span>
               </label>
             ))}
           </div>
 
-          <label className="sc-toggle" style={{ marginTop: 12 }} title="Also asks each model 6 short, auto-scored questions (math, reasoning, code, a fact, JSON, instruction-following) and reports % correct. Adds a few small extra calls per model.">
+          <label className="spx-check" style={{ marginTop: 12 }} title="Also asks each model a set of short, auto-scored questions (math, reasoning, code, facts, JSON, instruction-following) and reports % correct. Adds a few small extra calls per model.">
             <input type="checkbox" checked={quality} onChange={(e) => setQuality(e.target.checked)} /> Also score answer quality
           </label>
           {running ? (
-            <button className="btn" style={{ marginTop: 10, width: "100%", justifyContent: "center", borderColor: "var(--danger)", color: "var(--danger)" }} onClick={() => bridge.cancelSpeedTest()}>
+            <button className="spx-run spx-stop" onClick={() => bridge.cancelSpeedTest()}>
               <Square size={14} /> Stop
             </button>
           ) : (
-            <button className="btn primary" style={{ marginTop: 10, width: "100%", justifyContent: "center" }} onClick={run} disabled={!selectedSpecs.length}>
+            <button className="spx-run" onClick={run} disabled={!selectedSpecs.length}>
               <Play size={14} /> Run speed test ({selectedSpecs.length})
             </button>
           )}
         </div>
         )}
 
-        <div className="sc-right">
-          <div className="sc-resulthead">
-            <button className="icon-btn sc-panetoggle" title={paneOpen ? "Hide the models panel for a wider view" : "Show the models panel"} onClick={() => setPaneOpen((o) => !o)}>
+        <div className="spx-right">
+          <div className="spx-righthead">
+            <button className="icon-btn" title={paneOpen ? "Hide the models panel for a wider view" : "Show the models panel"} onClick={() => setPaneOpen((o) => !o)}>
               {paneOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
             </button>
-            <span>{result ? "Results" : "Speed check"}</span>
-            {result && <span className="mo-sub">{new Date(result.at).toLocaleString()} · {ok.length} model{ok.length !== 1 ? "s" : ""}{moreCount > 0 ? ` · top 15 of ${allOk.length}` : ""}</span>}
+            <span className="spx-label">{running ? "Run in progress" : result ? "Results" : "Speed check"}</span>
+            {result && !running && <span className="spx-dim spx-num">{new Date(result.at).toLocaleString()} · {ok.length} model{ok.length !== 1 ? "s" : ""}{moreCount > 0 ? ` · top 15 of ${allOk.length}` : ""}{failed.length ? ` · ${allOk.length}/${allOk.length + failed.length} succeeded` : ""}</span>}
           </div>
 
+          {/* ---- the race: live lanes while the test is running ---- */}
+          {running && laneRows.length > 0 && (
+            <div className="spx-race spx-card spx-anim">
+              <div className="spx-race-head">
+                <span className="spx-race-dot" />
+                <span className="spx-label">Racing {laneRows.length} model{laneRows.length !== 1 ? "s" : ""}</span>
+                <span className="spx-dim spx-num">{laneDone}/{laneRows.length} finished</span>
+              </div>
+              {laneRows.map(({ label, r }) => {
+                const st = laneStatus(r);
+                const pct = r ? Math.max(6, Math.min(100, ((r.tokens || 0) / 256) * 100)) : 0;
+                return (
+                  <div key={label} className={`spx-lane spx-st-${st}`}>
+                    <span className="spx-lane-name">{label.split(" · ")[0]}<small>{label.split(" · ")[1] || ""}</small></span>
+                    <span className="spx-lane-track">
+                      <span className="spx-lane-fill" style={st === "streaming" ? undefined : { width: `${r && !r.ok ? 100 : pct}%` }} />
+                    </span>
+                    <span className="spx-lane-tps spx-num">{r && r.ok && r.tps != null ? <>{r.tps} <i>tok/s</i></> : "—"}</span>
+                    <span className={`spx-status spx-st-${st}`}>{STATUS_TEXT[st]}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {!result ? (
-            <div className="sk-empty" style={{ marginTop: 40, textAlign: "center" }}>Pick models and run a test to see results.</div>
+            !running && (
+              <div className="spx-empty spx-anim">
+                <div className="spx-empty-ic"><Zap size={26} /></div>
+                <h3>Race your models, head to head</h3>
+                <p>One prompt goes to every model you pick — at the same time. You get speed, responsiveness, cost and a graded quality score back, side by side, so the right model for the job is obvious.</p>
+                <div className="spx-steps">
+                  <div className="spx-step spx-card"><span className="spx-step-n spx-num">01</span><b>Pick models</b><span>Choose any mix of cloud and local models from the panel.</span></div>
+                  <div className="spx-step spx-card"><span className="spx-step-n spx-num">02</span><b>One prompt, in parallel</b><span>Each model streams the same 256-token reply while we time it.</span></div>
+                  <div className="spx-step spx-card"><span className="spx-step-n spx-num">03</span><b>Graded &amp; ranked</b><span>Auto-scored quiz, KPI charts and a winner spotlight — no AI judge.</span></div>
+                </div>
+                <button className="spx-run" onClick={run} disabled={!selectedSpecs.length}>
+                  <Play size={14} /> {selectedSpecs.length ? `Run speed test (${selectedSpecs.length})` : "Run speed test"}
+                </button>
+                {!selectedSpecs.length && <div className="spx-empty-hint">Select at least one model on the left to start.</div>}
+              </div>
+            )
           ) : ok.length === 0 ? (
-            <div className="sk-empty" style={{ marginTop: 20, textAlign: "center" }}>No successful results.</div>
+            <>
+              {!running && <div className="spx-empty spx-anim"><div className="spx-empty-ic"><AlertCircle size={26} /></div><h3>No successful results</h3><p>Every tested model failed this run — open the list below for the reasons, then check keys, credit and model availability.</p></div>}
+            </>
           ) : (
             <>
-              <div className="sc-cards">
-                <div className="sc-card"><div className="sc-card-h"><Gauge size={13} /> Fastest</div><div className="sc-card-v">{fastest.tps} <span>tok/s</span></div><div className="sc-card-s">{fastest.name}</div></div>
-                <div className="sc-card"><div className="sc-card-h"><Timer size={13} /> Snappiest</div><div className="sc-card-v">{snappiest.ttftMs} <span>ms</span></div><div className="sc-card-s">{snappiest.name}</div></div>
-                {smartest
-                  ? <div className="sc-card"><div className="sc-card-h"><Award size={13} /> Most accurate</div><div className="sc-card-v">{smartest.qPct}<span>%</span></div><div className="sc-card-s">{smartest.name}</div></div>
-                  : cheapest
-                    ? <div className="sc-card"><div className="sc-card-h"><DollarSign size={13} /> Cheapest</div><div className="sc-card-v">{fmtUsd(cheapest.estCost)}</div><div className="sc-card-s">{cheapest.name}</div></div>
-                    : <div className="sc-card"><div className="sc-card-h"><Clock size={13} /> Quickest</div><div className="sc-card-v">{(quickest.totalMs / 1000).toFixed(1)}<span>s</span></div><div className="sc-card-s">{quickest.name}</div></div>}
-                <div className="sc-card"><div className="sc-card-h"><CheckCircle2 size={13} /> Succeeded</div><div className="sc-card-v">{allOk.length}<span>/{allOk.length + failed.length}</span></div><div className="sc-card-s">{failed.length ? `${failed.length} failed` : "all passed"}</div></div>
-              </div>
-
-              <div className="nav-label" style={{ paddingLeft: 0, marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-                Top 10 per KPI <span className="sc-hint">drag to reorder · hide/zoom per panel</span>
-                <span style={{ flex: 1 }} />
-                <button className="sc-resetlayout" onClick={resetKpiLayout} title="Reset layout"><RotateCcw size={12} /> Reset</button>
-              </div>
-              <div className="sc-charts" onDragOver={(e) => e.preventDefault()}>
-                {kpiVisible.map((e) => (
-                  <div key={e.key} className="kl-wrap" draggable
-                    onDragStart={() => { dragKpi.current = e.key; }}
-                    onDragOver={(ev) => ev.preventDefault()}
-                    onDrop={() => { if (dragKpi.current && dragKpi.current !== e.key) reorderKpi(dragKpi.current, e.key); dragKpi.current = null; }}>
-                    <KpiList kpi={kpiByKey[e.key]} rows={ok} onHide={() => toggleKpi(e.key)} onExpand={() => setZoom({ kind: "kpi", key: e.key })} />
+              {/* ---- hero band: winner spotlight + KPI tiles ---- */}
+              <div className="spx-hero">
+                <div className="spx-winner">
+                  <div className="spx-winner-tag"><Award size={14} /><span className="spx-label" style={{ color: "inherit" }}>Winner of this run</span></div>
+                  <div className="spx-winner-name">{winner.name}<small>{winner.provider}</small></div>
+                  <p className="spx-winner-why">{whyWon}</p>
+                  <div className="spx-winner-nums spx-num">
+                    <div className="spx-winner-num"><b>{winner.tps}<i>tok/s</i></b><span>throughput</span></div>
+                    <div className="spx-winner-num"><b>{Math.round(winner.ttftMs)}<i>ms</i></b><span>first token</span></div>
+                    {winner.qPct != null
+                      ? <div className="spx-winner-num"><b>{winner.qPct}<i>%</i></b><span>quality</span></div>
+                      : <div className="spx-winner-num"><b>{(winner.totalMs / 1000).toFixed(1)}<i>s</i></b><span>total time</span></div>}
                   </div>
-                ))}
-              </div>
-              {kpiHidden.length > 0 && (
-                <div className="kl-hiddenrow">
-                  <span className="mo-sub">Hidden:</span>
-                  {kpiHidden.map((e) => <button key={e.key} className="kl-chip" onClick={() => toggleKpi(e.key)} title="Show panel"><Plus size={11} /> {kpiByKey[e.key].label}</button>)}
                 </div>
-              )}
-
-              <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>Best for… <span className="sc-hint">{anyQuality ? "skills measured by auto-graded score · best value = quality ÷ cost" : "turn on “score answer quality” to measure these"}</span></div>
-              <div className="cap-grid">
-                {CAPS.map((c) => <CapPanel key={c.key} cap={c} ok={ok} />)}
-                {anyCost && anyQuality && <ValuePanel ok={ok} />}
+                <div className="spx-tiles">
+                  {heroTiles.map((t) => { const I = t.icon; return (
+                    <button key={t.id} className={`spx-tile ${chartKpi === t.k && picked === t.label ? "spx-on" : ""}`} onClick={() => jumpKpi(t.k, t.label)} title={`Sort the chart and table by ${kpiByKey[t.k] ? kpiByKey[t.k].label.toLowerCase() : t.h.toLowerCase()}`}>
+                      <span className="spx-tile-h"><I size={13} /><span className="spx-label">{t.h}</span></span>
+                      <span className="spx-tile-v spx-num">{t.v}<i>{t.u}</i></span>
+                      <span className="spx-tile-s">{t.s}</span>
+                    </button>
+                  ); })}
+                </div>
               </div>
 
-              {ok.length > 1 && (
+              {/* ---- ranked bar chart with KPI switcher ---- */}
+              <div className="spx-sechead" id="spx-chart-anchor">
+                <span className="spx-label">Ranking</span>
+                <span className="spx-dim">{chartK.better === "high" ? "higher is better" : "lower is better"} · click a bar to open its row</span>
+              </div>
+              <div className="spx-chartcard spx-card">
+                <div className="spx-seg">
+                  {KPIS.map((k) => (
+                    <button key={k.key} className={chartK.key === k.key ? "spx-on" : ""} onClick={() => setChartKpi(k.key)}>{k.label}</button>
+                  ))}
+                </div>
+                <SpxBarChart rows={ok} kpi={chartK} picked={picked} onPickModel={pickModel} />
+              </div>
+
+              {/* ---- speed vs quality scatter ---- */}
+              {ok.length > 1 && scX && scY && scX.key !== scY.key && (
                 <>
-                  <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>Trade‑offs <span className="sc-hint">hover a point · click ⤢ to zoom</span></div>
-                  <div className="sc-charts sc-scatters">
-                    <Scatter rows={ok} xk={KPIS.find((k) => k.key === "ttftMs")} yk={KPIS.find((k) => k.key === "tps")} note="top‑left = best" onExpand={() => setZoom({ kind: "scatter", xkey: "ttftMs", ykey: "tps", note: "top‑left = best" })} />
-                    {anyQuality && <Scatter rows={ok} xk={KPIS.find((k) => k.key === "tps")} yk={KPIS.find((k) => k.key === "qPct")} note="top‑right = best" onExpand={() => setZoom({ kind: "scatter", xkey: "tps", ykey: "qPct", note: "top‑right = best" })} />}
-                    {anyQuality && <Scatter rows={ok} xk={KPIS.find((k) => k.key === "ttftMs")} yk={KPIS.find((k) => k.key === "qPct")} note="top‑left = best" onExpand={() => setZoom({ kind: "scatter", xkey: "ttftMs", ykey: "qPct", note: "top‑left = best" })} />}
-                    {anyCost && anyQuality && <Scatter rows={ok} xk={KPIS.find((k) => k.key === "estCost")} yk={KPIS.find((k) => k.key === "qPct")} note="top‑left = best" onExpand={() => setZoom({ kind: "scatter", xkey: "estCost", ykey: "qPct", note: "top‑left = best" })} />}
+                  <div className="spx-sechead">
+                    <span className="spx-label">Trade-offs</span>
+                    <span className="spx-dim">{scY.label.toLowerCase()} vs {scX.label.toLowerCase()}{anyCost ? " · dot size = cost / run" : ""} · click a dot to open its row</span>
+                  </div>
+                  <div className="spx-scatter spx-card">
+                    <SpxScatter rows={ok} xk={scX} yk={scY} quads={scQuads} picked={picked} onPick={pickModel} />
                   </div>
                 </>
               )}
 
-              {failed.length > 0 && (
-                <div className="sc-failed">
-                  <button className="sc-failed-h" onClick={() => setFailOpen((o) => !o)}>
-                    {failOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}<AlertCircle size={13} /> {failed.length} failed <span className="sc-hint">{failOpen ? "hide" : "show"}</span>
-                  </button>
-                  {failOpen && (
-                    <div className="sc-faillist">
-                      {failed.map((r) => (
-                        <div key={r.label} className="sc-failrow"><span>{r.name || r.label.split(" · ")[0]}</span><span className="mo-sub" title={r.error}>{friendlyError(r.error)}</span></div>
-                      ))}
+              {/* ---- detail table ---- */}
+              <div className="spx-sechead">
+                <span className="spx-label">All measurements</span>
+                <span className="spx-dim">sorted by {chartK.label.toLowerCase()} · click a row for the full breakdown</span>
+              </div>
+              <div className={`spx-table spx-card spx-cols-${tableCols.length}`}>
+                <div className="spx-tr spx-thead">
+                  <span />
+                  <span>Model</span>
+                  {tableCols.map((k) => <span key={k.key} className="spx-num">{k.label}{k.unit ? ` · ${k.unit}` : ""}</span>)}
+                  <span />
+                </div>
+                {tableRows.map((r, i) => {
+                  const open = expanded === r.label;
+                  return (
+                    <div key={r.label} id={"spx-r-" + norm(r.label)}>
+                      <div className={`spx-tr spx-click ${picked === r.label ? "spx-picked" : ""}`} onClick={() => setExpanded(open ? null : r.label)}>
+                        <span className="spx-rank spx-num">{i + 1}</span>
+                        <span className="spx-td-model"><b>{r.name}</b><small>{r.provider}</small></span>
+                        {tableCols.map((k) => {
+                          const v = colVal(k, r);
+                          const best = v != null && bestOf[k.key] != null && v === bestOf[k.key];
+                          return (
+                            <span key={k.key} className={`spx-cell spx-num ${best ? "spx-best" : ""}`}>
+                              <span className="spx-cell-v">{v == null ? "—" : k.fmt(v)}</span>
+                              <span className="spx-meter"><span style={{ width: meterW(k, v) }} /></span>
+                            </span>
+                          );
+                        })}
+                        <span className="spx-chev">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
+                      </div>
+                      {open && (
+                        <div className="spx-detail">
+                          <div className="spx-detail-grid spx-num">
+                            <div className="spx-fact"><span>Throughput</span><b>{r.tps} <i>tok/s</i></b></div>
+                            <div className="spx-fact"><span>First token</span><b>{Math.round(r.ttftMs)} <i>ms</i></b></div>
+                            <div className="spx-fact"><span>Total time</span><b>{(r.totalMs / 1000).toFixed(2)} <i>s</i></b></div>
+                            <div className="spx-fact"><span>Output tokens</span><b>{r.tokens != null ? r.tokens : "—"}</b></div>
+                            <div className="spx-fact"><span>Quality</span><b>{r.qPct != null ? r.qPct + "%" : "—"}</b></div>
+                            <div className="spx-fact"><span>Cost / run</span><b>{fmtUsd(r.estCost)}</b></div>
+                            <div className="spx-fact"><span>Context</span><b>{fmtCtx(r.ctxK)}</b></div>
+                            <div className="spx-fact"><span>Provider</span><b>{r.provider}</b></div>
+                          </div>
+                          {r.scores && (
+                            <div className="spx-skills">
+                              {CAPS.filter((c) => c.scoreKey && r.scores[c.scoreKey] != null).map((c) => {
+                                const I = c.icon; const v = r.scores[c.scoreKey];
+                                const cnt = r.scores.counts && r.scores.counts[c.scoreKey];
+                                return (
+                                  <div key={c.key} className="spx-skill" title={cnt ? `${cnt} correct` : undefined}>
+                                    <I size={12} /><span>{c.label}</span>
+                                    <span className="spx-meter"><span style={{ width: `${Math.max(3, v)}%` }} /></span>
+                                    <em>{v}%</em>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {r.caps && Object.values(r.caps).some(Boolean) && (
+                            <div className="spx-dim" style={{ marginTop: 9, fontSize: 11 }}>
+                              Catalog tags: {Object.entries(r.caps).filter(([, v]) => v).map(([k]) => k).join(" · ")}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-
-              {zoom && (
-                <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setZoom(null); }}>
-                  <div className={`sc-zoom ${zoom.kind === "scatter" ? "wide" : ""}`}>
-                    <button className="icon-btn sc-zoom-x" onClick={() => setZoom(null)} title="Close"><X size={16} /></button>
-                    {zoom.kind === "kpi" && kpiByKey[zoom.key] && <KpiList kpi={kpiByKey[zoom.key]} rows={ok} top={15} big />}
-                    {zoom.kind === "scatter" && KPIS.find((k) => k.key === zoom.xkey) && KPIS.find((k) => k.key === zoom.ykey) &&
-                      <Scatter rows={ok} xk={KPIS.find((k) => k.key === zoom.xkey)} yk={KPIS.find((k) => k.key === zoom.ykey)} note={zoom.note} big />}
-                  </div>
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </>
+          )}
+
+          {/* ---- failed models, quiet and collapsed ---- */}
+          {result && failed.length > 0 && (
+            <div className="spx-failed">
+              <button className="spx-failed-h" onClick={() => setFailOpen((o) => !o)}>
+                {failOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}<AlertCircle size={13} /> {failed.length} model{failed.length !== 1 ? "s" : ""} failed
+              </button>
+              {failOpen && (
+                <div className="spx-faillist">
+                  {failed.map((r) => (
+                    <div key={r.label} className="spx-failrow"><span>{r.name || r.label.split(" · ")[0]}</span><span title={r.error}>{friendlyError(r.error)}</span></div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {result && ok.length > 0 && !running && (
+            <div className="spx-sechead" style={{ marginTop: 16 }}>
+              <CheckCircle2 size={12} style={{ color: "var(--ok)" }} />
+              <span className="spx-dim spx-num">{allOk.length}/{allOk.length + failed.length} models completed this run · results are a snapshot of one request — run again for a steadier picture</span>
+            </div>
           )}
         </div>
       </div>
@@ -560,90 +715,119 @@ export default function ModelSpeedCheck() {
   );
 }
 
-// One KPI panel as a ranked numeric list (top N models for that metric). #1 is accent-cyan.
-function KpiList({ kpi, rows, top = 10, onHide, onExpand, big }) {
-  const data = [...rows].filter((r) => kpi.get(r) != null && !isNaN(kpi.get(r)))
-    .sort((a, b) => kpi.better === "high" ? kpi.get(b) - kpi.get(a) : kpi.get(a) - kpi.get(b)).slice(0, top);
-  const vals = data.map((r) => kpi.get(r));
+/* ------------------------------------------------------------------------- */
+/* Presentation components                                                    */
+/* ------------------------------------------------------------------------- */
+
+// Large ranked bar chart. Rows keep a stable element identity (key = label) and are
+// positioned by rank via transform, so switching KPIs animates both order and width.
+function SpxBarChart({ rows, kpi, picked, onPickModel }) {
+  const ROW = 32;
+  const data = rows.filter((r) => { const v = kpi.get(r); return v != null && !isNaN(v); });
+  const sorted = [...data].sort((a, b) => kpi.better === "high" ? kpi.get(b) - kpi.get(a) : kpi.get(a) - kpi.get(b));
+  const rankOf = {};
+  sorted.forEach((r, i) => { rankOf[r.label] = i; });
+  const vals = sorted.map((r) => kpi.get(r));
   const maxV = Math.max(1e-9, ...vals), minV = Math.min(...vals);
-  const barW = (r) => { const v = kpi.get(r); const f = kpi.better === "high" ? (maxV > 0 ? v / maxV : 0) : (v > 0 ? minV / v : 0); return `${Math.max(5, Math.min(100, f * 100))}%`; };
+  const frac = (v) => kpi.better === "high" ? (maxV > 0 ? v / maxV : 0) : (v > 0 ? minV / v : 0);
+  if (!sorted.length) return <div className="spx-models-empty">No model has a value for {kpi.label.toLowerCase()} this run.</div>;
   return (
-    <div className={`kl ${big ? "big" : ""}`}>
-      <div className="kl-h">
-        {!big && <GripVertical size={13} className="kl-grip" />}
-        <span className="kl-title">{kpi.label}{kpi.unit ? ` · ${kpi.unit}` : ""}</span>
-        <span className="kl-meta">top {data.length} · {kpi.better === "high" ? "↑ better" : "↓ better"}</span>
-        {onExpand && <button className="kl-ico" title="Open in a bigger view" onClick={onExpand}><Maximize2 size={12} /></button>}
-        {onHide && <button className="kl-ico" title="Hide this panel" onClick={onHide}><EyeOff size={13} /></button>}
+    <div className="spx-chart">
+      <div className="spx-chart-body" style={{ height: sorted.length * ROW }}>
+        {rows.filter((r) => rankOf[r.label] != null).map((r) => {
+          const i = rankOf[r.label];
+          const v = kpi.get(r);
+          return (
+            <button key={r.label} type="button"
+              className={`spx-bar-row ${i === 0 ? "spx-lead" : ""} ${picked === r.label ? "spx-picked" : ""}`}
+              style={{ transform: `translateY(${i * ROW}px)` }}
+              onClick={() => onPickModel(r.label)}
+              title={`${r.name} · ${r.provider} — open in the table`}>
+              <span className="spx-rank spx-num">{i + 1}</span>
+              <span className="spx-bar-name">{r.name}</span>
+              <span className="spx-bar-track"><span className="spx-bar-fill" style={{ width: `${Math.max(4, Math.min(100, frac(v) * 100))}%` }} /></span>
+              <span className="spx-bar-val spx-num">{kpi.fmt(v)}{kpi.unit ? <i> {kpi.unit}</i> : null}</span>
+            </button>
+          );
+        })}
       </div>
-      <ol className="kl-list">
-        {data.map((r, i) => (
-          <li key={r.label} className={i === 0 ? "best" : ""}>
-            <span className="kl-rank">{i + 1}</span>
-            <span className="kl-n" title={`${r.name} · ${r.provider}`}>{r.name}</span>
-            <span className="kl-bar"><span className="kl-bar-fill" style={{ width: barW(r) }} /></span>
-            <span className="kl-v">{kpi.fmt(kpi.get(r))}</span>
-          </li>
-        ))}
-      </ol>
     </div>
   );
 }
 
-// Interactive scatter for weighing two KPIs against each other.
-function Scatter({ rows, xk, yk, note, onExpand, big }) {
+// Speed-vs-quality scatter. Dot size encodes cost per run (when known); quadrant hints
+// label the corners; hovering names a model and clicking jumps to its table row.
+function SpxScatter({ rows, xk, yk, quads, picked, onPick }) {
   const [hi, setHi] = useState(-1);
-  // Bigger coordinate space when zoomed → points spread out and labels overlap far less.
-  const W = big ? 680 : 320, H = big ? 460 : 210;
-  const pl = big ? 56 : 30, pr = big ? 26 : 14, pt = big ? 22 : 14, pb = big ? 48 : 34;
-  const fs = big ? 11 : 9, lfs = big ? 9 : 8, rad = big ? 5 : 4;
+  const W = 720, H = 360;
+  const pl = 48, pr = 18, pt = 24, pb = 42;
   const xs = rows.map(xk.get), ys = rows.map(yk.get);
   // Adaptive axis scaling: use log when the values span a wide range (e.g. first-token ms),
-  // so a few big outliers don't crush everyone else into a corner. Pixels map px0→px1 as value lo→hi.
+  // so a few big outliers don't crush everyone else into a corner.
   const axisScale = (vals, px0, px1) => {
     const f = vals.filter((v) => v != null && isFinite(v));
-    let lo = Math.min(...f), hi = Math.max(...f);
-    if (lo > 0 && hi / lo > 20) { const l0 = Math.log10(lo), l1 = Math.log10(hi); return (v) => px0 + ((Math.log10(Math.max(v, lo)) - l0) / ((l1 - l0) || 1)) * (px1 - px0); }
-    const pad = (hi - lo) * 0.05 || 1; lo -= pad; hi += pad;
-    return (v) => px0 + ((v - lo) / ((hi - lo) || 1)) * (px1 - px0);
+    let lo = Math.min(...f), hiV = Math.max(...f);
+    if (lo > 0 && hiV / lo > 20) { const l0 = Math.log10(lo), l1 = Math.log10(hiV); return (v) => px0 + ((Math.log10(Math.max(v, lo)) - l0) / ((l1 - l0) || 1)) * (px1 - px0); }
+    const pad = (hiV - lo) * 0.05 || 1; lo -= pad; hiV += pad;
+    return (v) => px0 + ((v - lo) / ((hiV - lo) || 1)) * (px1 - px0);
   };
+  const isLog = (vals) => { const f = vals.filter((v) => v != null && isFinite(v)); const lo = Math.min(...f), hiV = Math.max(...f); return lo > 0 && hiV / lo > 20; };
   const sx = axisScale(xs, pl, W - pr);
   const sy = axisScale(ys, H - pb, pt); // inverted: low value → bottom, high → top
-  const isLog = (vals) => { const f = vals.filter((v) => v != null && isFinite(v)); const lo = Math.min(...f), hi = Math.max(...f); return lo > 0 && hi / lo > 20; };
   const xLog = isLog(xs), yLog = isLog(ys);
-  const hov = hi >= 0 ? rows[hi] : null;
-  // Deterministic jitter so models that share a coordinate (e.g. many at quality 0%) don't perfectly overlap.
+  // Cost → dot radius (sqrt scale so area reads roughly linearly).
+  const costs = rows.map((r) => r.estCost).filter((v) => v != null && v > 0);
+  const cMin = costs.length ? Math.min(...costs) : 0, cMax = costs.length ? Math.max(...costs) : 0;
+  const radOf = (r) => {
+    if (r.estCost == null || !costs.length || cMax <= cMin) return 5.5;
+    const f = (Math.sqrt(r.estCost) - Math.sqrt(cMin)) / ((Math.sqrt(cMax) - Math.sqrt(cMin)) || 1);
+    return 4 + f * 7;
+  };
+  // Deterministic jitter so models that share a coordinate don't perfectly overlap.
   const jit = (n) => (Math.abs(Math.sin(n * 12.9898) * 43758.5453) % 1) * 6 - 3;
   const pts = rows.map((r, i) => ({ r, i, cx: sx(xk.get(r)) + jit(i + 1), cy: sy(yk.get(r)) + jit(i + 101) }));
-  // Greedy de-clutter: give labels to higher-value points first; skip a label if it would collide.
+  // Greedy de-clutter: label higher-value points first; skip a label if it would collide.
   const labelShow = new Set();
-  { const placed = []; const dx = big ? 70 : 46, dy = big ? 15 : 11;
+  { const placed = []; const dx = 72, dy = 14;
     for (const p of [...pts].sort((a, b) => yk.get(b.r) - yk.get(a.r))) {
-      if (!placed.some((q) => Math.abs(p.cx - q.cx) < dx && Math.abs(p.cy - q.cy) < dy)) { labelShow.add(p.i); placed.push(p); }
+      if (!placed.some((q2) => Math.abs(p.cx - q2.cx) < dx && Math.abs(p.cy - q2.cy) < dy)) { labelShow.add(p.i); placed.push(p); }
     } }
+  const hov = hi >= 0 ? rows[hi] : null;
+  const midX = (pl + W - pr) / 2, midY = (pt + H - pb) / 2;
   return (
-    <div className={`vb scatter ${big ? "big" : ""}`}>
-      <div className="vb-h">{yk.label} vs {xk.label} <span>{note}</span>{onExpand && <button className="kl-ico" title="Open in a bigger view" onClick={onExpand}><Maximize2 size={12} /></button>}</div>
-      <div className="vb-plot">
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" preserveAspectRatio="xMidYMid meet">
-          <line x1={pl} y1={pt} x2={pl} y2={H - pb} stroke="var(--line)" />
-          <line x1={pl} y1={H - pb} x2={W - pr} y2={H - pb} stroke="var(--line)" />
-          <text x={(pl + W - pr) / 2} y={H - (big ? 12 : 4)} fontSize={fs} fill="var(--text-2)" textAnchor="middle">{xk.label}{xk.unit ? ` (${xk.unit})` : ""}{xLog ? " · log" : ""} →</text>
-          <text x={big ? 16 : 9} y={(pt + H - pb) / 2} fontSize={fs} fill="var(--text-2)" textAnchor="middle" transform={`rotate(-90 ${big ? 16 : 9} ${(pt + H - pb) / 2})`}>{yk.label}{yLog ? " · log" : ""} ↑</text>
-          {pts.map(({ r, i, cx, cy }) => {
-            const on = hi === i;
-            const right = cx > (pl + W - pr) / 2; // flip label to the left for right-side points
-            const showLabel = on || labelShow.has(i);
-            return (
-              <g key={r.label} onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi((c) => (c === i ? -1 : c))} style={{ cursor: "default" }}>
-                <circle cx={cx} cy={cy} r={on ? rad + 1.5 : rad} fill={on ? "var(--accent-2)" : "var(--accent)"} opacity={on ? 1 : 0.82} />
-                {showLabel && <text x={right ? cx - (rad + 2) : cx + (rad + 2)} y={cy + 3} fontSize={lfs} textAnchor={right ? "end" : "start"} fill={on ? "var(--text-0)" : "var(--text-1)"} style={{ opacity: on ? 1 : 0.85 }}>{r.name.slice(0, big ? 22 : 14)}</text>}
-              </g>
-            );
-          })}
-        </svg>
-        {hov && <div className="vb-tip"><b>{hov.name}</b> · {yk.label} {yk.fmt(yk.get(hov))}{yk.unit ? " " + yk.unit : ""} · {xk.label} {xk.fmt(xk.get(hov))}{xk.unit ? " " + xk.unit : ""}</div>}
-      </div>
-    </div>
+    <>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+        <line x1={pl} y1={pt} x2={pl} y2={H - pb} stroke="var(--line)" />
+        <line x1={pl} y1={H - pb} x2={W - pr} y2={H - pb} stroke="var(--line)" />
+        <line x1={midX} y1={pt} x2={midX} y2={H - pb} stroke="var(--line)" strokeDasharray="3 5" opacity="0.6" />
+        <line x1={pl} y1={midY} x2={W - pr} y2={midY} stroke="var(--line)" strokeDasharray="3 5" opacity="0.6" />
+        <text className="spx-quad" x={pl + 8} y={pt + 13} textAnchor="start">{quads.tl}</text>
+        <text className="spx-quad" x={W - pr - 8} y={pt + 13} textAnchor="end">{quads.tr}</text>
+        <text className="spx-quad" x={pl + 8} y={H - pb - 8} textAnchor="start">{quads.bl}</text>
+        <text className="spx-quad" x={W - pr - 8} y={H - pb - 8} textAnchor="end">{quads.br}</text>
+        <text className="spx-axis" x={(pl + W - pr) / 2} y={H - 10} textAnchor="middle">{xk.label}{xk.unit ? ` (${xk.unit})` : ""}{xLog ? " · log" : ""} →</text>
+        <text className="spx-axis" x={14} y={(pt + H - pb) / 2} textAnchor="middle" transform={`rotate(-90 14 ${(pt + H - pb) / 2})`}>{yk.label}{yk.unit ? ` (${yk.unit})` : ""}{yLog ? " · log" : ""} ↑</text>
+        {pts.map(({ r, i, cx, cy }) => {
+          const on = hi === i;
+          const isPicked = picked === r.label;
+          const right = cx > midX; // flip label to the left for right-side points
+          const showLabel = on || isPicked || labelShow.has(i);
+          const rad = radOf(r);
+          return (
+            <g key={r.label} className={`spx-dot ${on ? "spx-hot" : ""} ${isPicked ? "spx-picked" : ""}`}
+              onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi((c) => (c === i ? -1 : c))}
+              onClick={() => onPick(r.label)}>
+              <circle cx={cx} cy={cy} r={on || isPicked ? rad + 1.5 : rad} />
+              {showLabel && <text x={right ? cx - (rad + 4) : cx + (rad + 4)} y={cy + 3} textAnchor={right ? "end" : "start"}>{r.name.slice(0, 22)}</text>}
+            </g>
+          );
+        })}
+      </svg>
+      {hov && (
+        <div className="spx-tip spx-num">
+          <b>{hov.name}</b> · {yk.label} {yk.fmt(yk.get(hov))}{yk.unit ? " " + yk.unit : ""} · {xk.label} {xk.fmt(xk.get(hov))}{xk.unit ? " " + xk.unit : ""}{hov.estCost != null ? ` · ${fmtUsd(hov.estCost)}/run` : ""}
+        </div>
+      )}
+    </>
   );
 }

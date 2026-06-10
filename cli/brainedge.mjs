@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 //
-// BrainEdge CLI — a terminal coding agent (like Claude Code) on ANY provider.
+// BrainEdge CLI — a terminal coding agent on ANY provider.
 // Run inside the folder you want to work in:  brainedge   (or: node cli/brainedge.mjs)
 //
 // Config (first match wins): env vars, ./brainedge.config.json, ~/.brainedge/config.json

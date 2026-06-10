@@ -1,6 +1,6 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 //
-// Let's Build environment picker (Claude-style). Pick a Local folder, or pull any repo from your
+// Let's Build environment picker. Pick a Local folder, or pull any repo from your
 // connected GitHub account(s) via a clean searchable list. Connect a whole account, or one repo by URL.
 // No cloud sandbox (BrainEdge runs locally), no Remote Control.
 import { useEffect, useState } from "react";

@@ -20,6 +20,7 @@ import StudioLauncher from "./components/StudioLauncher.jsx";
 import Agents from "./components/Agents.jsx";
 import TeamOps from "./components/TeamOps.jsx";
 import Onboarding from "./components/Onboarding.jsx";
+import UserGuide from "./components/UserGuide.jsx";
 // ADMIN-ONLY, BUILD-GATED: the Test Center UI (and the functional sweep it imports) is
 // compiled in ONLY when the build sets VITE_INCLUDE_QA=1 (dev + `npm run build:admin`).
 // The plain `npm run build` used for installers and web deploys statically drops this
@@ -397,7 +398,7 @@ export default function App() {
   };
 
   // Start a Cowork task scoped to a project: uses the project's linked folder as the
-  // working dir and injects its instructions + knowledge as context (like Claude).
+  // working dir and injects its instructions + knowledge as context.
   const startProjectCowork = async (project, text) => {
     if (!project.folder) { alert("Link a folder to this project first (Files & sources) to run a Cowork task."); return; }
     setMode("cowork"); setChatMode("cowork");
@@ -533,6 +534,7 @@ export default function App() {
   const isViaMobile = mode === "viamobile";
   const isScheduler = mode === "scheduler";
   const isConsumption = mode === "consumption";
+  const isGuide = mode === "guide";
   const isStudio = mode === "studio";
   const isTerminal = mode === "terminal";
   const isAgents = mode === "agents";
@@ -646,6 +648,8 @@ export default function App() {
           <Scheduler />
         ) : isConsumption ? (
           <Consumption />
+        ) : isGuide ? (
+          <UserGuide onNavigate={switchMode} />
         ) : mode === "testcenter" ? (
           TestCenter
             ? <Suspense fallback={<div className="skel-page"><div className="skel" style={{ width: 240, height: 26 }} /><div className="skel" style={{ height: 200 }} /></div>}><TestCenter onNavigate={switchMode} /></Suspense>

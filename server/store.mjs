@@ -58,14 +58,16 @@ async function pgStore(url) {
     plan text, stripe_customer_id text, stripe_sub_id text )`);
   await pool.query(`alter table users add column if not exists free_access boolean default false`); // for older tables
   await pool.query(`alter table users add column if not exists last_seen_at timestamptz`);          // for older tables
+  await pool.query(`alter table users add column if not exists token_version integer default 1`);   // CLI token revocation
   await pool.query(`create table if not exists events (
     id bigserial primary key, ts timestamptz default now(), user_id text, type text, meta jsonb )`);
   await pool.query(`create index if not exists events_ts_idx on events (ts desc)`);
-  const COLS = { subscriptionActive: "subscription_active", stripeCustomerId: "stripe_customer_id", stripeSubId: "stripe_sub_id", suspended: "suspended", freeAccess: "free_access", plan: "plan", trialEndsAt: "trial_ends_at", lastSeenAt: "last_seen_at" };
+  const COLS = { subscriptionActive: "subscription_active", stripeCustomerId: "stripe_customer_id", stripeSubId: "stripe_sub_id", suspended: "suspended", freeAccess: "free_access", plan: "plan", trialEndsAt: "trial_ends_at", lastSeenAt: "last_seen_at", tokenVersion: "token_version" };
   const row2u = (r) => r && ({
     id: r.id, provider: r.provider, email: r.email, name: r.name, avatar: r.avatar,
     createdAt: r.created_at, trialEndsAt: r.trial_ends_at, lastSeenAt: r.last_seen_at, suspended: r.suspended, freeAccess: r.free_access,
     subscriptionActive: r.subscription_active, plan: r.plan, stripeCustomerId: r.stripe_customer_id, stripeSubId: r.stripe_sub_id,
+    tokenVersion: r.token_version || 1,
   });
   return {
     kind: "postgres",

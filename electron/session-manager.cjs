@@ -21,7 +21,7 @@ const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // cry
 
 // Combine a natural-tone safeguard + the user's custom instructions + the chosen response language.
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
-// Artifact-iteration rule so the Studio "live preview" iterates like Claude artifacts:
+// Artifact-iteration rule so the Studio "live preview" iterates in place:
 // emit the WHOLE file in one fenced block, and re-emit it whole when the user asks for a change.
 const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
 function withLang(cfg) {
@@ -337,6 +337,7 @@ class SessionManager {
       systemOverride: this._memberSys(member, task),
       allowAskUser: true, // members can pause the mission with a question for the user
       browser: this._browserFor(member),
+      noShell: !t.shell, // Shell capability off → run_bash neither offered nor executable
     });
     return buf.trim();
   }
@@ -669,7 +670,7 @@ class SessionManager {
     }
 
     if (profile.kind === "anthropic") {
-      // Anthropic (or a proxy): full Claude Agent SDK.
+      // Anthropic (or a proxy): full Agent SDK.
       s.sdkSessionId = await runAgentTurn({
         sessionId, prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: s.permMode,
         resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds,
@@ -693,6 +694,9 @@ class SessionManager {
           roster: this._rosterFor(s, cfg),
           callAgent: this._makeCallAgent(s, profile, cfg, emit, controller.signal),
           browser: this._browserFor(s.agent),
+          // A custom agent with Shell off never gets run_bash; plain folder
+          // sessions (no agent) keep the full toolset as before.
+          noShell: !!(s.agent && s.agent.tools && !s.agent.tools.shell),
         });
       } finally {
         s.controller = null;

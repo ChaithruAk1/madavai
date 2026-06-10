@@ -30,7 +30,7 @@ const tgbot = require("./telegram-bot.cjs");
   try { cfg = settings.load(); } catch {}
   let px = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy || cfg.proxyUrl;
   if (!px) return;
-  // Mirror into env so EnvHttpProxyAgent and any spawned child (Claude Code binary) see it.
+  // Mirror into env so EnvHttpProxyAgent and any spawned child (Agent SDK binary) see it.
   process.env.HTTPS_PROXY = process.env.HTTPS_PROXY || px;
   process.env.HTTP_PROXY = process.env.HTTP_PROXY || px;
   if (!process.env.NO_PROXY && !process.env.no_proxy) process.env.NO_PROXY = cfg.noProxy || "localhost,127.0.0.1,::1,0.0.0.0";
@@ -71,6 +71,19 @@ function createWindow() {
     },
   });
 
+  // Navigation hardening (main window only — agent-browser.cjs manages its own windows
+  // on the "persist:agent-browser" partition): new windows open in the OS browser, and
+  // the renderer may only navigate to our dev server or our packaged files.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//.test(url)) require("electron").shell.openExternal(url);
+    return { action: "deny" };
+  });
+  win.webContents.on("will-navigate", (e, url) => {
+    const ok = url.startsWith("http://localhost:5174") || url.startsWith("http://127.0.0.1:5174") || url.startsWith("file://");
+    if (!ok) e.preventDefault();
+  });
+
+  applyPermissionPolicy();
   applyCSP();
   if (isDev) {
     win.loadURL("http://localhost:5174");
@@ -78,6 +91,21 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
   }
+}
+
+// Web permission policy. The main window (defaultSession) only ever needs the mic
+// (push-to-talk) and clipboard; the Agent Browser partition browses arbitrary sites
+// and should never grant camera/geolocation/etc — deny everything there.
+let _permDone = false;
+function applyPermissionPolicy() {
+  if (_permDone) return; _permDone = true;
+  const ALLOWED = new Set(["media", "clipboard-read", "clipboard-sanitized-write"]);
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
+    cb(ALLOWED.has(permission));
+  });
+  try {
+    session.fromPartition("persist:agent-browser").setPermissionRequestHandler((_wc, _permission, cb) => cb(false));
+  } catch {}
 }
 
 // Strict Content-Security-Policy on the renderer. Locks script execution to our own
@@ -268,7 +296,7 @@ ipcMain.handle("brainedge:chooseFolder", async () => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"] });
   return r.canceled ? null : r.filePaths[0];
 });
-ipcMain.handle("brainedge:openExternal", (_e, url) => { try { if (/^https?:\/\//i.test(url)) shell.openExternal(url); return true; } catch { return false; } });
+ipcMain.handle("brainedge:openExternal", (_e, url) => { try { if (/^(https?:\/\/|mailto:)/i.test(String(url || ""))) { shell.openExternal(String(url)); return true; } return false; } catch { return false; } });
 
 // ---- IPC: shallow directory listing (for @-mention file picker) ----
 const DIR_SKIP = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", "dist", "build", ".next", ".cache"]);
@@ -444,15 +472,19 @@ ipcMain.handle("brainedge:linkProjectFolder", async (_e, projectId) => {
   store.updateProject(projectId, { folder: r.filePaths[0], githubUrl: "" });
   return { folder: r.filePaths[0] };
 });
+// Only http(s) repo URLs are accepted (blocks ext::/ssh tricks), and "--" stops git
+// from ever parsing the URL positional as an option (e.g. --upload-pack=...).
+const isHttpRepoUrl = (u) => /^https?:\/\//i.test(String(u || "").trim());
 ipcMain.handle("brainedge:linkGithub", async (_e, { projectId, url }) => {
   if (!url) return { error: "Enter a repository URL." };
+  if (!isHttpRepoUrl(url)) return { error: "Repository URL must start with https:// (or http://)." };
   const repoName = (url.split("/").pop() || "repo").replace(/\.git$/, "");
   const dest = path.join(app.getPath("userData"), "projects-data", "repos", projectId);
   const target = path.join(dest, repoName);
   try {
     fs.rmSync(dest, { recursive: true, force: true });
     fs.mkdirSync(dest, { recursive: true });
-    await pExecFile("git", ["clone", "--depth", "1", url, target], { timeout: 180000 });
+    await pExecFile("git", ["clone", "--depth", "1", "--", url, target], { timeout: 180000 });
     store.updateProject(projectId, { folder: target, githubUrl: url });
     return { folder: target };
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
@@ -460,18 +492,19 @@ ipcMain.handle("brainedge:linkGithub", async (_e, { projectId, url }) => {
 // Clone a repo to work on directly in Build (not tied to a project) — returns the local folder.
 ipcMain.handle("brainedge:cloneRepo", async (_e, url) => {
   if (!url) return { error: "Enter a repository URL." };
+  if (!isHttpRepoUrl(url)) return { error: "Repository URL must start with https:// (or http://)." };
   const repoName = (String(url).split("/").pop() || "repo").replace(/\.git$/, "");
   const dest = path.join(app.getPath("userData"), "build-repos", repoName + "-" + Date.now().toString(36));
   try {
     fs.mkdirSync(dest, { recursive: true });
-    await pExecFile("git", ["clone", "--depth", "1", url, dest], { timeout: 180000 });
+    await pExecFile("git", ["clone", "--depth", "1", "--", url, dest], { timeout: 180000 });
     return { folder: dest };
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
 ipcMain.handle("brainedge:pullGithub", async (_e, projectId) => {
   const p = store.getProject(projectId);
   if (!p || !p.folder) return { error: "No linked repo." };
-  try { await pExecFile("git", ["-C", p.folder, "pull"], { timeout: 180000 }); return { ok: true }; }
+  try { await pExecFile("git", ["pull"], { cwd: p.folder, timeout: 180000 }); return { ok: true }; }
   catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
 ipcMain.handle("brainedge:unlinkProjectSource", (_e, projectId) => store.updateProject(projectId, { folder: "", githubUrl: "" }));

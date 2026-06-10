@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const TOP = [
@@ -94,7 +94,8 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     : st === "active" ? (plan || "Pro plan") : st === "trialing" ? `Trial · ${acct ? acct.daysLeft : 0}d left` : st === "expired" ? "Trial ended" : (acct ? "Account" : "Sign in");
   const signOut = async () => { setMenuOpen(false); try { await bridge.authSignOut?.(); } catch {} try { location.reload(); } catch {} };
   const manage = async () => { setMenuOpen(false); if (st === "active" && bridge.billingPortal) { try { await bridge.billingPortal(); } catch {} } else { upgrade(); } };
-  const getHelp = () => { setMenuOpen(false); try { bridge.openExternal?.("mailto:chaithru@gmail.com?subject=BrainEdge%20help"); } catch {} };
+  // Help now opens the in-app User Guide instead of an external mail link.
+  const getHelp = () => { setMenuOpen(false); onSelect("guide"); };
 
   // Default-response-language picker, lives in the account menu now.
   const [lang, setLang] = useState("model");
@@ -227,7 +228,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
           <button className="sb-upsell-btn" disabled={upBusy} onClick={upgrade}>{upBusy ? "Opening…" : "Upgrade"}</button>
         </div>
       )}
-      {/* Account: avatar/name trigger + a Claude-style popover menu */}
+      {/* Account: avatar/name trigger + a popover menu */}
       <div style={{ position: "relative" }}>
         {menuOpen && (
           <>
@@ -235,6 +236,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
             <div className="sb-acct-menu">
               {u && u.email && <div className="sb-acct-email">{u.email}</div>}
               <button className="sb-acct-item" onClick={() => { setMenuOpen(false); onSelect("settings"); }}><SettingsIcon size={15} /> Settings</button>
+              <button className="sb-acct-item" onClick={() => { setMenuOpen(false); onSelect("guide"); }}><BookOpen size={15} /> User Guide</button>
               <button className="sb-acct-item" onClick={() => setLangOpen((o) => !o)}>
                 <Globe size={15} /> Language
                 <span style={{ marginLeft: "auto", color: "var(--text-2)", fontSize: 11 }}>{lang === "model" ? "Auto" : lang}</span>

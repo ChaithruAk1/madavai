@@ -69,6 +69,14 @@ export default function ModelConfig({ onChanged }) {
     const a = document.createElement("a"); a.href = url; a.download = `brainedge-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  // Only settings keys the app actually knows about may come in from a backup file —
+  // unknown keys are dropped (a tampered backup must not smuggle arbitrary state in).
+  const RESTORE_KEYS = [
+    "profiles", "activeProfileId", "agents", "teams", "connectors", "skillsDir", "skillsDirs", "disabledSkills",
+    "account", "googleClientId", "googleClientSecret", "githubClientId", "globalInstructions", "responseLanguage",
+    "theme", "accent", "defaultModel", "anthropicUseSubscription", "proxyUrl", "noProxy", "messaging", "webhooks",
+    "missionTokenBudget", "agentBrowser", "authBaseUrl",
+  ];
   const restoreAll = (file) => {
     if (!file) return;
     const reader = new FileReader();
@@ -76,9 +84,28 @@ export default function ModelConfig({ onChanged }) {
       try {
         const j = JSON.parse(String(reader.result || ""));
         if (!j || j.app !== "brainedge" || !j.settings || typeof j.settings.profiles !== "object") { setStatus("Not a BrainEdge backup file."); return; }
+        // Drop unknown top-level keys (whitelist) so a crafted backup can't inject settings the UI never exposes.
+        const incoming = {};
+        for (const k of RESTORE_KEYS) if (k in j.settings) incoming[k] = j.settings[k];
+        // authBaseUrl controls which server receives the auth token — never accept it silently.
+        if (incoming.authBaseUrl) {
+          const keep = window.confirm(`This backup wants to change the account server URL to "${incoming.authBaseUrl}" — keep it?\n\n(Cancel restores everything else but leaves your account server unchanged.)`);
+          if (!keep) delete incoming.authBaseUrl;
+        }
+        // Every provider must point at an http(s) URL — anything else gets dropped, not restored.
+        const badProfiles = [];
+        const cleanProfiles = {};
+        for (const [pid, p] of Object.entries(incoming.profiles || {})) {
+          if (p && typeof p.baseUrl === "string" && /^https?:\/\//i.test(p.baseUrl.trim())) cleanProfiles[pid] = p;
+          else badProfiles.push((p && p.name) || pid);
+        }
+        incoming.profiles = cleanProfiles;
+        if (badProfiles.length) alert(`These providers were skipped — their server URL must start with http:// or https://:\n\n${badProfiles.join("\n")}`);
+        if (!Object.keys(incoming.profiles).length) { setStatus("No valid providers in that backup — nothing restored."); return; }
+        if (!incoming.profiles[incoming.activeProfileId]) incoming.activeProfileId = Object.keys(incoming.profiles)[0];
         if (!window.confirm("Restore this backup? Your current providers, agents, teams and preferences will be REPLACED.")) return;
-        await persist(j.settings);
-        setSelId(j.settings.activeProfileId || Object.keys(j.settings.profiles)[0]);
+        await persist(incoming);
+        setSelId(incoming.activeProfileId || Object.keys(incoming.profiles)[0]);
         setStatus("Backup restored.");
       } catch { setStatus("Couldn't read that backup file."); }
     };

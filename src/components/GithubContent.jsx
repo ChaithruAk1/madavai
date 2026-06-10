@@ -1,6 +1,6 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 //
-// "Add content from GitHub" — Claude-style. Link a GitHub account, pick a repository (or paste a URL),
+// "Add content from GitHub". Link a GitHub account, pick a repository (or paste a URL),
 // then select individual files to add to the chat as context. Files are returned as { name, content }
 // attachments. All GitHub calls are client-side (api.github.com is CORS-friendly); private repos use
 // the connected account's token.

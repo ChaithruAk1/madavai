@@ -26,9 +26,20 @@ export async function pickDirectory() {
 
 export function clear() { root = null; rootName = ""; }
 
+// SECURITY: reject absolute paths, home-dir shortcuts and ".." traversal before touching any
+// directory handle. The File System Access API scopes handles to the picked folder, but we
+// refuse suspect paths outright (belt and braces) rather than rely on browser behavior.
+function safeParts(path) {
+  const raw = String(path || "");
+  if (raw.startsWith("/") || raw.startsWith("~") || raw.startsWith("\\")) throw new Error(`Invalid path "${raw}": paths must be relative to the chosen folder (no leading "/", "\\" or "~")`);
+  const parts = raw.split(/[\\/]/).map((p) => p.trim()).filter((p) => p && p !== ".");
+  if (parts.includes("..")) throw new Error(`Invalid path "${raw}": ".." segments are not allowed`);
+  return parts;
+}
+
 // Resolve a "/"-separated relative path to a directory handle (and the final leaf name).
 async function resolveParent(path, create = false) {
-  const parts = String(path || "").split("/").map((p) => p.trim()).filter((p) => p && p !== ".");
+  const parts = safeParts(path);
   if (!parts.length) return { dir: root, leaf: "" };
   let dir = root;
   for (let i = 0; i < parts.length - 1; i++) dir = await dir.getDirectoryHandle(parts[i], { create });
@@ -38,7 +49,7 @@ async function resolveParent(path, create = false) {
 export async function listDir(path = "") {
   if (!root) throw new Error("No folder selected");
   let dir = root;
-  const parts = String(path || "").split("/").map((p) => p.trim()).filter((p) => p && p !== ".");
+  const parts = safeParts(path);
   for (const part of parts) dir = await dir.getDirectoryHandle(part);
   const out = [];
   for await (const [name, handle] of dir.entries()) out.push({ name, type: handle.kind === "directory" ? "dir" : "file" });

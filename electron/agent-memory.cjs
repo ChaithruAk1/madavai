@@ -1,6 +1,6 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
 // Agent memory — each agent keeps a small file of durable learnings that survives
-// across missions (Claude memory-tool pattern). After a mission, a cheap model call
+// across missions (the agent memory-tool pattern). After a mission, a cheap model call
 // extracts up to three durable notes (user preferences, domain facts, corrections);
 // they are injected into the agent's system prompt next time. The user can view,
 // edit, and clear an agent's memory in the Studio Blueprint.

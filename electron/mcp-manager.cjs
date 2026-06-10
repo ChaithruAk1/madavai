@@ -37,10 +37,19 @@ async function connect(server) {
       transport = new m.StreamableHTTPClientTransport(url, opts);
     }
   } else {
+    // Don't leak the whole environment (API keys, tokens) to every MCP server — pass a
+    // minimal allowlist needed to launch node/python tooling, plus the server's own env.
+    const ENV_ALLOWLIST = [
+      "PATH", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "TEMP", "TMP",
+      "SystemRoot", "SystemDrive", "ComSpec", "ProgramFiles", "ProgramData",
+      "NVM_DIR", "npm_config_prefix",
+    ];
+    const baseEnv = {};
+    for (const k of ENV_ALLOWLIST) { if (process.env[k] !== undefined) baseEnv[k] = process.env[k]; }
     transport = new m.StdioClientTransport({
       command: server.command,
       args: server.args || [],
-      env: { ...process.env, ...(server.env || {}) },
+      env: { ...baseEnv, ...(server.env || {}) },
     });
   }
   const client = new m.Client({ name: "brainedge", version: "0.1.0" }, { capabilities: {} });
