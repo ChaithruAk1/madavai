@@ -74,7 +74,7 @@ export default function ModelConfig({ onChanged }) {
   const RESTORE_KEYS = [
     "profiles", "activeProfileId", "agents", "teams", "connectors", "skillsDir", "skillsDirs", "disabledSkills",
     "account", "googleClientId", "googleClientSecret", "githubClientId", "globalInstructions", "responseLanguage",
-    "theme", "accent", "defaultModel", "anthropicUseSubscription", "proxyUrl", "noProxy", "messaging", "webhooks",
+    "theme", "accent", "defaultModel", "proxyUrl", "noProxy", "messaging", "webhooks",
     "missionTokenBudget", "agentBrowser", "authBaseUrl",
   ];
   const restoreAll = (file) => {
@@ -189,9 +189,7 @@ export default function ModelConfig({ onChanged }) {
               </select>
             </Field>
             <Field label="Base URL"><input className="model-search" value={sel.baseUrl} onChange={(e) => patch("baseUrl", e.target.value)} placeholder="https://openrouter.ai/api" /></Field>
-            {!(sel.kind === "anthropic" && s.anthropicUseSubscription) && (
-              <Field label="API key"><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder="leave blank for local" /></Field>
-            )}
+            <Field label="API key"><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder={sel.kind === "anthropic" ? "sk-ant-…" : "leave blank for local"} /></Field>
           </div>
           {isWeb && (
             <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 0" }}>
@@ -200,30 +198,8 @@ export default function ModelConfig({ onChanged }) {
             </p>
           )}
 
-          {sel.kind === "anthropic" && (
-            <>
-              <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>Billing &amp; sign‑in</div>
-              <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 10px" }}>Choose how Anthropic models are billed (testing only — subscription/OAuth use is restricted by Anthropic's terms; remove before publishing):</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <button type="button" onClick={() => setField("anthropicUseSubscription", false)} style={{ textAlign: "left", border: "1px solid " + (!s.anthropicUseSubscription ? "var(--accent)" : "var(--line)"), borderRadius: 10, padding: "12px 14px", background: !s.anthropicUseSubscription ? "var(--accent-weak)" : "var(--bg-1)", cursor: "pointer" }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>🔑 API key {!s.anthropicUseSubscription && <span className="chip" style={{ color: "var(--ok)", marginLeft: 6 }}><Check size={12} /></span>}</div>
-                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginTop: 6 }}>Use an <code>sk‑ant‑…</code> commercial key. Billed pay‑as‑you‑go to your Anthropic API credits.</div>
-                </button>
-                <button type="button" onClick={() => setField("anthropicUseSubscription", true)} style={{ textAlign: "left", border: "1px solid " + (s.anthropicUseSubscription ? "var(--accent)" : "var(--line)"), borderRadius: 10, padding: "12px 14px", background: s.anthropicUseSubscription ? "var(--accent-weak)" : "var(--bg-1)", cursor: "pointer" }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>👤 Subscription {s.anthropicUseSubscription && <span className="chip" style={{ color: "var(--ok)", marginLeft: 6 }}><Check size={12} /></span>}</div>
-                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginTop: 6 }}>No API key. Uses your Claude plan via <code>claude login</code>. ⚠ Testing only — not permitted for production.</div>
-                </button>
-              </div>
-              {s.anthropicUseSubscription ? (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{ color: "var(--text-2)", fontSize: 11.5, marginBottom: 6 }}>One‑time setup — run in a terminal, then sign in:</div>
-                  <pre style={{ margin: 0, padding: "10px 12px", background: "rgba(0,0,0,0.45)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 12.5, lineHeight: 1.6, color: "var(--text-1)", whiteSpace: "pre-wrap", fontFamily: "var(--mono)" }}>npm i -g @anthropic-ai/claude-code{"\n"}claude login</pre>
-                </div>
-              ) : (
-                <div style={{ maxWidth: 420 }}><Field label="Anthropic API key"><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder="sk-ant-…" /></Field></div>
-              )}
-            </>
-          )}
+          {/* Anthropic is API-key only — the subscription/OAuth path was removed pre-launch
+              (billing a Claude consumer plan from third-party software breaches Anthropic's ToS). */}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
             <button className="btn primary" onClick={saveProvider}><Save size={14} /> Save &amp; load models</button>

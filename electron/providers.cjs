@@ -130,11 +130,8 @@ const ANTHROPIC_MODELS = [
 // List models from the provider's /v1/models (best-effort).
 async function listModels(profile) {
   if (!profile || !profile.baseUrl) return [];
-  // Anthropic on subscription (or no key): can't query the API — return the known model set.
-  if (profile.kind === "anthropic") {
-    let sub = false; try { sub = !!require("./settings.cjs").load().anthropicUseSubscription; } catch {}
-    if (sub || !(profile.apiKey || "").trim()) return [...ANTHROPIC_MODELS];
-  }
+  // Anthropic without a key yet: can't query the API — return the known model set.
+  if (profile.kind === "anthropic" && !(profile.apiKey || "").trim()) return [...ANTHROPIC_MODELS];
   const url = modelsUrl(profile.baseUrl);
   const headers = {};
   if (profile.kind === "anthropic") {

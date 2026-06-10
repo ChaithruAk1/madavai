@@ -50,7 +50,6 @@ const DEFAULTS = {
   theme: "dark", // "dark" | "light" | "system"
   accent: "default", // "default" = original two-tone; or a hex for a monochrome accent
   defaultModel: "", // "profileId::model" — applied on every app start
-  anthropicUseSubscription: false, // TESTING ONLY: use `claude login` creds (remove before publishing — Anthropic ToS)
   proxyUrl: "", // optional corporate proxy, e.g. http://proxy.corp:8080 (applied on startup)
   noProxy: "", // optional comma-separated hosts to bypass the proxy (defaults to localhost)
   messaging: { enabled: false, platform: "telegram", telegramToken: "", telegramAllowedUserIds: "", target: "chat", folder: "" },

@@ -130,11 +130,19 @@
 .agsd-send:not(:disabled):hover { filter: brightness(1.1); }
 .agsd-send:not(:disabled):active { transform: scale(0.94); }
 
-/* When the blueprint is open it becomes the pane's main workspace: the chat shrinks
-   to a small recent-context strip and the refine chips step aside — no dead space. */
+/* The blueprint lives at the TOP of the pane (flex order — no DOM churn): the toggle
+   sits right under the Designer header, and when open the blueprint is the main
+   workspace; the chat shrinks to a context strip below and refine chips step aside. */
+.agsd-head { order: 0; }
+.agsd-bp-toggle { order: 1; border-top: none; border-bottom: 1px solid var(--line); }
+.ags-bp { order: 2; }
+.agsd-chat { order: 3; }
+.agsd-quick { order: 4; }
+.agsd-composer { order: 5; }
 .agsd-pane:has(.ags-bp) .agsd-chat { flex: 0 1 130px; }
 .agsd-pane:has(.ags-bp) .agsd-quick { display: none; }
 .agsd-pane:has(.ags-bp) .agsd-composer { margin-bottom: 8px; }
+.agsd-pane:has(.ags-bp) .ags-bp { border-bottom: 1px solid var(--line); }
 
 /* ---------- blueprint summary row (internals untouched — see .ags-bp in styles.css) ---------- */
 .agsd-bp-toggle {

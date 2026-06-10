@@ -1725,11 +1725,11 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </button>
           {blueprintOpen && (
             <div className="ags-bp scroll">
-              <label>Purpose</label>
+              <label>Purpose <span>— one sentence on what it's for</span></label>
               <input value={draft.description} placeholder="One sentence" onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
-              <label>Instructions</label>
+              <label>Instructions <span>— how it thinks and answers</span></label>
               <textarea rows={7} value={draft.instructions} onChange={(e) => setDraft({ ...draft, instructions: e.target.value })} />
-              <label>Capabilities</label>
+              <label>Capabilities <span>— what it may use</span></label>
               <div className="ags-bp-tools">
                 {TOOL_DEFS.filter((t) => t.key !== "browser" || browserOn).map((t) => {
                   const I = t.icon; const on = !!draft.tools[t.key];
@@ -1744,13 +1744,13 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               {!browserOn && <div className="ag-hint" style={{ margin: "2px 0 6px" }}>The Agent Browser is turned off by your admin (Settings → Agent Browser), so the Browser capability is unavailable.</div>}
               {browserOn && draft.tools.browser && (
                 <>
-                  <label>Allowed sites (optional) — domains the browser may visit</label>
+                  <label>Allowed sites <span>— optional; domains the browser may visit</span></label>
                   <input value={draft.browserAllow || ""} placeholder="e.g. github.com, news.ycombinator.com — empty = any site"
                     onChange={(e) => setDraft({ ...draft, browserAllow: e.target.value })} />
                   <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Navigation, clicks and form-fills ask your permission; passwords and payment fields are always refused.</div>
                 </>
               )}
-              <label>Autonomy — how it handles risky actions (files, terminal, browser)</label>
+              <label>Autonomy <span>— how it handles risky actions (files, terminal, browser)</span></label>
               <div className="ags-bp-tools">
                 {[
                   { v: "ask", label: "Ask first", note: "Pauses and asks your permission before each risky action. The safe default." },
@@ -1763,7 +1763,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               </div>
               {draft.autonomy === "act" && <div className="ag-hint" style={{ margin: "2px 0 6px" }}>⚠ Acts without asking — file edits, terminal commands and browser actions run automatically. Pair with a site allowlist and a folder you trust it with.</div>}
               {draft.autonomy === "skip" && <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Risky actions are declined instantly (no prompt); the agent adapts or tells you what it skipped. Reads are always allowed.</div>}
-              <label>Knowledge ({(draft.knowledge || []).length}/24) — files this agent always knows</label>
+              <label>Knowledge <span>— {(draft.knowledge || []).length}/24 files it always knows</span></label>
               <div className="ags-kn">
                 {(draft.knowledge || []).map((k, i) => (
                   <span key={i} className="ag-pill" title={`${Math.round((k.content || "").length / 1000)}k chars`}>
@@ -1776,7 +1776,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                   onChange={(e) => { addKnowledgeFiles(e.target.files); e.target.value = ""; }} />
               </div>
               <div className="ag-hint" style={{ margin: 0 }}>Text files (md, txt, csv, json…). Large libraries are retrieved per task — only the relevant passages are injected. For PDFs, add them to a Project instead — Projects parse PDF/Word.</div>
-              <label>Pinned model</label>
+              <label>Pinned model <span>— overrides the live selector for this agent</span></label>
               <div className="ag-model-row">
                 <ModelPicker value={draft.model || undefined} groups={groups} onChange={(v) => setDraft({ ...draft, model: v })} onRefresh={onRefresh} agenticOnly />
                 {draft.model

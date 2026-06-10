@@ -1675,7 +1675,11 @@ textarea.model-search { line-height: 1.5; }
 .ags-bp-toggle { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; border-top: 1px solid var(--line); width: 100%; padding: 8px 14px; color: var(--text-2); font-size: 12px; cursor: pointer; text-align: left; }
 .ags-bp-toggle:hover { color: var(--text-0); }
 .ags-bp { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 7px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-.ags-bp label { font-size: 10.5px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 6px; }
+/* Section headers: real hierarchy — bold bright title, dim plain-case hint, hairline
+   dividers between sections (the old one-size-one-color wall was unreadable). */
+.ags-bp > label { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; font-size: 12.5px; font-weight: 700; color: var(--text-0); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.ags-bp > label:first-child { margin-top: 2px; padding-top: 0; border-top: none; }
+.ags-bp > label span { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-2); font-size: 11.5px; }
 .ags-bp input, .ags-bp textarea { background: var(--bg-1); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; color: var(--text-0); font-size: 13px; outline: none; resize: vertical; }
 .ags-bp textarea { font-family: var(--mono); line-height: 1.55; min-height: 150px; }
 .ags-bp input:focus, .ags-bp textarea:focus { border-color: var(--accent-line); }

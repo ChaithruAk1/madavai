@@ -97,8 +97,7 @@ function resolve(m, profiles, cfg) {
     const prof = matchProfile(profiles, pn);
     if (!prof) continue;
     const keyed = !!(prof.apiKey || "").trim();
-    const sub = prof.kind === "anthropic" && cfg.anthropicUseSubscription;
-    if (!(keyed || sub)) continue; // cloud needs a key (or Claude subscription)
+    if (!keyed) continue; // cloud needs a key (API-key access only)
     const cm = prof.cachedModels || [];
     const want = norm(m.run), wantName = norm(m.name);
     const id = cm.find((x) => { const nx = norm(x); return nx.includes(want) || want.includes(nx) || nx.includes(wantName); });
