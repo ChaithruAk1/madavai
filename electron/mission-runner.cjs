@@ -105,6 +105,14 @@ async function runAgentHeadless({ agent, prompt, cwd = null, source = "schedule"
         // Handoffs inherit webhook provenance so the no-shell guard can't be escaped via call_agent.
         callAgent: depth === 0 ? (name, task) => callAgentByName(name, task, { cwd, source: source === "webhook" ? "webhook" : "handoff", depth: depth + 1, signal }) : null,
         browser: browserFor(agent),
+        // Harness toggles (thorough / reviewer / economy model / text protocol) apply
+        // headless too — same quality bar whether a human is watching or not.
+        agentOpts: {
+          thorough: !!agent.thorough,
+          reviewerProfile: agent.reviewer ? (agent.economyModel ? profileFor(agent.economyModel, cfg) : prof) : null,
+          economyProfile: agent.economyModel ? profileFor(agent.economyModel, cfg) : null,
+          textTools: !!agent.textTools,
+        },
       });
       text = buf.trim();
     }

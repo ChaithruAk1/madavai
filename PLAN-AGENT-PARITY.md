@@ -1,5 +1,7 @@
 # Plan: Frontier-grade agent quality on ANY model
-*How to make BrainEdge's agents and Let's Collaborate perform like the best frontier agent harnesses even when running on external/open models. Written June 2026. Plan only — nothing here is built yet.*
+*How to make BrainEdge's agents and Let's Collaborate perform like the best frontier agent harnesses even when running on external/open models. Written June 2026.*
+
+> **STATUS 2026-06-10: BUILT — all five waves.** Engine: `electron/harness.cjs` (discipline layer), `electron/model-stats.cjs` (measured tool discipline + harness score), wired through `agent-openai.cjs`, `session-manager.cjs` (`_harnessFor`), `mission-runner.cjs`; web mirror `src/shared/harness.js` → `webBridge.js` (Wave-1 core); per-agent toggles in Studio → Blueprint → "Craft" (thorough / reviewer / text-protocol / economy model); harness score surfaced in Models Overview expanded rows. Plain-English explanation: **HARNESS.md**. Deviations from the plan: 1.3 compaction uses heuristic context windows (catalog hookup later); 3.1 uses live mission stats (no separate gauntlet yet — §8's Test-Center gauntlet remains the open follow-up); 2.3 read-before-edit resets on app restart (per-process memory).
 
 ---
 

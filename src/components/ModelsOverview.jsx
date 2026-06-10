@@ -249,6 +249,7 @@ export default function ModelsOverview({ activeModel }) {
   const [orCat, setOrCat] = useState(null);
   const [dlMenu, setDlMenu] = useState(null); // model name whose download-source chooser is open
   const [speedMap, setSpeedMap] = useState({}); // measured tokens/sec from the Speed Check, by model id
+  const [harnessMap, setHarnessMap] = useState({}); // measured tool discipline (agent missions), by model id
   const [expanded, setExpanded] = useState(null); // row name expanded inline (learn without leaving the screen)
   const [cmp, setCmp] = useState(() => new Set()); // models picked for side-by-side compare (max 4)
   const [cmpOpen, setCmpOpen] = useState(false);
@@ -261,6 +262,16 @@ export default function ModelsOverview({ activeModel }) {
     for (const x of r.results) { if (x && x.model && x.ok && x.tps) map[norm(x.model)] = x.tps; }
     setSpeedMap(map);
   }).catch(() => {}); }, []);
+
+  // Pull measured harness stats (tool discipline from real agent missions, desktop engine).
+  useEffect(() => { bridge.getModelStats?.().then((m) => setHarnessMap(m || {})).catch(() => {}); }, []);
+  const harnessFor = (m) => harnessMap[m.run] || harnessMap[norm(m.run)] || null;
+  const harnessText = (m) => {
+    const h = harnessFor(m);
+    if (!h) return "not measured";
+    if (h.score == null) return `measuring… (${h.toolCalls || 0} calls)`;
+    return `${h.score}/10 · ${h.toolCalls || 0} calls`;
+  };
 
   // Close the download chooser on any outside click or Escape.
   useEffect(() => {
@@ -518,6 +529,11 @@ export default function ModelsOverview({ activeModel }) {
                         ))}
                         <div className="mo-exp-stat"><span className="mo-exp-k">Thinking</span><span className="mo-exp-v" style={{ color: thinkingTone(thinkingLabel(m)) }}>{thinkingLabel(m)}</span></div>
                         <div className="mo-exp-stat"><span className="mo-exp-k">Agentic</span><span className="mo-exp-v" style={{ color: agenticTone(agenticLabel(m)) }}>{agenticLabel(m)}</span></div>
+                        <div className="mo-exp-stat" title="Measured tool discipline from your real agent missions: JSON accuracy, retries, failures, finished vs stalled. Builds up as you use agents on this model.">
+                          <span className="mo-exp-k">Harness</span>
+                          <span className="mo-exp-v">{harnessText(m)}</span>
+                          <Meter pct={harnessFor(m) && harnessFor(m).score != null ? harnessFor(m).score * 10 : -1} tone="#f5a623" />
+                        </div>
                       </div>
                     </div>
                   </td>

@@ -287,6 +287,7 @@ class SessionManager {
         roster: this._rosterFor(s, cfg),
         callAgent: this._makeCallAgent(s, profile, cfg, emit, controller.signal),
         browser: this._browserFor(s.agent), // chat-mode agents can browse too
+        agentOpts: this._harnessFor(s.agent, profile),
       });
     } finally {
       s.controller = null;
@@ -302,6 +303,23 @@ class SessionManager {
       if (p) return { ...p, model: member.model.slice(i + 2) };
     }
     return fallback;
+  }
+
+  // Harness options (PLAN-AGENT-PARITY waves) — per-agent quality/cost toggles.
+  // thorough = one self-review pass before the final answer ships;
+  // reviewer  = a cheap-model "approve | flag: reason" verdict after each file change;
+  // economyModel = "profileId::modelId" (same shape as a member model pin) that runs
+  //   the scouts + reviewer so grunt work happens on a cheap model;
+  // textTools = force the JSON-in-text protocol (models with no native tool calling).
+  _harnessFor(agentLike, profile) {
+    const a = agentLike || {};
+    const eco = a.economyModel ? this._memberProfile({ model: a.economyModel }, null) : null;
+    return {
+      thorough: !!a.thorough,
+      reviewerProfile: a.reviewer ? (eco || profile) : null,
+      economyProfile: eco || null,
+      textTools: !!a.textTools,
+    };
   }
 
   _memberSys(member, taskText) {
@@ -336,6 +354,7 @@ class SessionManager {
       allowAskUser: true, // members can pause the mission with a question for the user
       browser: this._browserFor(member),
       noShell: !t.shell, // Shell capability off → run_bash neither offered nor executable
+      agentOpts: this._harnessFor(member, prof),
     });
     return buf.trim();
   }
@@ -696,6 +715,7 @@ class SessionManager {
           // A custom agent with Shell off never gets run_bash; plain folder
           // sessions (no agent) keep the full toolset as before.
           noShell: !!(s.agent && s.agent.tools && !s.agent.tools.shell),
+          agentOpts: this._harnessFor(s.agent, profile),
         });
       } finally {
         s.controller = null;

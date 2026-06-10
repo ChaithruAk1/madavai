@@ -10,6 +10,9 @@
 //     local models) can't run in a browser -> they return a clear "desktop app" result.
 import { streamChat, streamChatTools, listModels as provListModels, ping as provPing } from "../shared/providers.js";
 import * as webfs from "./webfs.js";
+// The agent discipline layer (mirror of the desktop harness): JSON repair,
+// head+tail truncation, stale-result squash, identical-call loop breaker.
+import { tolerantParse, headTail, squashStale, CallGuard } from "../shared/harness.js";
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
@@ -372,10 +375,10 @@ async function runSubagent(sess, task, prof) {
     if (!toolCalls || !toolCalls.length) return content || "(sub-agent finished)";
     msgs.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
     for (const c of toolCalls) {
-      let a = {}; try { a = JSON.parse(c.arguments || "{}"); } catch {}
+      const a = tolerantParse(c.arguments || "{}").value || {};
       let out; try { out = await executeTool(c.name, a, { sess }); } catch (e) { out = "Error: " + String((e && e.message) || e); }
       if (sess) emit(sess.id, "tool_result", { id: c.id, name: "↳ " + c.name, ok: true, output: String(out).slice(0, 2000) });
-      msgs.push({ role: "tool", tool_call_id: c.id, content: String(out).slice(0, 40000) });
+      msgs.push({ role: "tool", tool_call_id: c.id, content: headTail(String(out), { maxChars: 24000, headLines: 400, tailLines: 200 }) });
     }
   }
   return "(sub-agent reached its step limit)";
@@ -407,17 +410,50 @@ async function runAgentTurn(sess, text, images, prof) {
   sess.ac = new AbortController();
   emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind, cwd: sess.cwd });
   const started = Date.now();
+  // Harness (desktop-mirrored): squash stale tool outputs + per-turn call guard.
+  squashStale(sess.messages);
+  const guard = new CallGuard();
+  let reasks = 0;
   try {
     for (let step = 0; step < 16; step++) {
       const { content, toolCalls } = await callTools(prof, sess.messages, (c) => emit(sess.id, "assistant_delta", { text: c }), sess.ac.signal);
       if (!toolCalls || !toolCalls.length) { sess.messages.push({ role: "assistant", content: content || "" }); emit(sess.id, "assistant_message", { stop_reason: "end_turn" }); break; }
       sess.messages.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
       for (const c of toolCalls) {
-        let args = {}; try { args = JSON.parse(c.arguments || "{}"); } catch {}
+        // Wave 1.1 — tolerant JSON repair (weak models emit sloppy arguments).
+        const parsed = tolerantParse(c.arguments || "{}");
+        const args = parsed.value || {};
+        if (!parsed.ok) {
+          let out;
+          if (reasks < 2) { reasks++; out = `Your ${c.name} arguments were not valid JSON. Call ${c.name} again with ONE valid JSON object as arguments — no comments, no single quotes, no trailing commas.`; }
+          else out = "(arguments were invalid JSON again — abandon this call and try a different approach)";
+          emit(sess.id, "tool_use", { id: c.id, name: c.name, input: { error: "invalid arguments" }, auto: true });
+          emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: false, output: out });
+          sess.messages.push({ role: "tool", tool_call_id: c.id, content: out });
+          continue;
+        }
+        // Wave 1.4 — identical-call loop breaker (3rd copy of the same call in a row).
+        if (guard.repeatBlocked(c.name, args)) {
+          const out = "(blocked: this is the 3rd identical call in a row — the result will not change. State why the previous attempts failed and try a DIFFERENT approach.)";
+          emit(sess.id, "tool_use", { id: c.id, name: c.name, input: args, auto: true });
+          emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: false, output: out });
+          sess.messages.push({ role: "tool", tool_call_id: c.id, content: out });
+          continue;
+        }
         emit(sess.id, "tool_use", { id: c.id, name: c.name, input: args, auto: true });
-        let out; try { out = await executeTool(c.name, args, { sess }); } catch (e) { out = "Error: " + String((e && e.message) || e); }
-        emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: true, output: String(out).slice(0, 8000) });
-        sess.messages.push({ role: "tool", tool_call_id: c.id, content: String(out).slice(0, 60000) });
+        const target = args.path || args.query || args.url || "";
+        let out, failed = false;
+        try { out = await executeTool(c.name, args, { sess }); guard.noteResult(c.name, target, true); }
+        catch (e) {
+          failed = true;
+          guard.noteResult(c.name, target, false);
+          const streak = guard.failStreak(c.name, target);
+          out = "Error: " + String((e && e.message) || e) + (streak >= 2
+            ? "\n[harness] Second consecutive failure on this target — STOP retrying this approach. Say why it failed, then take a different route or report the blocker."
+            : "\nReflect: state in one sentence why this failed, then try a DIFFERENT approach.");
+        }
+        emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: !failed, output: headTail(String(out), { maxChars: 8000 }) });
+        sess.messages.push({ role: "tool", tool_call_id: c.id, content: headTail(String(out), { maxChars: 24000, headLines: 400, tailLines: 200 }) });
       }
     }
     emit(sess.id, "result", { subtype: "success", duration_ms: Date.now() - started, total_cost_usd: 0 });
@@ -742,6 +778,10 @@ export const webBridge = {
   async cancelSpeedTest() { _speedCancel = true; _speedRunning = false; return true; },
   async getSpeedTestLast() { return _lastSpeed; },
   async getSpeedTestStatus() { return { running: _speedRunning, startedAt: 0 }; },
+  // Harness stats are measured by the desktop engine (model-stats.cjs); the web
+  // agent doesn't record them yet — empty map keeps the contract identical.
+  async getModelStats() { return {}; },
+
   async getOpenRouterCatalog() {
     // Transform to the same shape the desktop catalog returns, so ModelsOverview reads one schema.
     try {

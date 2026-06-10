@@ -11,9 +11,15 @@ const execAsync = (command, opts) => new Promise((resolve) => {
     resolve(String(stdout || "") + (stderr ? "\n[stderr] " + String(stderr).slice(0, 1000) : ""));
   });
 });
-const { streamChatTools, stripReasoning } = require("./providers.cjs");
+const { streamChatTools, streamChat, stripReasoning } = require("./providers.cjs");
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
+// The discipline layer (PLAN-AGENT-PARITY waves): JSON repair, plan tracking,
+// compaction, tiers, loop breakers — see electron/harness.cjs.
+const harness = require("./harness.cjs");
+// Measured per-model tool discipline (lazy: stats are a desktop nicety, never fatal).
+let modelStats = null;
+try { modelStats = require("./model-stats.cjs"); } catch { modelStats = { bump: () => {}, flag: () => {}, summary: () => null, score: () => null, all: () => ({}) }; }
 
 const LOAD_SKILL_TOOL = {
   type: "function",
@@ -127,28 +133,62 @@ function inside(cwd, p) {
   return abs;
 }
 
-async function execTool(cwd, name, args) {
+async function execTool(cwd, name, args, mission) {
+  // Wave 2.3 — read-before-edit, enforced structurally (not just prompted):
+  // editing or overwriting a file the agent hasn't read this mission is refused.
+  const readPaths = mission && mission.readPaths;
   switch (name) {
     case "list_dir": {
       const dir = inside(cwd, args.path || ".");
       return fs.readdirSync(dir, { withFileTypes: true })
         .map((d) => (d.isDirectory() ? d.name + "/" : d.name)).join("\n") || "(empty)";
     }
-    case "read_file":
-      return fs.readFileSync(inside(cwd, args.path), "utf8").slice(0, 8000);
-    case "write_file":
-      fs.mkdirSync(path.dirname(inside(cwd, args.path)), { recursive: true });
-      fs.writeFileSync(inside(cwd, args.path), args.content == null ? "" : args.content);
-      return "wrote " + args.path;
+    case "read_file": {
+      const f = inside(cwd, args.path);
+      if (readPaths) readPaths.add(f);
+      return harness.headTail(fs.readFileSync(f, "utf8"), { maxChars: 8000 });
+    }
+    case "write_file": {
+      const f = inside(cwd, args.path);
+      if (readPaths && fs.existsSync(f) && !readPaths.has(f)) {
+        throw new Error(`refusing to overwrite ${args.path} — read_file it first (it already exists and you have not read it this mission)`);
+      }
+      fs.mkdirSync(path.dirname(f), { recursive: true });
+      const body = args.content == null ? "" : String(args.content);
+      fs.writeFileSync(f, body);
+      if (readPaths) readPaths.add(f);
+      return `wrote ${args.path} (${body.split("\n").length} lines, ${body.length} chars)`;
+    }
     case "edit_file": {
       const f = inside(cwd, args.path);
+      if (readPaths && !readPaths.has(f)) {
+        throw new Error(`refusing to edit ${args.path} — read_file it first so you can see the exact current text`);
+      }
       let t = fs.readFileSync(f, "utf8");
-      if (!t.includes(args.old_string)) throw new Error("old_string not found in " + args.path);
-      fs.writeFileSync(f, t.replace(args.old_string, args.new_string == null ? "" : args.new_string));
-      return "edited " + args.path;
+      const oldS = String(args.old_string == null ? "" : args.old_string);
+      if (!oldS) throw new Error("old_string is empty");
+      // Wave 1.2 — uniqueness: a non-unique match silently edits the WRONG spot.
+      const first = t.indexOf(oldS);
+      if (first === -1) throw new Error("old_string not found in " + args.path + " — read the file again and copy the exact current text (whitespace matters)");
+      if (t.indexOf(oldS, first + 1) !== -1) {
+        const n = t.split(oldS).length - 1;
+        throw new Error(`old_string matches ${n} places in ${args.path} — include more surrounding lines so it matches exactly once`);
+      }
+      const newS = args.new_string == null ? "" : String(args.new_string);
+      const updated = t.slice(0, first) + newS + t.slice(first + oldS.length);
+      fs.writeFileSync(f, updated);
+      if (readPaths) readPaths.add(f);
+      // Wave 1.2 — show the agent what it actually did (±3 lines around the change),
+      // killing the "said it fixed it but didn't" failure class.
+      const upToChange = updated.slice(0, first + newS.length);
+      const lineNo = upToChange.split("\n").length;
+      const lines = updated.split("\n");
+      const lo = Math.max(0, lineNo - 4), hi = Math.min(lines.length, lineNo + 3);
+      const region = lines.slice(lo, hi).map((l, i) => `${lo + i + 1}| ${l}`).join("\n");
+      return `edited ${args.path} — the changed region now reads:\n${region}`;
     }
     case "run_bash":
-      return (await execAsync(args.command, { cwd, encoding: "utf8", timeout: 30000 })).slice(0, 8000);
+      return harness.headTail(await execAsync(args.command, { cwd, encoding: "utf8", timeout: 30000 }), { maxChars: 8000 });
     case "find_files": {
       const out = [];
       walkFiles(cwd, cwd, 6, (rel) => { if (rel.toLowerCase().includes(String(args.pattern || "").toLowerCase())) out.push(rel); });
@@ -183,7 +223,7 @@ function walkFiles(root, dir, depth, cb) {
 }
 
 // Route a tool call to a skill, an MCP connector, a remote SSH backend, or a local tool.
-async function runTool(cwd, name, args, skillsDir, backend) {
+async function runTool(cwd, name, args, skillsDir, backend, mission) {
   if (name === "load_skill") {
     const r = skillsMgr.loadSkill(skillsDir, args.name);
     if (!r) return "Skill not found: " + args.name;
@@ -191,7 +231,48 @@ async function runTool(cwd, name, args, skillsDir, backend) {
   }
   if (mcp.isMcpTool(name)) return await mcp.callTool(name, args);
   if (backend) return backendExec(backend, name, args);
-  return execTool(cwd, name, args);
+  return execTool(cwd, name, args, mission);
+}
+
+// ---- Wave 5.1: parallel read-only scouts -------------------------------------
+// Each scout is a tiny text-protocol mini-loop on the economy (or main) model with
+// READ-ONLY tools. Scouts cannot write, edit, or run commands — by construction.
+const SCOUT_READONLY = new Set(["list_dir", "read_file", "search_text", "find_files"]);
+async function runScout(profile, cwd, query, signal) {
+  const toolList = "- list_dir {path}\n- read_file {path}\n- search_text {query, glob?}\n- find_files {pattern}";
+  const msgs = [
+    { role: "system", content: "You are a fast project scout. Explore the project with the tools, then answer the question in <=120 words: name the exact files and line areas that matter." + harness.TEXT_PROTOCOL(toolList) },
+    { role: "user", content: String(query || "").slice(0, 500) },
+  ];
+  for (let i = 0; i < 4; i++) {
+    let text;
+    try { const r = await streamChat(profile, msgs, { onDelta: () => {}, signal }); text = (r && r.text) || ""; }
+    catch (e) { return "(scout error: " + String((e && e.message) || e).slice(0, 200) + ")"; }
+    const { calls, stripped } = harness.parseTextToolCalls(text);
+    if (!calls.length) return stripped.slice(0, 1200) || "(no findings)";
+    msgs.push({ role: "assistant", content: text });
+    for (const c of calls) {
+      const p = harness.tolerantParse(c.arguments);
+      let out;
+      if (!SCOUT_READONLY.has(c.name)) out = "(scouts are read-only — that tool is not available)";
+      else { try { out = await execTool(cwd, c.name, p.value || {}, null); } catch (e) { out = "ERROR: " + String((e && e.message) || e); } }
+      msgs.push({ role: "user", content: `[result of ${c.name}]\n` + String(out).slice(0, 4000) });
+    }
+  }
+  return "(scout ran out of steps — partial findings above)";
+}
+
+// ---- Wave 5.2: cheap-model reviewer ------------------------------------------
+// One bounded call: did this change match the brief? "approve" or "flag: reason".
+async function runReviewer(profile, brief, action, signal) {
+  try {
+    const r = await streamChat(profile, [
+      { role: "system", content: "You are a strict but fair code/work reviewer. Reply with EXACTLY one line: either \"approve\" or \"flag: <one concrete reason, max 25 words>\". Never anything else." },
+      { role: "user", content: "Brief (what the user asked for):\n" + String(brief || "").slice(0, 2000) + "\n\nChange just made:\n" + String(action || "").slice(0, 3000) },
+    ], { onDelta: () => {}, signal });
+    const line = String((r && r.text) || "").trim().split("\n")[0].slice(0, 200);
+    return /^flag/i.test(line) ? line : "approve";
+  } catch { return "approve"; } // reviewer failures never block the builder
 }
 
 // Map a tool call to a remote backend (SSH).
@@ -226,8 +307,20 @@ function askUserQuestion(emit, permissions, toolUseId, question, options) {
   });
 }
 
-async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, noShell = false }) {
+async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, noShell = false, agentOpts = {} }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
+  // ---- Mission state (the harness's memory for this conversation) ----
+  // Attached to the history array: custom props on arrays survive in RAM across turns
+  // of the same session and are invisible to JSON persistence. Reset on app restart.
+  history._plan = history._plan || new harness.PlanTracker();
+  history._guard = new harness.CallGuard(); // fresh per turn — streaks are turn-local
+  history._readPaths = history._readPaths || new Set();
+  const mission = { readPaths: history._readPaths };
+  const tracker = history._plan;
+  const guard = history._guard;
+  const model = profile.model || "";
+  const tier = agentOpts.textTools ? "C" : harness.tierFor(modelStats.summary(model));
+  modelStats.bump(model, "missions");
   const gi = globalInstructions ? `\n\nUser's custom instructions (always follow these):\n${globalInstructions}` : "";
   // Spell the browser out in the system prompt — without this, weaker models ignore the
   // browse_* tool schemas and improvise ("install Chrome", "I cannot browse"), which is wrong:
@@ -235,10 +328,27 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   const browserNote = browser
     ? `\n\nYou HAVE a real web browser: the tools browse_open, browse_read, browse_click, browse_fill, browse_back drive a visible browser window the user watches. To look at any website, CALL browse_open with the URL — do not describe what you would do, do it. Never say you cannot browse, never ask the user to install or download a browser (no Chrome needed — the browser is built in), and never invent page content: open the page and read it.\nVERIFY BEFORE CLAIMING: after any action that should change something (sending a message, submitting a form, posting), call browse_read and CONFIRM the page actually shows the result (e.g. your message visible in the conversation) BEFORE telling the user it was done. If you cannot confirm it on the page, say honestly that it may not have gone through and what you see instead. Never report success you have not verified.${(browser.allow || []).length ? ` This agent may only visit: ${browser.allow.join(", ")}.` : ""}`
     : "";
-  const sys = (systemOverride || SYSTEM(mode)) + gi + browserNote + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
+  // Wave 4.1 — repo map: one compressed file tree per mission so the agent starts
+  // knowing the lay of the land instead of list_dir spelunking.
+  let repoMapText = "";
+  if (cwd && mode !== "chat") {
+    if (!history._repoMap) {
+      try {
+        const entries = [];
+        walkFiles(cwd, cwd, 5, (rel, abs) => { if (entries.length < 800) { let size = 0; try { size = fs.statSync(abs).size; } catch {} entries.push({ rel, size }); } });
+        history._repoMap = harness.formatRepoMap(entries);
+      } catch { history._repoMap = ""; }
+    }
+    repoMapText = history._repoMap ? "\n\n" + history._repoMap : "";
+  }
+  const methodRules = mode !== "chat" ? harness.METHOD_RULES : "";
+  const tierNote = tier === "B" ? harness.FEWSHOT_NOTE : "";
+  const sys = (systemOverride || SYSTEM(mode)) + methodRules + tierNote + gi + browserNote + repoMapText + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
   if (history.length === 0) history.push({ role: "system", content: sys });
   else if (history[0] && history[0].role === "system") history[0].content = sys; // refresh index live
   history.push({ role: "user", content: prompt });
+  // Wave 4.2 — squash stale tool outputs so old logs stop hogging the window.
+  harness.squashStale(history);
 
   emit({ kind: "init", data: { model: profile.model, cwd, mode, permissionMode: permMode } });
 
@@ -252,6 +362,9 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   if (allowAskUser) tools.push(ASK_USER_TOOL);
   if (callAgent && Array.isArray(roster) && roster.length) tools.push(callAgentTool(roster));
   if (browser) tools = [...tools, ...BROWSER_TOOLS(browser.allow || [])];
+  // Wave 2.1 — the visible working plan; Wave 5.1 — parallel scouts (folder missions).
+  if (mode !== "chat") tools.push(harness.PLAN_TOOL);
+  if (cwd && mode !== "chat" && agentOpts.scouts !== false) tools.push(harness.SCOUT_TOOL);
   try {
     const mcpTools = await mcp.openAiTools(connectors);
     if (mcpTools.length) tools = [...tools, ...mcpTools];
@@ -262,41 +375,159 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   const streamLive = false;
 
   const started = Date.now();
-  const MAX_STEPS = 12;
+  const MAX_STEPS = agentOpts.thorough ? 14 : 12;
+  const ctxBudget = harness.ctxWindowFor(model);
+  let textMode = tier === "C";   // JSON-in-text protocol for models w/o native tools
+  let planNudged = false;        // Wave 2.1 — one "finish your plan" nudge per turn
+  let selfReviewed = false;      // Wave 2.4 — one self-review pass per turn
+  let reviewsDone = 0;           // Wave 5.2 — reviewer call budget per turn
+  const textToolList = () => tools.map((t) => `- ${t.function.name} ${JSON.stringify((t.function.parameters && t.function.parameters.properties) || {}).slice(0, 160)}`).join("\n");
   for (let step = 0; step < MAX_STEPS; step++) {
+    // Wave 1.3 — auto-compaction: at ~70% of the model's window, compress the
+    // mission into working notes (exactly what /compact does in the CLI).
+    if (harness.estTokens(history) > 0.7 * ctxBudget) {
+      const cid = "compact_" + Date.now().toString(36);
+      emit({ kind: "tool_use", data: { id: cid, name: "compact_context", input: { reason: "approaching the model's context window" }, auto: true } });
+      try {
+        const sr = await streamChat(profile, harness.buildCompactionMessages(history), { onDelta: () => {}, signal });
+        harness.applyCompaction(history, (sr && sr.text) || "");
+        emit({ kind: "tool_result", data: { id: cid, output: "Mission history compacted into working notes (goal, decisions, files, remaining work)." } });
+      } catch (e) {
+        emit({ kind: "tool_result", data: { id: cid, output: "(compaction skipped: " + String((e && e.message) || e).slice(0, 160) + ")" } });
+      }
+    }
+    // Wave 3.2 — tier-B drift guard: re-pin the discipline note every 6 steps.
+    if (tier === "B" && step > 0 && step % 6 === 0) {
+      history.push({ role: "user", content: "[reminder — not the user] Re-read your tool-call discipline rules and your plan; continue the task." });
+    }
+
     let result;
     try {
-      result = await streamChatTools(profile, history, tools, {
-        signal,
-        onDelta: streamLive ? (d) => emit({ kind: "assistant_delta", data: { text: d } }) : () => {},
-      });
+      if (textMode) {
+        // Tier C: plain completion + ```tool block protocol (any chat model can agent).
+        const sysC = history[0] && history[0].role === "system" ? history[0] : null;
+        if (sysC && !sysC._protocolAdded) { sysC.content += "\n" + harness.TEXT_PROTOCOL(textToolList()); sysC._protocolAdded = true; }
+        const tr = await streamChat(profile, history, { onDelta: () => {}, signal });
+        const text = (tr && tr.text) || "";
+        const { calls, stripped } = harness.parseTextToolCalls(text); // assistant text ONLY — never tool results
+        result = { content: stripped, toolCalls: calls, _rawText: text };
+      } else {
+        result = await streamChatTools(profile, history, tools, {
+          signal,
+          onDelta: streamLive ? (d) => emit({ kind: "assistant_delta", data: { text: d } }) : () => {},
+        });
+      }
     } catch (e) {
       if (e.name === "AbortError") { emit({ kind: "result", data: { subtype: "interrupted" } }); return; }
+      // Wave 3.2 — native tool-calling unsupported? Fall back to the text protocol
+      // once, and remember it for this model so future missions skip the failure.
+      if (!textMode && /tool|function/i.test(String(e.message || "")) && step === 0) {
+        textMode = true;
+        modelStats.flag(model, "nativeBroken", 1);
+        modelStats.bump(model, "textMode");
+        continue; // retry this step in text mode
+      }
       emit({ kind: "error", data: { code: e.code || "error", message: String(e.message || e) } });
       return;
     }
 
     const { content, toolCalls } = result;
-    const assistantMsg = { role: "assistant", content: content || "" };
-    if (toolCalls.length) {
+    const assistantMsg = { role: "assistant", content: textMode ? (result._rawText || content || "") : (content || "") };
+    if (!textMode && toolCalls.length) {
       assistantMsg.tool_calls = toolCalls.map((tc) => ({ id: tc.id, type: "function", function: { name: tc.name, arguments: tc.arguments } }));
     }
     history.push(assistantMsg);
 
     if (!toolCalls.length) {
+      // Wave 2.1 — plan enforcement: no "done" while plan steps are pending.
+      if (!planNudged && mode !== "chat" && tracker.hasPlan() && tracker.pending().length && step < MAX_STEPS - 2) {
+        planNudged = true;
+        history.push({ role: "user", content: "[plan check — not the user] Your working plan still has pending steps:\n" + tracker.render() + "\nFinish them (or update the plan with set_plan if they are no longer needed) before giving your final answer." });
+        continue;
+      }
+      // Wave 2.4 — thorough mode: one self-review pass before the answer ships.
+      if (agentOpts.thorough && !selfReviewed && String(content || "").length > 400 && step < MAX_STEPS - 1) {
+        selfReviewed = true;
+        history.push({ role: "user", content: "[final self-review — not the user] Re-read the ORIGINAL request and your answer above. If anything is missing, wrong, or incomplete, produce the corrected COMPLETE answer now. If it is already complete, repeat it verbatim." });
+        continue;
+      }
       // Final answer — strip any chain-of-thought, then reveal the clean text.
       const clean = stripReasoning(content);
       if (clean) emit({ kind: "assistant_delta", data: { text: clean } });
       emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
       emit({ kind: "result", data: { subtype: "success", num_turns: step + 1, duration_ms: Date.now() - started } });
+      modelStats.bump(model, "success");
       return;
     }
     // Tool-calling step: suppress the model's pre-tool narration so it can't claim
     // success before the user approves. The tool cards convey the action.
 
+    // In text mode there are no native tool_calls on the assistant message, so tool
+    // results must return as user-role messages (the "tool" role would be rejected).
+    const pushToolResult = (tc, text) => {
+      if (textMode) history.push({ role: "user", content: `[result of ${tc.name}]\n` + text });
+      else history.push({ role: "tool", tool_call_id: tc.id, content: text });
+    };
+
     for (const tc of toolCalls) {
-      let args = {};
-      try { args = JSON.parse(tc.arguments || "{}"); } catch {}
+      // Wave 1.1 — tolerant JSON repair ladder + measured discipline (Wave 3.1).
+      const parsed = harness.tolerantParse(tc.arguments || "{}");
+      let args = parsed.value || {};
+      modelStats.bump(model, "toolCalls");
+      if (parsed.repaired) modelStats.bump(model, "repaired");
+      if (!parsed.ok) {
+        modelStats.bump(model, "parseFails");
+        emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: { error: "invalid arguments" }, auto: true } });
+        let out;
+        if (guard.reasks < 2) {
+          guard.reasks++;
+          modelStats.bump(model, "reasks");
+          out = `Your ${tc.name} arguments were not valid JSON. Call ${tc.name} again with ONE valid JSON object as arguments — no comments, no single quotes, no trailing commas.`;
+        } else {
+          out = "(arguments were invalid JSON again — abandon this call and try a different approach)";
+        }
+        emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+        pushToolResult(tc, out);
+        continue;
+      }
+
+      // Wave 2.1 — the visible working plan (internal, instant, always auto).
+      if (tc.name === "set_plan") {
+        const rendered = args.update ? tracker.update(args.update.index, args.update.status) : tracker.set(args.steps);
+        emit({ kind: "tool_use", data: { id: tc.id, name: "set_plan", input: { plan: rendered }, auto: true } });
+        emit({ kind: "tool_result", data: { id: tc.id, output: rendered } });
+        pushToolResult(tc, "Plan updated:\n" + rendered);
+        continue;
+      }
+
+      // Wave 1.4 — identical-call loop breaker: the 3rd copy of the same call in a
+      // row is refused (the result will not change; flailing wastes the budget).
+      if (guard.repeatBlocked(tc.name, args)) {
+        const out = "(blocked: this is the 3rd identical call in a row — the result will not change. State in one sentence why the previous attempts failed, then try a DIFFERENT approach.)";
+        emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: args, auto: true } });
+        emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+        pushToolResult(tc, out);
+        continue;
+      }
+
+      // Wave 5.1 — parallel read-only scouts on the economy (or main) model.
+      if (tc.name === "explore_parallel") {
+        const queries = (Array.isArray(args.queries) ? args.queries : []).slice(0, 3).map((q) => String(q || "")).filter(Boolean);
+        emit({ kind: "tool_use", data: { id: tc.id, name: `explore_parallel (${queries.length} scouts)`, input: { queries }, auto: true } });
+        let out;
+        if (!queries.length || !cwd) {
+          out = "(scouts need at least one query and a working folder)";
+        } else {
+          try {
+            const sp = agentOpts.economyProfile || profile;
+            const results = await Promise.all(queries.map((q) => runScout(sp, cwd, q, signal)));
+            out = results.map((r, i) => `Scout ${i + 1} — "${queries[i]}":\n${r}`).join("\n\n");
+          } catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+        }
+        emit({ kind: "tool_result", data: { id: tc.id, output: String(out).slice(0, 4000) } });
+        pushToolResult(tc, String(out).slice(0, 8000));
+        continue;
+      }
 
       // Mid-mission question: pause for the human, resume with their answer.
       if (tc.name === "ask_user") {
@@ -305,7 +536,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
           ? await askUserQuestion(emit, permissions, tc.id, args.question, args.options)
           : "(no user available on this run — proceed with your best judgment and state your assumption)";
         emit({ kind: "tool_result", data: { id: tc.id, output: answer.slice(0, 4000) } });
-        history.push({ role: "tool", tool_call_id: tc.id, content: answer.slice(0, 8000) });
+        pushToolResult(tc, answer.slice(0, 8000));
         continue;
       }
 
@@ -315,7 +546,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
           const out = permMode === "plan" ? "(blocked: plan mode is read-only — describe the delegation instead)" : "(agent handoffs unavailable on this run)";
           emit({ kind: "tool_use", data: { id: tc.id, name: `call_agent → ${args.agent || "?"}`, input: args, auto: true } });
           emit({ kind: "tool_result", data: { id: tc.id, output: out } });
-          history.push({ role: "tool", tool_call_id: tc.id, content: out });
+          pushToolResult(tc, out);
           continue;
         }
         emit({ kind: "tool_use", data: { id: tc.id, name: `call_agent → ${args.agent || "?"}`, input: { task: args.task }, auto: true } });
@@ -323,7 +554,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         try { out = String(await callAgent(args.agent, args.task) || "(no output)"); }
         catch (e) { out = "ERROR: " + String((e && e.message) || e); }
         emit({ kind: "tool_result", data: { id: tc.id, output: out.slice(0, 4000) } });
-        history.push({ role: "tool", tool_call_id: tc.id, content: out.slice(0, 12000) });
+        pushToolResult(tc, out.slice(0, 12000));
         continue;
       }
 
@@ -335,7 +566,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
           emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "plan mode (read-only)" } });
           const out = "(blocked: plan mode is read-only)";
           emit({ kind: "tool_result", data: { id: tc.id, output: out } });
-          history.push({ role: "tool", tool_call_id: tc.id, content: out });
+          pushToolResult(tc, out);
           continue;
         }
         const auto = isAuto(permMode, tc.name);
@@ -356,7 +587,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
           } catch (e) { out = "ERROR: " + String((e && e.message) || e); }
         }
         emit({ kind: "tool_result", data: { id: tc.id, output: String(out).slice(0, 4000) } });
-        history.push({ role: "tool", tool_call_id: tc.id, content: String(out).slice(0, 16000) });
+        pushToolResult(tc, String(out).slice(0, 16000));
         continue;
       }
 
@@ -365,7 +596,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         const out = "(blocked: the shell is not available on this run)";
         emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: args, auto: true } });
         emit({ kind: "tool_result", data: { id: tc.id, output: out } });
-        history.push({ role: "tool", tool_call_id: tc.id, content: out });
+        pushToolResult(tc, out);
         continue;
       }
 
@@ -375,7 +606,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "plan mode (read-only)" } });
         const out = "(blocked: plan mode is read-only)";
         emit({ kind: "tool_result", data: { id: tc.id, output: out } });
-        history.push({ role: "tool", tool_call_id: tc.id, content: out });
+        pushToolResult(tc, out);
         continue;
       }
 
@@ -385,17 +616,45 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       let allowed = auto;
       if (!allowed) allowed = await askPermission(emit, permissions, tc.id, tc.name, args);
 
+      const target = args.path || args.command || args.pattern || args.query || "";
       let output;
       if (!allowed) {
         emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "declined" } });
+        modelStats.bump(model, "denied");
         output = "(user declined this tool call)";
       } else {
-        try { output = await runTool(cwd, tc.name, args, skillsDir); emit({ kind: "tool_result", data: { id: tc.id, output: String(output).slice(0, 4000) } }); }
-        catch (e) { output = "ERROR: " + e.message; emit({ kind: "tool_result", data: { id: tc.id, output } }); }
+        try {
+          output = await runTool(cwd, tc.name, args, skillsDir, null, mission);
+          guard.noteResult(tc.name, target, true);
+          emit({ kind: "tool_result", data: { id: tc.id, output: String(output).slice(0, 4000) } });
+        } catch (e) {
+          // Wave 1.4 — bounded error recovery: reflect, change approach, 2-strike stop.
+          guard.noteResult(tc.name, target, false);
+          modelStats.bump(model, "failures");
+          const streak = guard.failStreak(tc.name, target);
+          output = "ERROR: " + e.message + (streak >= 2
+            ? "\n[harness] Second consecutive failure of this tool on this target — STOP retrying this approach. State in one sentence why it failed, then either take a different route or report the blocker honestly."
+            : "\nReflect: state in one sentence why this failed, then try a DIFFERENT approach (do not repeat the same call).");
+          emit({ kind: "tool_result", data: { id: tc.id, output } });
+        }
       }
-      history.push({ role: "tool", tool_call_id: tc.id, content: String(output).slice(0, 8000) });
+      pushToolResult(tc, String(output).slice(0, 8000));
+
+      // Wave 5.2 — cheap-model reviewer: one bounded verdict per successful change.
+      if (allowed && agentOpts.reviewerProfile && (tc.name === "edit_file" || tc.name === "write_file")
+          && !String(output).startsWith("ERROR") && reviewsDone < 6) {
+        reviewsDone++;
+        const verdict = await runReviewer(agentOpts.reviewerProfile, prompt, `${tc.name} ${args.path || ""}\n${String(output).slice(0, 1200)}`, signal);
+        if (/^flag/i.test(verdict)) {
+          const rid = String(tc.id) + "_rev";
+          emit({ kind: "tool_use", data: { id: rid, name: "reviewer", input: { file: args.path }, auto: true } });
+          emit({ kind: "tool_result", data: { id: rid, output: verdict } });
+          history.push({ role: "user", content: `[reviewer — not the user] ${verdict} — address this on ${args.path || "the change"} before finishing.` });
+        }
+      }
     }
   }
+  modelStats.bump(model, "maxSteps");
   emit({ kind: "result", data: { subtype: "max_steps", duration_ms: Date.now() - started } });
 }
 

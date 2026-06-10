@@ -107,6 +107,7 @@ contextBridge.exposeInMainWorld("brainedge", {
   webhookStatus: () => ipcRenderer.invoke("brainedge:webhookStatus"),
   newWebhookToken: () => ipcRenderer.invoke("brainedge:newWebhookToken"),
   transcribe: (args) => ipcRenderer.invoke("brainedge:transcribe", args),
+  getModelStats: () => ipcRenderer.invoke("brainedge:getModelStats"),
   runSwarm: (args) => ipcRenderer.invoke("brainedge:runSwarm", args),
   cancelSwarm: (swarmId) => ipcRenderer.invoke("brainedge:cancelSwarm", swarmId),
   onSwarmEvent: (cb) => { const h = (_e, m) => cb(m); ipcRenderer.on("brainedge:swarm", h); return () => ipcRenderer.removeListener("brainedge:swarm", h); },

@@ -2202,6 +2202,41 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
         </Section>
       )}
 
+      {/* Craft — harness quality/cost toggles (PLAN-AGENT-PARITY waves) */}
+      <Section id="craft" icon={Hammer} label="Craft — quality vs cost">
+        <div className="ag-hint" style={{ margin: "0 0 8px" }}>
+          The reliability layer (plan tracking, self-repair, context compaction, read-before-edit) is always on and free.
+          These three trade a little extra cost for extra rigor:
+        </div>
+        <label className="chip" style={{ cursor: "pointer", display: "inline-flex", marginBottom: 6 }}>
+          <input type="checkbox" checked={!!draft.thorough} onChange={() => setDraft({ ...draft, thorough: !draft.thorough })} style={{ marginRight: 6 }} />
+          Thorough mode — one self-review pass before every final answer (+1 model call)
+        </label>
+        <br />
+        <label className="chip" style={{ cursor: "pointer", display: "inline-flex", marginBottom: 6 }}>
+          <input type="checkbox" checked={!!draft.reviewer} onChange={() => setDraft({ ...draft, reviewer: !draft.reviewer })} style={{ marginRight: 6 }} />
+          Reviewer — a second model checks every file change against the brief (+1 small call per edit)
+        </label>
+        <br />
+        <label className="chip" style={{ cursor: "pointer", display: "inline-flex", marginBottom: 8 }}>
+          <input type="checkbox" checked={!!draft.textTools} onChange={() => setDraft({ ...draft, textTools: !draft.textTools })} style={{ marginRight: 6 }} />
+          Text-protocol tools — for models with no native tool calling (most local models)
+        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+          <span style={{ fontSize: 12, color: "var(--text-2)", flexShrink: 0 }}>Economy model</span>
+          <input
+            value={draft.economyModel || ""}
+            onChange={(e) => setDraft({ ...draft, economyModel: e.target.value })}
+            placeholder="profileId::model-id (optional — runs scouts + reviewer cheaply)"
+            style={{ flex: 1, fontSize: 12 }}
+          />
+        </div>
+        <div className="ag-hint" style={{ margin: "6px 0 0" }}>
+          Tip: copy a pin from the model picker — e.g. <code>p_openrouter::meta-llama/llama-3.3-70b-instruct:free</code>.
+          Leave empty to use the agent's own model for everything.
+        </div>
+      </Section>
+
       {/* Share */}
       {bridge.exportAgent && (
         <div style={{ marginTop: 10 }}>

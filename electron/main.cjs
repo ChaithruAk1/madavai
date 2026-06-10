@@ -218,6 +218,17 @@ ipcMain.handle("brainedge:getSpeedTestStatus", () => ({ running: speedRunning, s
 const orCatalog = require("./openrouter-catalog.cjs");
 ipcMain.handle("brainedge:getOpenRouterCatalog", (_e, opts) => orCatalog.getCatalog(opts || {}));
 
+// ---- IPC: measured per-model harness stats (tool discipline; PLAN-AGENT-PARITY 3.1) ----
+ipcMain.handle("brainedge:getModelStats", () => {
+  try {
+    const ms = require("./model-stats.cjs");
+    const all = ms.all();
+    const out = {};
+    for (const id of Object.keys(all)) out[id] = { ...all[id], score: ms.score(id) };
+    return out;
+  } catch { return {}; }
+});
+
 // ---- IPC: persisted chat history (Let's Talk / Collaborate / Build) ----
 const sstore = require("./sessions-store.cjs");
 ipcMain.handle("brainedge:listSessions", (_e, mode, agentScope) => sstore.listSessions(mode, agentScope));

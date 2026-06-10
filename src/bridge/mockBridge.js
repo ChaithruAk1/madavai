@@ -119,6 +119,7 @@ export const mockBridge = {
   async getSpeedTestLast() { return null; },
   async getSpeedTestStatus() { return { running: false, startedAt: 0 }; },
   async getOpenRouterCatalog() { return {}; },
+  async getModelStats() { return {}; },
   async openExternal(url) { try { window.open(url, "_blank"); } catch {} return true; },
   async pingProvider() { return true; },
   async saveAccount(a) { _mockSettings.account = { ...(_mockSettings.account || {}), ...a }; return _mockSettings.account; },

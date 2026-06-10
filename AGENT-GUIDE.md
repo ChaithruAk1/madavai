@@ -109,6 +109,9 @@ Every agent has an **Autonomy** setting in its Blueprint, so you aren't prompted
 ### Sage — the mentor who knows this whole guide
 **Ask Sage** (next to the Agent Guide, and a tab inside it) is a conversational mentor that knows everything in this guide and learns each release's new features automatically. It teaches with analogies and short stories, keeps answers brief, never invents features, and always ends with a concrete next step in the app.
 
+### The Harness — why agents feel disciplined on ANY model
+Every agent mission runs inside a built-in discipline layer (full story: HARNESS.md in the project; the user-facing summary): sloppy tool calls are auto-repaired; file edits must match exactly one spot and the agent is shown the changed lines; an agent must READ a file before editing it; long missions auto-compact into working notes instead of losing memory (a "compact_context" card appears); failures force a one-sentence reflection and a different approach — two strikes on the same target stops the attempt; repeated identical calls are blocked; multi-step work shows a live **set_plan checklist** and the agent cannot say "done" with steps pending; folder missions start with a project map and can fan out up to 3 read-only **parallel scouts**. Per-agent extras in **Blueprint & capabilities → "Craft — quality vs cost"**: **Thorough mode** (one self-review before the final answer), **Reviewer** (a second model checks each file change — "approve" or "flag"), **Text-protocol tools** (agents on models with NO native tool calling — most local models), and **Economy model** (a cheap pinned model runs scouts + reviewer). Every mission also measures the model's tool discipline → the **Harness score** in Models Overview (expand a row): "not measured" until 10+ real calls, never invented.
+
 ---
 
 ## 3. Scenarios — the playbook
