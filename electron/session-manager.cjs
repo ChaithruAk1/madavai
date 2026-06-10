@@ -168,6 +168,17 @@ class SessionManager {
     return agentPrompt.agentSystem(s.agent, { taskText: taskText || "" });
   }
 
+  // Per-agent AUTONOMY — set once when the agent is created, so the user isn't
+  // prompted constantly: "act" = full autonomy (no permission prompts, like bypass);
+  // "skip" = never interrupt — risky actions are auto-declined instantly and the
+  // agent adapts/works around them; "ask" (default) = the normal permission flow.
+  _permsFor(agentLike, fallbackMode) {
+    const a = agentLike && agentLike.autonomy;
+    if (a === "act") return { permMode: "bypassPermissions", permissions: this.permissions };
+    if (a === "skip") return { permMode: fallbackMode || "default", permissions: async () => false };
+    return { permMode: fallbackMode || "default", permissions: this.permissions };
+  }
+
   // Agent Browser binding: only for agents with the Browser capability on, bound
   // to that agent's site allowlist. Desktop only (Electron window).
   _browserFor(agentLike) {
@@ -175,7 +186,8 @@ class SessionManager {
     try {
       const ab = require("./agent-browser.cjs");
       if (!ab.isEnabled()) return null; // admin master switch is off
-      return ab.forAllowlist(agentLike.browserAllow || "");
+      // Per-agent identity → per-agent window, so parallel agents browse independently.
+      return ab.forAllowlist(agentLike.browserAllow || "", { id: agentLike.id, name: agentLike.name });
     } catch { return null; }
   }
 
@@ -237,6 +249,10 @@ class SessionManager {
     }
 
     this._turns.set(sessionId, { sessionId, model: profile.model, provider: profile.name, mode: s.mode, promptChars: (userText || "").length, replyChars: 0, replyText: "", userText: userText || "" });
+    // Floor visibility: stamp the conversation as active at turn START (saveSession bumps
+    // updatedAt), so the live workforce view shows "working now" while the agent works —
+    // not only after the turn completes.
+    if (s.chatConvId) { try { const c0 = sstore.getSession(s.chatConvId); if (c0) sstore.saveSession(c0); } catch {} }
 
     // Subscription forces the SDK for chat/project too (raw /v1/messages can't use plan creds).
     if (subMode && (s.mode === "project" || !AGENT_MODES.has(s.mode))) {
@@ -269,9 +285,10 @@ class SessionManager {
     userText = (userText || "") + materializeImages(images);
     const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
     try {
+      const ap = this._permsFor(s.agent, "default");
       await runOpenAIAgentTurn({
-        prompt: userText, mode: "chat", cwd: null, profile, permMode: "default",
-        history: s.history, emit, permissions: this.permissions, signal: controller.signal,
+        prompt: userText, mode: "chat", cwd: null, profile, permMode: ap.permMode,
+        history: s.history, emit, permissions: ap.permissions, signal: controller.signal,
         connectors: ex.connectors, skillsDir: ex.skillsDir, disabledSkills: ex.disabledSkills, globalInstructions: withLang(cfg),
         systemOverride: this._agentSys(s, userText) || null,
         allowAskUser: true,
@@ -329,8 +346,8 @@ class SessionManager {
       prompt: task,
       mode: (t.files || t.shell) && s.cwd ? "cowork" : "chat",
       cwd: (t.files || t.shell) ? (s.cwd || null) : null,
-      profile: prof, permMode: s.permMode || "default",
-      history: [], emit: innerEmit, permissions: this.permissions, signal,
+      profile: prof, permMode: this._permsFor(member, s.permMode || "default").permMode,
+      history: [], emit: innerEmit, permissions: this._permsFor(member, s.permMode || "default").permissions, signal,
       connectors: t.connectors ? (cfg.connectors || []) : [],
       skillsDir: t.skills ? (cfg.skillsDirs || []) : [],
       disabledSkills: cfg.disabledSkills || [],
@@ -685,9 +702,10 @@ class SessionManager {
         // A custom agent keeps the mode's file-tool system prompt and appends its own
         // instructions (a full override would lose the tool-usage guidance).
         const agentSys = this._agentSys(s, userText);
+        const ap = this._permsFor(s.agent, s.permMode);
         await runOpenAIAgentTurn({
-          prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: s.permMode,
-          history: s.history, emit, permissions: this.permissions, signal: controller.signal,
+          prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: ap.permMode,
+          history: s.history, emit, permissions: ap.permissions, signal: controller.signal,
           connectors: ex.connectors, skillsDir: ex.skillsDir, disabledSkills: ex.disabledSkills,
           globalInstructions: agentSys ? `${agentSys}\n\n${withLang(cfg)}` : withLang(cfg),
           allowAskUser: true,

@@ -1674,11 +1674,15 @@ textarea.model-search { line-height: 1.5; }
 .ags-crew-inline { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
 .ags-bp-toggle { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; border-top: 1px solid var(--line); width: 100%; padding: 8px 14px; color: var(--text-2); font-size: 12px; cursor: pointer; text-align: left; }
 .ags-bp-toggle:hover { color: var(--text-0); }
-.ags-bp { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 6px; max-height: 46%; }
+.ags-bp { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 7px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .ags-bp label { font-size: 10.5px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 6px; }
-.ags-bp input, .ags-bp textarea { background: var(--bg-1); border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; color: var(--text-0); font-size: 12.5px; outline: none; resize: vertical; }
-.ags-bp textarea { font-family: var(--mono); line-height: 1.5; }
+.ags-bp input, .ags-bp textarea { background: var(--bg-1); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; color: var(--text-0); font-size: 13px; outline: none; resize: vertical; }
+.ags-bp textarea { font-family: var(--mono); line-height: 1.55; min-height: 150px; }
 .ags-bp input:focus, .ags-bp textarea:focus { border-color: var(--accent-line); }
+/* Blueprint's pinned-model picker: the default menu is right-anchored (fine in top bars),
+   but here the trigger sits at the pane's LEFT edge — so anchor left and open upward,
+   sized to the pane, or the 480px menu clips outside the pane. */
+.ags-bp .model-menu { left: 0; right: auto; top: auto; bottom: 44px; width: min(460px, 42vw) !important; max-height: min(440px, 62vh) !important; }
 .ags-bp-tools { display: flex; flex-wrap: wrap; gap: 6px; }
 .ags-bp-tool { cursor: pointer; background: var(--bg-1); }
 .ags-bp-tool.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-weak); }
@@ -1715,7 +1719,18 @@ textarea.model-search { line-height: 1.5; }
 .agg-pager-dots span.on { background: var(--accent); transform: scale(1.25); }
 .agg-right-head h2 { margin: 0 0 6px; font-size: 18px; color: var(--text-0); }
 .agg-right-head p { margin: 0 0 16px; color: var(--text-1); font-size: 12.5px; line-height: 1.55; }
-.agg-sim.lit { border-color: var(--accent-line); box-shadow: 0 0 0 1px var(--accent-weak), 0 6px 22px rgba(0,0,0,0.18); }
+/* Focus follows the story: the chapter's missions glow and lift; the rest step back. */
+.agg-sim { transition: opacity var(--dur-2, 220ms) var(--ease, ease), border-color var(--dur-2, 220ms) var(--ease, ease), box-shadow var(--dur-2, 220ms) var(--ease, ease), transform var(--dur-2, 220ms) var(--ease, ease); }
+.agg-sim.lit {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, var(--accent-weak), transparent 110px), var(--bg-2);
+  box-shadow: 0 0 0 3px var(--accent-weak), 0 12px 34px rgba(0, 0, 0, 0.28);
+  transform: translateY(-2px);
+}
+.agg-sim.lit .agg-sim-n { background: var(--accent); border-color: var(--accent); color: #04121a; }
+.agg-sims:has(.agg-sim.lit) .agg-sim:not(.lit) { opacity: 0.5; }
+.agg-sims .agg-sim:not(.lit):hover { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .agg-sim { transition: none; } .agg-sim.lit { transform: none; } }
 .agg-right .agg-sims { grid-template-columns: 1fr; }
 .agg-left .agg-flow { padding: 14px 12px; }
 .agg-wrap { overflow: hidden; }                      /* panes scroll internally; the page itself never overflows */
@@ -2003,7 +2018,7 @@ svg.lucide { color: var(--accent); }
 
 /* ===== Teams: tabs, builder, Mission Control (TeamOps) ===== */
 .ags-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
-.ags-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text-1); font-size: 13px; cursor: pointer; }
+.ags-tab { display: inline-flex; align-items: center; gap: 8px; padding: 9px 17px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text-1); font-size: 14px; font-weight: 500; cursor: pointer; }
 .ags-tab.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-weak); font-weight: 600; }
 .ags-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 720px; }
 @media (max-width: 760px) { .ags-modes { grid-template-columns: 1fr; } }
@@ -2120,6 +2135,14 @@ svg.lucide { color: var(--accent); }
 @media (max-width: 640px) { .stu2-console { flex-direction: column; align-items: stretch; } .stu2-go { justify-content: center; } }
 
 /* ===== Agent Studio: tile/list view toggle + list rows ===== */
+/* two tab layers: learning row sits lightly above the workforce row */
+.ags-tabs-learn { margin-bottom: 8px; }
+.ags-tabs-learn .ags-tab { padding: 7px 14px; font-size: 13px; }
+
+/* utility toolbar: its own right-aligned row under the tabs — icons only, tooltips tell the story */
+.ags-utilrow { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: -6px 0 12px; }
+.ags-util { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2); color: var(--text-1); cursor: pointer; transition: border-color var(--dur-1, 120ms) var(--ease, ease), background var(--dur-1, 120ms) var(--ease, ease), color var(--dur-1, 120ms) var(--ease, ease); }
+.ags-util:hover { border-color: var(--accent-line); background: var(--accent-weak); color: var(--text-0); }
 .ags-viewtoggle { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2); align-self: center; }
 .ags-viewtoggle button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 24px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--text-2); cursor: pointer; }
 .ags-viewtoggle button:hover { color: var(--text-0); background: var(--bg-3); }
@@ -2165,7 +2188,10 @@ svg.lucide { color: var(--accent); }
 .pt.working .pt-eyes { transform: scaleY(0.72); animation: none; }
 .pt.happy { animation: pt-pop 0.55s var(--ease, ease) 1; }
 @keyframes pt-pop { 0% { transform: scale(1); } 35% { transform: scale(1.08) rotate(-2deg); } 70% { transform: scale(0.98); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .pt .pt-eyes, .pt.working .pt-headg, .pt.happy { animation: none; } }
+/* hello — a beaming smile with a gentle, friendly head tilt (no waving) */
+.pt.hello .pt-headg { animation: pt-greet 3s ease-in-out infinite; }
+@keyframes pt-greet { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-2.5deg); } }
+@media (prefers-reduced-motion: reduce) { .pt .pt-eyes, .pt.working .pt-headg, .pt.happy, .pt.hello .pt-headg { animation: none; } }
 
 /* ===== The Recruiter — describe the mission, hire the team ===== */
 .rcr { border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); padding: 14px 16px; margin-bottom: 16px; }
@@ -2192,12 +2218,27 @@ svg.lucide { color: var(--accent); }
 .flr-k { display: inline-flex; align-items: center; gap: 7px; font-variant-numeric: tabular-nums; }
 .flr-k svg { color: var(--text-2); }
 .flr-k.live { color: var(--accent); font-weight: 600; }
+.flr-k.ok { color: var(--ok); } .flr-k.ok svg { color: var(--ok); }
+.flr-k.warn { color: var(--warn); } .flr-k.warn svg { color: var(--warn); }
 .flr-r { margin-left: auto; }
 .flr-r svg { color: var(--ok); }
+/* state sections: colored headers group the workforce by what it's doing */
+.flr-sec { margin-top: 16px; }
+.flr-sec-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 9px; }
+.flr-sec-head svg { flex: none; }
+.flr-sec-head.live { color: var(--accent); }
+.flr-sec-head.ok { color: var(--ok); } .flr-sec-head.ok svg { color: var(--ok); }
+.flr-sec-head.warn { color: var(--warn); } .flr-sec-head.warn svg { color: var(--warn); }
+.flr-sec-head.dim { color: var(--text-2); } .flr-sec-head.dim svg { color: var(--text-2); }
+.flr-sec-n { font-size: 11px; font-weight: 600; color: var(--text-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; }
 .flr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; }
+.flr-grid.flr-aslist { grid-template-columns: 1fr; gap: 8px; }
 .flr-tile { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 13px; background: var(--bg-2); min-width: 0; }
 .flr-tile.working { border-color: var(--accent-line); box-shadow: 0 0 0 1px var(--accent-weak), 0 6px 22px rgba(0, 0, 0, 0.14); }
 .flr-tile.working .pt { box-shadow: 0 0 0 4px var(--accent-weak); border-radius: 12px; }
+.flr-tile.happy { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.flr-tile.happy .pt { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 14%, transparent); border-radius: 12px; }
+.flr-tile.sched { border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
 .flr-main { flex: 1; min-width: 0; }
 .flr-name { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .flr-sch { color: var(--warn); flex: none; }
@@ -2208,6 +2249,21 @@ svg.lucide { color: var(--accent); }
 .flr-tr { color: var(--text-2); font-weight: 400; }
 .flr-go { flex: none; padding: 6px 9px; }
 :root[data-theme="light"] .flr-tile, :root[data-theme="light"] .flr-strip { background: #fff; }
+
+/* ===== Recent agent activity (lives on the Floor) — themed to the accent ===== */
+.ags-runs { margin-top: 18px; }
+.ags-runs-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text-0); margin-bottom: 9px; }
+.ags-runs-head svg { color: var(--accent); }
+.ags-runs-list { display: flex; flex-direction: column; gap: 7px; }
+.ags-run { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 9px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); color: var(--text-1); font: inherit; cursor: pointer; transition: border-color var(--dur-1, 120ms) var(--ease, ease), background var(--dur-1, 120ms) var(--ease, ease); }
+.ags-run:hover { border-color: var(--accent-line); background: var(--accent-weak); }
+.ags-run-ic { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9px; background: var(--accent-weak); border: 1px solid var(--accent-line); color: var(--accent); flex: none; }
+.ags-run-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.ags-run-title { font-size: 13px; font-weight: 600; color: var(--text-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ags-run-meta { font-size: 11.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ags-run-go { color: var(--text-2); flex: none; transition: color var(--dur-1, 120ms) var(--ease, ease), transform var(--dur-2, 220ms) var(--ease, ease); }
+.ags-run:hover .ags-run-go { color: var(--accent); transform: translateX(2px); }
+:root[data-theme="light"] .ags-run { background: #fff; }
 
 /* ===== Light theme: Models Overview contrast pass (table read too pale on white) =====
    Restrained: same layout and data, just colors tuned for a light canvas —

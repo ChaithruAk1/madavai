@@ -229,7 +229,13 @@ function askUserQuestion(emit, permissions, toolUseId, question, options) {
 async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, noShell = false }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
   const gi = globalInstructions ? `\n\nUser's custom instructions (always follow these):\n${globalInstructions}` : "";
-  const sys = (systemOverride || SYSTEM(mode)) + gi + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
+  // Spell the browser out in the system prompt — without this, weaker models ignore the
+  // browse_* tool schemas and improvise ("install Chrome", "I cannot browse"), which is wrong:
+  // the Agent Browser is BrainEdge's own built-in Chromium window, always available here.
+  const browserNote = browser
+    ? `\n\nYou HAVE a real web browser: the tools browse_open, browse_read, browse_click, browse_fill, browse_back drive a visible browser window the user watches. To look at any website, CALL browse_open with the URL — do not describe what you would do, do it. Never say you cannot browse, never ask the user to install or download a browser (no Chrome needed — the browser is built in), and never invent page content: open the page and read it.\nVERIFY BEFORE CLAIMING: after any action that should change something (sending a message, submitting a form, posting), call browse_read and CONFIRM the page actually shows the result (e.g. your message visible in the conversation) BEFORE telling the user it was done. If you cannot confirm it on the page, say honestly that it may not have gone through and what you see instead. Never report success you have not verified.${(browser.allow || []).length ? ` This agent may only visit: ${browser.allow.join(", ")}.` : ""}`
+    : "";
+  const sys = (systemOverride || SYSTEM(mode)) + gi + browserNote + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
   if (history.length === 0) history.push({ role: "system", content: sys });
   else if (history[0] && history[0].role === "system") history[0].content = sys; // refresh index live
   history.push({ role: "user", content: prompt });

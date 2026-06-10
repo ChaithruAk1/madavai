@@ -37,7 +37,8 @@ function browserFor(agent) {
   try {
     const ab = require("./agent-browser.cjs");
     if (!ab.isEnabled()) return null; // admin master switch is off
-    return ab.forAllowlist(agent.browserAllow || "");
+    // Per-agent identity → per-agent window, so parallel headless runs don't collide.
+    return ab.forAllowlist(agent.browserAllow || "", { id: agent.id, name: agent.name });
   } catch { return null; }
 }
 

@@ -23,8 +23,9 @@ function controls() {
       enforceAllowlist: c.enforceAllowlist !== false,
       shieldInjection: c.shieldInjection !== false,
       allowSecretFields: c.allowSecretFields === true,
+      globalAllow: String(c.globalAllow || ""), // default allowlist for agents that don't set their own
     };
-  } catch { return { enforceAllowlist: true, shieldInjection: true, allowSecretFields: false }; }
+  } catch { return { enforceAllowlist: true, shieldInjection: true, allowSecretFields: false, globalAllow: "" }; }
 }
 
 // Master switch — admins ALWAYS keep the Agent Browser; the switch only turns it off
@@ -38,28 +39,49 @@ function isEnabled() {
   } catch { return true; }
 }
 
-let win = null;
-function ensureWin() {
-  if (win && !win.isDestroyed()) return win;
-  win = new BrowserWindow({
+// One window PER AGENT (keyed by agent id) so parallel team members and concurrent
+// solo agents browse simultaneously without clobbering each other's navigation.
+// All windows share one session partition — log into a site once (e.g. WhatsApp QR)
+// and every agent's window has it.
+const wins = new Map();
+function ensureWin(key, title) {
+  const k = key || "default";
+  let w = wins.get(k);
+  if (w && !w.isDestroyed()) return w;
+  w = new BrowserWindow({
     width: 1080, height: 780,
-    title: "BrainEdge — Agent Browser",
+    x: 80 + (wins.size % 5) * 36, y: 60 + (wins.size % 5) * 36, // cascade, don't stack
+    title: title ? `${title} — Agent Browser` : "BrainEdge — Agent Browser",
     backgroundColor: "#101216",
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
-      partition: "persist:agent-browser", // its own cookies/session, separate from nothing else in the app
+      partition: "persist:agent-browser", // shared session: one login serves all agent windows
     },
   });
-  win.on("closed", () => { win = null; });
-  win.webContents.setWindowOpenHandler(({ url }) => {
+  wins.set(k, w);
+  w.on("closed", () => { if (wins.get(k) === w) wins.delete(k); });
+  // Sites sniff the user agent, and Electron's default contains "Electron/x.y" and the
+  // app name — which trips "unsupported browser, update Chrome" walls (WhatsApp Web,
+  // some Google surfaces) even though the engine IS current Chrome. Introduce ourselves
+  // as the plain Chrome we actually are.
+  try {
+    const ses = w.webContents.session;
+    const ua = ses.getUserAgent()
+      .replace(/\sElectron\/[\d.]+/i, "")
+      .replace(/\sBrainEdge\/[\d.]+/i, "")
+      .replace(/\sbrainedge\/[\d.]+/i, "");
+    ses.setUserAgent(ua);
+    w.webContents.setUserAgent(ua);
+  } catch {}
+  w.webContents.setWindowOpenHandler(({ url }) => {
     // Funnel popups back into the same window so the agent never loses the page.
-    try { win.webContents.loadURL(url); } catch {}
+    try { w.webContents.loadURL(url); } catch {}
     return { action: "deny" };
   });
-  win.showInactive(); // visible, but don't steal the user's focus
-  return win;
+  w.showInactive(); // visible, but don't steal the user's focus
+  return w;
 }
 
 const hostOf = (u) => { try { return new URL(u).hostname.toLowerCase(); } catch { return ""; } };
@@ -90,7 +112,7 @@ const READ_JS = `(() => {
   const els = [];
   let n = 0;
   document.querySelectorAll("[data-be-ref]").forEach((el) => el.removeAttribute("data-be-ref"));
-  const sel = 'a[href], button, input, select, textarea, [role="button"], [role="link"], [role="tab"], [onclick], [type="submit"]';
+  const sel = 'a[href], button, input, select, textarea, [contenteditable="true"], [contenteditable=""], [role="textbox"], [role="button"], [role="link"], [role="tab"], [onclick], [type="submit"]';
   for (const el of document.querySelectorAll(sel)) {
     if (n >= ${MAX_ELEMENTS}) break;
     const r = el.getBoundingClientRect();
@@ -120,16 +142,14 @@ function format(p) {
   return head + body + els;
 }
 
-async function readPage() {
-  const w = ensureWin();
+async function readPage(w) {
   const p = await w.webContents.executeJavaScript(READ_JS, true);
   return format(p);
 }
 
-async function open(url, allow) {
+async function open(w, url, allow) {
   if (!/^https?:\/\//i.test(url || "")) url = "https://" + String(url || "").replace(/^\/+/, "");
   checkUrl(url, allow);
-  const w = ensureWin();
   const loaded = waitForLoad(w);
   try { await w.webContents.loadURL(url); } catch { /* did-fail-load handles it */ }
   await loaded;
@@ -139,11 +159,10 @@ async function open(url, allow) {
     try { await w.webContents.loadURL("about:blank"); } catch {}
     throw new Error(`The page redirected to "${hostOf(finalUrl)}", which is outside this agent's allowed sites — navigation was blocked.`);
   }
-  return readPage();
+  return readPage(w);
 }
 
-async function click(n, allow) {
-  const w = ensureWin();
+async function click(w, n, allow) {
   const loaded = waitForLoad(w); // in case the click navigates
   const r = await w.webContents.executeJavaScript(`(() => {
     const el = document.querySelector('[data-be-ref="${Number(n)}"]');
@@ -159,14 +178,13 @@ async function click(n, allow) {
     try { await w.webContents.loadURL("about:blank"); } catch {}
     throw new Error(`That click navigated to "${hostOf(finalUrl)}", outside this agent's allowed sites — it was blocked.`);
   }
-  return readPage();
+  return readPage(w);
 }
 
 // Fields an agent must never fill — credentials and payment data stay human-only.
 const FORBIDDEN_FIELD = /passw|cvv|cvc|card.?num|cardnumber|ccnum|expir|ssn|social.?sec|secret|otp|pin\b/i;
 
-async function fill(n, text, submit) {
-  const w = ensureWin();
+async function fill(w, n, text, submit) {
   const allowSecret = controls().allowSecretFields;
   const r = await w.webContents.executeJavaScript(`(() => {
     const allowSecret = ${allowSecret ? "true" : "false"};
@@ -177,6 +195,15 @@ async function fill(n, text, submit) {
     if (!allowSecret && (type === "password" || /passw|cvv|cvc|card-?num|cc-(number|exp|csc)|expir|ssn|otp/i.test(meta))) return { err: "forbidden" };
     el.scrollIntoView({ block: "center" });
     el.focus();
+    // Rich-text composers (WhatsApp Web, Slack, Gmail…) are contenteditable DIVs, not
+    // inputs — type via execCommand so the app's own framework sees real input events,
+    // and submit with Enter (how chat apps actually send).
+    if (el.isContentEditable || el.getAttribute("role") === "textbox") {
+      document.execCommand("selectAll", false, null);
+      document.execCommand("insertText", false, ${JSON.stringify(String(text == null ? "" : text))});
+      ${submit ? 'el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true }));' : ""}
+      return { ok: true, ce: true };
+    }
     const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : el.tagName === "SELECT" ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
     const setter = Object.getOwnPropertyDescriptor(proto, "value");
     if (setter && setter.set) setter.set.call(el, ${JSON.stringify(String(text == null ? "" : text))});
@@ -190,33 +217,43 @@ async function fill(n, text, submit) {
   if (r && r.err === "forbidden") return `Refused: element [${n}] is a password/payment/credential field. Agents never fill those — tell the user to complete that part themselves in the Agent Browser window.`;
   if (FORBIDDEN_FIELD.test(String(text || ""))) { /* value itself looked like a secret pattern — still allowed; field check is the gate */ }
   if (submit) await new Promise((res) => setTimeout(res, 1500));
-  return submit ? readPage() : `Filled element [${n}].` + " Call browse_read to see the updated page, or browse_click to press a button.";
+  return submit ? readPage(w) : `Filled element [${n}].` + " Call browse_read to see the updated page, or browse_click to press a button.";
 }
 
-async function back() {
-  const w = ensureWin();
+async function back(w) {
   if (w.webContents.navigationHistory ? w.webContents.navigationHistory.canGoBack() : w.webContents.canGoBack()) {
     const loaded = waitForLoad(w);
     if (w.webContents.navigationHistory) w.webContents.navigationHistory.goBack(); else w.webContents.goBack();
     await loaded;
   }
-  return readPage();
+  return readPage(w);
 }
 
-// Bind the API to one agent's allowlist (comma/space separated domains; empty = any site).
-function forAllowlist(allowRaw) {
-  const allow = (Array.isArray(allowRaw) ? allowRaw : String(allowRaw || "").split(/[\s,]+/))
-    .map((s) => s.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "")).filter(Boolean);
+// Bind the API to one agent's allowlist (comma/space separated domains; empty = any
+// site) and identity — each agent gets ITS OWN window, so several can browse at once.
+const parseAllow = (raw) => (Array.isArray(raw) ? raw : String(raw || "").split(/[\s,\n]+/))
+  .map((s) => s.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "")).filter(Boolean);
+function forAllowlist(allowRaw, ident) {
+  let allow = parseAllow(allowRaw);
+  // No per-agent list → fall back to the admin's global default allowlist
+  // (Settings → Agent Browser). Both empty = any site (subject to the enforce switch).
+  if (!allow.length) allow = parseAllow(controls().globalAllow);
+  const key = (ident && ident.id) || "default";
+  const title = (ident && ident.name) || "";
+  const getW = () => ensureWin(key, title);
   return {
     allow,
-    open: (url) => open(url, allow),
-    read: () => readPage(),
-    click: (n) => click(n, allow),
-    fill: (n, text, submit) => fill(n, text, submit),
-    back: () => back(),
+    open: (url) => open(getW(), url, allow),
+    read: () => readPage(getW()),
+    click: (n) => click(getW(), n, allow),
+    fill: (n, text, submit) => fill(getW(), n, text, submit),
+    back: () => back(getW()),
   };
 }
 
-function closeWindow() { if (win && !win.isDestroyed()) { try { win.close(); } catch {} } win = null; }
+function closeWindow() {
+  for (const w of wins.values()) { if (w && !w.isDestroyed()) { try { w.close(); } catch {} } }
+  wins.clear();
+}
 
 module.exports = { forAllowlist, closeWindow, isEnabled };

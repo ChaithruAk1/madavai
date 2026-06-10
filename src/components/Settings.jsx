@@ -228,6 +228,21 @@ function AgentBrowserSettings({ s, setField }) {
         offText="⚠ Off — agents may open ANY site and follow redirects anywhere.">
         Confine each browsing agent to the domains listed on its card. Leave on so a stray link or injected redirect can't take an agent somewhere unexpected.
       </Row>
+
+      {/* Global default allowlist — used by any agent that doesn't define its own */}
+      <div className="prof-card" style={!featureOn || ab.enforceAllowlist === false ? { opacity: 0.5 } : undefined}>
+        <div className="prof-card-h" style={{ marginBottom: 4 }}>Default allowed sites</div>
+        <p className="prof-sub" style={{ margin: "0 0 8px" }}>
+          Domains every browsing agent may visit when it has <b>no allowlist of its own</b> — one per line or comma-separated
+          (e.g. <code>github.com, news.ycombinator.com</code>). Subdomains are included automatically. An agent's own
+          allowed-sites list (in its Blueprint) always wins over this default. Leave empty to allow any site for agents without a list.
+        </p>
+        <textarea rows={3} disabled={!featureOn || ab.enforceAllowlist === false}
+          value={ab.globalAllow || ""} placeholder="github.com, docs.python.org, news.ycombinator.com"
+          onChange={(e) => set("globalAllow", e.target.value)}
+          style={{ width: "100%", background: "var(--bg-1)", border: "1px solid var(--line)", borderRadius: 9, padding: "8px 11px", color: "var(--text-0)", fontSize: 12.5, outline: "none", resize: "vertical", fontFamily: "var(--mono)" }} />
+        {ab.enforceAllowlist === false && <div className="ag-hint" style={{ margin: "6px 0 0" }}>Inactive while "Enforce site allowlist" is off.</div>}
+      </div>
       <Row k="shieldInjection" disabled={!featureOn} title="Shield against page-injected instructions" on={ab.shieldInjection !== false}
         onText="✓ Page text is marked UNTRUSTED so embedded commands stay inert."
         offText="⚠ Off — text hidden in a page could hijack the agent (prompt injection).">

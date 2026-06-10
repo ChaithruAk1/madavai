@@ -4,7 +4,7 @@
 // run on the model from the model selector (optionally pinned per agent — never an API key).
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare } from "lucide-react";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
@@ -210,6 +210,12 @@ Hard rules:
 THE KNOWLEDGE — the BrainEdge Agent Guide for the current release:
 ${AGENT_GUIDE_RAW}`;
 
+// Friendly nicknames — an unnamed agent is never "Untitled": it introduces itself
+// with a stable, human nickname picked from its id (same agent, same name, always).
+const NICKS = ["Aria", "Bodhi", "Cleo", "Dex", "Emi", "Finn", "Gigi", "Hugo", "Iris", "Juno", "Kai", "Luna", "Milo", "Nova", "Otis", "Pia", "Quinn", "Remy", "Skye", "Theo", "Uma", "Vik", "Wren", "Yara", "Zane", "Ada", "Beau", "Cora", "Ezra", "Faye", "Gus", "Hana", "Ivo", "Kira", "Leo", "Mira", "Nia", "Omar", "Rio", "Tess", "Vera", "Zola"];
+const nick = (seed) => NICKS[hashStr(String(seed) + "nick") % NICKS.length];
+const agentName = (a) => (a && a.name && a.name.trim()) || nick(a && a.id);
+
 // Identity dot used across the Studio.
 function Face({ identity, size = 34, fontSize }) {
   const c = (identity && identity.color) || ID_COLORS[0];
@@ -264,6 +270,14 @@ const SIMULATIONS = [
     goal: "Fifty potential BeanBox wholesale cafés, researched in one parallel run and compiled into a single report.",
     story: "BeanBox is ready for wholesale accounts. Rather than fifty separate chats, you point one researcher at a list of fifty cafés and let it work down the whole list at once.",
     steps: ["On the Agents tab, click the Swarm button on your researcher's card", "Paste a list of cafés — one per line — and a brief containing {item}", "Run it and watch cafés finish in parallel", "Copy the single compiled report — one profile per café"] },
+  { n: 10, title: "Chapter 10 · The recruiter's call", kind: "recruit", arch: "Recruiter", time: "4 min",
+    goal: "A holiday-rush team staffed from one sentence — no hand-building anyone.",
+    story: "Holiday orders are doubling and there's no time to design a team member by member. You tell the Recruiter what the rush needs; it staffs the line from the workers you already hired and only invents a new face if nobody fits.",
+    steps: ["Open the Recruiter tab", 'Describe: "BeanBox\'s holiday rush — research best-selling gift bundles, write a gift-guide post, and draft the promo email"', "Read the proposal: roster tags mean it reused your people (expect Digger, Drafter, Mailwright); check the mode it picked", 'Refine it once (try "make it managed with a budget"), then Hire this team and brief it from the Agents Team tab'] },
+  { n: 11, title: "Chapter 11 · Walk the floor", kind: "floor", arch: "Floor", time: "3 min",
+    goal: "See the whole BeanBox workforce alive — who's working, who's scheduled, who's waving.",
+    story: "Eleven hires later, you stop managing chats and start managing a floor. One screen shows everyone: the writer mid-draft with focused eyes, the researcher that just finished beaming, the rest waving hello — ready for whatever's next.",
+    steps: ["Open the Floor tab — every agent clocks in with a live portrait", "Put any agent to work, come back, and watch its tile glow \"working now\" within seconds", "Spot the clock badge on scheduled agents and the strip counts up top", "Scroll down — Recent agent activity lives here too; reopen any conversation to pick up where the agent left off"] },
 ];
 
 // Modern flow-infographic pieces — gradient glyph tiles + animated flow connectors.
@@ -443,9 +457,10 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [draft, setDraft] = useState(blankAgent());
   const [blueprintOpen, setBlueprintOpen] = useState(false);
   const [q, setQ] = useState("");
-  // Tiles vs list presentation of the roster (persisted per user; list is the default).
-  const [layout, setLayout] = useState(() => { try { return localStorage.getItem("be.agents.layout") || "list"; } catch { return "list"; } });
-  const switchLayout = (v) => { setLayout(v); try { localStorage.setItem("be.agents.layout", v); } catch {} };
+  // Tiles vs list presentation of the roster (persisted per user; list is the default —
+  // v2 key deliberately re-defaults everyone to list once).
+  const [layout, setLayout] = useState(() => { try { return localStorage.getItem("be.agents.layout.v2") || "list"; } catch { return "list"; } });
+  const switchLayout = (v) => { setLayout(v); try { localStorage.setItem("be.agents.layout.v2", v); } catch {} };
   // User-defined groups (folders) for the roster — stored in settings.agentGroups;
   // each agent carries an optional `group` id. Engines ignore both fields.
   const [agentGroups, setAgentGroups] = useState([]);
@@ -518,7 +533,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       members: ids.slice(0, 6), budgetTokens: Math.max(0, Number(p.team.budgetTokens) || 0), createdAt: Date.now() };
     const cur = await bridge.getSettings();
     await bridge.saveSettings({ ...cur, agents: nextAgents, teams: [...(cur.teams || []), team] });
-    setAgents(nextAgents); setTeams((t) => [...t, team]); setRcProposal(null);
+    setAgents(nextAgents); setTeams((t) => [...t, team]); setRcProposal(null); setTab("teams");
   };
   // Resolve a proposal member to something displayable (name + whether it's new).
   const rcMemberView = (m) => {
@@ -532,8 +547,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [floorTasks, setFloorTasks] = useState([]);
   const loadFloorTasks = () => { if (bridge.listTasks) bridge.listTasks().then((x) => setFloorTasks(x || [])).catch(() => {}); };
   useEffect(() => {
-    if (view !== "list" || tab !== "floor") return;
-    loadFloorTasks();
+    if (view !== "list" || (tab !== "floor" && tab !== "activity")) return;
+    loadFloorTasks(); loadRuns();
     const t = setInterval(() => { loadStats(); loadRuns(); loadFloorTasks(); }, 5000);
     return () => clearInterval(t);
   }, [view, tab]);
@@ -555,6 +570,16 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [gBusy, setGBusy] = useState(false);
   const gEndRef = useRef(null);
   useEffect(() => { gEndRef.current && gEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [gMsgs, gBusy]);
+  // When the tour chapter changes, bring the matching Flight School mission into view.
+  useEffect(() => {
+    if (view !== "guide") return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(".agg-sim.lit");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [chapter, view]);
+
   const guideAsk = async (preset) => {
     const text = (typeof preset === "string" ? preset : gInput).trim();
     if (!text || gBusy) return;
@@ -630,7 +655,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const saveDraft = async (closeAfter) => {
     setSaveErr(""); setSaveBusy(true);
     try {
-      const a = { ...draft, name: draft.name.trim() || "Untitled agent", updatedAt: Date.now() };
+      const a = { ...draft, name: draft.name.trim() || nick(draft.id), updatedAt: Date.now() };
       // Versioning: snapshot the agent AS IT WAS before this overwrite (last 10 kept).
       const prev = agents.find((x) => x.id === a.id);
       if (prev && bridge.snapshotAgentVersion) { try { await bridge.snapshotAgentVersion(prev); } catch {} }
@@ -809,7 +834,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 
   const launch = async () => {
     const ok = await saveDraft(false);
-    if (ok) onLaunch && onLaunch({ ...draft, name: draft.name.trim() || "Untitled agent" }, null);
+    if (ok) onLaunch && onLaunch({ ...draft, name: draft.name.trim() || nick(draft.id) }, null);
   };
 
   // Per-agent knowledge: text files the agent permanently knows (GPTs-style).
@@ -851,9 +876,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const renderAgentCard = (a) => (
     <div key={a.id} className="ags-card" {...dragProps(a)}>
       <div className="ags-card-top">
-        <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={34} title={a.name} />
+        <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={46} title={a.name} />
         <div className="ags-card-id">
-          <div className="ags-card-name">{a.name || "Untitled agent"}</div>
+          <div className="ags-card-name">{agentName(a)}</div>
           <div className="ags-card-role">{a.description || "No description"}</div>
         </div>
       </div>
@@ -879,9 +904,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   );
   const renderAgentRow = (a) => (
     <div key={a.id} className="ags-listrow" {...dragProps(a)}>
-      <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={30} title={a.name} />
+      <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={40} title={a.name} />
       <div className="ags-list-main">
-        <span className="ags-list-name">{a.name || "Untitled agent"}</span>
+        <span className="ags-list-name">{agentName(a)}</span>
         <span className="ags-list-desc" title={a.description || ""}>{a.description || "No description"}</span>
       </div>
       <div className="ags-list-pills">
@@ -916,6 +941,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     try { localStorage.setItem(GUIDE_SEEN_KEY, "1"); } catch {}
     if (sim.kind === "agent" && sim.designer) { openStudio(null); setDInput(sim.designer); }
     else if (sim.kind === "agent") { setTab("agents"); setView("list"); }
+    else if (sim.kind === "recruit") { setTab("recruit"); setView("list"); }
+    else if (sim.kind === "floor") { setTab("floor"); setView("list"); }
     else { setTab("teams"); setView("list"); }
   };
 
@@ -1012,6 +1039,22 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
             <Node glyph="🧑" color="var(--text-1)" label="You" sub="one answer" />
             <Arrow label="resume" />
             <Node glyph="✓" color="#5fb573" label="Deliverable" sub="checkpointed all the way" />
+          </div>
+        ),
+      },
+      {
+        title: "The Recruiter & the Floor", sub: "staff it · watch it",
+        lead: <>Two hires complete the loop. The <b>Recruiter</b> turns one sentence about the work into a hire-ready team — it staffs from your existing roster first, pulls from the persona crew next, and invents a new specialist only when nobody fits. And the <b>Floor</b> is where everyone clocks in: your whole workforce live — working, just finished, or waving hello and ready — refreshed from real sessions, schedules and track records, with recent agent conversations one click away.</>,
+        note: <><UserPlus size={12} /> Recruiter tab to staff a mission · Floor tab to watch the whole workforce. Need help? Ask Sage — the mentor knows every feature here.</>,
+        diagram: (
+          <div className="agg-flow">
+            <Node glyph="🧑" color="var(--text-1)" label="You" sub="one sentence of work" />
+            <Arrow label="staffs" />
+            <Node glyph="🤝" label="Recruiter" sub="roster first · crew · new hires" />
+            <Arrow label="hires" />
+            <Node glyph="◆" color="#8b7cf6" label="Team" sub="ready to brief" />
+            <Arrow label="clocks in" />
+            <Node glyph="☀" color="#5fb573" label="The Floor" sub="live status, always on" />
           </div>
         ),
       },
@@ -1120,11 +1163,11 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           <div className="agg-right-head">
             <div className="agg-kicker" style={{ marginBottom: 8 }}><Play size={12} /> Flight school</div>
             <h2>Build the workforce for BeanBox</h2>
-            <p>One story, nine chapters. You're standing up the AI workforce for <b>BeanBox</b>, a small coffee-subscription business. Start at Chapter 1 and work down: each mission hires the next worker (or team), reuses the ones you built before, and teaches a new way agents work — by running it for real. By Chapter 9 you've gone from your first hire to a whole running operation.</p>
+            <p>One story, eleven chapters. You're standing up the AI workforce for <b>BeanBox</b>, a small coffee-subscription business. Start at Chapter 1 and work down: each mission hires the next worker (or team), reuses the ones you built before, and teaches a new way agents work — by running it for real. By Chapter 11 you've gone from your first hire to a whole operation you can watch breathe on the Floor.</p>
           </div>
           <div className="agg-sims">
             {SIMULATIONS.map((s) => (
-              <div key={s.n} className={`agg-sim ${chapter >= 2 && s.kind === "teams" ? "lit" : chapter < 2 && s.kind === "agent" ? "lit" : ""}`}>
+              <div key={s.n} className={`agg-sim ${(chapter === 6 ? ["recruit", "floor"] : chapter >= 2 ? ["teams"] : ["agent"]).includes(s.kind) ? "lit" : ""}`}>
                 <div className="agg-sim-head">
                   <span className="agg-sim-n">{s.n}</span>
                   <div>
@@ -1163,15 +1206,25 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
         </div>
         {needModel && <div className="ag-err" style={{ marginBottom: 10 }}>Pick a model first — your agents will run on it. (Top right.)</div>}
 
+        {/* layer 1 — learning: the guide and the mentor */}
+        <div className="ags-tabs ags-tabs-learn">
+          <button className="ags-tab ags-guide-tab" title="How agents work" onClick={() => setView("guide")}><BookOpen size={15} className="agg-book" /> Agent Guide</button>
+          <button className="ags-tab ags-guide-tab" title="Talk to Sage — your agent mentor answers anything" onClick={() => { setGuideView("chat"); setView("guide"); }}><MessagesSquare size={15} /> Ask Sage</button>
+        </div>
+        {/* layer 2 — the workforce: build, team up, staff, watch, revisit */}
         <div className="ags-tabs">
-          <button className="ags-tab ags-guide-tab" title="How agents work" onClick={() => setView("guide")}><BookOpen size={13} className="agg-book" /> Agent Guide</button>
-          <span className="ags-tab-div" />
-          <button className={`ags-tab ${tab === "agents" ? "on" : ""}`} onClick={() => setTab("agents")}><User size={13} /> Agent</button>
-          <button className={`ags-tab ${tab === "teams" ? "on" : ""}`} onClick={() => setTab("teams")}><Users size={13} /> Agents Team</button>
-          <button className={`ags-tab ${tab === "floor" ? "on" : ""}`} title="The Floor — your whole workforce, live" onClick={() => setTab("floor")}><Radar size={13} /> Floor</button>
-          <span className="ags-viewtoggle" style={{ marginLeft: "auto" }} role="group" aria-label="View">
-            <button className={layout === "tiles" ? "on" : ""} title="Tile view" aria-label="Tile view" onClick={() => switchLayout("tiles")}><LayoutGrid size={13} /></button>
-            <button className={layout === "list" ? "on" : ""} title="List view" aria-label="List view" onClick={() => switchLayout("list")}><List size={13} /></button>
+          <button className={`ags-tab ${tab === "agents" ? "on" : ""}`} onClick={() => setTab("agents")}><User size={15} /> Agent</button>
+          <button className={`ags-tab ${tab === "teams" ? "on" : ""}`} onClick={() => setTab("teams")}><Users size={15} /> Agents Team</button>
+          <button className={`ags-tab ${tab === "recruit" ? "on" : ""}`} title="The Recruiter — describe the work, it assembles the team" onClick={() => setTab("recruit")}><UserPlus size={15} /> Recruiter</button>
+          <button className={`ags-tab ${tab === "floor" ? "on" : ""}`} title="The Floor — your whole workforce, live" onClick={() => setTab("floor")}><Radar size={15} /> Floor</button>
+          <button className={`ags-tab ${tab === "activity" ? "on" : ""}`} title="Recent agent conversations — reopen any to continue" onClick={() => setTab("activity")}><History size={15} /> Activity</button>
+        </div>
+
+        {/* Utility toolbar — icon-only, separate from the tabs; hover for what each does */}
+        <div className="ags-utilrow">
+          <span className="ags-viewtoggle" role="group" aria-label="View">
+            <button className={layout === "tiles" ? "on" : ""} title="Tile view" aria-label="Tile view" onClick={() => switchLayout("tiles")}><LayoutGrid size={14} /></button>
+            <button className={layout === "list" ? "on" : ""} title="List view" aria-label="List view" onClick={() => switchLayout("list")}><List size={14} /></button>
           </span>
           {tab === "agents" && (
             grpEdit && grpEdit.id === "new"
@@ -1179,16 +1232,16 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                   onChange={(e) => setGrpEdit({ ...grpEdit, name: e.target.value })}
                   onKeyDown={(e) => { if (e.key === "Enter") saveGroupEdit(); if (e.key === "Escape") setGrpEdit(null); }}
                   onBlur={saveGroupEdit} />
-              : <button className="ags-tab" title="New group — organize agents into folders; drag agents between groups" onClick={() => setGrpEdit({ id: "new", name: "" })}><FolderPlus size={13} /> New group</button>
+              : <button className="ags-util" title="New group — organize agents into folders; drag agents between groups" aria-label="New group" onClick={() => setGrpEdit({ id: "new", name: "" })}><FolderPlus size={15} /></button>
           )}
           {tab === "agents" && bridge.importAgent && (
-            <button className="ags-tab" title="Import a .agent file someone shared with you" onClick={importAgentFile}><Upload size={13} /> Import .agent</button>
+            <button className="ags-util" title="Import a .agent file someone shared with you" aria-label="Import .agent" onClick={importAgentFile}><Upload size={15} /></button>
           )}
         </div>
 
-        {tab === "teams" && (
+        {/* The Recruiter — its own tab: describe the mission, get a hire-ready team */}
+        {tab === "recruit" && (
           <>
-            {/* The Recruiter — describe the mission, get a hire-ready team */}
             <div className="rcr">
               <div className="rcr-head"><UserPlus size={14} /> <b>The Recruiter</b> <span>— describe the work, I'll assemble the team</span></div>
               <div className="rcr-bar">
@@ -1216,7 +1269,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                       const v = rcMemberView(m);
                       return v && (
                         <div key={i} className="rcr-member">
-                          <Portrait seed={v.seed} color={v.color} size={30} title={v.name} />
+                          <Portrait seed={v.seed} color={v.color} size={38} mood="hello" title={v.name} />
                           <div className="ags-list-main">
                             <span className="ags-list-name">{v.name}</span>
                             <span className="ags-list-desc">{v.sub}</span>
@@ -1234,7 +1287,12 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                 </div>
               )}
             </div>
+            <div className="ag-hint" style={{ marginTop: 14 }}>The Recruiter staffs from your existing roster first, then the persona crew, and invents a new specialist only when nobody fits. Hired teams land on the Agents Team tab, new members on the Agent tab.</div>
+          </>
+        )}
 
+        {tab === "teams" && (
+          <>
             {layout === "tiles" ? (
             <div className="ags-grid">
               <button className="ags-card ags-new" onClick={newTeam}>
@@ -1299,13 +1357,34 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </>
         )}
 
-        {/* The Floor — every agent's live status in one standing view (refreshes every 5s) */}
+        {/* The Floor — every agent's live status, grouped by state (refreshes every 5s) */}
         {tab === "floor" && (() => {
           const infos = agents.map((a) => ({ a, ...floorStatus(a) }));
-          const working = infos.filter((x) => x.state === "working").length;
-          const scheduled = infos.filter((x) => x.scheduled).length;
-          const resting = infos.length - working;
+          const working = infos.filter((x) => x.state === "working");
+          const finished = infos.filter((x) => x.state === "happy");
+          const sched = infos.filter((x) => x.state === "idle" && x.scheduled);
+          const resting = infos.filter((x) => x.state === "idle" && !x.scheduled);
           const totalMissions = Object.values(stats).reduce((n, s) => n + ((s && s.missions) || 0), 0);
+          const groups = [
+            { id: "working", label: "Working now", cls: "live", icon: <i className="ags-live-dot" />, items: working },
+            { id: "finished", label: "Finished recently", cls: "ok", icon: <BadgeCheck size={13} />, items: finished },
+            { id: "sched", label: "On a schedule", cls: "warn", icon: <Clock size={13} />, items: sched },
+            { id: "resting", label: "Resting — ready for work", cls: "dim", icon: <Moon size={13} />, items: resting },
+          ];
+          const tile = ({ a, state, last, scheduled: sch }) => (
+            <div key={a.id} className={`flr-tile ${state} ${sch && state === "idle" ? "sched" : ""}`}>
+              <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={layout === "list" ? 48 : 66} mood={state === "working" ? "working" : state === "happy" ? "happy" : "hello"} title={a.name} />
+              <div className="flr-main">
+                <div className="flr-name">{agentName(a)}{sch && <Clock size={11} className="flr-sch" title="Runs on a schedule" />}</div>
+                <div className="flr-role">{a.description || "No description"}</div>
+                <div className={`flr-status ${state}`}>
+                  {state === "working" ? "working now" : state === "happy" ? `finished ${rel(last)}` : last ? `resting · last active ${rel(last)}` : "resting · hasn't worked yet"}
+                  {stats[a.id] && stats[a.id].missions > 0 && <span className="flr-tr"> · {stats[a.id].missions} missions · {stats[a.id].cleanPct}% clean</span>}
+                </div>
+              </div>
+              <button className="btn ghost flr-go" title="Put to work" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={12} /></button>
+            </div>
+          );
           return (
             <div className="flr">
               {agents.length === 0 ? (
@@ -1313,33 +1392,49 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               ) : (
                 <>
                   <div className="flr-strip">
-                    <span className="flr-k live"><i className="ags-live-dot" /> {working} working now</span>
-                    <span className="flr-k"><Clock size={12} /> {scheduled} on schedules</span>
-                    <span className="flr-k"><Moon size={12} /> {resting} resting</span>
+                    <span className="flr-k live"><i className="ags-live-dot" /> {working.length} working now</span>
+                    <span className="flr-k ok"><BadgeCheck size={12} /> {finished.length} finished recently</span>
+                    <span className="flr-k warn"><Clock size={12} /> {sched.length} on schedules</span>
+                    <span className="flr-k"><Moon size={12} /> {resting.length} resting</span>
                     <span className="flr-k flr-r"><BadgeCheck size={12} /> {totalMissions} missions all-time</span>
                   </div>
-                  <div className="flr-grid">
-                    {infos.map(({ a, state, last, scheduled: sch }) => (
-                      <div key={a.id} className={`flr-tile ${state}`}>
-                        <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={54} mood={state === "happy" ? "happy" : state} title={a.name} />
-                        <div className="flr-main">
-                          <div className="flr-name">{a.name || "Untitled agent"}{sch && <Clock size={11} className="flr-sch" title="Runs on a schedule" />}</div>
-                          <div className="flr-role">{a.description || "No description"}</div>
-                          <div className={`flr-status ${state}`}>
-                            {state === "working" ? "working now" : state === "happy" ? `finished ${rel(last)}` : last ? `resting · last active ${rel(last)}` : "resting · hasn't worked yet"}
-                            {stats[a.id] && stats[a.id].missions > 0 && <span className="flr-tr"> · {stats[a.id].missions} missions · {stats[a.id].cleanPct}% clean</span>}
-                          </div>
-                        </div>
-                        <button className="btn ghost flr-go" title="Put to work" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={12} /></button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="ag-hint" style={{ marginTop: 12 }}>Live from real data: open sessions, schedules and each agent's track record. "Working" = active in the last 3 minutes; the glow follows the work.</div>
+                  {groups.map((g) => g.items.length > 0 && (
+                    <div key={g.id} className="flr-sec">
+                      <div className={`flr-sec-head ${g.cls}`}>{g.icon} {g.label} <span className="flr-sec-n">{g.items.length}</span></div>
+                      <div className={`flr-grid ${layout === "list" ? "flr-aslist" : ""}`}>{g.items.map(tile)}</div>
+                    </div>
+                  ))}
+                  <div className="ag-hint" style={{ marginTop: 12 }}>Live from real data: open sessions, schedules and each agent's track record. "Working" = active in the last 3 minutes; the colors follow the state.</div>
                 </>
               )}
             </div>
           );
         })()}
+
+        {/* Activity — recent agent & team conversations, their own room next to the Floor */}
+        {tab === "activity" && (
+          <div className="flr">
+            {(!onOpenSession || recentRuns.length === 0) ? (
+              <div className="ags-group-empty" style={{ marginTop: 12 }}>No agent conversations yet — put an agent to work and its missions will be listed here.</div>
+            ) : (
+              <div className="ags-runs" style={{ marginTop: 4 }}>
+                <div className="ags-runs-list">
+                  {recentRuns.map((r) => (
+                    <button key={r.id} className="ags-run" onClick={() => onOpenSession(r.id)} title={r.title}>
+                      <span className="ags-run-ic">{r.teamName ? <Users size={13} /> : <User size={13} />}</span>
+                      <span className="ags-run-main">
+                        <span className="ags-run-title">{r.title || "Untitled"}</span>
+                        <span className="ags-run-meta">{r.teamName || r.agentName || "agent"} · {rel(r.updatedAt)}{r.mode === "cowork" ? " · folder" : ""}</span>
+                      </span>
+                      <ArrowRight size={13} className="ags-run-go" />
+                    </button>
+                  ))}
+                </div>
+                <div className="ag-hint" style={{ margin: "10px 0 0" }}>Agent and team conversations live here, out of your general chat history. Open one to pick up where the agent left off.</div>
+              </div>
+            )}
+          </div>
+        )}
 
         {tab === "agents" && agents.length > 3 && (
           <div className="ag-tpl-search" style={{ maxWidth: 320 }}>
@@ -1429,24 +1524,6 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </div>
         )}
 
-        {onOpenSession && recentRuns.length > 0 && (
-          <div className="ags-runs">
-            <div className="ags-runs-head"><History size={13} /> Recent agent activity</div>
-            <div className="ags-runs-list">
-              {recentRuns.map((r) => (
-                <button key={r.id} className="ags-run" onClick={() => onOpenSession(r.id)} title={r.title}>
-                  <span className="ags-run-ic">{r.teamName ? <Users size={13} /> : <User size={13} />}</span>
-                  <span className="ags-run-main">
-                    <span className="ags-run-title">{r.title || "Untitled"}</span>
-                    <span className="ags-run-meta">{r.teamName || r.agentName || "agent"} · {rel(r.updatedAt)}{r.mode === "cowork" ? " · folder" : ""}</span>
-                  </span>
-                  <ArrowRight size={13} style={{ color: "var(--text-2)" }} />
-                </button>
-              ))}
-            </div>
-            <div className="ag-hint" style={{ margin: "8px 0 0" }}>These conversations stay here on the Agents screen, out of your general chat history. Open one to pick up where the agent left off.</div>
-          </div>
-        )}
       </div>
     );
   }
@@ -1548,7 +1625,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       <div className="ags-topbar">
         <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>
         <button className="ags-face-btn" title="Change look" onClick={cycleIdentity}><Face identity={draft.identity} size={30} /></button>
-        <input className="ags-name" value={draft.name} placeholder="Name your agent…" onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+        <input className="ags-name" value={draft.name} placeholder={`Name your agent — or go with “${nick(draft.id)}”`} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
         <div className="ags-topbar-right">
           {saved && <span className="ag-saved"><Check size={12} /> Saved</span>}
           {saveErr && <span className="ag-err" style={{ margin: 0 }}>{saveErr}</span>}
@@ -1636,10 +1713,14 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </div>
 
           {/* blueprint: the raw config, always one click away */}
-          <button className="agsd-bp-toggle" aria-expanded={blueprintOpen} onClick={() => setBlueprintOpen((o) => !o)}>
+          <button className="agsd-bp-toggle" aria-expanded={blueprintOpen} onClick={() => setBlueprintOpen((o) => !o)}
+            title="Capabilities live here — files, terminal, connectors, skills, browser + allowed sites, knowledge, model pin">
             <Hammer size={12} />
-            <span className="agsd-bp-label">Blueprint</span>
+            <span className="agsd-bp-label">Blueprint &amp; capabilities</span>
             <span className="agsd-bp-sum">{compDone} of {compSteps.length} set</span>
+            <span className="agsd-bp-caps" aria-hidden="true">
+              {TOOL_DEFS.map((t) => { const I = t.icon; return <I key={t.key} size={11} className={draft.tools && draft.tools[t.key] ? "on" : ""} />; })}
+            </span>
             <span className="agsd-bp-cx">{blueprintOpen ? "▾" : "▸"}</span>
           </button>
           {blueprintOpen && (
@@ -1669,6 +1750,19 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                   <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Navigation, clicks and form-fills ask your permission; passwords and payment fields are always refused.</div>
                 </>
               )}
+              <label>Autonomy — how it handles risky actions (files, terminal, browser)</label>
+              <div className="ags-bp-tools">
+                {[
+                  { v: "ask", label: "Ask first", note: "Pauses and asks your permission before each risky action. The safe default." },
+                  { v: "act", label: "Act freely", note: "Full autonomy — no permission prompts at all. Only for agents you fully trust." },
+                  { v: "skip", label: "Skip & decide", note: "Never interrupts you: risky actions are auto-declined and the agent finds another way or reports what it couldn't do." },
+                ].map((o) => (
+                  <button key={o.v} className={`ag-pill ags-bp-tool ${(draft.autonomy || "ask") === o.v ? "on" : ""}`} title={o.note}
+                    onClick={() => setDraft({ ...draft, autonomy: o.v })}>{o.label}</button>
+                ))}
+              </div>
+              {draft.autonomy === "act" && <div className="ag-hint" style={{ margin: "2px 0 6px" }}>⚠ Acts without asking — file edits, terminal commands and browser actions run automatically. Pair with a site allowlist and a folder you trust it with.</div>}
+              {draft.autonomy === "skip" && <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Risky actions are declined instantly (no prompt); the agent adapts or tells you what it skipped. Reads are always allowed.</div>}
               <label>Knowledge ({(draft.knowledge || []).length}/24) — files this agent always knows</label>
               <div className="ags-kn">
                 {(draft.knowledge || []).map((k, i) => (
@@ -1706,7 +1800,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
             {!draft.instructions.trim() && <div className="ags-bench-empty">Nothing to test yet — describe the agent to the designer first.</div>}
             {draft.instructions.trim() && tMsgs.length === 0 && (
               <div className="ags-bench-empty">
-                <span className="ags-bench-aura"><Portrait seed={draft.id} color={(draft.identity && draft.identity.color) || "var(--accent)"} size={48} title={draft.name} /></span>
+                <span className="ags-bench-aura"><Portrait seed={draft.id} color={(draft.identity && draft.identity.color) || "var(--accent)"} size={68} mood="hello" title={draft.name} /></span>
                 <div className="ags-bench-live"><i className="ags-live-dot" /> {draft.name.trim() || "Your agent"} is live on the bench</div>
                 <div>Say something — instructions only here; files, terminal and connectors switch on in a real session.</div>
                 {testIdeas.length === 0 && (

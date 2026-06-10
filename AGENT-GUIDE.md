@@ -1,6 +1,6 @@
 # BrainEdge Agent Guide
 
-*The complete guide to the agent engine — what every capability does, when to reach for it, and nine hands-on scenarios. Updated June 2026 with the Wave A/B/C engine: memory, triggers, track record, handoffs, mid-mission questions, coordinator re-planning, durable missions, .agent share files, RAG-lite knowledge, cost guardrails, and swarms.*
+*The complete guide to the agent engine — what every capability does, when to reach for it, and thirteen hands-on scenarios. Updated June 2026 with the Wave A/B/C engine (memory, triggers, track record, handoffs, mid-mission questions, coordinator re-planning, durable missions, .agent share files, RAG-lite knowledge, cost guardrails, swarms) plus the workforce layer: the Recruiter, the Floor, living portraits, roster groups, and Sage the in-app mentor.*
 
 ---
 
@@ -15,6 +15,9 @@
 | **Track record** | Persisted run history per agent ("12 missions · 92% clean") | Agent card + Blueprint → Track record |
 | **Triggers** | Schedules and webhooks that run agents/teams headless | Scheduler |
 | **Swarm** | One agent over a whole list, in parallel | ⧉ button on the agent card |
+| **Recruiter** | Describe the work in one sentence; it assembles a hire-ready team (your roster first, persona crew next, new specialists only when needed) | Agents → Recruiter tab |
+| **The Floor** | The whole workforce live — who's working, who's scheduled, who's resting — plus recent agent conversations | Agents → Floor tab |
+| **Sage** | The in-app mentor: ask anything about agents in plain words; it teaches with stories, steps and a next move | Agents → Ask Sage (also inside the Agent Guide) |
 
 No code, no API keys per agent — agents run on whatever model your selector points at, or a model pinned per agent.
 
@@ -80,6 +83,24 @@ The mic button records while active; click again to stop, and the audio is trans
 ### Swarms — one agent × a whole list
 The ⧉ button on an agent card opens the swarm runner: paste a list (one item per line), write a brief with `{item}` in it, pick parallelism (1–6), run. Each item is a full headless mission; progress streams live; the result is one compiled report. Swarm runs count toward the agent's track record.
 
+### The Recruiter — one sentence in, a hire-ready team out
+On the Agents screen, the **Recruiter** tab takes a description of the *work* ("every Monday, summarize last week's sales and turn it into a client-ready report") and returns a full team proposal: a name, the right working mode (Relay pipeline for chained work, Managed for independent parallel slices), a suggested token budget for Managed teams, and a line-up where every member is tagged honestly — **roster** (reuses an agent you already have), **crew** (hired from the persona library), or **new hire** (a specialist invented only when nobody fits). Type again to refine the standing proposal; **Hire this team** creates any new agents and the team in one step and lands it on the Agents Team tab.
+
+### The Floor — your whole workforce, live
+The **Floor** tab is the standing status board for every agent you own (not per-mission — that's Mission Control's job). Each agent appears as a living portrait with its real state, refreshed every few seconds from real data: **working now** (active in a session in the last ~3 minutes — tile glows, face focuses), **finished recently** (beaming), or **resting** (waving hello, ready for work). A clock badge marks agents wired to schedules; the strip on top counts working / scheduled / resting plus all-time missions. **Recent agent activity** also lives here — agent and team conversations, kept out of your general chat history, one click to resume.
+
+### Living portraits — agents with human faces
+Every agent gets a procedurally drawn human face, deterministic from its identity: skin tone, hair style and color, sometimes glasses, wearing a uniform in its identity color. The faces are alive — they blink, focus when working, beam when a mission finishes, and wave hello when greeting you (on the Bench, the Floor, and in Recruiter proposals). No images, fully theme-aware, and they respect reduced-motion settings.
+
+### Organizing the roster — groups, views, export
+The Agent tab supports **user-defined groups** (folders): create one with *New group*, rename or delete from its header, and **drag agents between sections** to file them. Choose **list view** (default) or **tile view** with the toggle. Every agent card/row carries quick actions: Put to work, Open in Studio, Swarm, **Export .agent** (share the blueprint — memory and model pins stay private), and Delete.
+
+### Autonomy — decide once how much an agent may do without you
+Every agent has an **Autonomy** setting in its Blueprint, so you aren't prompted on every action: **Ask first** (default — pauses for permission on risky actions), **Act freely** (full autonomy, zero prompts — only for agents you fully trust; pair it with a browser allowlist and a safe working folder), and **Skip & decide** (never interrupts — risky actions are auto-declined instantly and the agent works around them or reports what it skipped). Reads are always allowed in every mode. Autonomy applies in chat, folder sessions, and team missions; headless runs (schedules, webhooks, swarms) were already fully autonomous by design.
+
+### Sage — the mentor who knows this whole guide
+**Ask Sage** (next to the Agent Guide, and a tab inside it) is a conversational mentor that knows everything in this guide and learns each release's new features automatically. It teaches with analogies and short stories, keeps answers brief, never invents features, and always ends with a concrete next step in the app.
+
 ---
 
 ## 3. Scenarios — the playbook
@@ -127,6 +148,14 @@ Build **Pricecheck** (*"compares product prices and summarizes the best option"*
 ### Scenario 11 · Hands-free briefing (3 min) — *voice*
 Turn on the speaker toggle next to the model picker. Click the mic, say *"give me a two-paragraph summary of what my agents did this week,"* click again — the transcript lands in the composer; send it and the answer is read back aloud. Needs any OpenAI or Groq key for the transcription half; the speech half is your OS, free.
 **What you learn:** the full voice loop without a single new account.
+
+### Scenario 12 · The recruiter's call (4 min) — *Recruiter*
+Open Agents → **Recruiter** and describe a rush: *"research best-selling gift bundles, write a gift-guide post, and draft the promo email."* Read the proposal — members you already own carry **roster** tags (the Recruiter reuses before it invents), and the mode matches the work's shape. Refine once (*"make it managed with a budget"*), then **Hire this team** and brief it from the Agents Team tab.
+**What you learn:** staffing a mission from one sentence, and how proposals prefer your existing workforce.
+
+### Scenario 13 · Walk the floor (3 min) — *the Floor*
+Open Agents → **Floor**. Every agent clocks in with a living portrait — most waving, ready. Put one to work, return, and watch its tile flip to *working now* with a focused face within seconds; when it finishes, it beams. Scheduled agents wear a clock badge, and Recent agent activity at the bottom reopens any agent conversation where it left off.
+**What you learn:** managing the workforce as a whole instead of one chat at a time.
 
 ---
 

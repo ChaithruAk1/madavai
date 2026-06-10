@@ -130,6 +130,12 @@
 .agsd-send:not(:disabled):hover { filter: brightness(1.1); }
 .agsd-send:not(:disabled):active { transform: scale(0.94); }
 
+/* When the blueprint is open it becomes the pane's main workspace: the chat shrinks
+   to a small recent-context strip and the refine chips step aside — no dead space. */
+.agsd-pane:has(.ags-bp) .agsd-chat { flex: 0 1 130px; }
+.agsd-pane:has(.ags-bp) .agsd-quick { display: none; }
+.agsd-pane:has(.ags-bp) .agsd-composer { margin-bottom: 8px; }
+
 /* ---------- blueprint summary row (internals untouched — see .ags-bp in styles.css) ---------- */
 .agsd-bp-toggle {
   display: flex; align-items: center; gap: 7px; width: 100%;
@@ -142,6 +148,10 @@
 .agsd-bp-toggle svg { color: var(--accent); flex: none; }
 .agsd-bp-label { font-weight: 600; color: var(--text-0); }
 .agsd-bp-sum { color: var(--text-2); font-size: 11.5px; }
+/* capability glance: every tool icon, lit when active — so it's obvious where they live */
+.agsd-bp-caps { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; }
+.agsd-bp-caps svg { color: var(--line-2); opacity: 0.9; }
+.agsd-bp-caps svg.on { color: var(--accent); }
 .agsd-bp-cx { margin-left: auto; color: var(--text-2); }
 
 /* ---------- vitals strip: the agent's life so far, one quiet line under the top bar ---------- */

@@ -19,6 +19,7 @@ import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import StudioLauncher from "./components/StudioLauncher.jsx";
 import Agents from "./components/Agents.jsx";
 import TeamOps from "./components/TeamOps.jsx";
+import AgentOps from "./components/AgentOps.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import UserGuide from "./components/UserGuide.jsx";
 // ADMIN-ONLY, BUILD-GATED: the Test Center UI (and the functional sweep it imports) is
@@ -74,6 +75,7 @@ export default function App() {
   const agentSeed = useRef(null);  // pending { agent, prompt } from the Agents launcher
   const teamSeed = useRef(null);   // pending team from the Teams launcher
   const permQueue = useRef([]);    // pending permission requests (parallel team members can overlap)
+  const [soloRun, setSoloRun] = useState(null); // live activity feed for SOLO agent turns (Mission Control's little sibling)
   const chatRef = useRef(null);
   const streamOpen = useRef(false);
   const lastInfoRef = useRef(null); // real {model, provider, kind} from the backend init event
@@ -113,6 +115,9 @@ export default function App() {
   }, [timeline, streaming]);
 
   const onEvent = useCallback((e) => {
+    // Events from a PREVIOUS session (e.g. one detached by navigation) must not
+    // mutate the conversation currently on screen.
+    if (e.sessionId && sessionRef.current && e.sessionId !== sessionRef.current) return;
     switch (e.kind) {
       case "init":
         if (e.data.permissionMode) setPermissionMode(e.data.permissionMode);
@@ -148,6 +153,9 @@ export default function App() {
             plan: r.plan && r.plan.status !== "done" ? { ...r.plan, status: "done" } : r.plan } : r);
         } else if (/^Team plan/.test(e.data.name || "")) {
           setTeamRun((r) => r ? { ...r, plan: { status: "working", evId: e.data.id } } : r);
+        } else {
+          // Solo agent activity → drives the AgentOps live panel.
+          setSoloRun((r) => r && !r.finished ? { ...r, steps: [...r.steps, { id: e.data.id, name: e.data.name, status: "run" }].slice(-40) } : r);
         }
         setTimeline((tl) => [...tl, { type: "tool", id: e.data.id, name: e.data.name, input: e.data.input, auto: e.data.auto, status: "run" }]);
         break;
@@ -162,6 +170,7 @@ export default function App() {
           }
           return r;
         });
+        setSoloRun((r) => r ? { ...r, steps: r.steps.map((s) => s.id === e.data.id ? { ...s, status: "done" } : s) } : r);
         setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, output: e.data.output, status: "ok" } : it));
         break;
       case "permission_request":
@@ -179,11 +188,13 @@ export default function App() {
         break;
       case "permission_denied":
         setPerm((cur) => (cur && cur.toolUseId === e.data.id) ? (permQueue.current.shift() || null) : cur);
+        setSoloRun((r) => r ? { ...r, steps: r.steps.map((s) => s.id === e.data.id ? { ...s, status: "deny" } : s) } : r);
         setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, status: "deny" } : it));
         break;
       case "result":
         streamOpen.current = false; setStreaming(false); setBusy(false);
         setTeamRun((r) => r ? { ...r, finished: true, synth: r.synth === "working" ? "done" : r.synth } : r);
+        setSoloRun((r) => r ? { ...r, finished: true, endedAt: Date.now(), steps: r.steps.map((s) => s.status === "run" ? { ...s, status: "done" } : s) } : r);
         setHistRefresh((n) => n + 1); // refresh the saved-chat list (new title / new convo)
         // Spoken replies (voice toggle): read the final answer aloud via OS speech synthesis.
         if (settingsRef.current && settingsRef.current.voiceSpeak && replyBufRef.current && window.speechSynthesis) {
@@ -279,6 +290,7 @@ export default function App() {
     const ag = agentOv || agentCtx; // explicit override beats state (avoids a stale closure on seeded launches)
     const tm = teamOv || teamCtx;
     if (tm) setTeamRun({ startedAt: Date.now(), steps: tm.members.map((m) => ({ name: m.name, status: "queued", identity: m.identity })), plan: tm.mode === "manager" ? { status: "queued" } : null, synth: null, finished: false });
+    setSoloRun(ag && !tm ? { startedAt: Date.now(), finished: false, steps: [] } : null); // solo agents get their own live panel
     setTimeline((tl) => [...tl, { type: "message", role: "user", text, images }]);
     setBusy(true);
     streamOpen.current = false;
@@ -459,19 +471,30 @@ export default function App() {
     // Snapshot the conversation of the mode we're leaving so we can restore it.
     if (PRIMARY.includes(mode)) modeCacheRef.current[mode] = { convId: activeConvId, timeline };
     if (m !== mode) bridge.track?.("view", { section: m }); // analytics: which sections get used
-    setMode(m); streamOpen.current = false; setBusy(false); setPerm(null);
+    // A running turn KEEPS RUNNING when you navigate away: busy, the live session
+    // binding and any pending permission request all survive — the permission modal
+    // is a global overlay, answerable from any screen. Only the view changes.
+    // (Previously this reset busy + dropped the permission request, which orphaned
+    // the engine mid-task: the agent waited forever on a question nobody could see.)
+    setMode(m); streamOpen.current = false;
     if (PRIMARY.includes(m)) setChatMode(m);
     if (PRIMARY.includes(m)) {
-      // Returning to a chat mode: restore its last conversation (or start fresh).
       const c = modeCacheRef.current[m];
+      // Returning to the SAME conversation that is still mid-turn? Keep the live
+      // timeline — restoring the snapshot would discard everything streamed while away.
+      const liveReturn = busy && sessionRef.current && c && c.convId === activeConvId;
       setProjectCtx(null); setCoworkProj(null);
-      if (!agentSeed.current) setAgentCtx(null); // manual navigation drops the agent; a pending launch keeps it
-      if (!teamSeed.current) { setTeamCtx(null); setTeamRun(null); }
-      setTimeline(c ? c.timeline : []);
-      setActiveConvId(c ? c.convId : null);
-      sessionRef.current = null;
+      if (!liveReturn) {
+        if (!agentSeed.current) setAgentCtx(null); // manual navigation drops the agent; a pending launch keeps it
+        if (!teamSeed.current) { setTeamCtx(null); setTeamRun(null); }
+        setSoloRun(null);
+        setTimeline(c ? c.timeline : []);
+        setActiveConvId(c ? c.convId : null);
+        sessionRef.current = null;
+        setBusy(false); // a restored (non-live) conversation is never mid-turn
+      }
     } else if (m === "project") {
-      setProjectCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null;
+      setProjectCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; setBusy(false); setSoloRun(null);
     }
     // Secondary views (settings/skills/connectors/viamobile/consumption): leave the
     // current conversation untouched so coming back restores it.
@@ -803,6 +826,7 @@ export default function App() {
               versions={timeline.filter((it) => it.type === "message" && it.role === "assistant").flatMap((it) => extractArtifacts(it.text)).filter((a) => a.kind === artifact.kind)}
               onClose={() => setArtifact(null)} />}
             {teamCtx && !artifact && <TeamOps team={teamCtx} run={teamRun} onClose={clearTeam} />}
+            {agentCtx && !teamCtx && !artifact && soloRun && <AgentOps agent={agentCtx} run={soloRun} onClose={() => setSoloRun(null)} />}
           </div>
         )}
       </div>
