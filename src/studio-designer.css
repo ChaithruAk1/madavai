@@ -14,25 +14,13 @@
   overflow: hidden;
 }
 
-/* ---------- signature: the completeness spine ----------
-   A hairline track down the left edge; the fill grows top-down as the draft gains
-   name → instructions → capabilities → model (height set inline from the draft). */
-.agsd-spine {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-  background: var(--accent-weak);
-  z-index: 2; pointer-events: none;
-}
-.agsd-spine-fill {
-  display: block; width: 100%;
-  background: linear-gradient(180deg, var(--accent-2, var(--accent)), var(--accent));
-  border-radius: 0 0 3px 0;
-  transition: height var(--dur-3, 380ms) var(--ease, ease);
-}
+/* (the colored "completeness spine" on the left edge was removed — the header
+   meter dots carry the same information; panes stay visually consistent app-wide) */
 
 /* ---------- drafting-table header ---------- */
 .agsd-head {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px 10px 17px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--line);
 }
 .agsd-id { position: relative; background: none; border: none; padding: 0; cursor: pointer; border-radius: 11px; flex: none; }
@@ -69,7 +57,7 @@
 /* ---------- conversation: paper sheets & quiet chips ---------- */
 .agsd-chat {
   flex: 1; min-height: 0;
-  padding: 18px 16px 10px 21px;
+  padding: 14px 16px 8px;
   display: flex; flex-direction: column; gap: 14px;
 }
 /* designer messages: flat paper sheets — no bubble, a hairline accent rule on the left */
@@ -113,9 +101,9 @@
 /* ---------- composer: one elevated bar ---------- */
 .agsd-composer {
   display: flex; align-items: center; gap: 8px;
-  margin: 6px 12px 12px 14px;
-  padding: 5px 5px 5px 15px;
-  border-radius: 14px;
+  margin: 5px 10px 10px 12px;
+  padding: 4px 4px 4px 13px;
+  border-radius: 12px;
   background: var(--bg-2); border: 1px solid var(--line);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   transition: border-color var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-2, 220ms) var(--ease, ease);
@@ -127,15 +115,17 @@
 .agsd-composer input {
   flex: 1; min-width: 0;
   background: none; border: none; outline: none;
-  color: var(--text-0); font-size: 14px; padding: 6px 0;
+  color: var(--text-0); font-size: 13.5px; padding: 5px 0;
 }
 .agsd-composer input::placeholder { color: var(--text-2); }
 .agsd-send {
-  width: 34px; height: 34px; border-radius: 11px; border: none; flex: none;
+  width: 30px; height: 30px; border-radius: 9px; border: none; flex: none;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--accent); color: var(--bg-0); cursor: pointer;
   transition: filter var(--dur-1, 120ms) var(--ease, ease), opacity var(--dur-1, 120ms) var(--ease, ease), transform var(--dur-1, 120ms) var(--ease, ease);
 }
+/* the arrow must invert on the accent surface (global svg.lucide theming would hide it) */
+.agsd-send svg.lucide { color: inherit; }
 .agsd-send:disabled { opacity: 0.35; cursor: default; }
 .agsd-send:not(:disabled):hover { filter: brightness(1.1); }
 .agsd-send:not(:disabled):active { transform: scale(0.94); }
@@ -144,7 +134,7 @@
 .agsd-bp-toggle {
   display: flex; align-items: center; gap: 7px; width: 100%;
   background: none; border: none; border-top: 1px solid var(--line);
-  padding: 9px 14px 9px 17px;
+  padding: 9px 14px;
   color: var(--text-1); font-size: 12px; cursor: pointer; text-align: left;
   transition: background var(--dur-1, 120ms) var(--ease, ease), color var(--dur-1, 120ms) var(--ease, ease);
 }
@@ -210,7 +200,7 @@
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .agsd-spine-fill, .agsd-meter i, .agsd-cast-chip, .agsd-composer, .agsd-send, .agsd-bp-toggle { transition: none; }
+  .agsd-meter i, .agsd-cast-chip, .agsd-composer, .agsd-send, .agsd-bp-toggle { transition: none; }
   .agsd-id-pulse { animation: none; opacity: 0; }
   .agsd-sub-note, .agsd-sub-idle { animation: none; opacity: 1; }
   .agsd-cast-chip:hover { transform: none; }

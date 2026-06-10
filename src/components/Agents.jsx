@@ -4,10 +4,14 @@
 // run on the model from the model selector (optionally pinned per agent — never an API key).
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus } from "lucide-react";
+import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
 import "../studio-designer.css";
+// The mentor's knowledge = the real Agent Guide, bundled at build time. The guide is
+// updated with every new capability (standing rule), so the mentor learns each release.
+import AGENT_GUIDE_RAW from "../../AGENT-GUIDE.md?raw";
 
 const TOOL_DEFS = [
   { key: "files",      label: "Files",      icon: FolderOpen,     note: "Read, write, edit and search files in a working folder." },
@@ -169,6 +173,43 @@ const REFINE_CHIPS = [
   { label: "Warmer tone",    msg: "Make the tone warmer and more human while staying professional and concise." },
 ];
 
+// ---- The Recruiter — describe a mission, get a hire-ready team proposal ----
+const RECRUITER_SYS = (roster, personas, prior) => `You are BrainEdge's Recruiter. The user describes work that needs doing; you assemble the right AI team for it.
+
+Existing roster (PREFER these when they fit the job):
+${JSON.stringify(roster.map((a) => ({ id: a.id, name: a.name, does: a.description })))}
+Hireable personas (ready-made specialists — use when the roster doesn't cover a role):
+${JSON.stringify(personas.map((p) => ({ persona: p.persona, role: p.role })))}
+${prior ? `Your previous proposal (the user is refining it):\n${JSON.stringify(prior)}` : ""}
+Reply with ONLY a JSON object, no prose, no code fence:
+{"reply":"2-3 warm sentences: what this team is and why each member earns their seat","team":{"name":"short team name","mode":"relay or manager","members":[{"kind":"existing","id":"roster id"} or {"kind":"persona","persona":"exact persona name"} or {"kind":"new","name":"...","description":"one sentence","instructions":"detailed second-person system instructions","tools":{"files":false,"shell":false,"connectors":false,"skills":false,"browser":false}}],"budgetTokens":0}}
+Rules: 2-5 members. relay = a pipeline where work flows member to member in order (research → draft → polish). manager = independent slices done in parallel, then merged by a coordinator. Pick the mode that fits the work's shape. Invent a "new" member only when no roster agent or persona covers the role. budgetTokens: suggest a sensible cap in tokens (e.g. 60000) for manager teams, else 0.`;
+
+// ---- Sage, the agent mentor (Agent Guide chatbot) ----
+const MENTOR_STARTERS = [
+  "I'm completely new — what can agents actually do for me?",
+  "Relay vs Managed — which kind of team do I need?",
+  "How does an agent remember my corrections?",
+  "How do I make an agent work overnight without me?",
+  "What's safe to let an agent do on the web?",
+];
+const MENTOR_SYS = () => `You are Sage, BrainEdge's agent mentor — a warm, endlessly patient teacher who lives inside the Agent Guide. Your job: help this person understand and master BrainEdge agents.
+
+How you teach:
+- You are part mentor, part storyteller, part friend. For a new concept, open with one vivid everyday analogy or a two-sentence story, then give the concrete explanation.
+- Be warm, polite and encouraging — never condescending. If the user seems lost, slow down and check understanding with one gentle question.
+- Keep answers short by default (under ~180 words). Offer to go deeper instead of dumping everything at once.
+- ALWAYS end with one concrete next step they can take in the app right now (which screen, which button). When a Flight School simulation covers the topic, point them to it by chapter number.
+- Format simply: short paragraphs, occasional numbered steps. No markdown headers.
+
+Hard rules:
+- The knowledge below is the complete truth about BrainEdge agents TODAY. Never invent a feature, button or behaviour that is not in it. If something isn't covered, say plainly that it doesn't exist yet (or that you're not sure) and suggest the closest real feature.
+- If asked about things unrelated to BrainEdge agents, answer in one friendly sentence and gently steer back — you are the agent mentor.
+- This knowledge is refreshed with every release; trust it over anything else you believe.
+
+THE KNOWLEDGE — the BrainEdge Agent Guide for the current release:
+${AGENT_GUIDE_RAW}`;
+
 // Identity dot used across the Studio.
 function Face({ identity, size = 34, fontSize }) {
   const c = (identity && identity.color) || ID_COLORS[0];
@@ -301,7 +342,7 @@ const GUIDE_MATRIX = [
   ["Checkpoints & budget", "Team missions only — resume banner + live token meter in Mission Control."],
 ];
 
-function ReferenceGuide({ onTour, onStudio }) {
+function ReferenceGuide({ onTour, onChat, onStudio }) {
   const [openFeat, setOpenFeat] = useState(0); // first capability expanded by default
   return (
     <div className="agg-ref scroll">
@@ -310,6 +351,7 @@ function ReferenceGuide({ onTour, onStudio }) {
           <div className="agg-subnav">
             <button onClick={onTour}><Compass size={14} /> Tour &amp; practice</button>
             <button className="on"><BookOpen size={14} /> Do's &amp; don'ts</button>
+            {onChat && <button onClick={onChat}><GraduationCap size={14} /> Ask Sage</button>}
             {onStudio && <button onClick={onStudio}><ArrowRight size={14} /> Go to Studio</button>}
           </div>
         )}
@@ -401,9 +443,14 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [draft, setDraft] = useState(blankAgent());
   const [blueprintOpen, setBlueprintOpen] = useState(false);
   const [q, setQ] = useState("");
-  // Tiles vs list presentation of the roster (persisted per user).
-  const [layout, setLayout] = useState(() => { try { return localStorage.getItem("be.agents.layout") || "tiles"; } catch { return "tiles"; } });
+  // Tiles vs list presentation of the roster (persisted per user; list is the default).
+  const [layout, setLayout] = useState(() => { try { return localStorage.getItem("be.agents.layout") || "list"; } catch { return "list"; } });
   const switchLayout = (v) => { setLayout(v); try { localStorage.setItem("be.agents.layout", v); } catch {} };
+  // User-defined groups (folders) for the roster — stored in settings.agentGroups;
+  // each agent carries an optional `group` id. Engines ignore both fields.
+  const [agentGroups, setAgentGroups] = useState([]);
+  const [grpEdit, setGrpEdit] = useState(null);  // { id: groupId | "new", name } — inline name editor
+  const [dragOver, setDragOver] = useState(null); // section currently hovered by a dragged agent
   const [saveErr, setSaveErr] = useState("");
   const [saveBusy, setSaveBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -421,10 +468,113 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [tBusy, setTBusy] = useState(false);
   const tEndRef = useRef(null);
 
+  // The Recruiter — mission in, hire-ready team proposal out
+  const [rcInput, setRcInput] = useState("");
+  const [rcBusy, setRcBusy] = useState(false);
+  const [rcProposal, setRcProposal] = useState(null); // { reply, team } | null
+  const [rcErr, setRcErr] = useState("");
+  const recruiterAsk = async (refine) => {
+    const text = rcInput.trim();
+    if (!text || rcBusy) return;
+    setRcBusy(true); setRcErr("");
+    try {
+      const r = await bridge.completeOnce([
+        { role: "system", content: RECRUITER_SYS(agents, PERSONAS, refine ? rcProposal : null) },
+        { role: "user", content: text },
+      ]);
+      const out = extractJson(r && r.text);
+      if (!out || !out.team || !Array.isArray(out.team.members) || !out.team.members.length) {
+        setRcErr((r && r.error) || "The recruiter couldn't shape that into a team — add a little more detail, or switch to a stronger model.");
+        return;
+      }
+      setRcProposal(out);
+      setRcInput("");
+    } catch (e) { setRcErr("Error: " + String((e && e.message) || e)); }
+    finally { setRcBusy(false); }
+  };
+  // Hire: create any missing agents + the team in ONE clobber-safe settings write.
+  const hireProposal = async () => {
+    const p = rcProposal; if (!p) return;
+    const nextAgents = [...agents]; const ids = [];
+    for (const m of p.team.members || []) {
+      if (m.kind === "existing" && nextAgents.some((a) => a.id === m.id)) { if (!ids.includes(m.id)) ids.push(m.id); continue; }
+      let cfg = null;
+      if (m.kind === "persona") {
+        const per = PERSONAS.find((x) => x.persona === m.persona);
+        if (per) cfg = { name: per.persona, description: per.desc || per.role, instructions: per.instructions, tools: { ...per.tools } };
+      }
+      if (m.kind === "new" && m.instructions) {
+        cfg = { name: String(m.name || "Specialist").slice(0, 60), description: String(m.description || "").slice(0, 200), instructions: String(m.instructions),
+          tools: { files: !!(m.tools && m.tools.files), shell: !!(m.tools && m.tools.shell), connectors: !!(m.tools && m.tools.connectors), skills: !!(m.tools && m.tools.skills), browser: !!(m.tools && m.tools.browser) } };
+      }
+      if (!cfg || !cfg.instructions) continue;
+      const id = "agent_" + Math.random().toString(36).slice(2, 9);
+      nextAgents.push({ id, ...cfg, identity: autoIdentity(cfg.name || id), createdAt: Date.now() });
+      ids.push(id);
+    }
+    if (ids.length < 1) { setRcErr("No usable members in the proposal — refine it and try again."); return; }
+    const team = { id: "team_" + Math.random().toString(36).slice(2, 9), name: String(p.team.name || "New team").slice(0, 60),
+      identity: autoIdentity(String(p.team.name || "team")), mode: p.team.mode === "manager" ? "manager" : "relay",
+      members: ids.slice(0, 6), budgetTokens: Math.max(0, Number(p.team.budgetTokens) || 0), createdAt: Date.now() };
+    const cur = await bridge.getSettings();
+    await bridge.saveSettings({ ...cur, agents: nextAgents, teams: [...(cur.teams || []), team] });
+    setAgents(nextAgents); setTeams((t) => [...t, team]); setRcProposal(null);
+  };
+  // Resolve a proposal member to something displayable (name + whether it's new).
+  const rcMemberView = (m) => {
+    if (m.kind === "existing") { const a = agents.find((x) => x.id === m.id); return a ? { name: a.name, sub: a.description, tag: "roster", seed: a.id, color: (a.identity || autoIdentity(a.id)).color } : null; }
+    if (m.kind === "persona") { const p = PERSONAS.find((x) => x.persona === m.persona); return p ? { name: p.persona, sub: p.role, tag: "crew", seed: p.persona, color: autoIdentity(p.persona).color } : null; }
+    if (m.kind === "new") return { name: m.name || "Specialist", sub: m.description || "", tag: "new hire", seed: m.name || "new", color: autoIdentity(m.name || "new").color };
+    return null;
+  };
+
+  // The Floor — whole-workforce live status (sessions + schedules + track record)
+  const [floorTasks, setFloorTasks] = useState([]);
+  const loadFloorTasks = () => { if (bridge.listTasks) bridge.listTasks().then((x) => setFloorTasks(x || [])).catch(() => {}); };
+  useEffect(() => {
+    if (view !== "list" || tab !== "floor") return;
+    loadFloorTasks();
+    const t = setInterval(() => { loadStats(); loadRuns(); loadFloorTasks(); }, 5000);
+    return () => clearInterval(t);
+  }, [view, tab]);
+  const floorStatus = (a) => {
+    const now = Date.now();
+    let last = (stats[a.id] && stats[a.id].lastAt) || 0;
+    for (const r of recentRuns) {
+      const mine = r.agentName === a.name || teams.some((t) => t.name === r.teamName && t.members.includes(a.id));
+      if (mine && (r.updatedAt || 0) > last) last = r.updatedAt;
+    }
+    const scheduled = floorTasks.some((t) => { try { return JSON.stringify(t).includes(a.id); } catch { return false; } });
+    const state = last && now - last < 3 * 60_000 ? "working" : last && now - last < 60 * 60_000 ? "happy" : "idle";
+    return { state, last, scheduled };
+  };
+
+  // Sage — the Agent Guide mentor chat
+  const [gMsgs, setGMsgs] = useState([]);           // { role: "user"|"mentor", text }
+  const [gInput, setGInput] = useState("");
+  const [gBusy, setGBusy] = useState(false);
+  const gEndRef = useRef(null);
+  useEffect(() => { gEndRef.current && gEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [gMsgs, gBusy]);
+  const guideAsk = async (preset) => {
+    const text = (typeof preset === "string" ? preset : gInput).trim();
+    if (!text || gBusy) return;
+    setGInput(""); setGBusy(true);
+    const next = [...gMsgs, { role: "user", text }];
+    setGMsgs(next);
+    try {
+      const hist = next.slice(-12).map((m) => ({ role: m.role === "mentor" ? "assistant" : "user", content: m.text }));
+      const r = await bridge.completeOnce([{ role: "system", content: MENTOR_SYS() }, ...hist]);
+      setGMsgs((m) => [...m, { role: "mentor", text: (r && r.text) || (r && r.error) || "(no reply)" }]);
+    } catch (e) {
+      setGMsgs((m) => [...m, { role: "mentor", text: "Error: " + String((e && e.message) || e) }]);
+    } finally { setGBusy(false); }
+  };
+
   useEffect(() => {
     Promise.all([bridge.getSettings(), bridge.authMe ? bridge.authMe().catch(() => null) : null]).then(([s, me]) => {
       setAgents((s && s.agents) || []);
       setTeams((s && s.teams) || []);
+      setAgentGroups((s && s.agentGroups) || []);
       const admin = !!(me && me.admin) || !!(s && s.account && s.account.admin);
       // Admins always keep the Browser capability; others lose it when the master switch is off.
       setBrowserOn(admin || !s || !s.agentBrowser || s.agentBrowser.enabled !== false);
@@ -497,6 +647,28 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   };
 
   const removeAgent = async (id) => { await persist(agents.filter((a) => a.id !== id)); };
+
+  // ---- groups: create / rename / delete / move (clobber-safe writes, same as persist) ----
+  const persistOrg = async (nextGroups, nextAgents) => {
+    const cur = await bridge.getSettings();
+    await bridge.saveSettings({ ...cur, agentGroups: nextGroups, ...(nextAgents ? { agents: nextAgents } : {}) });
+    setAgentGroups(nextGroups);
+    if (nextAgents) setAgents(nextAgents);
+  };
+  const saveGroupEdit = async () => {
+    if (!grpEdit) return;
+    const name = (grpEdit.name || "").trim();
+    if (!name) { setGrpEdit(null); return; }
+    if (grpEdit.id === "new") await persistOrg([...agentGroups, { id: "grp_" + Date.now().toString(36), name }]);
+    else await persistOrg(agentGroups.map((g) => (g.id === grpEdit.id ? { ...g, name } : g)));
+    setGrpEdit(null);
+  };
+  const deleteGroup = async (id) => {
+    await persistOrg(agentGroups.filter((g) => g.id !== id), agents.map((a) => (a.group === id ? { ...a, group: undefined } : a)));
+  };
+  const moveAgent = async (agentId, groupId) => {
+    await persist(agents.map((a) => (a.id === agentId ? { ...a, group: groupId || undefined } : a)));
+  };
 
   // .agent share files — import an agent someone exported (fresh id, model pin stripped).
   const importAgentFile = async () => {
@@ -674,6 +846,64 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     return k ? agents.filter((a) => ((a.name || "") + " " + (a.description || "")).toLowerCase().includes(k)) : agents;
   }, [agents, q]);
 
+  // ---- per-agent renderers (shared by the grouped sections in both layouts) ----
+  const dragProps = (a) => ({ draggable: true, onDragStart: (e) => e.dataTransfer.setData("text/agent-id", a.id) });
+  const renderAgentCard = (a) => (
+    <div key={a.id} className="ags-card" {...dragProps(a)}>
+      <div className="ags-card-top">
+        <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={34} title={a.name} />
+        <div className="ags-card-id">
+          <div className="ags-card-name">{a.name || "Untitled agent"}</div>
+          <div className="ags-card-role">{a.description || "No description"}</div>
+        </div>
+      </div>
+      <div className="ag-card-pills">
+        {toolPills(a.tools)}
+        {a.model && <span className="ag-pill ag-pill-model"><Cpu size={11} /> {a.model.split("::")[1] || a.model}</span>}
+      </div>
+      {stats[a.id] && stats[a.id].missions > 0 && (
+        <div className="ags-card-role" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}
+          title={`${stats[a.id].missions} missions recorded · ${stats[a.id].cleanPct}% finished clean · ~${Math.round((stats[a.id].tokens || 0) / 1000)}k tokens total`}>
+          <BadgeCheck size={12} style={{ color: stats[a.id].cleanPct >= 80 ? "var(--ok)" : "var(--text-2)", flexShrink: 0 }} />
+          {stats[a.id].missions} mission{stats[a.id].missions === 1 ? "" : "s"} · {stats[a.id].cleanPct}% clean · last {rel(stats[a.id].lastAt)}
+        </div>
+      )}
+      <div className="ag-card-actions">
+        <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
+        <button className="btn ghost" onClick={() => openStudio(a)}><Pencil size={13} /> Open in Studio</button>
+        {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
+        {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
+        <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
+      </div>
+    </div>
+  );
+  const renderAgentRow = (a) => (
+    <div key={a.id} className="ags-listrow" {...dragProps(a)}>
+      <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={30} title={a.name} />
+      <div className="ags-list-main">
+        <span className="ags-list-name">{a.name || "Untitled agent"}</span>
+        <span className="ags-list-desc" title={a.description || ""}>{a.description || "No description"}</span>
+      </div>
+      <div className="ags-list-pills">
+        {toolPills(a.tools)}
+        {a.model && <span className="ag-pill ag-pill-model"><Cpu size={11} /> {a.model.split("::")[1] || a.model}</span>}
+      </div>
+      {stats[a.id] && stats[a.id].missions > 0 && (
+        <span className="ags-list-stats" title={`${stats[a.id].missions} missions · ${stats[a.id].cleanPct}% clean · last ${rel(stats[a.id].lastAt)}`}>
+          <BadgeCheck size={12} style={{ color: stats[a.id].cleanPct >= 80 ? "var(--ok)" : "var(--text-2)" }} />
+          {stats[a.id].missions} · {stats[a.id].cleanPct}%
+        </span>
+      )}
+      <div className="ags-list-acts">
+        <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
+        <button className="btn ghost" title="Open in Studio" onClick={() => openStudio(a)}><Pencil size={13} /></button>
+        {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
+        {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
+        <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
+      </div>
+    </div>
+  );
+
   const canRun = !!draft.instructions.trim();
 
   useEffect(() => { if (hasModel) setNeedModel(false); }, [hasModel]);
@@ -791,7 +1021,50 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     if (guideView === "reference") {
       return (
         <div className="agg-wrap" style={{ display: "block", overflow: "hidden" }}>
-          <ReferenceGuide onTour={() => setGuideView("tour")} onStudio={() => leaveGuide("list")} />
+          <ReferenceGuide onTour={() => setGuideView("tour")} onChat={() => setGuideView("chat")} onStudio={() => leaveGuide("list")} />
+        </div>
+      );
+    }
+    // Sage — the mentor chat: ask anything about agents, answered from the live guide.
+    if (guideView === "chat") {
+      return (
+        <div className="agg-wrap" style={{ display: "block", overflow: "hidden" }}>
+          <div className="aggc-page">
+            <div className="agg-subnav">
+              <button onClick={() => setGuideView("tour")}><Compass size={14} /> Tour &amp; practice</button>
+              <button onClick={() => setGuideView("reference")}><BookOpen size={14} /> Do's &amp; don'ts</button>
+              <button className="on"><GraduationCap size={14} /> Ask Sage</button>
+            </div>
+            <div className="agg-kicker"><GraduationCap size={13} /> Sage — your agent mentor</div>
+            <h1 className="aggc-h1">Ask anything about agents</h1>
+            <p className="agg-ref-sub">Sage knows the whole Agent Guide — every capability, every scenario — and learns the new ones each release. Ask in your own words; it teaches with stories, steps, and a next move you can take right away.</p>
+            <div className="aggc-chat scroll">
+              {gMsgs.length === 0 && (
+                <div className="aggc-hello">
+                  <div className="aggc-hello-face"><GraduationCap size={22} /></div>
+                  <div className="aggc-hello-t">Hello, friend — I'm Sage.</div>
+                  <div className="aggc-hello-s">No question is too small. Start with one of these, or ask your own:</div>
+                  <div className="aggc-starters">
+                    {MENTOR_STARTERS.map((s, i) => (
+                      <button key={i} type="button" className="aggc-starter" disabled={gBusy} onClick={() => guideAsk(s)}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {gMsgs.map((m, i) => (
+                m.role === "user"
+                  ? <div key={i} className="agsd-say">{m.text}</div>
+                  : <div key={i} className="agsd-sheet">{m.text}</div>
+              ))}
+              {gBusy && <div className="agsd-sheet agsd-busy"><Loader2 size={13} className="ag-spin" /> thinking of the best way to explain…</div>}
+              <div ref={gEndRef} />
+            </div>
+            <div className="agsd-composer aggc-composer">
+              <input value={gInput} placeholder="Ask Sage anything about agents…"
+                onChange={(e) => setGInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") guideAsk(); }} />
+              <button type="button" className="agsd-send" aria-label="Ask Sage" disabled={gBusy || !gInput.trim()} onClick={() => guideAsk()}><ArrowUp size={15} /></button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -813,6 +1086,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           <div className="agg-subnav">
             <button className="on"><Compass size={14} /> Tour &amp; practice</button>
             <button onClick={() => setGuideView("reference")}><BookOpen size={14} /> Do's &amp; don'ts</button>
+            <button onClick={() => setGuideView("chat")}><GraduationCap size={14} /> Ask Sage</button>
           </div>
 
           <div className="agg-rail">
@@ -894,10 +1168,19 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           <span className="ags-tab-div" />
           <button className={`ags-tab ${tab === "agents" ? "on" : ""}`} onClick={() => setTab("agents")}><User size={13} /> Agent</button>
           <button className={`ags-tab ${tab === "teams" ? "on" : ""}`} onClick={() => setTab("teams")}><Users size={13} /> Agents Team</button>
+          <button className={`ags-tab ${tab === "floor" ? "on" : ""}`} title="The Floor — your whole workforce, live" onClick={() => setTab("floor")}><Radar size={13} /> Floor</button>
           <span className="ags-viewtoggle" style={{ marginLeft: "auto" }} role="group" aria-label="View">
             <button className={layout === "tiles" ? "on" : ""} title="Tile view" aria-label="Tile view" onClick={() => switchLayout("tiles")}><LayoutGrid size={13} /></button>
             <button className={layout === "list" ? "on" : ""} title="List view" aria-label="List view" onClick={() => switchLayout("list")}><List size={13} /></button>
           </span>
+          {tab === "agents" && (
+            grpEdit && grpEdit.id === "new"
+              ? <input autoFocus className="ags-group-edit" placeholder="Group name…" value={grpEdit.name}
+                  onChange={(e) => setGrpEdit({ ...grpEdit, name: e.target.value })}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveGroupEdit(); if (e.key === "Escape") setGrpEdit(null); }}
+                  onBlur={saveGroupEdit} />
+              : <button className="ags-tab" title="New group — organize agents into folders; drag agents between groups" onClick={() => setGrpEdit({ id: "new", name: "" })}><FolderPlus size={13} /> New group</button>
+          )}
           {tab === "agents" && bridge.importAgent && (
             <button className="ags-tab" title="Import a .agent file someone shared with you" onClick={importAgentFile}><Upload size={13} /> Import .agent</button>
           )}
@@ -905,6 +1188,53 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 
         {tab === "teams" && (
           <>
+            {/* The Recruiter — describe the mission, get a hire-ready team */}
+            <div className="rcr">
+              <div className="rcr-head"><UserPlus size={14} /> <b>The Recruiter</b> <span>— describe the work, I'll assemble the team</span></div>
+              <div className="rcr-bar">
+                <input value={rcInput} disabled={rcBusy}
+                  placeholder='e.g. "every Monday I need last week’s sales summarized and turned into a client-ready report"'
+                  onChange={(e) => setRcInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") recruiterAsk(!!rcProposal); }} />
+                <button className="btn primary" disabled={rcBusy || !rcInput.trim()} onClick={() => recruiterAsk(!!rcProposal)}>
+                  {rcBusy ? <><Loader2 size={13} className="ag-spin" /> recruiting…</> : rcProposal ? <>Refine</> : <><Wand2 size={13} /> Assemble</>}
+                </button>
+              </div>
+              {rcErr && <div className="ag-err" style={{ marginTop: 8 }}>{rcErr}</div>}
+              {rcProposal && (
+                <div className="rcr-card">
+                  <div className="rcr-card-top">
+                    <Face identity={autoIdentity(String(rcProposal.team.name || "team"))} size={30} />
+                    <div className="rcr-card-id">
+                      <div className="ags-card-name">{rcProposal.team.name || "Proposed team"}</div>
+                      <div className="ags-card-role">{rcProposal.team.mode === "manager" ? "Managed — parallel slices, merged by a coordinator" : "Relay line — work flows member to member"}{Number(rcProposal.team.budgetTokens) > 0 ? ` · budget ~${Math.round(Number(rcProposal.team.budgetTokens) / 1000)}k tokens` : ""}</div>
+                    </div>
+                  </div>
+                  <p className="rcr-reply">{rcProposal.reply}</p>
+                  <div className="rcr-members">
+                    {(rcProposal.team.members || []).map((m, i) => {
+                      const v = rcMemberView(m);
+                      return v && (
+                        <div key={i} className="rcr-member">
+                          <Portrait seed={v.seed} color={v.color} size={30} title={v.name} />
+                          <div className="ags-list-main">
+                            <span className="ags-list-name">{v.name}</span>
+                            <span className="ags-list-desc">{v.sub}</span>
+                          </div>
+                          <span className={`rcr-tag ${m.kind === "existing" ? "have" : ""}`}>{v.tag}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="rcr-acts">
+                    <button className="btn primary" onClick={hireProposal}><Rocket size={13} /> Hire this team</button>
+                    <button className="btn ghost" onClick={() => setRcProposal(null)}>Dismiss</button>
+                    <span className="ag-hint" style={{ margin: 0 }}>Refine by typing above — the recruiter reworks this proposal.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {layout === "tiles" ? (
             <div className="ags-grid">
               <button className="ags-card ags-new" onClick={newTeam}>
@@ -969,6 +1299,48 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </>
         )}
 
+        {/* The Floor — every agent's live status in one standing view (refreshes every 5s) */}
+        {tab === "floor" && (() => {
+          const infos = agents.map((a) => ({ a, ...floorStatus(a) }));
+          const working = infos.filter((x) => x.state === "working").length;
+          const scheduled = infos.filter((x) => x.scheduled).length;
+          const resting = infos.length - working;
+          const totalMissions = Object.values(stats).reduce((n, s) => n + ((s && s.missions) || 0), 0);
+          return (
+            <div className="flr">
+              {agents.length === 0 ? (
+                <div className="ags-group-empty" style={{ marginTop: 12 }}>The floor is empty — hire your first agent on the Agent tab and it'll clock in here.</div>
+              ) : (
+                <>
+                  <div className="flr-strip">
+                    <span className="flr-k live"><i className="ags-live-dot" /> {working} working now</span>
+                    <span className="flr-k"><Clock size={12} /> {scheduled} on schedules</span>
+                    <span className="flr-k"><Moon size={12} /> {resting} resting</span>
+                    <span className="flr-k flr-r"><BadgeCheck size={12} /> {totalMissions} missions all-time</span>
+                  </div>
+                  <div className="flr-grid">
+                    {infos.map(({ a, state, last, scheduled: sch }) => (
+                      <div key={a.id} className={`flr-tile ${state}`}>
+                        <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={54} mood={state === "happy" ? "happy" : state} title={a.name} />
+                        <div className="flr-main">
+                          <div className="flr-name">{a.name || "Untitled agent"}{sch && <Clock size={11} className="flr-sch" title="Runs on a schedule" />}</div>
+                          <div className="flr-role">{a.description || "No description"}</div>
+                          <div className={`flr-status ${state}`}>
+                            {state === "working" ? "working now" : state === "happy" ? `finished ${rel(last)}` : last ? `resting · last active ${rel(last)}` : "resting · hasn't worked yet"}
+                            {stats[a.id] && stats[a.id].missions > 0 && <span className="flr-tr"> · {stats[a.id].missions} missions · {stats[a.id].cleanPct}% clean</span>}
+                          </div>
+                        </div>
+                        <button className="btn ghost flr-go" title="Put to work" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={12} /></button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="ag-hint" style={{ marginTop: 12 }}>Live from real data: open sessions, schedules and each agent's track record. "Working" = active in the last 3 minutes; the glow follows the work.</div>
+                </>
+              )}
+            </div>
+          );
+        })()}
+
         {tab === "agents" && agents.length > 3 && (
           <div className="ag-tpl-search" style={{ maxWidth: 320 }}>
             <Search size={13} />
@@ -976,80 +1348,62 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </div>
         )}
 
-        {tab === "agents" && layout === "tiles" && (
-        <div className="ags-grid">
-          <button className="ags-card ags-new" onClick={() => openStudio(null)}>
-            <span className="ags-face ags-face-new"><Plus size={20} /></span>
-            <div className="ags-card-name">New agent</div>
-            <div className="ag-card-desc">Describe it, shape it, test it — all in one room.</div>
-          </button>
-          {shownAgents.map((a) => (
-            <div key={a.id} className="ags-card">
-              <div className="ags-card-top">
-                <Face identity={a.identity || autoIdentity(a.id)} />
-                <div className="ags-card-id">
-                  <div className="ags-card-name">{a.name || "Untitled agent"}</div>
-                  <div className="ags-card-role">{a.description || "No description"}</div>
-                </div>
-              </div>
-              <div className="ag-card-pills">
-                {toolPills(a.tools)}
-                {a.model && <span className="ag-pill ag-pill-model"><Cpu size={11} /> {a.model.split("::")[1] || a.model}</span>}
-              </div>
-              {stats[a.id] && stats[a.id].missions > 0 && (
-                <div className="ags-card-role" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}
-                  title={`${stats[a.id].missions} missions recorded · ${stats[a.id].cleanPct}% finished clean · ~${Math.round((stats[a.id].tokens || 0) / 1000)}k tokens total`}>
-                  <BadgeCheck size={12} style={{ color: stats[a.id].cleanPct >= 80 ? "var(--ok)" : "var(--text-2)", flexShrink: 0 }} />
-                  {stats[a.id].missions} mission{stats[a.id].missions === 1 ? "" : "s"} · {stats[a.id].cleanPct}% clean · last {rel(stats[a.id].lastAt)}
+        {tab === "agents" && (() => {
+          // Sections: the main roster first (agents with no group, incl. orphans of deleted
+          // groups), then each user-defined group. Drop an agent anywhere to re-file it.
+          const known = new Set(agentGroups.map((g) => g.id));
+          const sections = [
+            { id: null, items: shownAgents.filter((a) => !a.group || !known.has(a.group)) },
+            ...agentGroups.map((g) => ({ ...g, items: shownAgents.filter((a) => a.group === g.id) })),
+          ];
+          const searching = !!q.trim();
+          return sections.map((g) => ((searching && g.id && g.items.length === 0) ? null : (
+            <div key={g.id || "none"} className={`ags-group ${dragOver === (g.id || "none") ? "drop" : ""}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(g.id || "none"); }}
+              onDragLeave={() => setDragOver(null)}
+              onDrop={(e) => { e.preventDefault(); setDragOver(null); const id = e.dataTransfer.getData("text/agent-id"); if (id) moveAgent(id, g.id); }}>
+              {g.id && (
+                <div className="ags-group-head">
+                  <Folder size={13} />
+                  {grpEdit && grpEdit.id === g.id
+                    ? <input autoFocus className="ags-group-edit" value={grpEdit.name}
+                        onChange={(e) => setGrpEdit({ ...grpEdit, name: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveGroupEdit(); if (e.key === "Escape") setGrpEdit(null); }}
+                        onBlur={saveGroupEdit} />
+                    : <span className="ags-group-name">{g.name}</span>}
+                  <span className="ags-group-n">{g.items.length}</span>
+                  <button className="ags-group-act" title="Rename group" onClick={() => setGrpEdit({ id: g.id, name: g.name })}><Pencil size={11} /></button>
+                  <button className="ags-group-act ag-del" title="Delete group (its agents move back to the main list)" onClick={() => deleteGroup(g.id)}><Trash2 size={11} /></button>
                 </div>
               )}
-              <div className="ag-card-actions">
-                <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
-                <button className="btn ghost" onClick={() => openStudio(a)}><Pencil size={13} /> Open in Studio</button>
-                {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
-                {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
-                <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
-              </div>
-            </div>
-          ))}
-        </div>
-        )}
-
-        {tab === "agents" && layout === "list" && (
-        <div className="ags-listwrap">
-          <button className="ags-listrow ags-listrow-new" onClick={() => openStudio(null)}>
-            <span className="ags-face ags-face-new" style={{ width: 30, height: 30 }}><Plus size={15} /></span>
-            <span className="ags-list-name">New agent</span>
-            <span className="ags-list-desc">Describe it, shape it, test it — all in one room.</span>
-          </button>
-          {shownAgents.map((a) => (
-            <div key={a.id} className="ags-listrow">
-              <Face identity={a.identity || autoIdentity(a.id)} size={30} />
-              <div className="ags-list-main">
-                <span className="ags-list-name">{a.name || "Untitled agent"}</span>
-                <span className="ags-list-desc" title={a.description || ""}>{a.description || "No description"}</span>
-              </div>
-              <div className="ags-list-pills">
-                {toolPills(a.tools)}
-                {a.model && <span className="ag-pill ag-pill-model"><Cpu size={11} /> {a.model.split("::")[1] || a.model}</span>}
-              </div>
-              {stats[a.id] && stats[a.id].missions > 0 && (
-                <span className="ags-list-stats" title={`${stats[a.id].missions} missions · ${stats[a.id].cleanPct}% clean · last ${rel(stats[a.id].lastAt)}`}>
-                  <BadgeCheck size={12} style={{ color: stats[a.id].cleanPct >= 80 ? "var(--ok)" : "var(--text-2)" }} />
-                  {stats[a.id].missions} · {stats[a.id].cleanPct}%
-                </span>
+              {layout === "list" ? (
+                <div className="ags-listwrap">
+                  {!g.id && (
+                    <button className="ags-listrow ags-listrow-new" onClick={() => openStudio(null)}>
+                      <span className="ags-face ags-face-new" style={{ width: 30, height: 30 }}><Plus size={15} /></span>
+                      <span className="ags-list-name">New agent</span>
+                      <span className="ags-list-desc">Describe it, shape it, test it — all in one room.</span>
+                    </button>
+                  )}
+                  {g.items.map(renderAgentRow)}
+                  {g.id && g.items.length === 0 && <div className="ags-group-empty">Drag agents here to file them under “{g.name}”.</div>}
+                </div>
+              ) : (
+                <div className="ags-grid">
+                  {!g.id && (
+                    <button className="ags-card ags-new" onClick={() => openStudio(null)}>
+                      <span className="ags-face ags-face-new"><Plus size={20} /></span>
+                      <div className="ags-card-name">New agent</div>
+                      <div className="ag-card-desc">Describe it, shape it, test it — all in one room.</div>
+                    </button>
+                  )}
+                  {g.items.map(renderAgentCard)}
+                  {g.id && g.items.length === 0 && <div className="ags-group-empty">Drag agents here to file them under “{g.name}”.</div>}
+                </div>
               )}
-              <div className="ags-list-acts">
-                <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
-                <button className="btn ghost" title="Open in Studio" onClick={() => openStudio(a)}><Pencil size={13} /></button>
-                {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
-                {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
-                <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
-              </div>
             </div>
-          ))}
-        </div>
-        )}
+          )));
+        })()}
 
         {swarmAgent && <SwarmModal agent={swarmAgent} onClose={() => { setSwarmAgent(null); loadStats(); }} />}
 
@@ -1217,11 +1571,6 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       <div className="ags-split">
         {/* left — the designer's drafting table */}
         <div className="agsd-pane">
-          {/* completeness spine — fills as the draft gains name → instructions → capabilities → model */}
-          <span className="agsd-spine" aria-hidden="true">
-            <span className="agsd-spine-fill" style={{ height: `${(compDone / compSteps.length) * 100}%` }} />
-          </span>
-
           {/* drafting-table header: identity face (click to cycle) + live draft status */}
           <div className="agsd-head">
             <button type="button" className="agsd-id" title="Change look" onClick={cycleIdentity}>
@@ -1357,7 +1706,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
             {!draft.instructions.trim() && <div className="ags-bench-empty">Nothing to test yet — describe the agent to the designer first.</div>}
             {draft.instructions.trim() && tMsgs.length === 0 && (
               <div className="ags-bench-empty">
-                <span className="ags-bench-aura"><Face identity={draft.identity} size={44} /></span>
+                <span className="ags-bench-aura"><Portrait seed={draft.id} color={(draft.identity && draft.identity.color) || "var(--accent)"} size={48} title={draft.name} /></span>
                 <div className="ags-bench-live"><i className="ags-live-dot" /> {draft.name.trim() || "Your agent"} is live on the bench</div>
                 <div>Say something — instructions only here; files, terminal and connectors switch on in a real session.</div>
                 {testIdeas.length === 0 && (
@@ -1380,9 +1729,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
             {tMsgs.map((m, i) => (
               m.role === "user"
                 ? <div key={i} className="ags-msg me">{m.text}</div>
-                : <div key={i} className="ags-bench-reply"><Face identity={draft.identity} size={22} fontSize={11} /><div className="ags-msg">{m.text}</div></div>
+                : <div key={i} className="ags-bench-reply"><Portrait seed={draft.id} color={(draft.identity && draft.identity.color) || "var(--accent)"} size={22} /><div className="ags-msg">{m.text}</div></div>
             ))}
-            {tBusy && <div className="ags-bench-reply"><Face identity={draft.identity} size={22} fontSize={11} /><div className="ags-msg"><Loader2 size={13} className="ag-spin" /></div></div>}
+            {tBusy && <div className="ags-bench-reply"><Portrait seed={draft.id} color={(draft.identity && draft.identity.color) || "var(--accent)"} size={22} mood="working" /><div className="ags-msg"><Loader2 size={13} className="ag-spin" /></div></div>}
             <div ref={tEndRef} />
           </div>
           <div className="ags-input">
