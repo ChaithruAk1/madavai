@@ -2090,6 +2090,27 @@ svg.lucide { color: var(--accent); }
 .sage-panel-input input:focus { border-color: var(--accent-line); }
 @media (max-width: 760px) { .sage-dock { right: 14px; bottom: 14px; } }
 
+/* Sage/Sara upgrades: voice mic, drag-to-resize grip, bigger look gallery */
+.sage-panel { max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); }
+.sage-mic { flex: none; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); color: var(--text-2); cursor: pointer; transition: color var(--dur-1,120ms) var(--ease,ease), border-color var(--dur-1,120ms) var(--ease,ease); }
+.sage-mic:hover { border-color: var(--accent-line); }
+.sage-mic.rec { background: #c44a4a; border-color: #c44a4a; animation: sage-rec 1.1s ease-in-out infinite; }
+.sage-mic.rec svg.lucide { color: #fff; }
+@keyframes sage-rec { 0%, 100% { box-shadow: 0 0 0 0 rgba(196,74,74,0.45); } 50% { box-shadow: 0 0 0 6px rgba(196,74,74,0); } }
+@media (prefers-reduced-motion: reduce) { .sage-mic.rec { animation: none; } }
+.sage-grip { position: absolute; width: 18px; height: 18px; z-index: 6; opacity: 0; transition: opacity var(--dur-1,120ms) var(--ease,ease); }
+.sage-panel:hover .sage-grip { opacity: 0.85; }
+.sage-grip::before, .sage-grip::after { content: ""; position: absolute; left: 50%; top: 50%; height: 2px; background: var(--accent-line); border-radius: 1px; }
+.sage-grip::before { width: 12px; transform: translate(-50%, -50%) rotate(45deg); }
+.sage-grip::after { width: 7px; transform: translate(-50%, -50%) rotate(45deg); margin-top: -4px; }
+.sage-dock.up.right .sage-grip { top: 0; left: 0; cursor: nwse-resize; }
+.sage-dock.up.left .sage-grip { top: 0; right: 0; cursor: nesw-resize; }
+.sage-dock.down.right .sage-grip { bottom: 0; left: 0; cursor: nesw-resize; }
+.sage-dock.down.left .sage-grip { bottom: 0; right: 0; cursor: nwse-resize; }
+.sage-dock.up.left .sage-grip::before, .sage-dock.down.right .sage-grip::before { transform: translate(-50%, -50%) rotate(-45deg); }
+.sage-dock.up.left .sage-grip::after, .sage-dock.down.right .sage-grip::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.sage-looks-row { max-height: 170px; overflow-y: auto; padding-right: 2px; }
+
 /* ===== Teams: tabs, builder, Mission Control (TeamOps) ===== */
 .ags-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
 .ags-tab { display: inline-flex; align-items: center; gap: 8px; padding: 9px 17px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text-1); font-size: 14px; font-weight: 500; cursor: pointer; }

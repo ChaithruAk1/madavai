@@ -1,6 +1,6 @@
 # BrainEdge — Competitive Feature-Gap Research (June 2026)
 
-**Scope:** Consumer feature sets of ChatGPT (OpenAI web/desktop/mobile), Google Gemini (gemini.google.com + app), and xAI Grok (grok.com + X integration), compared against BrainEdge as it ships today. Research date: 2026-06-10, based on official release notes, vendor announcements, and press coverage. Where a feature's current status could not be confirmed from a primary source, that uncertainty is flagged inline. BrainEdge's positioning is different from all three (bring-your-own-key, any model, local-first option, heavy agent/automation tooling), so some "gaps" are deliberate trade-offs rather than failures — the tables try to be honest about which is which.
+**Scope:** Consumer feature sets of Anthropic Claude (claude.ai / desktop / mobile / Code), ChatGPT (OpenAI web/desktop/mobile), Google Gemini (gemini.google.com + app), and xAI Grok (grok.com + X integration), compared against BrainEdge as it ships today. Research date: 2026-06-10, based on official release notes, vendor announcements, and press coverage. Where a feature's current status could not be confirmed from a primary source, that uncertainty is flagged inline. BrainEdge's positioning is different from all three (bring-your-own-key, any model, local-first option, heavy agent/automation tooling), so some "gaps" are deliberate trade-offs rather than failures — the tables try to be honest about which is which.
 
 **Legend:** Gap size ★☆☆☆☆ = cosmetic / nearly at parity … ★★★★★ = major missing category. Effort: S (days), M (1–3 weeks), L (1–2 months), XL (multi-month / new subsystem).
 
@@ -87,6 +87,38 @@
 
 ---
 
+## 4. Anthropic Claude (claude.ai + desktop + mobile + Code)
+
+*BrainEdge deliberately mirrors much of this product's shape, so this table is mostly parity-confirmation plus the genuinely missing pieces. Research date 2026-06-10.*
+
+| Feature | What it does | BrainEdge today | Gap | Effort |
+|---|---|---|---|---|
+| **Memory (all tiers, editable)** | Chat-history memory rolled out to every tier (Mar 2026); memories are human-readable files the user can open and edit; project-scoped memory exists | Per-*agent* memory only (viewable/editable in Blueprint) — no global user memory across normal chats | ★★★★★ | M (same work item as ChatGPT/Gemini memory — one build closes all three) |
+| **Incognito chat** | Ghost icon → temporary chat: not saved to history, no memory read/write | None; all chats persist | ★★★☆☆ | S (same item as Temporary Chat) |
+| **Research mode** | Multi-source agentic research with inline, checkable citations; needs web-search toggle on | No packaged research mode | ★★★★☆ | M (same Deep-Research item) |
+| **Web search with citations** | Search toggle on all tiers; inline URL citations in normal chat | No lightweight search-with-citations in chat (agent browser is heavier-weight) | ★★★☆☆ | M (same item) |
+| **In-chat office file creation** | Creates and edits real Excel/PowerPoint/Word/PDF files directly in the app (paid tiers) | Artifacts preview HTML/SVG/Mermaid/React/Markdown; no xlsx/pptx/docx/pdf generation | ★★★★☆ | M–L (new gap unique to this table; doable client-side with SheetJS/pptxgen/jsPDF or via skills) |
+| **Chat search** | Search across past conversations | **Parity** — global content search shipped | — | — |
+| **Projects** | Files + instructions + project memory; persistent workspaces | **Near-parity** (instructions, PDF/docx knowledge, linked folder/GitHub repo); missing project-scoped memory + sharing | ★☆☆☆☆ | M |
+| **Skills** | Folder with SKILL.md, progressive disclosure, bundled scripts | **Parity** — BrainEdge implements the same shape, plus import/multi-folder/toggles | — | — |
+| **Connectors (150+, one-click, free tier)** | Curated one-click MCP connectors on web and desktop | MCP works on desktop but setup is technical; web shows a catalog only | ★★★☆☆ | M (same curated-connector item) |
+| **Cowork (folder agent + scheduled tasks + sub-agents)** | Folder access, multi-step autonomy, sub-agent fan-out, scheduling inside Cowork | **Near-parity:** Collaborate + permission modes + Teams fan-out + Scheduler cover this; polish gap only | ★☆☆☆☆ | S |
+| **Claude Code (terminal agent)** | Mature TUI coding agent; `/voice` input; plugins | BrainEdge CLI exists (Ink TUI, slash commands, skills) but younger; no voice; PLAN-AGENT-PARITY.md is the quality roadmap | ★★☆☆☆ | M (harness plan) |
+| **Claude in Chrome** | Extension that drives the user's real browser tabs (Max tier) | Agent Browser is a separate embedded Chromium window — by design (can't attach to user's Chrome without an extension) | ★★☆☆☆ | XL (extension product; low priority) |
+| **Office add-ins (Excel/PowerPoint/Word/Outlook)** | Claude embedded inside Microsoft Office apps | None | ★★☆☆☆ | XL (low strategic fit for BYOK audience) |
+| **Mobile apps + voice (5 voices) + health/calendar integration** | Full iOS/Android apps; voice mode free for all users in 2026; OS app integrations | Web + Telegram remote ("Via Mobile") | ★★★☆☆ | XL native / M PWA (same mobile item) |
+| **Managed Agents (Platform, Jun 2026)** | Hosted agents on cron schedules; credential **vaults** (secret attached at the network boundary, never in model context); browser-capable | Scheduler + webhook triggers run agents *locally* (no hosting — deliberate, per TEAMLY-PARITY verdict); secrets ARE in env today | ★★☆☆☆ | M for a vault-style env-allowlist on webhook agents (good security idea to borrow); hosting = non-goal |
+| **Continue on phone (remote control)** | Hand a running session from desktop to phone | **Parity** — Via Mobile Telegram handoff does exactly this | — | — |
+| **Desktop GUI polish** | Split views; pin messages as chapters with generated TOC; inline diff comments | Split views exist (artifact/mission panels); no chapters/TOC or inline diff comments | ★★☆☆☆ | S–M |
+| **Plugins (bundles + marketplaces)** | Installable bundles of MCPs + skills + commands, grouped into marketplaces | Skills and connectors are separate; no bundle/marketplace concept | ★★☆☆☆ | M |
+| **Image generation** | **Claude has none** — analysis only | None either — and PLAN-LETS-CREATE.md would put BrainEdge *ahead* of Anthropic here | — | — |
+
+*Uncertainty notes:* Managed Agents scheduling/vaults entered public beta 2026-06-09 (platform feature, not consumer app). Voice-mode tier availability and file-creation tier gating change frequently; verified against help-center pages where possible.
+
+**Net read vs Anthropic:** BrainEdge's core shape (Projects/Skills/Connectors/Cowork-style folder agent/scheduler/CLI) is at or near parity — unsurprising, it was the design target. The real deltas are the same four cross-vendor items (memory, research mode, curated web connectors, mobile/voice) **plus one Anthropic-specific item worth adding to the shortlist: in-chat office file creation (xlsx/pptx/docx/pdf)**. Where BrainEdge is ahead: any-model choice, local/offline, multi-agent teams/swarms with budgets and Mission Control, webhook triggers, per-member model pinning — none of which claude.ai offers.
+
+---
+
 ## Top 10 recommended (ranked)
 
 1. **Cross-chat user memory (with viewer/editor UI)** — the single biggest UX gap vs. all three competitors; BrainEdge already has agent memory infrastructure to generalize.
@@ -100,7 +132,7 @@
 9. **Shareable conversation/artifact links + agent sharing** — export exists, live links don't; also the missing piece that turns custom Agents into a GPT-Store-style ecosystem.
 10. **Proactive daily brief ("Pulse-lite")** — build on the existing scheduler + Telegram push to deliver a morning digest; differentiator: user-controlled, BYOK, no data leaves chosen providers.
 
-Honorable mentions: native mobile app (or hardened PWA), study/learn mode (ship as a built-in Skill — near-zero cost), chat-history importer from ChatGPT/Gemini exports, video generation (wait for cheaper APIs).
+Honorable mentions: native mobile app (or hardened PWA), study/learn mode (ship as a built-in Skill — near-zero cost), chat-history importer from ChatGPT/Gemini exports, video generation (wait for cheaper APIs), **in-chat office file creation (xlsx/pptx/docx/pdf — from the Anthropic table; client-side libraries make it M effort)**, and a vault-style env allowlist for webhook-triggered agents (security idea borrowed from Anthropic Managed Agents).
 
 ---
 
@@ -127,6 +159,14 @@ Groq, Inc. runs LPU-based inference hardware and a cloud API (GroqCloud) serving
 
 ## Sources
 
+- Claude Release Notes (Help Center): https://support.claude.com/en/articles/12138966-release-notes
+- Claude memory & chat search (Help Center): https://support.claude.com/en/articles/11817273-use-claude-s-chat-search-and-memory-to-build-on-previous-context
+- Claude Research (Help Center): https://support.claude.com/en/articles/11088861-use-research-on-claude
+- Claude voice mode (Help Center): https://support.claude.com/en/articles/11101966-using-voice-mode-on-claude-mobile-apps
+- Anthropic — Managed Agents engineering post: https://www.anthropic.com/engineering/managed-agents
+- Claude updates tracker (third-party): https://releasebot.io/updates/anthropic/claude
+- TechTimes — Managed Agents cron + vaults (2026-06-10): https://www.techtimes.com/articles/318163/20260610/claude-managed-agents-add-cron-schedules-credential-vaultsanthropic-beta-puts-agents-autopilot.htm
+- Claude app guide 2026 (third-party): https://beginnersinai.org/claude-app-guide/
 - ChatGPT Release Notes (OpenAI Help Center): https://help.openai.com/en/articles/6825453-chatgpt-release-notes
 - ChatGPT Pricing/Plans: https://chatgpt.com/pricing/
 - Introducing ChatGPT Atlas (OpenAI): https://openai.com/index/introducing-chatgpt-atlas/

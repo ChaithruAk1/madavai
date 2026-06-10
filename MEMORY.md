@@ -913,3 +913,42 @@ Long single session on **claude-opus-4-8** (NOT Fable — the §11ap Fable-only 
 - **Standing constraints/rules:** styles.css = targeted edits only; single-writer (no concurrent sessions); every agent feature updates Tour & Practice + Flight School + AGENT-GUIDE.md (feeds Sage) + APP-GUIDE.md; keep bringing agents to life.
 - **Carried pre-launch:** rotate OAuth secrets + `ALLOW_DEV_LOGIN=0` + 2FA; SIGNING.md + cert + signed-build verify; electron:build EPERM (Defender exclusion) + packaged Anthropic-SDK `runAsNode` fuse test + "Test Center absent on fresh install" check; inherited-deliverable integrity read-through; bundle is 1.12MB → code-split before web launch; Q16 monolith split; vite/vitest majors; Playwright suite 8.
 - **Repo docs added this session:** SECURITY-REVIEW-2026-06-10.md, RESEARCH-FEATURE-GAPS.md, PLAN-AGENT-PARITY.md, PLAN-LETS-CREATE.md, TEAMLY-PARITY.md, APP-GUIDE.md, electron-builder.config.cjs; new src: Portrait.jsx, AgentOps.jsx, SageDock.jsx, UserGuide.jsx (+userguide.css, speedcheck.css).
+
+---
+
+## 13. SESSION — 2026-06-10 (Fable, single-writer — kickoff-queue INTEGRITY PASS + branding scrub completion + Anthropic gap research; NEWEST authoritative state)
+
+User re-issued the original 7-task kickoff list; per §12a most was already built, so this session ran the owed **inherited-deliverable integrity read-through** and closed the gaps. Sandbox VM down all session (host file tools only; Glob unreliable on this mount — use Read/Grep).
+
+### Verified intact (no action needed)
+- **Task 1 security:** SECURITY-REVIEW-2026-06-10.md complete (A–E sections); spot-checked 3 of the 21 fixes in code (artifact popout sandboxed iframe, `noShell` hard-gate in agent-openai, CORS allowlist + timing-safe compares in auth-server) — all real. Remaining = user-only Section A (rotate secrets, ALLOW_DEV_LOGIN=0, 2FA).
+- **Task 2 user guide:** UserGuide.jsx (1423 lines, clean tail) + userguide.css (419 lines, clean tail); 19 chapters covering every feature; wired in the sidebar account menu **directly below Settings** (Sidebar.jsx:239) + Get help opens it; App route mode "guide".
+- **Task 3 speed test:** speedcheck.css complete (.spx- — live race animation, winner hero band, ranked bars, scatter, detail table, methodology, responsive/reduced-motion) and imported by ModelSpeedCheck.jsx.
+
+### Branding scrub COMPLETED (task 4 — fixes landed this session)
+- **package.json description** de-Claude'd → "chat, agents, and an AI workforce over any cloud or local LLM".
+- **`linkAnthropic` subscription remnant removed end-to-end** (was the standing "remove Anthropic subscription path" leftover): main.cjs IPC handler (incl. "claude login" note), preload wire, mockBridge + webBridge stubs; vestigial `anthropicLinked` account field dropped from settings.cjs DEFAULTS + main.cjs signOut/googleSignIn. No UI callers existed.
+- **APP-GUIDE.md** (feeds Sage, user-visible): "Claude-Desktop-style workflows" + "Claude-style skill playbooks" reworded.
+- **agent-transport.cjs** wrong_profile error no longer names "free-claude-code proxy"; providers.cjs + settings.cjs stale subscription comments reworded.
+- **Verdict:** remaining Claude/Anthropic/OpenAI mentions are FUNCTIONAL ONLY (provider wire formats, API headers, real model ids in catalog/benchmarks, `@anthropic-ai/claude-agent-sdk` npm dep, CLI reading CLAUDE.md for interop) — legitimate, no litigation surface. Zero Teamly/ChatGPT-style brand comparisons anywhere in src/electron/server/cli.
+
+### Task 5 research COMPLETED — Anthropic section added
+- RESEARCH-FEATURE-GAPS.md previously covered ChatGPT/Gemini/Grok/Groq but **omitted Anthropic** (user explicitly asked for it). Added **§4 Anthropic Claude** (19-row gap table, June-2026 web-researched: memory all-tiers, incognito, Research mode, in-chat office file creation, Managed Agents cron+vaults 2026-06-09, Claude-in-Chrome/Office add-ins, voice, plugins) + parity confirmations (chat search, skills, Cowork-style, continue-on-phone) + "BrainEdge ahead" list + sources. Honorable mentions gained office-file-creation + vault-style env allowlist. RESEARCH IS REVIEW-ONLY — user decides what to build.
+- Tasks 6/7 deliverables verified complete: PLAN-AGENT-PARITY.md (5-wave harness plan, ends §9) + PLAN-LETS-CREATE.md (providers/architecture/P1-P3/risks/sources).
+
+### Review round (same session, later)
+- User asked for (1) a consolidated competitive gap table + build recommendations, (2) plain-English explanation of PLAN-AGENT-PARITY, (3) an implementable Let's Create architecture **bound to the model selector's provider profiles**. Delivered all three in chat; **PLAN-LETS-CREATE.md gained §5 "Architecture v2 — selector-integrated"** (shared engine catalog ∩ user profiles → engine picker; MediaJob store desktop JSON/web IndexedDB; sync image/transcript + async video poller w/ resume; Creations tray; budget guardrails; P1 image+transcript ≈1-2wk, P2 video ≈2-3wk; §5.4 = 5 open user decisions). AWAITING user's picks on the build order + §5.4 decisions before any implementation.
+
+### Sage/Sara upgrade round (same session, later — BUILT)
+User asked for 5 Sage improvements; all landed (renderer-only, shared web+desktop):
+1. **Voice command:** mic button in the Sage panel input row — records via `bridge.transcribe` (desktop, user's OpenAI/Groq key; same pattern as Composer) or Web Speech API fallback (Chromium web); transcript **auto-sends** so you can just talk. Errors surface as in-thread mentor messages, not alerts.
+2. **Resizable panel:** `.sage-grip` drag handle on the panel's free corner (positions/cursors flip with the dock's up/down/left/right anchor classes); size persisted to `be.sage.size`, clamped 320-760w × 380-900h and to the viewport; panel got max-w/h viewport clamps.
+3. **BrainEdge-first rule** in SYS: whenever the user wants to build/create anything, Sage must answer with the right BrainEdge surface (Build/Studio/Agents/Projects/Scheduler/Connectors) + first step + GOTO; never point to outside tools. **GOTO keys gained `studio` + `projects`** (mode ids "studio"/"project").
+4. **14-look multicultural gallery** (append-only — saved `be.sage.look` indices stay valid): original 8 male looks labeled (classic/European/Indian/Nordic/African/silver) + 6 NEW female looks (Indian, 2× East Asian, European, African, Latina). **Portrait.jsx gained explicit-only styles 7 (long center-part hair) + 8 (swept bangs + side bun), `lashes` + `earring` override props** — deterministic agent faces unchanged (random range still 0-6).
+5. **Sara naming:** female look → the buddy is **Sara** everywhere (header, hello, placeholder, nudge, titles, SYS persona via `SYS(name)`); male looks stay Sage. Same thread/memory either way. APP-GUIDE.md gained a "Sage / Sara — the floating helper" section (so Sage can describe its own features; documents-feed-Sage rule honored).
+- Files: SageDock.jsx (looks/name/voice/resize/SYS), Portrait.jsx (styles 7-8, lashes, earring prop), styles.css (TARGETED append after the sage block: .sage-mic + rec pulse, .sage-grip × 4 anchor variants, panel max clamps, looks-row scroll), APP-GUIDE.md.
+- NOTE: the in-Agents full "Ask Sage" tab (Agents.jsx) still says Sage regardless of look — only the global dock renames. Flagged, not changed (Agents.jsx is the monolith; touch in its own pass).
+
+### Gates
+- This session touched **main.cjs / preload.cjs / settings.cjs / agent-transport.cjs / providers.cjs** (main process) + webBridge/mockBridge/package.json/APP-GUIDE/RESEARCH doc + **SageDock.jsx/Portrait.jsx/styles.css** (renderer) → `npm run build` + FULL close-and-reopen, then commit from the user's terminal. Nothing compile-checked (sandbox down).
+- Carried opens unchanged from §12g: commit global Sage mount (if still uncommitted), rotate OAuth secrets + ALLOW_DEV_LOGIN=0 + 2FA, SIGNING.md + cert, electron:build EPERM Defender exclusion, packaged runAsNode fuse test, bundle code-split before web launch, Q16 split, vite/vitest majors, Playwright suite 8.

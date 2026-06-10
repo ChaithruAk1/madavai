@@ -91,7 +91,7 @@ function toUiEvents(msg) {
  */
 async function runAgentTurn({ prompt, mode, cwd, profile, resume, emit, permissions, holds, sessionId, permMode }) {
   if (!applyEnv(profile)) {
-    emit({ kind: "error", data: { code: "wrong_profile", message: `Cowork needs an Anthropic-compatible provider. "${profile.name}" is ${profile.kind}. Select an Anthropic profile (Anthropic direct, or a LiteLLM/free-claude-code proxy) in Settings.` } });
+    emit({ kind: "error", data: { code: "wrong_profile", message: `This mode needs an Anthropic-compatible provider. "${profile.name}" is ${profile.kind}. Select an Anthropic-compatible profile in Settings → Model configuration.` } });
     return resume || null;
   }
 

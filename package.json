@@ -2,7 +2,7 @@
   "name": "brainedge",
   "version": "0.3.0",
   "private": true,
-  "description": "BrainEdge — a Claude-Desktop-style app over Anthropic, cloud, and local LLMs",
+  "description": "BrainEdge — chat, agents, and an AI workforce over any cloud or local LLM",
   "author": "Samskruthi Harish <chaithru@gmail.com>",
   "license": "UNLICENSED",
   "type": "module",

@@ -17,17 +17,19 @@ const HAIRC = ["#2c2924", "#4b3625", "#6e4a2a", "#8d8d8d", "#b86f2c", "#1f2a3a"]
 const hashS = (s) => { let h = 0; for (let i = 0; i < (s || "").length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
 
 export default function Portrait({ seed = "", color = "var(--accent)", size = 40, mood = "idle", title,
-  skin: skinOv, hair: hairOv, beard: beardOv, glasses: glassesOv, style: styleOv }) {
+  skin: skinOv, hair: hairOv, beard: beardOv, glasses: glassesOv, style: styleOv,
+  lashes = false, earring: earringOv }) {
   const s = String(seed);
   // Looks are deterministic from the seed, but any trait can be pinned via a prop
-  // (used for fixed characters like Sage).
+  // (used for fixed characters like Sage/Sara). Styles 7-8 (long hair, side bun)
+  // are reachable only via the style prop — random faces stay in 0-6.
   const skin = skinOv || SKINS[hashS(s + "skin") % SKINS.length];
   const hair = hairOv || HAIRC[hashS(s + "hairc") % HAIRC.length];
   const style = styleOv != null ? styleOv : hashS(s + "style") % 7;
   const glasses = glassesOv != null ? glassesOv : hashS(s + "spec") % 10 < 3;
   const beard = beardOv != null ? beardOv : (!glasses && hashS(s + "beard") % 10 < 2);
   const freckles = hashS(s + "frk") % 10 < 2;
-  const earring = hashS(s + "ear") % 10 < 2;
+  const earring = earringOv != null ? earringOv : hashS(s + "ear") % 10 < 2;
   const ink = "#262b34";
   const shade = `color-mix(in srgb, ${skin} 62%, #6b4226)`;
   const sleeping = mood === "sleeping";
@@ -87,6 +89,17 @@ export default function Portrait({ seed = "", color = "var(--accent)", size = 40
             <path d="M19.6 21.5 L21.6 21.5 L21.6 16 Q19.6 17.5 19.6 21.5 Z" /><path d="M44.4 21.5 L42.4 21.5 L42.4 16 Q44.4 17.5 44.4 21.5 Z" />
           </g>
         )}
+        {/* style 7 — long center-parted hair framing the face (explicit-only) */}
+        {style === 7 && (
+          <path d="M16.8 43.5 Q13.2 9 32 8.6 Q50.8 9 47.2 43.5 L41.6 43.5 Q44.6 15.5 32.8 14.3 L32 16.4 L31.2 14.3 Q19.4 15.5 22.4 43.5 Z" fill={hair} />
+        )}
+        {/* style 8 — swept bangs + side bun (explicit-only) */}
+        {style === 8 && (
+          <g fill={hair}>
+            <path d="M18.6 24.5 Q17.8 9.8 32 9.6 Q46.2 9.8 45.4 24.5 L43.5 24.5 Q44.2 13.5 31 13.6 Q24.5 14 21.8 18.5 Q19.5 21 19.4 24.5 Z" />
+            <circle cx="46.6" cy="13.4" r="4.4" />
+          </g>
+        )}
         {/* brows */}
         <g className="pt-brows" stroke={ink} strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.85">
           <path d="M23.8 20.8 q3.2 -2.1 6 -0.5" />
@@ -106,6 +119,12 @@ export default function Portrait({ seed = "", color = "var(--accent)", size = 40
             <circle cx="37.4" cy="25.4" r="1.55" fill={ink} />
             <circle cx="27.8" cy="24.7" r="0.55" fill="#fff" />
             <circle cx="38" cy="24.7" r="0.55" fill="#fff" />
+            {lashes && (
+              <g stroke={ink} strokeWidth="1" strokeLinecap="round" opacity="0.85">
+                <path d="M24.3 23.2 L23 22.2" /><path d="M25.4 22.4 L24.5 21.2" />
+                <path d="M39.7 23.2 L41 22.2" /><path d="M38.6 22.4 L39.5 21.2" />
+              </g>
+            )}
           </g>
         )}
         {glasses && !sleeping && (

@@ -564,7 +564,6 @@ export const webBridge = {
   async signOut() { return webBridge.authSignOut(); },
   async googleSignIn() { return webBridge.authSignIn("google"); },
   async githubSignIn() { return webBridge.authSignIn("github"); },
-  async linkAnthropic() { return { error: "Available in the desktop app." }; },
 
   // ---- auth server: account gate, billing, analytics ----
   async authMe() {

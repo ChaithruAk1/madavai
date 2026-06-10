@@ -723,13 +723,8 @@ ipcMain.handle("brainedge:saveAccount", (_e, account) => {
 });
 ipcMain.handle("brainedge:signOut", () => {
   const cfg = settings.load();
-  settings.save({ ...cfg, account: { name: "", email: "", avatar: "", googleLinked: false, anthropicLinked: false } });
+  settings.save({ ...cfg, account: { name: "", email: "", avatar: "", googleLinked: false } });
   return true;
-});
-ipcMain.handle("brainedge:linkAnthropic", () => {
-  const cfg = settings.load();
-  settings.save({ ...cfg, account: { ...(cfg.account || {}), anthropicLinked: true } });
-  return { ok: true, note: "Run `claude login` once in a terminal to authorize; the SDK path then uses your Claude plan. Testing only — remove before publishing." };
 });
 ipcMain.handle("brainedge:googleSignIn", async () => {
   const cfg = settings.load();
@@ -754,7 +749,7 @@ ipcMain.handle("brainedge:googleSignIn", async () => {
         const tj = await tk.json();
         if (!tj.access_token) return finish({ error: "Token exchange failed: " + JSON.stringify(tj).slice(0, 220) });
         const info = await (await fetch("https://www.googleapis.com/oauth2/v3/userinfo", { headers: { Authorization: "Bearer " + tj.access_token } })).json();
-        const account = { name: info.name || "", email: info.email || "", avatar: info.picture || "", googleLinked: true, anthropicLinked: (cfg.account || {}).anthropicLinked || false };
+        const account = { name: info.name || "", email: info.email || "", avatar: info.picture || "", googleLinked: true };
         settings.save({ ...settings.load(), account });
         finish({ account });
       } catch (e) { finish({ error: String((e && e.message) || e) }); }

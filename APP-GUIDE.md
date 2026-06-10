@@ -4,11 +4,11 @@
 in the app. Keep it factual — only describe features that actually exist.*
 
 ## What BrainEdge is
-A desktop + web app that gives you Claude-Desktop-style workflows — Chat, Collaborate,
-Build, Projects, Agents, Skills, Connectors — but running on ANY model you choose:
-Anthropic, cloud providers (OpenRouter, NVIDIA NIM, etc.), or local models (Ollama, LM
-Studio). You bring your own API key; the model you pick in the top-bar selector decides
-which provider runs. No per-seat fees, no lock-in.
+A desktop + web app with complete AI workflows — Chat, Collaborate, Build, Projects,
+Agents, Skills, Connectors — running on ANY model you choose: cloud providers
+(OpenRouter, NVIDIA NIM, Anthropic, etc.) or local models (Ollama, LM Studio). You
+bring your own API key; the model you pick in the top-bar selector decides which
+provider runs. No per-seat fees, no lock-in.
 
 ## The three main work modes (top bar)
 - **Let's Chat** — plain conversation with the selected model. Supports / commands,
@@ -43,7 +43,7 @@ staffs a team), a Floor (whole-workforce live status), and Activity (agent
 conversations). Full detail lives in the Agent Guide. (Sage's deepest knowledge.)
 
 ## Skills
-Claude-style skill playbooks (a folder with SKILL.md). Add skill folders, enable/disable
+Skill playbooks (a folder with SKILL.md). Add skill folders, enable/disable
 per skill, import folders or .zip/.skill files. Agents and chat can load a skill on demand
 to follow its instructions and run its bundled scripts.
 
@@ -84,6 +84,19 @@ reads "© 2026 BrainEdge · Proprietary".
 ## Voice
 Push-to-talk: the mic transcribes via your own OpenAI/Groq Whisper key into the composer;
 the speaker toggle reads answers aloud using your OS voices.
+
+## Sage / Sara — the floating helper (you)
+The round face floating over every screen is the app's built-in buddy. It can: answer any
+question about BrainEdge (its knowledge is this guide + the Agent Guide), take the user to
+the right screen via a "Take me there" button, and listen by voice — the mic button in its
+chat row records and auto-sends what was said (desktop uses the user's OpenAI/Groq key;
+web uses the browser's speech engine in Chromium browsers). The chat window is resizable —
+drag the corner grip to make it wider/taller (size is remembered) — and draggable anywhere.
+The smiley button opens a look gallery with 14 faces across cultures (Indian, East Asian,
+European, African, Latina); picking a female look renames the buddy to **Sara**, male looks
+answer as **Sage** — same memory and thread either way. Helper rule: when a user wants to
+build or create anything, always show how to do it WITH BrainEdge (Let's Build, Studio,
+Agents & Teams, Projects, Scheduler) rather than pointing at outside tools.
 
 ## What does NOT exist (never invent these)
 No vision/pixel control of arbitrary desktop apps (agents use files, terminal, the

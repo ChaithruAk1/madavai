@@ -41,7 +41,7 @@ const DEFAULTS = {
   skillsDir: "",
   skillsDirs: [],
   disabledSkills: [],
-  account: { name: "", email: "", avatar: "", googleLinked: false, githubLinked: false, anthropicLinked: false },
+  account: { name: "", email: "", avatar: "", googleLinked: false, githubLinked: false },
   googleClientId: "",
   googleClientSecret: "",
   githubClientId: "",
@@ -105,7 +105,7 @@ function load() {
     if (!Array.isArray(merged.agents)) merged.agents = [];
     if (!Array.isArray(merged.teams)) merged.teams = [];
     if (merged.skillsDirs.length === 0 && merged.skillsDir) merged.skillsDirs = [merged.skillsDir]; // migrate single → list
-    if (merged.profiles.p_proxy) delete merged.profiles.p_proxy; // free-claude-code proxy removed
+    if (merged.profiles.p_proxy) delete merged.profiles.p_proxy; // legacy proxy profile removed
     if (!merged.profiles[merged.activeProfileId]) merged.activeProfileId = Object.keys(merged.profiles)[0];
     if (merged.activeProfileId === "p_proxy") merged.activeProfileId = Object.keys(merged.profiles)[0];
     // Light schema guard: a corrupted file shouldn't crash callers with wrong types.

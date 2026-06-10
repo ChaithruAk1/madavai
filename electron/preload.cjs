@@ -27,7 +27,6 @@ contextBridge.exposeInMainWorld("brainedge", {
   signOut: () => ipcRenderer.invoke("brainedge:signOut"),
   googleSignIn: () => ipcRenderer.invoke("brainedge:googleSignIn"),
   githubSignIn: () => ipcRenderer.invoke("brainedge:githubSignIn"),
-  linkAnthropic: () => ipcRenderer.invoke("brainedge:linkAnthropic"),
 
   // --- agent ---
   chooseFolder: () => ipcRenderer.invoke("brainedge:chooseFolder"),

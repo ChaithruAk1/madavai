@@ -127,7 +127,59 @@ Chat is request/stream; **video is submit/poll (1–6 minutes)**. Proposed shape
 
 ---
 
-## 5. Sources
+## 5. Architecture v2 — SELECTOR-INTEGRATED (2026-06-10, per user requirement: "use models from the model selector")
+
+**Core decision:** media engines do NOT get their own keys/settings silo. They **bind to the provider profiles the model selector already manages** (`settings.profiles`: OpenRouter, Gemini, OpenAI, Groq, NIM, local). A user who already chats on a Gemini key gets Veo + Nano Banana with zero extra setup; an OpenRouter-only user gets image gen through the same `/chat/completions` + `modalities` call the chat selector already makes.
+
+### 5.1 Components
+
+```
+                      ┌─ src/shared/mediaEngines.js (SHARED catalog + request builders)
+                      │    engine = { id, capability, label, profileMatch, tier, price, build(params, profile) }
+                      │
+  Let's Create UI ────┤    available = catalog ∩ user's profiles  → engine picker (ModelPicker-styled)
+  (sidebar mode)      │    missing key → engine shown dimmed: "Add a Gemini key to unlock"
+                      │
+        ┌─────────────┴──────────────┐
+   DESKTOP                         WEB
+   electron/media-runner.cjs       src/media/mediaRunner.js
+   electron/media-store.cjs        IndexedDB (same idb layer as history)
+   results → ~/BrainEdge/Creations  results → Blob + download
+   ffmpeg static (on-demand DL)    no ffmpeg → Gemini File API path
+        └─────────────┬──────────────┘
+                 MediaJob record
+   { id, capability, engine, profileId, params, status,
+     providerJobId, costEst, costActual, resultPath|blobKey, createdAt }
+```
+
+- **Bridge contract:** `mediaCreate(job)` / `mediaList()` / `mediaCancel(id)` / `mediaRetry(id)` + event `brainedge:mediaJob` — mirrored desktop (IPC) and web (webBridge), per the both-platforms standing rule.
+- **Sync vs async:** images + transcripts are request/response. Video is submit → **poller** (backoff 2s→15s, resume on app relaunch via stored `providerJobId`). No webhooks (no server compute) — polling is the design.
+- **Engine bindings (P1/P2):** image → Gemini Flash Image (default), GPT Image mini, OpenRouter `modalities:["image","text"]`; transcript → Groq whisper-v3-turbo (default), OpenAI 4o-mini-transcribe, Gemini video understanding (smart mode + web big-file path); video → Veo 3.1 Lite/Fast on the Gemini profile (default), optional `p_fal` profile added later as ONE power-up key (Kling/Pika/Wan).
+
+### 5.2 UI
+
+- **"Let's Create"** sidebar mode, prompt-first console (Studio-launcher pattern): capability tabs Image | Video | Transcript, engine picker w/ per-unit price, param chips (size/duration/res), **pre-flight cost estimate next to the Generate button — always** ("8 s · Veo 3.1 Lite · 720p ≈ $0.36").
+- **Creations tray:** thumbnail grid of jobs (queued/running w/ progress, done, failed+retry), open/download, "send to chat", **"Animate this"** (image→video chaining: P1 image becomes Veo start frame).
+- **Guardrails (Settings → Create):** monthly soft budget (default $5) + hard confirm beyond it; cheap tiers default; video capped 8 s/720p with explicit unlock; actual spend logged → Consumption gains a Creations row.
+- **Agent integration:** optional `create_image` tool toggle per agent + `/image` slash command in chat.
+
+### 5.3 Phases & estimates
+
+- **P1 (≈1–2 wk):** mode shell + engine catalog + MediaJob store + image gen (3 engines) + transcript (Groq/OpenAI desktop via ffmpeg; Gemini path web) + cost estimator + tray.
+- **P2 (≈2–3 wk):** async poller + resumable jobs + Veo t2v/i2v + optional fal key + chaining.
+- **P3:** local whisper.cpp (desktop), batch tiers, Sora-successor watch.
+
+### 5.4 Open decisions (user)
+
+1. Approve selector-integrated binding (vs a separate media-keys page). ← recommended
+2. Approve P1 scope order (image + transcript first, video as P2).
+3. fal.ai as optional power-up key in P2 — yes/no.
+4. Creations folder location default (`~/BrainEdge/Creations`).
+5. Monthly budget default ($5?).
+
+---
+
+## 6. Sources
 
 - OpenAI API pricing: https://openai.com/api/pricing/ and https://developers.openai.com/api/docs/pricing
 - OpenAI GPT Image pricing breakdown (incl. DALL·E API removal May 12, 2026): https://costgoat.com/pricing/openai-images and https://www.aifreeapi.com/en/posts/openai-image-generation-api-pricing
