@@ -192,12 +192,28 @@ ipcMain.handle("brainedge:getOpenRouterCatalog", (_e, opts) => orCatalog.getCata
 
 // ---- IPC: persisted chat history (Let's Talk / Collaborate / Build) ----
 const sstore = require("./sessions-store.cjs");
-ipcMain.handle("brainedge:listSessions", (_e, mode) => sstore.listSessions(mode));
+ipcMain.handle("brainedge:listSessions", (_e, mode, agentScope) => sstore.listSessions(mode, agentScope));
 ipcMain.handle("brainedge:getSession", (_e, id) => sstore.getSession(id));
 ipcMain.handle("brainedge:deleteSession", (_e, id) => sstore.deleteSession(id));
 ipcMain.handle("brainedge:searchSessions", (_e, { q, mode }) => sstore.searchSessions(q, mode));
 // Update check: compares this build against a version JSON served by the auth server (or any URL).
 ipcMain.handle("brainedge:getAppVersion", () => { try { return app.getVersion(); } catch { return "0.0.0"; } });
+
+// ---- QA Test Center (admin) — BrainEdge tests BrainEdge ----
+// DEV/ADMIN-ONLY TOOLING: these files are EXCLUDED from packaged installers
+// (see build.files "!electron/qa-*" in package.json). End users who download the
+// setup never receive the test engine or the Repair Bay. The guarded require
+// below makes a packaged app simply report "not in this build" instead of crashing.
+let qa = null, qaFixer = null;
+try { qa = require("./qa-runner.cjs"); qaFixer = require("./qa-fixer.cjs"); } catch { /* packaged build — QA not shipped */ }
+const QA_MISSING = { error: "Testing tools aren't included in this build of BrainEdge.", available: false };
+ipcMain.handle("brainedge:qaStart", () => qa ? qa.runCycle((e) => { try { win.webContents.send("brainedge:qa", e); } catch {} }) : QA_MISSING);
+ipcMain.handle("brainedge:qaStatus", () => qa ? { available: true, ...qa.status() } : QA_MISSING);
+ipcMain.handle("brainedge:qaHistory", () => qa ? qa.history() : []);
+// Repair Bay: AI diagnosis is automatic; APPLYING a fix always requires the admin's explicit approval click.
+ipcMain.handle("brainedge:qaDiagnose", async (_e, test) => { if (!qaFixer) return QA_MISSING; try { return await qaFixer.diagnose(test); } catch (err) { return { error: String(err.message || err) }; } });
+ipcMain.handle("brainedge:qaApplyFix", (_e, fix) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.applyFix(fix); } catch (err) { return { error: String(err.message || err) }; } });
+ipcMain.handle("brainedge:qaRollback", (_e, args) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.rollback(args); } catch (err) { return { error: String(err.message || err) }; } });
 
 // ---- IPC: Saved library (bookmarked responses) ----
 // Each save is written to a local JSON store AND mirrored into an auto-created
@@ -465,6 +481,74 @@ ipcMain.handle("brainedge:getConversation", (_e, id) => store.getConversation(id
 ipcMain.handle("brainedge:createConversation", (_e, projectId) => store.createConversation(projectId));
 ipcMain.handle("brainedge:deleteConversation", (_e, id) => store.deleteConversation(id));
 
+// ---- IPC: agent engine (memory · history · missions · versions · share files) ----
+const agentMemory = require("./agent-memory.cjs");
+const agentHistory = require("./agent-history.cjs");
+const missionStore = require("./mission-store.cjs");
+const missionRunner = require("./mission-runner.cjs");
+const agentFiles = require("./agent-files.cjs");
+const webhookServer = require("./webhook-server.cjs");
+
+// Memory — what an agent has learned (view/edit/clear in the Studio Blueprint).
+ipcMain.handle("brainedge:getAgentMemory", (_e, agentId) => agentMemory.get(agentId));
+ipcMain.handle("brainedge:setAgentMemory", (_e, { agentId, notes }) => agentMemory.setNotes(agentId, notes));
+ipcMain.handle("brainedge:clearAgentMemory", (_e, agentId) => agentMemory.clear(agentId));
+
+// Track record — per-agent run history + roster-wide stats for the agent cards.
+ipcMain.handle("brainedge:getAgentHistory", (_e, agentId) => agentHistory.list(agentId, 50));
+ipcMain.handle("brainedge:getAgentStats", () => agentHistory.stats());
+
+// Durable missions — checkpoint lookup for the "Resume mission" banner.
+ipcMain.handle("brainedge:getMission", (_e, convId) => missionStore.get(convId));
+
+// .agent share files + versioning.
+ipcMain.handle("brainedge:exportAgent", (_e, agent) => agentFiles.exportAgent(win, agent));
+ipcMain.handle("brainedge:importAgent", () => agentFiles.importAgent(win));
+ipcMain.handle("brainedge:snapshotAgentVersion", (_e, agent) => agentFiles.snapshot(agent));
+ipcMain.handle("brainedge:listAgentVersions", (_e, agentId) => agentFiles.listVersions(agentId));
+
+// Webhook triggers — local HTTP server; external systems fire agents/teams/tasks.
+function reconcileWebhooks() {
+  return webhookServer.reconcile({
+    settings, taskStore, taskRunner: runner, missionRunner,
+    onRun: (kind, id, run) => { try { if (win && !win.isDestroyed()) win.webContents.send("brainedge:taskRun", { kind, id, run }); } catch {} },
+  });
+}
+ipcMain.handle("brainedge:applyWebhooks", () => reconcileWebhooks());
+ipcMain.handle("brainedge:webhookStatus", () => webhookServer.status());
+ipcMain.handle("brainedge:newWebhookToken", () => webhookServer.newToken());
+
+// Voice — push-to-talk transcription via the user's own Whisper-capable key.
+const voice = require("./voice.cjs");
+ipcMain.handle("brainedge:transcribe", (_e, args) => voice.transcribe(args || {}));
+
+// Swarms — run one agent over a list with a bounded parallel pool.
+const swarmAborts = new Map(); // swarmId -> AbortController
+ipcMain.handle("brainedge:runSwarm", async (_e, { agentId, items, template, concurrency }) => {
+  const cfg = settings.load();
+  const agent = missionRunner.findAgent(cfg, agentId);
+  if (!agent) return { error: "Agent not found." };
+  const swarmId = "swarm_" + Math.random().toString(36).slice(2, 9);
+  const ac = new AbortController();
+  swarmAborts.set(swarmId, ac);
+  const progress = (p) => { try { if (win && !win.isDestroyed()) win.webContents.send("brainedge:swarm", { swarmId, ...p }); } catch {} };
+  try {
+    const r = await missionRunner.runSwarm({ agent, items, template, concurrency, onProgress: progress, signal: ac.signal });
+    return { swarmId, results: r.results, report: r.report };
+  } catch (e) {
+    return { swarmId, error: String((e && e.message) || e) };
+  } finally {
+    swarmAborts.delete(swarmId);
+  }
+});
+ipcMain.handle("brainedge:cancelSwarm", (_e, swarmId) => {
+  const ac = swarmAborts.get(swarmId);
+  if (ac) { try { ac.abort(); } catch {} swarmAborts.delete(swarmId); return true; }
+  // No id (or already gone) → cancel everything in flight.
+  if (!swarmId) { for (const a of swarmAborts.values()) { try { a.abort(); } catch {} } swarmAborts.clear(); return true; }
+  return false;
+});
+
 // ---- IPC: scheduled / background tasks ----
 ipcMain.handle("brainedge:listTasks", () => taskStore.listTasks());
 ipcMain.handle("brainedge:createTask", () => taskStore.createTask());
@@ -496,7 +580,37 @@ ipcMain.handle("brainedge:clearViaMobile", () => viaMobileLog.clear());
 const auth = require("./auth.cjs");
 const authBase = () => (settings.load().authBaseUrl || "http://127.0.0.1:8787");
 ipcMain.handle("brainedge:authSignIn", (_e, provider) => auth.signIn(provider === "github" ? "github" : provider === "dev" ? "dev" : "google", authBase()));
-ipcMain.handle("brainedge:authMe", () => auth.me(authBase()));
+const roster = require("./roster.cjs");
+ipcMain.handle("brainedge:authMe", async () => {
+  const r = await auth.me(authBase());
+  // LOCAL ROSTER OVERRIDE (admin-roster.cjs on this machine) beats the server. This is the
+  // hijack-resistant control: even if someone edits admin-emails.txt on the server, whoever
+  // holds the local roster keeps Creator (or Complimentary) here.
+  try {
+    const email = r && r.user && r.user.email;
+    const role = email ? roster.roleFor(email) : null;
+    if (role === "creator") {
+      r.admin = true;
+      r.role = "creator";
+      r.status = "active";
+      r.daysLeft = null;
+      r.subscription = { ...(r.subscription || {}), active: true, plan: "Creator" };
+    } else if (role === "complimentary") {
+      r.role = "complimentary";
+      r.status = "active";          // excluded from subscription — full access, no checkout
+      r.daysLeft = null;
+      r.subscription = { ...(r.subscription || {}), active: true, plan: "Complimentary" };
+    }
+  } catch {}
+  // Cache the admin flag locally so server-side gates (e.g. the Agent Browser master
+  // switch, which admins always bypass) can read it without an async auth call.
+  try {
+    const cfg = settings.load();
+    const isAdmin = !!(r && r.admin);
+    if (((cfg.account || {}).admin || false) !== isAdmin) settings.save({ ...cfg, account: { ...(cfg.account || {}), admin: isAdmin } });
+  } catch {}
+  return r;
+});
 ipcMain.handle("brainedge:authSignOut", () => auth.signOut(authBase()));
 ipcMain.handle("brainedge:billingCheckout", () => auth.billing("checkout", authBase()));
 ipcMain.handle("brainedge:billingPortal", () => auth.billing("portal", authBase()));
@@ -658,7 +772,7 @@ ipcMain.handle("brainedge:githubSignIn", async () => {
   } catch (e) { return { error: String((e && e.message) || e) }; }
 });
 
-app.on("before-quit", () => { mcp.disconnectAll(); try { terminal.killAll(); } catch {} });
+app.on("before-quit", () => { mcp.disconnectAll(); try { terminal.killAll(); } catch {} try { webhookServer.stop(); } catch {} });
 
 // Auto-provision terminal access for paying subscribers (silent). No-op if already set up, if no
 // provider is configured yet, or if the subscription isn't active (cliToken enforces that server-side).
@@ -670,6 +784,6 @@ async function autoEnableCli() {
     if (r && r.ok) console.log("[cli] terminal access auto-enabled for subscriber");
   } catch {}
 }
-app.whenReady().then(() => { createWindow(); reconcileMessaging(); setTimeout(autoEnableCli, 3000); });
+app.whenReady().then(() => { createWindow(); reconcileMessaging(); reconcileWebhooks(); setTimeout(autoEnableCli, 3000); });
 app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

@@ -3,8 +3,8 @@
 // test bench, and send them to work. Agents carry a visual identity (color + glyph) and
 // run on the model from the model selector (optionally pinned per agent — never an API key).
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, Fragment } from "react";
+import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
 
@@ -13,6 +13,7 @@ const TOOL_DEFS = [
   { key: "shell",      label: "Terminal",   icon: TerminalSquare, note: "Run shell commands (desktop only)." },
   { key: "connectors", label: "Connectors", icon: Plug,           note: "Your enabled MCP connectors (mail, GitHub, Slack…)." },
   { key: "skills",     label: "Skills",     icon: Puzzle,         note: "Load installed skill playbooks on demand." },
+  { key: "browser",    label: "Browser",    icon: Globe,          note: "Drive a real, visible browser window — open pages, read them, click, fill forms. Every action asks first; passwords and payments are human-only. (Desktop)" },
 ];
 
 // Identity palette — every agent gets a face.
@@ -21,37 +22,122 @@ const ID_GLYPHS = ["🜁", "✦", "◆", "⌘", "♟", "✺", "☄", "❖", "⚙
 const hashStr = (s) => { let h = 0; for (let i = 0; i < (s || "").length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
 const autoIdentity = (seed) => ({ color: ID_COLORS[hashStr(seed) % ID_COLORS.length], glyph: ID_GLYPHS[hashStr(seed + "g") % ID_GLYPHS.length] });
 
-// Personas — the same proven configs, presented as a crew you can hire. (Instructions/tools unchanged.)
+// Personas — a hireable crew spanning common industry practices, grouped by category.
+// Each is a ready-made agent config (instructions + capability toggles); hire one and
+// tweak it in the Designer. tools: files · shell · connectors · skills · browser.
 const PERSONAS = [
-  { cat: "Research", persona: "Scout", role: "Deep research, cited", desc: "Multi-step research with source synthesis and citations.",
-    tools: { files: false, shell: false, connectors: true, skills: true },
-    instructions: "You are a deep researcher. Break the question into sub-questions, gather evidence step by step (use connectors such as fetch/search when available), cross-check claims across at least two sources, and synthesize a structured answer with inline citations. Flag low-confidence claims explicitly. Never fabricate sources." },
-  { cat: "Research", persona: "Radar", role: "What changed in your field", desc: "Scans sources for a topic and writes a what-changed brief.",
-    tools: { files: false, shell: false, connectors: true, skills: false },
-    instructions: "You monitor a field/topic. Given a topic (and sources when provided), gather the latest developments, compare against what was previously known, and write a concise what-changed brief: 'New', 'Changed', 'Unchanged but notable'. Lead with the single most important development. Tip: schedule me weekly from the Scheduler." },
-  { cat: "Ops", persona: "Sentinel", role: "Incident command", desc: "Triages an alert, drafts the incident ticket, runs the war room.",
-    tools: { files: false, shell: false, connectors: true, skills: false },
-    instructions: "You are an incident commander. Given an alert or report: 1) triage severity and likely blast radius, 2) draft an incident ticket (title, severity, impact, timeline, current hypothesis), 3) coordinate next actions as a checklist with owners, 4) keep a running war-room log. Use connectors (issue tracker, chat) when connected; otherwise produce the artifacts as text." },
-  { cat: "Ops", persona: "Concierge", role: "Support from your docs", desc: "Answers customer questions from your docs and escalates honestly.",
+  // ---- Engineering (software / IT) ----
+  { cat: "Engineering", persona: "Codesmith", role: "Implements features in your repo", desc: "Explores the codebase, makes surgical edits, runs the build.",
+    tools: { files: true, shell: true, connectors: false, skills: false },
+    instructions: "You are a senior software engineer working in the user's repository. Always explore before editing: locate the relevant code, read it, then make minimal, correct changes. Match the project's existing style and patterns. After editing, run the build or tests when possible and report what you changed in one short paragraph with key diffs. Never rewrite a whole file when a small edit will do; never invent APIs — check first." },
+  { cat: "Engineering", persona: "Reviewer", role: "Code review: bugs & security", desc: "Reviews a diff or files and reports issues by severity.",
     tools: { files: true, shell: false, connectors: true, skills: false },
-    instructions: "You are a customer-support agent. Answer ONLY from the provided docs/knowledge (files in the working folder or connected sources). Quote the relevant passage when helpful. If the answer is not in the docs, say so plainly and draft an escalation summary (issue, what was tried, customer impact) instead of guessing." },
-  { cat: "Ops", persona: "Bridger", role: "Support → engineering", desc: "Turns a support thread into a reproduced, filed bug report.",
+    instructions: "You are a meticulous code reviewer. Given a diff or set of files, report findings grouped by severity (Blocker, Major, Minor, Nit): correctness bugs, security issues (injection, authz, secrets, unsafe input), race conditions, and missing tests. Quote the exact file:line for each. Be specific and actionable; praise nothing — just the issues and a suggested fix per item. Do not propose stylistic rewrites unless they fix a real problem." },
+  { cat: "Engineering", persona: "Refactorer", role: "Safe, test-backed refactors", desc: "Improves code structure without changing behavior.",
+    tools: { files: true, shell: true, connectors: false, skills: false },
+    instructions: "You refactor code without changing behavior. First confirm there are tests (or write characterization tests); run them green BEFORE and AFTER every change. Work in small, reversible steps, explaining the intent of each. Never mix a refactor with a behavior change. If tests are missing and can't be added safely, say so and stop rather than risk a silent regression." },
+  { cat: "Engineering", persona: "Pipeline", role: "CI/CD & infra reviewer", desc: "Reviews build, deploy, and IaC configs for safety.",
     tools: { files: true, shell: true, connectors: true, skills: false },
-    instructions: "You turn support conversations into engineering-ready bug reports. Read the conversation, identify the defect, attempt to reproduce it (use the working folder/terminal when code is available), then file or draft an issue: title, environment, exact repro steps, expected vs actual, severity, and the support context link. Mark repro as confirmed/unconfirmed honestly." },
-  { cat: "Docs", persona: "Clausewise", role: "Contract obligations", desc: "Extracts clauses, deadlines and obligations — quotes every term.",
+    instructions: "You are a DevOps engineer. Review CI/CD pipelines and infrastructure-as-code (YAML, Terraform, Dockerfiles, workflows) for correctness, security (least privilege, pinned versions, no leaked secrets), reproducibility, and rollback safety. Produce a prioritized findings list with the exact file and a concrete fix. Flag anything that could cause a destructive or irreversible deploy." },
+  { cat: "Engineering", persona: "Architect", role: "Design docs & ADRs", desc: "Turns a problem into options, trade-offs, and a decision record.",
+    tools: { files: true, shell: false, connectors: false, skills: true },
+    instructions: "You are a software architect. Given a problem or feature, produce a concise design: context & constraints, 2-3 viable options with explicit trade-offs (cost, complexity, risk, scalability), a recommendation with rationale, and an Architecture Decision Record. Diagram data/flow in text or mermaid. Call out the riskiest assumption and how to validate it cheaply first." },
+
+  // ---- QA & Testing ----
+  { cat: "QA & Testing", persona: "Testwright", role: "Test plans & cases", desc: "Turns requirements into a structured test plan.",
     tools: { files: true, shell: false, connectors: true, skills: false },
-    instructions: "You analyze contracts. Extract parties, term, renewal/termination windows, payment terms, SLAs, liability caps and unusual clauses. Build an obligations table with due dates sorted soonest-first and flag anything within 30 days. Quote the exact clause text for every extracted item — never paraphrase a legal term without the quote." },
-  { cat: "Docs", persona: "Retroscribe", role: "Sprint retro docs", desc: "Pulls a closed sprint, synthesizes themes, writes the retro doc.",
+    instructions: "You are a QA analyst. From a requirement, user story, or spec, produce a test plan: scope, preconditions, and a table of test cases (id, title, steps, test data, expected result, priority). Cover happy paths, edge cases, negative cases, and boundaries. Derive cases systematically (equivalence partitions, boundary values). Flag any requirement too ambiguous to test and the question that would resolve it." },
+  { cat: "QA & Testing", persona: "Bughunter", role: "Reproduce & file bugs", desc: "Reproduces an issue and writes an engineering-ready report.",
+    tools: { files: true, shell: true, connectors: true, skills: false },
+    instructions: "You turn a vague report into a crisp, reproducible bug. Identify the defect, attempt to reproduce it (use the working folder/terminal when code is available), then write: title, environment, exact repro steps, expected vs actual, severity/priority, and evidence. Mark reproduction confirmed or unconfirmed honestly — never claim a repro you didn't achieve." },
+  { cat: "QA & Testing", persona: "Automator", role: "Writes automated tests", desc: "Generates unit / API / UI tests that actually run.",
+    tools: { files: true, shell: true, connectors: false, skills: false },
+    instructions: "You write automated tests in the project's existing framework (detect it first). Cover the behavior under test including edge and failure cases; keep tests deterministic and isolated. Run them and ensure they pass (and fail when they should). Never write a test that asserts nothing or always passes; prefer clear arrange-act-assert structure and descriptive names." },
+  { cat: "QA & Testing", persona: "Signoff", role: "Release regression checklist", desc: "Builds a go/no-go regression checklist for a release.",
+    tools: { files: true, shell: false, connectors: true, skills: false },
+    instructions: "You own release sign-off. From the changes in a release, produce a risk-based regression checklist: areas touched, must-pass smoke tests, data migrations, rollback steps, and a clear Go / No-Go recommendation with the conditions for each. Be explicit about what was NOT tested. Never give a Go without listing the residual risks." },
+
+  // ---- Delivery & Agile (Jira, sprints, program deployment) ----
+  { cat: "Delivery & Agile", persona: "Sprintwright", role: "Sprint planning from backlog", desc: "Turns a backlog into a realistic, capacity-fit sprint.",
+    tools: { files: true, shell: false, connectors: true, skills: false },
+    instructions: "You are a scrum facilitator. Given a backlog and team capacity, propose a sprint plan: a sprint goal, the selected stories with estimates, dependencies and sequencing, and what was deliberately left out and why. Flag stories that are too large or under-specified (and the splitting/clarification needed). Keep the plan within stated capacity; never silently over-commit." },
+  { cat: "Delivery & Agile", persona: "Standup", role: "Daily standup digest", desc: "Summarizes tracker activity into yesterday / today / blockers.",
+    tools: { files: false, shell: false, connectors: true, skills: false },
+    instructions: "You produce a daily standup digest from the team's tracker (Jira/Linear/etc. via connectors) or pasted updates: per person or per workstream — Done since yesterday, In progress today, Blockers. Lead with blockers and at-risk items. Be concise; link the tickets. Tip: schedule me each weekday morning from the Scheduler." },
+  { cat: "Delivery & Agile", persona: "Retroscribe", role: "Sprint retro docs", desc: "Pulls a closed sprint, synthesizes themes, writes the retro.",
     tools: { files: true, shell: false, connectors: true, skills: true },
     instructions: "You facilitate sprint retros. Given sprint data (from a connected tracker or pasted/linked files), synthesize: what shipped vs planned, themes in what went well / what didn't, and 3-5 concrete action items with owners. Write the result as a clean retro doc. Be specific — name the tickets behind each theme." },
-  { cat: "Docs", persona: "Schema", role: "Text → typed JSON", desc: "Parses unstructured text into a strict, typed JSON schema.",
+  { cat: "Delivery & Agile", persona: "Releasewright", role: "Go-live runbook", desc: "Builds a deployment runbook with rollback for a major release.",
+    tools: { files: true, shell: false, connectors: true, skills: false },
+    instructions: "You write deployment runbooks for major program go-lives. Produce: pre-deploy checklist, step-by-step deploy sequence with owners and timings, validation/smoke checks at each stage, comms plan, and an explicit rollback procedure with its trigger conditions. Assume things will go wrong — every step needs a verification and a back-out. Never present a runbook without a rollback path." },
+  { cat: "Delivery & Agile", persona: "RAIDkeeper", role: "Program RAID log", desc: "Maintains Risks, Assumptions, Issues & Dependencies.",
+    tools: { files: true, shell: false, connectors: true, skills: false },
+    instructions: "You maintain a program RAID log. From status updates and notes, extract and classify entries into Risks, Assumptions, Issues, and Dependencies, each with owner, impact, likelihood (for risks), mitigation/next action, and due date. Sort by severity and surface anything overdue or newly critical at the top. Keep entries factual and traceable to their source." },
+  { cat: "Delivery & Agile", persona: "Statuswright", role: "Exec / program status report", desc: "Writes a RAG status report leadership can scan in a minute.",
+    tools: { files: true, shell: false, connectors: true, skills: false },
+    instructions: "You write program status reports for leadership. Lead with an overall RAG (Red/Amber/Green) and a one-line headline. Then: progress vs plan, key milestones (done / upcoming, with dates), top risks & issues with owners, decisions needed from leadership, and budget/scope notes if provided. Be honest about Amber/Red — never paint a struggling program Green. Keep it scannable." },
+
+  // ---- Marketing ----
+  { cat: "Marketing", persona: "Adsmith", role: "Ad copy variants", desc: "Writes on-brand ad copy in several angles and lengths.",
+    tools: { files: false, shell: false, connectors: false, skills: false },
+    instructions: "You are a performance copywriter. Given a product and audience, write ad copy in multiple angles (benefit, pain-point, social proof, urgency) and the required lengths/formats. Keep it on-brand, specific, and claim-safe — no unverifiable superlatives. Label each variant with its angle so the user can A/B test. Ask for the one missing fact if the offer or audience is unclear." },
+  { cat: "Marketing", persona: "Socialite", role: "Social content calendar", desc: "Plans and drafts a platform-aware posting schedule.",
+    tools: { files: true, shell: false, connectors: false, skills: false },
+    instructions: "You are a social media manager. From a theme or campaign, produce a content calendar: per-platform posts (tone and length tuned to each platform), hooks, hashtags, and suggested cadence. Provide ready-to-post copy plus a one-line rationale per post. Keep claims accurate and brand-consistent; flag anything that needs a visual or approval." },
+  { cat: "Marketing", persona: "Mailwright", role: "Email campaign sequences", desc: "Writes lifecycle/nurture email sequences that convert.",
+    tools: { files: false, shell: false, connectors: false, skills: false },
+    instructions: "You write email marketing sequences. Given a goal (welcome, nurture, re-engagement, launch), produce the sequence: per email — subject lines (2-3 options), preview text, body, and a single clear CTA. Map the sequence's timing and the intent of each step. Keep it compliant (clear sender, easy unsubscribe) and free of spam-trigger overclaiming." },
+  { cat: "Marketing", persona: "SEOscout", role: "SEO & keyword brief", desc: "Researches keywords and writes a content brief.",
+    tools: { files: false, shell: false, connectors: true, skills: false, browser: true },
+    instructions: "You are an SEO strategist. For a target topic, research intent and related queries (use the browser/connectors on live sources when available), then produce a content brief: primary & secondary keywords, search intent, suggested title & H2 outline, questions to answer, and internal/external link ideas. Note keyword difficulty qualitatively and cite where you saw real SERP/source evidence; never invent search volumes." },
+  { cat: "Marketing", persona: "Launchpad", role: "Go-to-market launch plan", desc: "Builds a GTM plan: positioning, channels, timeline.",
+    tools: { files: true, shell: false, connectors: false, skills: true },
+    instructions: "You are a product marketer. Build a go-to-market plan: positioning statement, target segments, key messages by segment, channel mix with owned/earned/paid tactics, a phased timeline (pre-launch / launch / post-launch), and success metrics. Tie every tactic to a goal. Flag the biggest launch risk and a contingency." },
+
+  // ---- Finance & Trading (research only — never advice) ----
+  { cat: "Finance & Trading", persona: "Marketscout", role: "Market & ticker research brief", desc: "Gathers factual context on a market, sector, or ticker.",
+    tools: { files: false, shell: false, connectors: true, skills: false, browser: true },
+    instructions: "You are a markets research analyst. For a given ticker, sector, or theme, gather factual context (recent price action, news, fundamentals, catalysts) from live sources via the browser/connectors and synthesize a neutral brief with inline citations. You provide RESEARCH AND ANALYSIS ONLY — never buy/sell/hold recommendations, price targets, or position sizing as advice. End every brief with: 'This is information, not financial advice; do your own research and consider a licensed advisor.' Never fabricate figures — cite the source for each number or omit it." },
+  { cat: "Finance & Trading", persona: "Risklens", role: "Portfolio risk summary", desc: "Summarizes exposure and concentration from a holdings file.",
+    tools: { files: true, shell: true, connectors: false, skills: true },
+    instructions: "You analyze a portfolio file (CSV/spreadsheet) the user provides. Compute and present factual risk metrics: allocation by asset/sector/geography, concentration (largest positions, % of total), and simple diversification observations — using real computed numbers, never estimates. Present facts and patterns only; do NOT recommend trades or allocations. Note that this is information, not financial advice." },
+  { cat: "Finance & Trading", persona: "Earnings", role: "Earnings report digest", desc: "Distills a filing or transcript into the numbers that moved.",
+    tools: { files: true, shell: false, connectors: true, skills: false },
+    instructions: "You digest earnings reports and transcripts the user provides or links. Extract: headline results vs consensus (if given), revenue/margin/EPS trends, guidance changes, and notable management commentary — quoting figures with their source. Separate facts from management's framing. Provide no investment recommendation; flag anything ambiguous rather than guessing. Note that this is information, not financial advice." },
+
+  // ---- Research ----
+  { cat: "Research", persona: "Scout", role: "Deep research, cited", desc: "Multi-step research with source synthesis and citations.",
+    tools: { files: false, shell: false, connectors: true, skills: true, browser: true },
+    instructions: "You are a deep researcher. Break the question into sub-questions, gather evidence step by step (use the browser and connectors such as fetch/search when available), cross-check claims across at least two sources, and synthesize a structured answer with inline citations. Flag low-confidence claims explicitly. Never fabricate sources." },
+  { cat: "Research", persona: "Radar", role: "What changed in your field", desc: "Scans sources for a topic and writes a what-changed brief.",
+    tools: { files: false, shell: false, connectors: true, skills: false, browser: true },
+    instructions: "You monitor a field/topic. Given a topic (and sources when provided), gather the latest developments, compare against what was previously known, and write a concise what-changed brief: 'New', 'Changed', 'Unchanged but notable'. Lead with the single most important development. Tip: schedule me weekly from the Scheduler." },
+
+  // ---- Ops & Support ----
+  { cat: "Ops & Support", persona: "Sentinel", role: "Incident command", desc: "Triages an alert, drafts the incident ticket, runs the war room.",
+    tools: { files: false, shell: false, connectors: true, skills: false },
+    instructions: "You are an incident commander. Given an alert or report: 1) triage severity and likely blast radius, 2) draft an incident ticket (title, severity, impact, timeline, current hypothesis), 3) coordinate next actions as a checklist with owners, 4) keep a running war-room log. Use connectors (issue tracker, chat) when connected; otherwise produce the artifacts as text." },
+  { cat: "Ops & Support", persona: "Concierge", role: "Support from your docs", desc: "Answers customer questions from your docs and escalates honestly.",
+    tools: { files: true, shell: false, connectors: true, skills: false },
+    instructions: "You are a customer-support agent. Answer ONLY from the provided docs/knowledge (files in the working folder or connected sources). Quote the relevant passage when helpful. If the answer is not in the docs, say so plainly and draft an escalation summary (issue, what was tried, customer impact) instead of guessing." },
+  { cat: "Ops & Support", persona: "Bridger", role: "Support → engineering", desc: "Turns a support thread into a reproduced, filed bug report.",
+    tools: { files: true, shell: true, connectors: true, skills: false },
+    instructions: "You turn support conversations into engineering-ready bug reports. Read the conversation, identify the defect, attempt to reproduce it (use the working folder/terminal when code is available), then file or draft an issue: title, environment, exact repro steps, expected vs actual, severity, and the support context link. Mark repro as confirmed/unconfirmed honestly." },
+
+  // ---- Docs & Legal ----
+  { cat: "Docs & Legal", persona: "Clausewise", role: "Contract obligations", desc: "Extracts clauses, deadlines and obligations — quotes every term.",
+    tools: { files: true, shell: false, connectors: true, skills: false },
+    instructions: "You analyze contracts. Extract parties, term, renewal/termination windows, payment terms, SLAs, liability caps and unusual clauses. Build an obligations table with due dates sorted soonest-first and flag anything within 30 days. Quote the exact clause text for every extracted item — never paraphrase a legal term without the quote. Note that this is not legal advice." },
+  { cat: "Docs & Legal", persona: "Schema", role: "Text → typed JSON", desc: "Parses unstructured text into a strict, typed JSON schema.",
     tools: { files: true, shell: false, connectors: false, skills: false },
     instructions: "You convert unstructured text into clean, typed JSON. First infer or confirm the target schema, then extract strictly — no invented fields, null for missing values, ISO-8601 dates, numbers as numbers. Output ONLY the JSON unless asked otherwise. Validate the result against the schema before answering." },
+
+  // ---- Data ----
   { cat: "Data", persona: "Quant", role: "Data analysis & reports", desc: "Loads, profiles and analyzes datasets with real computed numbers.",
     tools: { files: true, shell: true, connectors: false, skills: true },
     instructions: "You are a data analyst. Load datasets from the working folder, profile them first (shape, types, missing values), then answer questions with real computed numbers — never estimates. Prefer scripts (run via the terminal on desktop) so results are reproducible. Present findings readably: key numbers first, method after, caveats last." },
 ];
-const PERSONA_CATS = ["Research", "Ops", "Docs", "Data"];
+const PERSONA_CATS = ["Engineering", "QA & Testing", "Delivery & Agile", "Marketing", "Finance & Trading", "Research", "Ops & Support", "Docs & Legal", "Data"];
 
 const blankAgent = () => {
   const id = "agent_" + Math.random().toString(36).slice(2, 9);
@@ -70,8 +156,8 @@ const DESIGNER_SYS = (cfg) => `You are the agent designer in BrainEdge's Agent S
 Current agent config JSON:
 ${JSON.stringify({ name: cfg.name, description: cfg.description, instructions: cfg.instructions, tools: cfg.tools })}
 Apply the user's message to the config (create it if empty, refine it if not). Reply with ONLY a JSON object, no prose, no code fence:
-{"reply":"one or two short, friendly sentences saying what you set up or changed (or ONE clarifying question if truly needed)","config":{"name":"...","description":"one sentence","instructions":"detailed second-person system instructions covering role, method, output format, and what it must never do","tools":{"files":false,"shell":false,"connectors":false,"skills":false}}}
-Tool meanings — files: read/write files in a working folder; shell: run terminal commands; connectors: external apps via MCP (mail, GitHub, Slack, web fetch…); skills: installed skill playbooks. Enable only what the agent genuinely needs. Keep everything the user didn't ask to change.`;
+{"reply":"one or two short, friendly sentences saying what you set up or changed (or ONE clarifying question if truly needed)","config":{"name":"...","description":"one sentence","instructions":"detailed second-person system instructions covering role, method, output format, and what it must never do","tools":{"files":false,"shell":false,"connectors":false,"skills":false,"browser":false}}}
+Tool meanings — files: read/write files in a working folder; shell: run terminal commands; connectors: external apps via MCP (mail, GitHub, Slack, web fetch…); skills: installed skill playbooks; browser: drive a real visible browser window (open pages, read, click, fill forms — for research on live sites, dashboards, web tasks). Enable only what the agent genuinely needs. Keep everything the user didn't ask to change.`;
 
 // Identity dot used across the Studio.
 function Face({ identity, size = 34, fontSize }) {
@@ -84,44 +170,221 @@ function Face({ identity, size = 34, fontSize }) {
 
 const GUIDE_SEEN_KEY = "be.agentsGuideSeen";
 
-// Simulations — guided missions the user can run to learn each architecture.
+// Simulations — ONE continuous story across all nine missions: you're standing up the
+// AI workforce for BeanBox, a small coffee-subscription business. Each mission hires the
+// next worker (or team) and teaches one architecture by running it for real. The story
+// runs Step 1 → Step 9; later chapters reuse the agents you built earlier.
 const SIMULATIONS = [
-  { n: 1, kind: "agent", title: "Your first hire", arch: "Solo agent", time: "5 min",
-    story: "Meet Briefly — a specialist who turns walls of text into three sharp bullets. Build it by describing it, interview it on the Bench, then hand it real work.",
-    steps: ["Tell the Designer what Briefly does (we'll pre-fill it)", "Paste any paragraph on the Bench — expect exactly 3 bullets", "Put to work → paste a long article in the real session"],
+  { n: 1, kind: "agent", title: "Chapter 1 · Your first hire", arch: "Solo agent", time: "5 min",
+    goal: "Briefly — BeanBox's first AI worker, who shrinks any long text to exactly 3 bullets.",
+    story: "Day one at BeanBox, your new coffee-subscription business. Supplier emails are already endless, so your very first hire does just one thing well: turn any wall of text into three clean bullets.",
+    steps: ["Open the Designer — we pre-fill what Briefly does", "On the Bench, paste any supplier email or paragraph — it replies with exactly 3 bullets", "Click Put to work and paste a long article — same 3-bullet result, for real"],
     designer: "An agent called Briefly that turns any text into exactly 3 bullet points, max 15 words each, no intro or outro." },
-  { n: 2, kind: "agent", title: "Hands on the files", arch: "Solo agent + tools", time: "5 min",
-    story: "Quant doesn't chat — it opens your folder, reads your data, and answers with real numbers. Watch tool cards appear and approve its moves.",
-    steps: ["Hire Quant from the crew (Agents tab)", "Put to work → pick a folder with a CSV", "Ask: \"profile the data — 3 most interesting findings\""] },
-  { n: 3, kind: "teams", title: "The assembly line", arch: "Relay team", time: "7 min",
-    story: "Digger researches. Drafter writes. Polisher perfects. Each hands their work to the next — watch the stations clear one by one in Mission Control.",
-    steps: ["Build Digger, Drafter, Polisher (one Designer sentence each)", "New team → Relay line → order them", "Brief: \"a blog post on why small businesses should adopt AI agents\""] },
-  { n: 4, kind: "teams", title: "The factory floor", arch: "Managed team · parallel", time: "7 min",
-    story: "Four specialists, one coordinator, zero waiting. The mission splits, every station lights up AT ONCE, and one finished launch kit comes out the other end.",
-    steps: ["Build Adsmith, Faqster, Socialite, Mailwright", "New team → Managed → add all four", "Brief: \"launch kit for BeanBox, a coffee subscription\" — watch all 4 glow simultaneously"] },
-  { n: 5, kind: "teams", title: "The grand finale", arch: "All three together", time: "8 min",
-    story: "One mission, eight agents, three architectures. Briefly profiles the customer → the Launch Crew fans out in parallel → the Blog Line polishes it into the final post.",
-    steps: ["Run Briefly: \"3 bullets: target customer for a premium coffee subscription\"", "Brief Launch Crew with those bullets pasted in", "Brief Blog Line with the launch kit pasted in — the post should carry stage-1 details"] },
+  { n: 2, kind: "agent", title: "Chapter 2 · Hands on the books", arch: "Solo agent + tools", time: "5 min",
+    goal: "Quant — a worker who opens BeanBox's sales spreadsheet and reports real findings.",
+    story: "BeanBox has months of orders sitting in a CSV nobody's read. Your second hire, Quant, doesn't just chat — it opens the folder, reads the numbers, and tells you what's really happening.",
+    steps: ["Hire Quant from the crew on the Agents tab", "Click Put to work and pick a folder that has your sales CSV", "Ask: “profile the data — the 3 most interesting findings”", "Approve each tool card as Quant reads the file"] },
+  { n: 3, kind: "teams", title: "Chapter 3 · The content line", arch: "Relay team", time: "7 min",
+    goal: "A finished BeanBox blog post, built by three workers passing the draft down a line.",
+    story: "BeanBox needs a blog to get found. One writer alone is slow, so you build a line: a researcher digs up facts, hands them to a writer, who hands the draft to an editor — and you watch it move.",
+    steps: ["Build three agents — Digger, Drafter, Polisher (one Designer sentence each)", "New team → Relay line → put them in that order", "Brief the team: “a blog post on why small coffee brands should sell by subscription”", "Watch each station clear in turn in Mission Control"] },
+  { n: 4, kind: "teams", title: "Chapter 4 · Launch week", arch: "Managed team · parallel", time: "7 min",
+    goal: "BeanBox's full launch kit — ads, FAQ, social posts, and email — produced all at once.",
+    story: "Launch week for BeanBox's first blend. The kit needs four things that don't depend on each other, so instead of a line, a coordinator hands each worker a piece and they all work at the same time.",
+    steps: ["Build four agents — Adsmith, Faqster, Socialite, Mailwright", "New team → Managed → add all four", "Brief: “launch kit for BeanBox, a coffee subscription”", "Watch all four light up together, then merge into one kit"] },
+  { n: 5, kind: "teams", title: "Chapter 5 · The whole pipeline", arch: "All three together", time: "8 min",
+    goal: "One polished BeanBox launch post — passed from a solo worker, to the parallel team, to the content line.",
+    story: "Now you run BeanBox's whole workforce on one job: Briefly sets the direction, your launch-week team builds the pieces in parallel, and your content line polishes it into the final post.",
+    steps: ["Run Briefly: “3 bullets — the target customer for a premium coffee subscription”", "Brief your launch-week (Managed) team, pasting those 3 bullets in", "Brief your content line (Relay), pasting the launch kit in", "Read the final post — it should still carry the customer details from step 1"] },
+  { n: 6, kind: "agent", title: "Chapter 6 · The worker who remembers", arch: "Solo + memory", time: "5 min",
+    goal: "Memo — a worker who writes BeanBox's weekly investor update and remembers your style.",
+    story: "Every Monday you send BeanBox investors an update. You keep telling Memo “lead with risks, keep it short” — this time it remembers, so you only say it once.",
+    steps: ["Build Memo and run it on a rough week's notes", "Reply with one correction — e.g. “always lead with risks, under 150 words”", "Run it again next week's notes — it applies the correction unprompted", "Open Studio → Blueprint → Memory to read, edit, or clear what it learned"],
+    designer: "An agent called Memo that turns my rough notes into a crisp weekly investor update with sections: Wins, Risks, Next." },
+  { n: 7, kind: "agent", title: "Chapter 7 · The night shift", arch: "Triggers", time: "6 min",
+    goal: "Radar — a worker who watches BeanBox's competitors weekly, on its own, while you sleep.",
+    story: "You want to know the moment a rival roaster changes pricing — without remembering to check. So you put a worker on a timer and let it run the night shift.",
+    steps: ["Hire Radar from the crew and save it", "Scheduler → New task → target “Run an agent” → Radar, weekly at 07:00", "Optional: enable Webhook triggers and copy the example to fire it from elsewhere", "Next morning, check Radar's card — “1 mission · 100% clean”"] },
+  { n: 8, kind: "teams", title: "Chapter 8 · The team that asks first", arch: "ask_user + re-planning", time: "7 min",
+    goal: "A BeanBox planning team that pauses to ask you the calls only you can make — then resumes.",
+    story: "Planning BeanBox's next blend, you hand the team an open brief on purpose. Instead of guessing premium vs. mass-market, one worker stops and asks you — and the coordinator decides if more work is needed.",
+    steps: ["Brief a Managed team with something open-ended: “plan the launch of our next blend”", "When the question pops up, answer it — the mission resumes with your answer", "Watch “Coordinator review” decide: done, or send a follow-up wave", "Close the app mid-run, reopen the chat, and click Resume mission"] },
+  { n: 9, kind: "agent", title: "Chapter 9 · Going wholesale", arch: "One agent × a list", time: "6 min",
+    goal: "Fifty potential BeanBox wholesale cafés, researched in one parallel run and compiled into a single report.",
+    story: "BeanBox is ready for wholesale accounts. Rather than fifty separate chats, you point one researcher at a list of fifty cafés and let it work down the whole list at once.",
+    steps: ["On the Agents tab, click the Swarm button on your researcher's card", "Paste a list of cafés — one per line — and a brief containing {item}", "Run it and watch cafés finish in parallel", "Copy the single compiled report — one profile per café"] },
 ];
 
-// Lightweight flow-diagram pieces (pure CSS/markup, theme-aware).
+// Modern flow-infographic pieces — gradient glyph tiles + animated flow connectors.
+// Each node is tinted by its role color (driven through the --c CSS variable so the
+// tile, glow, and border all stay in sync). Theme-aware; honors reduced-motion.
 const Node = ({ color = "var(--accent)", glyph, label, sub, dashed }) => (
-  <div className={`agg-node ${dashed ? "dashed" : ""}`}>
-    <span className="agg-node-face" style={{ background: `color-mix(in srgb, ${color} 14%, transparent)`, borderColor: `color-mix(in srgb, ${color} 45%, transparent)`, color }}>{glyph}</span>
+  <div className={`agg-node ${dashed ? "dashed" : ""}`} style={{ "--c": color }}>
+    <span className="agg-node-face">{glyph}</span>
     <span className="agg-node-label">{label}</span>
     {sub && <span className="agg-node-sub">{sub}</span>}
   </div>
 );
-const Arrow = ({ label }) => <div className="agg-arrow">{label && <span>{label}</span>}<ArrowRight size={15} /></div>;
+const Arrow = ({ label }) => (
+  <div className="agg-arrow">
+    {label && <span className="agg-arrow-lbl">{label}</span>}
+    <span className="agg-arrow-line" />
+  </div>
+);
 
-export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, onSelectModel, onRefresh }) {
+// Reference — the in-app condensed "BrainEdge Agent Guide": do's & don'ts, capability
+// availability, and what each engine feature does. Mirrors AGENT-GUIDE.md.
+const GUIDE_DOS = [
+  <>Give an agent <b>one clear job</b> — three sharp specialists beat one that does everything.</>,
+  <>Let <b>memory</b> work: correct an agent in plain words; durable preferences graduate into memory on their own.</>,
+  <>Put a <b>token budget</b> on any Managed team that can re-plan — re-planning is powerful and not free.</>,
+  <>Use a <b>site allowlist</b> for browser agents, and keep the Agent Browser window visible to watch every move.</>,
+  <>Export a <b>.agent file</b> (and rely on version history) before big edits, so every experiment is reversible.</>,
+];
+const GUIDE_DONTS = [
+  <>Don't give file, terminal, or browser tools to a <b>triggered</b> agent you don't fully trust — headless runs auto-approve.</>,
+  <>Don't expect an agent to fill <b>passwords or payment fields</b> — those are refused by design; do them yourself.</>,
+  <>Don't paste secrets into an agent's <b>knowledge</b> or instructions; they travel with .agent exports (memory doesn't).</>,
+  <>Don't treat web pages as trusted — page text is data, never commands; verify before acting on what a page “says”.</>,
+  <>Don't pile a whole workflow into one prompt — split it into a Relay or Managed team instead.</>,
+];
+const GUIDE_FEATURES = [
+  { icon: Brain, t: "Memory", d: "Each agent keeps durable learnings across missions; view, edit, or clear them in the Blueprint.",
+    use: "Best for agents you use repeatedly — a status-writer, a support agent, an analyst. Stop re-explaining your preferences; correct it once and it sticks.",
+    how: ["Build or open an agent and run it on a real task", "Reply with a correction in plain words (\"lead with risks, under 150 words\")", "Run it again — it applies the correction automatically", "Open Studio → Blueprint → Memory to read, edit, or clear what it learned; toggle it off per agent if you want it stateless"],
+    eg: "Tell Memo once \"always group by team\" — every future report is grouped by team without asking." },
+  { icon: Clock, t: "Triggers", d: "Run agents and teams on a schedule, or fire them by webhook from mail rules, Zapier, CI, or cron.",
+    use: "Turn an agent into a worker that runs without you — morning briefs, inbox triage, weekly monitors, or reacting to an external event.",
+    how: ["Build the agent and save it", "Scheduler → New task → target \"Run an agent\" (or team) → pick it + a schedule", "Or enable Webhook triggers and POST to /hook/agent/<id> from any system", "Results land in the task's run history and the agent's track record"],
+    eg: "Radar, weekly Mon 07:00: \"what changed in our field this week\" — a brief is waiting when you start." },
+  { icon: History, t: "Track record", d: "Every run is recorded — “12 missions · 92% clean” on the card, full run list in the Blueprint.",
+    use: "Know which agents you can trust before handing them bigger jobs, and audit what a triggered agent did overnight.",
+    how: ["Run agents normally — chat, teams, schedules, webhooks and swarms all count", "Read the headline on each agent card (missions · clean %)", "Open Studio → Blueprint → Track record for the full per-run list with sources and summaries"],
+    eg: "A nightly agent shows \"7 missions · 100% clean\" — safe to widen its schedule." },
+  { icon: GitMerge, t: "Handoffs & re-planning", d: "Agents call each other mid-task; Managed coordinators review results and send follow-up waves.",
+    use: "Let a generalist recruit specialists by itself, and let a Managed team adapt when the first wave isn't enough.",
+    how: ["Keep a few focused agents on your roster", "In chat with an agent attached, it can call_agent to delegate a sub-task", "In a Managed team, the coordinator reviews results and dispatches follow-ups — even recruiting bench agents"],
+    eg: "Your researcher calls your fact-checker mid-answer; the team coordinator then sends Radar because Scout found nothing." },
+  { icon: MessageCircleQuestion, t: "Mid-mission questions", d: "An agent can pause to ask you a decision; your answer resumes the mission.",
+    use: "Keep a human in the loop on genuine forks (budget? audience? which file?) without babysitting the whole run.",
+    how: ["Brief an agent or team — leave a real decision open", "When the question modal appears, type an answer or pick a suggested option", "The mission resumes with your answer; \"Skip\" lets the agent use its best judgment"],
+    eg: "\"Plan our launch\" → the agent asks \"B2B or consumer?\" → you answer → it continues on that track." },
+  { icon: Zap, t: "Durable missions", d: "Team missions checkpoint after each member — a crash offers “Resume”, not “start over”.",
+    use: "Long multi-agent runs survive a closed laptop or crash — you don't pay for the finished steps twice.",
+    how: ["Run a team mission as usual — each member's output is checkpointed", "If the app closes mid-run, reopen the same conversation", "Click \"Resume mission\" — completed stations are restored, only the rest run"],
+    eg: "A 5-agent report dies at step 3; reopening resumes from step 4 with steps 1–3 intact." },
+  { icon: Globe, t: "Agent Browser", d: "Drive a real browser in text mode (any model), permission-gated, with a per-agent site allowlist.",
+    use: "Research on live sites, pull data from dashboards without an API, or fill web forms — with you watching the real window.",
+    how: ["In the Studio, switch on the Browser capability; optionally list allowed sites", "Put the agent to work and ask it to look something up on the web", "Approve each navigation/click/fill (or set a permission mode); passwords & payments stay yours", "Watch it work in the visible Agent Browser window — take over with your mouse anytime"],
+    eg: "Pricecheck (allowed: two retailers) → \"which is cheaper for this SKU?\" → it browses both and reports." },
+  { icon: Layers, t: "Swarms", d: "Run one agent across a whole list in parallel and compile a single report.",
+    use: "Volume work — research 50 leads, classify 200 tickets, summarize a folder of docs — without 50 separate chats.",
+    how: ["On the Agents tab, click the Swarm (⧉) button on any agent's card", "Paste a list (one item per line) and a brief containing {item}", "Pick how many run in parallel and Run", "Copy the single compiled report at the end"],
+    eg: "Researcher × 50 domains, 4 at a time → one report with a 3-bullet profile per company." },
+];
+const GUIDE_MATRIX = [
+  ["Knowledge (RAG-lite)", "Chat, teams, triggers, swarms — relevant passages retrieved per task."],
+  ["Memory", "Reads + learns in chat/teams/triggers; swarms read only."],
+  ["ask_user", "Solo + team members pause for you; headless runs self-decide and state the assumption."],
+  ["call_agent", "Solo + chat delegate to roster agents; teams re-plan via the coordinator instead."],
+  ["Agent Browser", "Everywhere — permission-gated when you're watching, auto-approved (allowlist it) when headless."],
+  ["Checkpoints & budget", "Team missions only — resume banner + live token meter in Mission Control."],
+];
+
+function ReferenceGuide({ onTour, onStudio }) {
+  const [openFeat, setOpenFeat] = useState(0); // first capability expanded by default
+  return (
+    <div className="agg-ref scroll">
+      <div className="agg-ref-inner">
+        {(onTour || onStudio) && (
+          <div className="agg-subnav">
+            <button onClick={onTour}><Compass size={14} /> Tour &amp; practice</button>
+            <button className="on"><BookOpen size={14} /> Do's &amp; don'ts</button>
+            {onStudio && <button onClick={onStudio}><ArrowRight size={14} /> Go to Studio</button>}
+          </div>
+        )}
+        <div className="agg-kicker"><BookOpen size={13} /> BrainEdge Agent Guide</div>
+        <h1>Do's &amp; don'ts, and how the engine works</h1>
+        <p className="agg-ref-sub">The short reference for getting the most out of your agents — the same guidance as the full written guide, in-app. Skim the do's and don'ts first; the capability map below shows what works where.</p>
+
+        <div className="agg-ref-grid">
+          <div className="agg-ref-card do">
+            <h3><ShieldCheck size={16} /> Do</h3>
+            <ul>{GUIDE_DOS.map((x, i) => <li key={i}>{x}</li>)}</ul>
+          </div>
+          <div className="agg-ref-card dont">
+            <h3><ShieldAlert size={16} /> Don't</h3>
+            <ul>{GUIDE_DONTS.map((x, i) => <li key={i}>{x}</li>)}</ul>
+          </div>
+        </div>
+
+        <div className="agg-ref-sec">
+          <h2>What the engine gives you</h2>
+          <p className="agg-ref-cap" style={{ display: "block", margin: "4px 0 8px", border: "none", background: "none", padding: 0, color: "var(--text-2)", fontSize: 12 }}>Tap any capability to see how to leverage it with your agents.</p>
+          <div className="agg-ref-feats">
+            {GUIDE_FEATURES.map((f, i) => {
+              const I = f.icon;
+              const isOpen = openFeat === i;
+              return (
+                <Fragment key={i}>
+                  <button className={`agg-ref-feat ${isOpen ? "open" : ""}`} onClick={() => setOpenFeat(isOpen ? null : i)} aria-expanded={isOpen}>
+                    <span className="agg-ref-ic"><I size={15} /></span>
+                    <span className="agg-ref-feat-main">
+                      <span className="agg-ref-feat-t">{f.t}</span>
+                      <span className="agg-ref-feat-d">{f.d}</span>
+                    </span>
+                    <ArrowRight size={15} className="agg-ref-feat-cx" />
+                  </button>
+                  {isOpen && (
+                    <div className="agg-ref-detail">
+                      {f.use && <p><b style={{ color: "var(--text-0)" }}>When to use it: </b>{f.use}</p>}
+                      {f.how && <ol className="agg-ref-how">{f.how.map((h, k) => <li key={k}>{h}</li>)}</ol>}
+                      {f.eg && <span className="agg-ref-eg"><b>Example — </b>{f.eg}</span>}
+                    </div>
+                  )}
+                </Fragment>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="agg-ref-sec">
+          <h2>Where each capability works</h2>
+          <dl className="agg-ref-cap" style={{ marginTop: 8 }}>
+            {GUIDE_MATRIX.flatMap(([k, v], i) => [<dt key={"k" + i}>{k}</dt>, <dd key={"v" + i}>{v}</dd>])}
+          </dl>
+        </div>
+
+        <div className="ag-hint">Safety note: agents never fill passwords or payment fields, headless runs auto-approve their own tools (give them only what you trust), and web-page text is always treated as untrusted data — not instructions.</div>
+      </div>
+    </div>
+  );
+}
+
+// "2h ago" style timestamps for run history.
+const rel = (ts) => {
+  if (!ts) return "";
+  const d = Date.now() - ts;
+  if (d < 60000) return "just now";
+  if (d < 3600000) return Math.floor(d / 60000) + "m ago";
+  if (d < 86400000) return Math.floor(d / 3600000) + "h ago";
+  return new Date(ts).toLocaleDateString();
+};
+const SOURCE_LABEL = { chat: "chat", team: "team", schedule: "scheduled", webhook: "webhook", handoff: "handoff", swarm: "swarm" };
+
+export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, activeValue, onSelectModel, onRefresh }) {
   const [agents, setAgents] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [recentRuns, setRecentRuns] = useState([]); // past agent/team conversations (scoped to this screen)
+  const [browserOn, setBrowserOn] = useState(true); // admin master switch for the Agent Browser feature
+  const [stats, setStats] = useState({});           // agentId → { missions, cleanPct, lastAt } (track record)
+  const [swarmAgent, setSwarmAgent] = useState(null); // agent for the swarm modal, or null
   const [tab, setTab] = useState("agents");         // "agents" | "teams"
   const [view, setView] = useState(() => {          // "guide" | "list" | "studio" | "team"
     try { return localStorage.getItem(GUIDE_SEEN_KEY) ? "list" : "guide"; } catch { return "guide"; }
   });
   const [chapter, setChapter] = useState(0);        // guide: which story chapter is on stage (0-3)
+  const [guideView, setGuideView] = useState("tour"); // guide: "tour" (learn + practice) | "reference" (do's & don'ts)
   const [needModel, setNeedModel] = useState(false); // gate: a model must be selected before building agents
   const [tdraft, setTdraft] = useState(null);       // team being edited: { id, name, identity, mode, members: [agentId] }
   const [tErr, setTErr] = useState("");
@@ -145,7 +408,28 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
   const [tBusy, setTBusy] = useState(false);
   const tEndRef = useRef(null);
 
-  useEffect(() => { bridge.getSettings().then((s) => { setAgents((s && s.agents) || []); setTeams((s && s.teams) || []); }).catch(() => {}); }, []);
+  useEffect(() => {
+    Promise.all([bridge.getSettings(), bridge.authMe ? bridge.authMe().catch(() => null) : null]).then(([s, me]) => {
+      setAgents((s && s.agents) || []);
+      setTeams((s && s.teams) || []);
+      const admin = !!(me && me.admin) || !!(s && s.account && s.account.admin);
+      // Admins always keep the Browser capability; others lose it when the master switch is off.
+      setBrowserOn(admin || !s || !s.agentBrowser || s.agentBrowser.enabled !== false);
+    }).catch(() => {});
+  }, []);
+  // Track record: per-agent mission stats power the "12 missions · 92% clean" line.
+  const loadStats = () => { if (bridge.getAgentStats) bridge.getAgentStats().then((x) => setStats(x || {})).catch(() => {}); };
+  useEffect(() => { loadStats(); }, [view]);
+  // Agent/team conversations live here (scoped out of the general chat recents).
+  const loadRuns = () => {
+    if (!bridge.listSessions) return;
+    Promise.all([
+      bridge.listSessions("chat", "only").catch(() => []),
+      bridge.listSessions("cowork", "only").catch(() => []),
+    ]).then(([a, b]) => setRecentRuns([...(a || []), ...(b || [])].sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0)).slice(0, 12)))
+      .catch(() => {});
+  };
+  useEffect(() => { if (view === "list") loadRuns(); }, [view]);
   useEffect(() => { dEndRef.current && dEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [dMsgs, dBusy]);
   useEffect(() => { tEndRef.current && tEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [tMsgs, tBusy]);
 
@@ -160,6 +444,9 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
     setSaveErr(""); setSaveBusy(true);
     try {
       const a = { ...draft, name: draft.name.trim() || "Untitled agent", updatedAt: Date.now() };
+      // Versioning: snapshot the agent AS IT WAS before this overwrite (last 10 kept).
+      const prev = agents.find((x) => x.id === a.id);
+      if (prev && bridge.snapshotAgentVersion) { try { await bridge.snapshotAgentVersion(prev); } catch {} }
       const next = agents.some((x) => x.id === a.id) ? agents.map((x) => (x.id === a.id ? a : x)) : [...agents, a];
       await persist(next);
       setDraft(a);
@@ -173,6 +460,19 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
   };
 
   const removeAgent = async (id) => { await persist(agents.filter((a) => a.id !== id)); };
+
+  // .agent share files — import an agent someone exported (fresh id, model pin stripped).
+  const importAgentFile = async () => {
+    if (!bridge.importAgent) return;
+    const r = await bridge.importAgent();
+    if (r && r.agent) { await persist([...agents, { ...r.agent, identity: r.agent.identity || autoIdentity(r.agent.id) }]); }
+    else if (r && r.error) alert(r.error);
+  };
+  const exportAgentFile = async (agent) => {
+    if (!bridge.exportAgent) return;
+    const r = await bridge.exportAgent(agent);
+    if (r && r.error) setSaveErr(r.error);
+  };
 
   // ---- teams (multi-agent) ----
   const persistTeams = async (next) => {
@@ -251,7 +551,7 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
         name: String(c.name || d.name || "").slice(0, 60),
         description: String(c.description || "").slice(0, 200),
         instructions: String(c.instructions || ""),
-        tools: { files: !!(c.tools && c.tools.files), shell: !!(c.tools && c.tools.shell), connectors: !!(c.tools && c.tools.connectors), skills: !!(c.tools && c.tools.skills) },
+        tools: { files: !!(c.tools && c.tools.files), shell: !!(c.tools && c.tools.shell), connectors: !!(c.tools && c.tools.connectors), skills: !!(c.tools && c.tools.skills), browser: !!(c.tools && c.tools.browser) },
         identity: d.identity || autoIdentity(c.name || d.id),
       }));
       setDMsgs((m) => [...m, { role: "designer", text: String(out.reply || "Updated.") }]);
@@ -283,15 +583,17 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
   };
 
   // Per-agent knowledge: text files the agent permanently knows (GPTs-style).
+  // RAG-lite retrieval means large libraries are fine — relevant passages are
+  // selected per task, so the cap is generous (24 files).
   const knFileRef = useRef(null);
   const addKnowledgeFiles = (files) => {
-    const list = Array.from(files || []).slice(0, 8);
+    const list = Array.from(files || []).slice(0, 24);
     for (const f of list) {
       if (f.size > 1024 * 1024) { setSaveErr(`"${f.name}" is over 1MB — split it or trim it first.`); continue; }
       const reader = new FileReader();
       reader.onload = () => setDraft((d) => ({
         ...d,
-        knowledge: [...(d.knowledge || []), { name: f.name, content: String(reader.result || "").slice(0, 200000) }].slice(0, 8),
+        knowledge: [...(d.knowledge || []), { name: f.name, content: String(reader.result || "").slice(0, 200000) }].slice(0, 24),
       }));
       reader.readAsText(f);
     }
@@ -342,7 +644,7 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
             <Arrow />
             <Node color="#8b7cf6" glyph="¶" label="Instructions" sub="how it thinks & answers" />
             <Arrow />
-            <Node color="#f4a261" glyph="⚙" label="Capabilities" sub="files · terminal · connectors · skills" />
+            <Node color="#f4a261" glyph="⚙" label="Capabilities" sub="files · terminal · connectors · skills · browser" />
             <Arrow />
             <Node color="#5fb573" glyph="◇" label="Model" sub="any model from your selector" />
           </div>
@@ -395,8 +697,46 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
           </div>
         ),
       },
+      {
+        title: "Memory, triggers & track record", sub: "works while you sleep",
+        lead: <>Agents used to start every mission amnesiac. Now each one <b>learns</b>: after a mission it keeps durable notes — your preferences, your corrections, stable facts — and applies them next time (view or edit them in the Blueprint). Wire an agent to the <b>Scheduler</b> or a <b>webhook</b> and it runs without you: overnight briefs, inbox triage, monitors. Every run lands on its <b>track record</b> — "12 missions · 92% clean" — right on the card.</>,
+        note: <><Clock size={12} /> Scheduler → New task → "Run an agent". Webhook triggers live at the bottom of the Scheduler page.</>,
+        diagram: (
+          <div className="agg-flow">
+            <Node glyph="⏰" color="#f4a261" label="Trigger" sub="schedule · webhook · you" />
+            <Arrow label="fires" />
+            <Node glyph="✦" label="Agent" sub="instructions + memory" />
+            <Arrow label="delivers" />
+            <Node glyph="✓" color="#5fb573" label="Result" sub="+ a new memory · + run history" />
+          </div>
+        ),
+      },
+      {
+        title: "Handoffs, questions & resumable missions", sub: "smart collaboration",
+        lead: <>Mid-task, any agent can <b>call another agent</b> on your roster as a tool — your researcher recruits your fact-checker by itself. When an agent hits a genuine decision it can <b>ask you</b>: the mission pauses, you answer, work resumes. In Managed teams the coordinator <b>reviews</b> the first wave and launches follow-ups ("Scout found nothing → send Radar"), even recruiting from your bench. Every step is <b>checkpointed</b> — a crash offers "Resume mission", not "start over" — and a per-team <b>token budget</b> hard-stops runaway missions with a live meter in Mission Control. Need volume instead? <b>Swarm</b> one agent over a whole list from its card.</>,
+        note: <><MessageCircleQuestion size={12} /> Try simulation 8 — an ambiguous brief triggers the question flow naturally.</>,
+        diagram: (
+          <div className="agg-flow">
+            <Node glyph="✦" label="Agent A" sub="working…" />
+            <Arrow label="call_agent" />
+            <Node glyph="◆" color="#13c2d6" label="Agent B" sub="sub-task" />
+            <Arrow label="ask_user" />
+            <Node glyph="🧑" color="var(--text-1)" label="You" sub="one answer" />
+            <Arrow label="resume" />
+            <Node glyph="✓" color="#5fb573" label="Deliverable" sub="checkpointed all the way" />
+          </div>
+        ),
+      },
     ];
     const ch = chapters[chapter];
+    // Reference (do's & don'ts) is a full-width page; the tour is the two-pane learn+practice.
+    if (guideView === "reference") {
+      return (
+        <div className="agg-wrap" style={{ display: "block", overflow: "hidden" }}>
+          <ReferenceGuide onTour={() => setGuideView("tour")} onStudio={() => leaveGuide("list")} />
+        </div>
+      );
+    }
     return (
       <div className="agg-wrap">
         {/* LEFT — the story, one chapter at a time */}
@@ -411,6 +751,11 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
             them to work forever</b> — each with a name, a face, its own instructions and tools.
             Build one in a minute. Then build a team of them.
           </p>
+
+          <div className="agg-subnav">
+            <button className="on"><Compass size={14} /> Tour &amp; practice</button>
+            <button onClick={() => setGuideView("reference")}><BookOpen size={14} /> Do's &amp; don'ts</button>
+          </div>
 
           <div className="agg-rail">
             {chapters.map((c, i) => (
@@ -442,8 +787,8 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
         <div className="agg-right scroll">
           <div className="agg-right-head">
             <div className="agg-kicker" style={{ marginBottom: 8 }}><Play size={12} /> Flight school</div>
-            <h2>Fly the simulations</h2>
-            <p>Five guided missions, easiest first. Each one teaches an architecture by running it for real.</p>
+            <h2>Build the workforce for BeanBox</h2>
+            <p>One story, nine chapters. You're standing up the AI workforce for <b>BeanBox</b>, a small coffee-subscription business. Start at Chapter 1 and work down: each mission hires the next worker (or team), reuses the ones you built before, and teaches a new way agents work — by running it for real. By Chapter 9 you've gone from your first hire to a whole running operation.</p>
           </div>
           <div className="agg-sims">
             {SIMULATIONS.map((s) => (
@@ -455,7 +800,9 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
                     <div className="agg-sim-meta">{s.arch} · {s.time}</div>
                   </div>
                 </div>
+                {s.goal && <div className="agg-sim-goal"><Target size={14} /><span><b>Goal:</b> {s.goal}</span></div>}
                 <p className="agg-sim-story">{s.story}</p>
+                <div className="agg-sim-label">Steps</div>
                 <ol className="agg-sim-steps">{s.steps.map((st, i) => <li key={i}>{st}</li>)}</ol>
                 <button className="btn ghost agg-sim-go" onClick={() => runSimulation(s)}><Play size={12} /> {s.kind === "agent" && s.designer ? "Start — Designer pre-filled" : s.kind === "teams" ? "Open Teams" : "Open Agents"}</button>
               </div>
@@ -489,6 +836,9 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
           <span className="ags-tab-div" />
           <button className={`ags-tab ${tab === "agents" ? "on" : ""}`} onClick={() => setTab("agents")}><User size={13} /> Agent</button>
           <button className={`ags-tab ${tab === "teams" ? "on" : ""}`} onClick={() => setTab("teams")}><Users size={13} /> Agents Team</button>
+          {tab === "agents" && bridge.importAgent && (
+            <button className="ags-tab" style={{ marginLeft: "auto" }} title="Import a .agent file someone shared with you" onClick={importAgentFile}><Upload size={13} /> Import .agent</button>
+          )}
         </div>
 
         {tab === "teams" && (
@@ -554,15 +904,25 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
                 {toolPills(a.tools)}
                 {a.model && <span className="ag-pill ag-pill-model"><Cpu size={11} /> {a.model.split("::")[1] || a.model}</span>}
               </div>
+              {stats[a.id] && stats[a.id].missions > 0 && (
+                <div className="ags-card-role" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}
+                  title={`${stats[a.id].missions} missions recorded · ${stats[a.id].cleanPct}% finished clean · ~${Math.round((stats[a.id].tokens || 0) / 1000)}k tokens total`}>
+                  <BadgeCheck size={12} style={{ color: stats[a.id].cleanPct >= 80 ? "var(--ok)" : "var(--text-2)", flexShrink: 0 }} />
+                  {stats[a.id].missions} mission{stats[a.id].missions === 1 ? "" : "s"} · {stats[a.id].cleanPct}% clean · last {rel(stats[a.id].lastAt)}
+                </div>
+              )}
               <div className="ag-card-actions">
                 <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
                 <button className="btn ghost" onClick={() => openStudio(a)}><Pencil size={13} /> Open in Studio</button>
+                {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
                 <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
               </div>
             </div>
           ))}
         </div>
         )}
+
+        {swarmAgent && <SwarmModal agent={swarmAgent} onClose={() => { setSwarmAgent(null); loadStats(); }} />}
 
         {tab === "agents" && agents.length === 0 && (
           <div className="ags-crew">
@@ -583,6 +943,25 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {onOpenSession && recentRuns.length > 0 && (
+          <div className="ags-runs">
+            <div className="ags-runs-head"><History size={13} /> Recent agent activity</div>
+            <div className="ags-runs-list">
+              {recentRuns.map((r) => (
+                <button key={r.id} className="ags-run" onClick={() => onOpenSession(r.id)} title={r.title}>
+                  <span className="ags-run-ic">{r.teamName ? <Users size={13} /> : <User size={13} />}</span>
+                  <span className="ags-run-main">
+                    <span className="ags-run-title">{r.title || "Untitled"}</span>
+                    <span className="ags-run-meta">{r.teamName || r.agentName || "agent"} · {rel(r.updatedAt)}{r.mode === "cowork" ? " · folder" : ""}</span>
+                  </span>
+                  <ArrowRight size={13} style={{ color: "var(--text-2)" }} />
+                </button>
+              ))}
+            </div>
+            <div className="ag-hint" style={{ margin: "8px 0 0" }}>These conversations stay here on the Agents screen, out of your general chat history. Open one to pick up where the agent left off.</div>
           </div>
         )}
       </div>
@@ -654,8 +1033,20 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
           </div>
         </div>
 
+        <div className="ag-field" style={{ marginTop: 14 }}>
+          <label>Mission budget (cost guardrail)</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input className="model-search" type="number" min="0" step="10" style={{ marginBottom: 0, width: 120 }}
+              value={tdraft.budgetTokens ? Math.round(tdraft.budgetTokens / 1000) : ""}
+              placeholder="off"
+              onChange={(e) => setTdraft({ ...tdraft, budgetTokens: Math.max(0, Number(e.target.value) || 0) * 1000 })} />
+            <span className="ag-tool-note">thousand tokens per mission (estimated). Mission Control shows a live meter; the mission hard-stops at the cap. Leave empty for no cap.</span>
+          </div>
+        </div>
+
         <div className="ag-hint" style={{ marginTop: 16 }}>
           Teams run in chat: brief them once, watch every agent work live in Mission Control, and get one finished deliverable. Up to 6 agents run per mission.
+          In Managed mode the coordinator also <b>reviews results</b> after the first wave and can send follow-up sub-tasks — even recruiting agents from your bench beyond this line-up.
         </div>
       </div>
     );
@@ -718,7 +1109,7 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
               <textarea rows={7} value={draft.instructions} onChange={(e) => setDraft({ ...draft, instructions: e.target.value })} />
               <label>Capabilities</label>
               <div className="ags-bp-tools">
-                {TOOL_DEFS.map((t) => {
+                {TOOL_DEFS.filter((t) => t.key !== "browser" || browserOn).map((t) => {
                   const I = t.icon; const on = !!draft.tools[t.key];
                   return (
                     <button key={t.key} className={`ag-pill ags-bp-tool ${on ? "on" : ""}`} title={t.note}
@@ -728,7 +1119,16 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
                   );
                 })}
               </div>
-              <label>Knowledge ({(draft.knowledge || []).length}/8) — files this agent always knows</label>
+              {!browserOn && <div className="ag-hint" style={{ margin: "2px 0 6px" }}>The Agent Browser is turned off by your admin (Settings → Agent Browser), so the Browser capability is unavailable.</div>}
+              {browserOn && draft.tools.browser && (
+                <>
+                  <label>Allowed sites (optional) — domains the browser may visit</label>
+                  <input value={draft.browserAllow || ""} placeholder="e.g. github.com, news.ycombinator.com — empty = any site"
+                    onChange={(e) => setDraft({ ...draft, browserAllow: e.target.value })} />
+                  <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Navigation, clicks and form-fills ask your permission; passwords and payment fields are always refused.</div>
+                </>
+              )}
+              <label>Knowledge ({(draft.knowledge || []).length}/24) — files this agent always knows</label>
               <div className="ags-kn">
                 {(draft.knowledge || []).map((k, i) => (
                   <span key={i} className="ag-pill" title={`${Math.round((k.content || "").length / 1000)}k chars`}>
@@ -740,7 +1140,7 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
                 <input ref={knFileRef} type="file" multiple accept=".txt,.md,.markdown,.csv,.json,.log,.yml,.yaml,.html,.xml,.js,.ts,.py" style={{ display: "none" }}
                   onChange={(e) => { addKnowledgeFiles(e.target.files); e.target.value = ""; }} />
               </div>
-              <div className="ag-hint" style={{ margin: 0 }}>Text files (md, txt, csv, json…). For PDFs, add them to a Project instead — Projects parse PDF/Word.</div>
+              <div className="ag-hint" style={{ margin: 0 }}>Text files (md, txt, csv, json…). Large libraries are retrieved per task — only the relevant passages are injected. For PDFs, add them to a Project instead — Projects parse PDF/Word.</div>
               <label>Pinned model</label>
               <div className="ag-model-row">
                 <ModelPicker value={draft.model || undefined} groups={groups} onChange={(v) => setDraft({ ...draft, model: v })} onRefresh={onRefresh} agenticOnly />
@@ -749,6 +1149,7 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
                   : <span className="ag-hint" style={{ margin: 0 }}>Unpinned — uses the live selector.</span>}
               </div>
               {(draft.tools.files || draft.tools.shell) && <div className="ag-hint">Works in a folder — you'll pick it when the real session starts.</div>}
+              <BlueprintExtras draft={draft} setDraft={setDraft} onExport={() => exportAgentFile(draft)} />
             </div>
           )}
         </div>
@@ -781,6 +1182,214 @@ export default function Agents({ onLaunch, onLaunchTeam, groups, activeValue, on
             <button className="ag-gen" aria-label="Send test message" disabled={tBusy || !tInput.trim() || !canRun} onClick={benchSend}><Send size={13} /></button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Blueprint extras: memory · track record · versions · export ----------------
+// Desktop-only sections (each hides itself when the bridge method isn't available).
+function BlueprintExtras({ draft, setDraft, onExport }) {
+  const [memNotes, setMemNotes] = useState(null);   // null = not loaded; array of {at,text}
+  const [memEdit, setMemEdit] = useState(null);     // editable text, or null when not editing
+  const [runs, setRuns] = useState(null);
+  const [versions, setVersions] = useState(null);
+  const [open, setOpen] = useState({ memory: false, runs: false, versions: false });
+  const memoryOn = draft.memory !== false;
+
+  useEffect(() => {
+    setMemNotes(null); setRuns(null); setVersions(null); setMemEdit(null);
+    if (!draft.id) return;
+    if (bridge.getAgentMemory) bridge.getAgentMemory(draft.id).then((m) => setMemNotes((m && m.notes) || [])).catch(() => setMemNotes([]));
+    if (bridge.getAgentHistory) bridge.getAgentHistory(draft.id).then((r) => setRuns(r || [])).catch(() => setRuns([]));
+    if (bridge.listAgentVersions) bridge.listAgentVersions(draft.id).then((v) => setVersions(v || [])).catch(() => setVersions([]));
+  }, [draft.id]);
+
+  const saveMemory = async () => {
+    const notes = (memEdit || "").split("\n").map((l) => l.replace(/^[-•]\s*/, "").trim()).filter(Boolean);
+    if (bridge.setAgentMemory) { const m = await bridge.setAgentMemory(draft.id, notes); setMemNotes((m && m.notes) || []); }
+    setMemEdit(null);
+  };
+  const clearMemory = async () => {
+    if (bridge.clearAgentMemory) await bridge.clearAgentMemory(draft.id);
+    setMemNotes([]); setMemEdit(null);
+  };
+
+  if (!bridge.getAgentMemory && !bridge.getAgentHistory) return null;
+
+  const Section = ({ id, icon: I, label, count, children }) => (
+    <>
+      <button className="ags-bp-toggle" style={{ marginTop: 8 }} onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>
+        <I size={12} /> {label}{count != null ? ` (${count})` : ""} {open[id] ? "▾" : "▸"}
+      </button>
+      {open[id] && <div style={{ padding: "6px 2px 2px" }}>{children}</div>}
+    </>
+  );
+
+  return (
+    <div style={{ marginTop: 10, borderTop: "1px solid color-mix(in srgb, currentColor 12%, transparent)", paddingTop: 8 }}>
+      {/* Memory — what this agent has learned */}
+      {bridge.getAgentMemory && (
+        <Section id="memory" icon={Brain} label={`Memory — what ${draft.name.trim() || "this agent"} has learned`} count={memNotes ? memNotes.length : undefined}>
+          <label className="chip" style={{ cursor: "pointer", display: "inline-flex", marginBottom: 8 }}>
+            <input type="checkbox" checked={memoryOn} onChange={() => setDraft({ ...draft, memory: memoryOn ? false : undefined })} style={{ marginRight: 6 }} />
+            Learn across missions
+          </label>
+          {!memoryOn && <div className="ag-hint" style={{ margin: "0 0 6px" }}>Memory is off — past notes are kept but not used, and nothing new is learned.</div>}
+          {memEdit !== null ? (
+            <>
+              <textarea rows={6} value={memEdit} onChange={(e) => setMemEdit(e.target.value)} placeholder="One learning per line" />
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                <button className="btn primary" onClick={saveMemory}>Save memory</button>
+                <button className="btn ghost" onClick={() => setMemEdit(null)}>Cancel</button>
+              </div>
+            </>
+          ) : (
+            <>
+              {(memNotes || []).length === 0 && <div className="ag-hint" style={{ margin: 0 }}>Nothing learned yet — after each mission the agent extracts durable learnings (your preferences, corrections, stable facts) and applies them next time.</div>}
+              {(memNotes || []).slice().reverse().map((n, i) => (
+                <div key={i} style={{ fontSize: 12, padding: "4px 0", borderBottom: "1px dashed color-mix(in srgb, currentColor 10%, transparent)" }}>• {n.text}</div>
+              ))}
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <button className="btn ghost" onClick={() => setMemEdit((memNotes || []).map((n) => n.text).join("\n"))}><Pencil size={12} /> Edit</button>
+                {(memNotes || []).length > 0 && <button className="btn ghost ag-del" onClick={clearMemory}><Trash2 size={12} /> Forget everything</button>}
+              </div>
+            </>
+          )}
+        </Section>
+      )}
+
+      {/* Track record — persisted run history */}
+      {bridge.getAgentHistory && (
+        <Section id="runs" icon={History} label="Track record" count={runs ? runs.length : undefined}>
+          {(runs || []).length === 0 && <div className="ag-hint" style={{ margin: 0 }}>No missions recorded yet — every chat run, team mission, scheduled trigger, webhook and swarm lands here.</div>}
+          {(runs || []).slice(0, 10).map((r, i) => (
+            <div key={i} style={{ fontSize: 12, padding: "5px 0", borderBottom: "1px dashed color-mix(in srgb, currentColor 10%, transparent)", display: "flex", gap: 8, alignItems: "baseline" }}>
+              <span style={{ color: r.ok ? "var(--ok)" : "var(--danger)", flexShrink: 0 }}>{r.ok ? "✓" : "✗"}</span>
+              <span style={{ color: "var(--text-2)", flexShrink: 0 }}>{rel(r.at)} · {SOURCE_LABEL[r.source] || r.source}{r.tokens ? ` · ~${(r.tokens / 1000).toFixed(1)}k tok` : ""}</span>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.summary}</span>
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {/* Versions — rollback to an earlier blueprint */}
+      {bridge.listAgentVersions && (
+        <Section id="versions" icon={Clock} label="Versions" count={versions ? versions.length : undefined}>
+          {(versions || []).length === 0 && <div className="ag-hint" style={{ margin: 0 }}>No earlier versions yet — each Studio save keeps the previous blueprint (last 10).</div>}
+          {(versions || []).map((v, i) => (
+            <div key={i} style={{ fontSize: 12, padding: "5px 0", display: "flex", gap: 8, alignItems: "center", borderBottom: "1px dashed color-mix(in srgb, currentColor 10%, transparent)" }}>
+              <span style={{ color: "var(--text-2)", flexShrink: 0 }}>{new Date(v.at).toLocaleString()}</span>
+              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{(v.agent.description || v.agent.instructions || "").slice(0, 60)}</span>
+              <button className="btn ghost" style={{ padding: "2px 8px" }}
+                title="Load this version into the Studio (Save to keep it)"
+                onClick={() => setDraft({ ...draft, name: v.agent.name, description: v.agent.description, instructions: v.agent.instructions, tools: { ...v.agent.tools }, knowledge: v.agent.knowledge || [], identity: v.agent.identity || draft.identity })}>
+                <RotateCcw size={11} /> Restore
+              </button>
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {/* Share */}
+      {bridge.exportAgent && (
+        <div style={{ marginTop: 10 }}>
+          <button className="btn ghost" onClick={onExport}><Download size={12} /> Export .agent file</button>
+          <span className="ag-hint" style={{ margin: "0 0 0 8px" }}>Portable: instructions, capabilities, knowledge. Memory and model pins stay private.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------- Swarm — run one agent over a list ----------------
+function SwarmModal({ agent, onClose }) {
+  const [items, setItems] = useState("");
+  const [template, setTemplate] = useState("");
+  const [conc, setConc] = useState(3);
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState({});   // index → { status, item, output }
+  const [report, setReport] = useState("");
+  const [err, setErr] = useState("");
+  const [copied, setCopied] = useState(false);
+  const swarmIdRef = useRef(null);
+
+  useEffect(() => {
+    if (!bridge.onSwarmEvent) return;
+    return bridge.onSwarmEvent((m) => {
+      setProgress((p) => ({ ...p, [m.i]: { status: m.status, item: m.item, output: m.output } }));
+    });
+  }, []);
+
+  const lines = items.split("\n").map((s) => s.trim()).filter(Boolean);
+  const run = async () => {
+    if (!lines.length || running) return;
+    setRunning(true); setErr(""); setReport(""); setProgress({});
+    try {
+      const r = await bridge.runSwarm({ agentId: agent.id, items: lines, template: template || "Do your job on this item: {item}", concurrency: conc });
+      if (r && r.error) setErr(r.error);
+      else if (r) { swarmIdRef.current = r.swarmId; setReport(r.report || ""); }
+    } catch (e) { setErr(String((e && e.message) || e)); }
+    finally { setRunning(false); }
+  };
+  const cancel = async () => { if (bridge.cancelSwarm) await bridge.cancelSwarm(swarmIdRef.current); setRunning(false); };
+  const copyReport = async () => { try { await navigator.clipboard.writeText(report); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} };
+  const doneCount = Object.values(progress).filter((p) => p.status === "done" || p.status === "failed").length;
+
+  return (
+    <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget && !running) onClose(); }}>
+      <div className="pj-create" style={{ width: 680, maxHeight: "84vh", overflow: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Layers size={16} style={{ color: "var(--accent)" }} />
+          <h2 style={{ flex: 1, margin: 0, fontSize: 16 }}>Swarm — {agent.name || "agent"} × a whole list</h2>
+          <button className="icon-btn" onClick={onClose} disabled={running}><X size={16} /></button>
+        </div>
+        <p className="mo-sub" style={{ margin: "6px 0 12px" }}>
+          One instance of {agent.name || "this agent"} per line, running {conc} at a time. Use <code>{"{item}"}</code> in the brief where each line should go.
+        </p>
+
+        <label>The list (one item per line — leads, URLs, tickets, rows…)</label>
+        <textarea className="model-search" rows={5} style={{ resize: "vertical", fontFamily: "var(--mono)", fontSize: 12 }}
+          value={items} disabled={running} placeholder={"acme.com\nglobex.com\ninitech.com"} onChange={(e) => setItems(e.target.value)} />
+
+        <label>Brief per item</label>
+        <textarea className="model-search" rows={2} style={{ resize: "vertical" }}
+          value={template} disabled={running} placeholder='e.g. "Research {item} and give me a 3-bullet company profile."' onChange={(e) => setTemplate(e.target.value)} />
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
+          <span className="mo-sub">Parallel</span>
+          <select className="model-search" style={{ marginBottom: 0, width: 70 }} value={conc} disabled={running} onChange={(e) => setConc(Number(e.target.value))}>
+            {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <span className="mo-sub">{lines.length} item{lines.length === 1 ? "" : "s"}{running ? ` · ${doneCount}/${lines.length} done` : ""}</span>
+          <span style={{ flex: 1 }} />
+          {running
+            ? <button className="btn" onClick={cancel}>Stop</button>
+            : <button className="btn primary" disabled={!lines.length} onClick={run}><Play size={13} /> Run swarm</button>}
+        </div>
+        {err && <div className="ag-err" style={{ marginTop: 8 }}>{err}</div>}
+
+        {Object.keys(progress).length > 0 && (
+          <div style={{ marginTop: 12, maxHeight: 220, overflow: "auto", border: "1px solid color-mix(in srgb, currentColor 12%, transparent)", borderRadius: 8, padding: 8 }}>
+            {Object.entries(progress).sort((a, b) => Number(a[0]) - Number(b[0])).map(([i, p]) => (
+              <div key={i} style={{ fontSize: 12, padding: "4px 0", display: "flex", gap: 8, alignItems: "baseline" }}>
+                <span style={{ flexShrink: 0 }}>{p.status === "working" ? <Loader2 size={11} className="ag-spin" /> : p.status === "done" ? "✓" : "✗"}</span>
+                <span style={{ flexShrink: 0, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-2)" }}>{p.item}</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.output || (p.status === "working" ? "working…" : "")}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {report && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <label style={{ flex: 1 }}>Compiled report</label>
+              <button className="btn ghost" onClick={copyReport}>{copied ? <Check size={12} /> : "Copy"}</button>
+            </div>
+            <textarea className="model-search" rows={8} readOnly value={report} style={{ fontFamily: "var(--mono)", fontSize: 11 }} />
+          </div>
+        )}
       </div>
     </div>
   );

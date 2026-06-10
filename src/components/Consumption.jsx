@@ -74,14 +74,16 @@ export default function Consumption() {
             ); })}
           </div>
 
-          <div className="cons-panel">
-            <div className="cons-panel-h"><TrendingUp size={14} /> Activity over time <span className="cons-panel-sub">tokens per day</span></div>
-            <AreaChart byDay={d.byDay} days={days} />
-          </div>
-
-          <div className="cons-panel">
-            <div className="cons-panel-h"><CalendarDays size={14} /> Daily activity <span className="cons-panel-sub">last 14 weeks</span></div>
-            <Heatmap byDay={d.byDay} />
+          {/* On wide windows these sit side by side (cons-wide2); on narrow they stack. */}
+          <div className="cons-wide2">
+            <div className="cons-panel">
+              <div className="cons-panel-h"><TrendingUp size={14} /> Activity over time <span className="cons-panel-sub">tokens per day</span></div>
+              <AreaChart byDay={d.byDay} days={days} />
+            </div>
+            <div className="cons-panel">
+              <div className="cons-panel-h"><CalendarDays size={14} /> Daily activity <span className="cons-panel-sub">last 14 weeks</span></div>
+              <Heatmap byDay={d.byDay} />
+            </div>
           </div>
 
           <div className="cons-2col">

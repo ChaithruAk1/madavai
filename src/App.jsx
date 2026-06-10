@@ -1,6 +1,6 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
-import { useEffect, useRef, useState, useCallback } from "react";
-import { FolderOpen, FolderKanban, Smartphone, Bot, X } from "lucide-react";
+import { useEffect, useRef, useState, useCallback, lazy, Suspense } from "react";
+import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestion, Volume2, VolumeX } from "lucide-react";
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
@@ -20,6 +20,12 @@ import StudioLauncher from "./components/StudioLauncher.jsx";
 import Agents from "./components/Agents.jsx";
 import TeamOps from "./components/TeamOps.jsx";
 import Onboarding from "./components/Onboarding.jsx";
+// ADMIN-ONLY, BUILD-GATED: the Test Center UI (and the functional sweep it imports) is
+// compiled in ONLY when the build sets VITE_INCLUDE_QA=1 (dev + `npm run build:admin`).
+// The plain `npm run build` used for installers and web deploys statically drops this
+// branch, so the QA interface never exists in what end users download.
+const QA_IN_BUILD = import.meta.env.VITE_INCLUDE_QA === "1";
+const TestCenter = QA_IN_BUILD ? lazy(() => import("./components/TestCenter.jsx")) : null;
 import TerminalPanel from "./components/TerminalPanel.jsx";
 import EnvPicker from "./components/EnvPicker.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
@@ -57,7 +63,11 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [agentCtx, setAgentCtx] = useState(null); // active custom agent for this session ({id,name,instructions,tools,model})
   const [teamCtx, setTeamCtx] = useState(null);   // active agent team ({name,mode,members:[agents]})
-  const [teamRun, setTeamRun] = useState(null);   // live mission state for TeamOps: { startedAt, steps, plan, synth, finished }
+  const [teamRun, setTeamRun] = useState(null);   // live mission state for TeamOps: { startedAt, steps, plan, synth, finished, budget }
+  const [ask, setAsk] = useState(null);           // pending mid-mission question from an agent ({requestId, question, options})
+  const [askText, setAskText] = useState("");
+  const askQueue = useRef([]);                    // queued questions (parallel members can ask at once)
+  const [missionPending, setMissionPending] = useState(null); // unfinished team-mission checkpoint for this conversation
   const sessionRef = useRef(null);
   const studioSeed = useRef(null); // pending Studio starter prompt, sent once we're in chat mode
   const agentSeed = useRef(null);  // pending { agent, prompt } from the Agents launcher
@@ -66,6 +76,8 @@ export default function App() {
   const chatRef = useRef(null);
   const streamOpen = useRef(false);
   const lastInfoRef = useRef(null); // real {model, provider, kind} from the backend init event
+  const replyBufRef = useRef("");   // current turn's assistant text (for spoken replies)
+  const settingsRef = useRef(null); // settings mirror readable inside the stable onEvent callback
   const modeCacheRef = useRef({}); // per-mode {convId, timeline} so navigating away/back restores
 
   const PRIMARY = ["chat", "cowork", "code"];
@@ -108,6 +120,7 @@ export default function App() {
       case "assistant_delta": {
         const text = e.data.text ?? "";
         if (!text) break;
+        replyBufRef.current += text;
         setStreaming(true);
         setTimeline((tl) => {
           const last = tl[tl.length - 1];
@@ -155,6 +168,14 @@ export default function App() {
         // modal at a time and feed the next when the current one is resolved.
         setPerm((cur) => { if (cur) { permQueue.current.push(e.data); return cur; } return e.data; });
         break;
+      case "user_question":
+        // Mid-mission "ask the human": the agent paused; answering resumes it.
+        setAsk((cur) => { if (cur) { askQueue.current.push(e.data); return cur; } return e.data; });
+        break;
+      case "budget":
+        // Live token meter for Mission Control's cost guardrail.
+        setTeamRun((r) => (r ? { ...r, budget: e.data } : r));
+        break;
       case "permission_denied":
         setPerm((cur) => (cur && cur.toolUseId === e.data.id) ? (permQueue.current.shift() || null) : cur);
         setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, status: "deny" } : it));
@@ -163,6 +184,17 @@ export default function App() {
         streamOpen.current = false; setStreaming(false); setBusy(false);
         setTeamRun((r) => r ? { ...r, finished: true, synth: r.synth === "working" ? "done" : r.synth } : r);
         setHistRefresh((n) => n + 1); // refresh the saved-chat list (new title / new convo)
+        // Spoken replies (voice toggle): read the final answer aloud via OS speech synthesis.
+        if (settingsRef.current && settingsRef.current.voiceSpeak && replyBufRef.current && window.speechSynthesis) {
+          const speech = replyBufRef.current
+            .replace(/```[\s\S]*?```/g, " (code omitted) ")
+            .replace(/[*_#>`|]/g, "").replace(/\[(.*?)\]\(.*?\)/g, "$1")
+            .replace(/\s+/g, " ").trim().slice(0, 1400);
+          if (speech) {
+            try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(speech)); } catch {}
+          }
+        }
+        replyBufRef.current = "";
         break;
       case "error":
         streamOpen.current = false; setStreaming(false); setBusy(false);
@@ -194,22 +226,37 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement;
     const raw = ((settings && settings.accent) || "default").trim();
-    const clearVars = () => { ["--accent", "--accent-rgb", "--accent-2", "--accent2-rgb"].forEach((v) => root.style.removeProperty(v)); };
+    const clearVars = () => { ["--accent", "--accent-rgb", "--accent-2", "--accent2-rgb", "--accent-ink"].forEach((v) => root.style.removeProperty(v)); };
     const m = /^#?([0-9a-f]{6})$/i.exec(raw);
     if (raw === "default" || !m) { root.dataset.accent = "default"; clearVars(); return; }
     const n = parseInt(m[1], 16);
-    const rgb = `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const rgb = `${r},${g},${b}`;
     root.dataset.accent = "custom";
     root.style.setProperty("--accent", "#" + m[1]);
     root.style.setProperty("--accent-rgb", rgb);
     root.style.setProperty("--accent-2", "#" + m[1]);   // blend secondary into the chosen color
     root.style.setProperty("--accent2-rgb", rgb);
+    // Readable text/icon color ON a solid accent fill: white for dark accents, near-black for light ones.
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    root.style.setProperty("--accent-ink", brightness < 145 ? "#ffffff" : "#04121a");
   }, [settings && settings.accent]);
   useEffect(() => {
     const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) { e.preventDefault(); setSidebarOpen((v) => !v); } };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
+
+  // Spoken replies toggle (voice): persisted in settings; off also cancels current speech.
+  const voiceSpeak = !!(settings && settings.voiceSpeak);
+  const toggleSpeak = async () => {
+    const cur = await bridge.getSettings();
+    const next = { ...cur, voiceSpeak: !cur.voiceSpeak };
+    setSettings(next);
+    await bridge.saveSettings(next);
+    if (!next.voiceSpeak && window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch {} }
+  };
 
   const isAgentMode = mode === "cowork" || mode === "code";
 
@@ -227,23 +274,40 @@ export default function App() {
     send(newText, item.images || []);
   };
 
-  const send = async (text, images = [], agentOv = null, teamOv = null) => {
+  const send = async (text, images = [], agentOv = null, teamOv = null, opts = {}) => {
     const ag = agentOv || agentCtx; // explicit override beats state (avoids a stale closure on seeded launches)
     const tm = teamOv || teamCtx;
     if (tm) setTeamRun({ startedAt: Date.now(), steps: tm.members.map((m) => ({ name: m.name, status: "queued", identity: m.identity })), plan: tm.mode === "manager" ? { status: "queued" } : null, synth: null, finished: false });
     setTimeline((tl) => [...tl, { type: "message", role: "user", text, images }]);
     setBusy(true);
     streamOpen.current = false;
+    replyBufRef.current = "";
     if (!sessionRef.current) {
       const req = projectCtx
         ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId, images }
-        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined, team: tm || undefined };
+        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined, team: tm || undefined, resumeMission: opts.resumeMission || undefined };
       const { sessionId, conversationId } = await bridge.start(req);
       sessionRef.current = sessionId;
       if (!projectCtx && conversationId) setActiveConvId(conversationId);
     } else {
       bridge.sendInput(sessionRef.current, text, images);
     }
+  };
+
+  // Answer (or skip) a mid-mission agent question — resumes the paused mission.
+  const answerQuestion = (answer) => {
+    if (!ask) return;
+    bridge.resolvePermission(ask.requestId, { behavior: "allow", answer: answer || "(the user skipped the question — use your best judgment)" });
+    setAsk(askQueue.current.shift() || null);
+    setAskText("");
+  };
+
+  // Durable missions: resume an interrupted team mission from its checkpoint.
+  const resumeMission = () => {
+    const m = missionPending;
+    if (!m || !teamCtx) return;
+    setMissionPending(null);
+    send(m.userText, [], null, teamCtx, { resumeMission: true });
   };
 
   // ---- persisted chat history (Talk / Collaborate / Build) ----
@@ -257,12 +321,17 @@ export default function App() {
     setAgentCtx(conv.agent || null);
     setTeamCtx(conv.team && conv.team.members && conv.team.members.length ? conv.team : null);
     setTeamRun(null);
+    // Durable missions: if this conversation has an unfinished checkpoint, offer Resume.
+    setMissionPending(null);
+    if (conv.team && conv.team.members && conv.team.members.length && bridge.getMission) {
+      bridge.getMission(id).then((m) => { if (m && !m.finished && m.userText) setMissionPending(m); }).catch(() => {});
+    }
     sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   // Start a fresh chat — also returns to the chat surface if we're in a tool/settings view.
   const newSession = () => {
     if (!PRIMARY.includes(mode)) setMode(chatMode);
-    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); setTeamCtx(null); setTeamRun(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+    setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); setTeamCtx(null); setTeamRun(null); setMissionPending(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const removeSession = async (id) => {
     await bridge.deleteSession(id);
@@ -492,6 +561,8 @@ export default function App() {
     }
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const clearAgent = () => { setAgentCtx(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
+  // Return to the Agent Studio screen, keeping the conversation saved in history.
+  const backToAgents = () => { switchMode("agents"); };
 
   // Launch a team: fresh chat session bound to the team; Mission Control opens alongside.
   const startTeamSession = (team) => {
@@ -505,7 +576,7 @@ export default function App() {
       setAgentCtx(null); setTeamCtx(team); setTeamRun(null);
     }
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
-  const clearTeam = () => { setTeamCtx(null); setTeamRun(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
+  const clearTeam = () => { setTeamCtx(null); setTeamRun(null); setMissionPending(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
 
   // First-run onboarding: show until the user has any key'd provider (or explicitly skips).
   const [obDismissed, setObDismissed] = useState(() => { try { return !!localStorage.getItem("be.onboarded"); } catch { return true; } });
@@ -516,6 +587,10 @@ export default function App() {
     <div className="ctrl-row">
       {isAgentMode && <EnvPicker cwd={cwd} onPickFolder={pickFolder} onUseFolder={useFolder} onAddRepoUrl={addRepo} />}
       {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
+      <button className="icon-btn" onClick={toggleSpeak} title={voiceSpeak ? "Spoken replies: ON — answers are read aloud" : "Spoken replies: off"}
+        style={voiceSpeak ? { color: "var(--accent)" } : undefined}>
+        {voiceSpeak ? <Volume2 size={15} /> : <VolumeX size={15} />}
+      </button>
       <ModelPicker value={activeValue} groups={pickerGroups} onChange={selectModel} onRefresh={refreshModels} />
     </div>
   );
@@ -571,8 +646,12 @@ export default function App() {
           <Scheduler />
         ) : isConsumption ? (
           <Consumption />
+        ) : mode === "testcenter" ? (
+          TestCenter
+            ? <Suspense fallback={<div className="skel-page"><div className="skel" style={{ width: 240, height: 26 }} /><div className="skel" style={{ height: 200 }} /></div>}><TestCenter onNavigate={switchMode} /></Suspense>
+            : <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">Testing tools are excluded from distributed builds of BrainEdge.</div></div></div>
         ) : isAgents ? (
-          <Agents onLaunch={startAgentSession} onLaunchTeam={startTeamSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
+          <Agents onLaunch={startAgentSession} onLaunchTeam={startTeamSession} onOpenSession={openSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
         ) : isStudio ? (
           <StudioLauncher onStart={startStudio} />
         ) : isTerminal ? (
@@ -622,12 +701,15 @@ export default function App() {
                         <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
                       </div>
                     )}
-                    {agentCtx && (
+                    {(agentCtx || teamCtx) && (
                       <div className="hero-opts">
-                        <span className="chip agent-chip" style={agentCtx.identity ? { color: agentCtx.identity.color, borderColor: `${agentCtx.identity.color}66`, background: `${agentCtx.identity.color}1f` } : undefined}>
-                          {agentCtx.identity ? <span>{agentCtx.identity.glyph}</span> : <Bot size={13} />} {agentCtx.name}
-                          <button className="agent-chip-x" title="Detach agent" onClick={clearAgent}><X size={12} /></button>
-                        </span>
+                        <button className="chip" onClick={backToAgents} title="Back to the Agents screen">← Agents</button>
+                        {agentCtx && (
+                          <span className="chip agent-chip" style={agentCtx.identity ? { color: agentCtx.identity.color, borderColor: `${agentCtx.identity.color}66`, background: `${agentCtx.identity.color}1f` } : undefined}>
+                            {agentCtx.identity ? <span>{agentCtx.identity.glyph}</span> : <Bot size={13} />} {agentCtx.name}
+                            <button className="agent-chip-x" title="Detach agent" onClick={clearAgent}><X size={12} /></button>
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -675,10 +757,28 @@ export default function App() {
                   )}
                   {agentCtx && (
                     <div className="folder-bar agent-bar">
+                      <button className="btn ghost" style={{ padding: "3px 9px" }} title="Back to the Agents screen" onClick={backToAgents}>← Agents</button>
                       {agentCtx.identity ? <span style={{ color: agentCtx.identity.color }}>{agentCtx.identity.glyph}</span> : <Bot size={14} />}
                       <span className="path">{agentCtx.name}</span>
                       <span style={{ color: "var(--text-2)" }}>· custom agent</span>
                       <button className="btn ghost" style={{ padding: "3px 7px", marginLeft: "auto" }} title="Detach agent" onClick={clearAgent}><X size={12} /></button>
+                    </div>
+                  )}
+                  {teamCtx && (
+                    <div className="folder-bar agent-bar">
+                      <button className="btn ghost" style={{ padding: "3px 9px" }} title="Back to the Agents screen" onClick={backToAgents}>← Agents</button>
+                      <span style={{ color: "var(--accent)" }}>{(teamCtx.members[0] && teamCtx.members[0].identity && teamCtx.members[0].identity.glyph) || "✦"}</span>
+                      <span className="path">{teamCtx.name}</span>
+                      <span style={{ color: "var(--text-2)" }}>· {teamCtx.mode === "manager" ? "managed team" : "relay team"}</span>
+                      <button className="btn ghost" style={{ padding: "3px 7px", marginLeft: "auto" }} title="Detach team" onClick={clearTeam}><X size={12} /></button>
+                    </div>
+                  )}
+                  {missionPending && teamCtx && !busy && (
+                    <div className="folder-bar" style={{ borderColor: "color-mix(in srgb, var(--accent) 50%, transparent)" }}>
+                      <Zap size={14} style={{ color: "var(--accent)" }} />
+                      <span className="path">Mission interrupted — {(missionPending.outputs || []).length} step{(missionPending.outputs || []).length === 1 ? "" : "s"} already done and checkpointed</span>
+                      <button className="btn primary" style={{ marginLeft: "auto", padding: "4px 12px" }} onClick={resumeMission}>Resume mission</button>
+                      <button className="btn ghost" style={{ padding: "4px 8px" }} title="Dismiss" onClick={() => setMissionPending(null)}><X size={12} /></button>
                     </div>
                   )}
                   <div className="chat scroll" ref={chatRef}>
@@ -710,6 +810,34 @@ export default function App() {
         onAllowAlways={() => { changePermission("bypassPermissions"); resolve("allow"); }}
         onDeny={() => resolve("deny")}
       />
+
+      {/* Mid-mission question — an agent paused and is waiting on your answer */}
+      {ask && (
+        <div className="scrim">
+          <div className="pj-create" style={{ width: 540 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <MessageCircleQuestion size={18} style={{ color: "var(--accent)" }} />
+              <h2 style={{ flex: 1, margin: 0, fontSize: 16 }}>An agent needs your input</h2>
+            </div>
+            <p style={{ margin: "12px 0 10px", fontSize: 14, lineHeight: 1.5 }}>{ask.question}</p>
+            {Array.isArray(ask.options) && ask.options.length > 0 && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                {ask.options.map((o, i) => (
+                  <button key={i} className="chip" style={{ cursor: "pointer" }} onClick={() => answerQuestion(o)}>{o}</button>
+                ))}
+              </div>
+            )}
+            <input className="model-search" autoFocus value={askText} placeholder="Type your answer…"
+              onChange={(e) => setAskText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && askText.trim()) answerQuestion(askText.trim()); }} />
+            <div className="pj-create-btns">
+              <button className="btn" onClick={() => answerQuestion("")}>Skip — let it decide</button>
+              <span style={{ flex: 1 }} />
+              <button className="btn primary" disabled={!askText.trim()} onClick={() => answerQuestion(askText.trim())}>Answer & resume</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

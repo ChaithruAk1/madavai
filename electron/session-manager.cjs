@@ -10,21 +10,20 @@ const settings = require("./settings.cjs");
 const store = require("./projects-store.cjs");
 const sstore = require("./sessions-store.cjs");
 const usage = require("./usage-store.cjs");
+const agentPrompt = require("./agent-prompt.cjs");
+const agentMemory = require("./agent-memory.cjs");
+const agentHistory = require("./agent-history.cjs");
+const missionStore = require("./mission-store.cjs");
 const fs = require("fs");
 const os = require("os");
 const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
 
-// Per-agent knowledge docs → a capped reference block for the system prompt.
-function agentKnowledge(a) {
-  const docs = (a && Array.isArray(a.knowledge) ? a.knowledge : []).slice(0, 8);
-  if (!docs.length) return "";
-  return "\n\nAgent knowledge — reference material this agent always has (cite it when relevant):\n" +
-    docs.map((k) => `--- ${k.name || "doc"} ---\n${String(k.content || "").slice(0, 20000)}`).join("\n\n");
-}
-
 // Combine a natural-tone safeguard + the user's custom instructions + the chosen response language.
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
+// Artifact-iteration rule so the Studio "live preview" iterates like Claude artifacts:
+// emit the WHOLE file in one fenced block, and re-emit it whole when the user asks for a change.
+const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
 function withLang(cfg) {
   const gi = cfg.globalInstructions || "";
   const lang = cfg.responseLanguage;
@@ -85,10 +84,30 @@ class SessionManager {
     const t = this._turns.get(sessionId);
     if (t) {
       if (kind === "assistant_delta") { t.replyChars += ((data && data.text) || "").length; t.replyText += (data && data.text) || ""; }
-      else if (kind === "result") { usage.append({ ...t, at: Date.now() }); this._persistTurn(sessionId); this._turns.delete(sessionId); }
-      else if (kind === "error") { this._persistTurn(sessionId); this._turns.delete(sessionId); }
+      else if (kind === "result") { usage.append({ ...t, at: Date.now() }); this._recordAgentRun(sessionId, t, data, true); this._persistTurn(sessionId); this._turns.delete(sessionId); }
+      else if (kind === "error") { this._recordAgentRun(sessionId, t, data, false); this._persistTurn(sessionId); this._turns.delete(sessionId); }
     }
     this.rawEmit({ sessionId, seq: seq++, kind, data });
+  }
+
+  // Track record + memory for SOLO custom agents: after every interactive turn,
+  // append a run event (agent cards show "12 missions · 92% clean") and let the
+  // agent extract durable learnings from the exchange (fire-and-forget).
+  _recordAgentRun(sessionId, t, data, ok) {
+    const s = this.sessions.get(sessionId);
+    if (!s || !s.agent || !s.agent.id || s.team) return;
+    try {
+      agentHistory.record({
+        agentId: s.agent.id, name: s.agent.name, ok,
+        ms: (data && data.duration_ms) || 0,
+        tokens: Math.round(((t.promptChars || 0) + (t.replyChars || 0)) / 4),
+        source: "chat",
+        summary: (ok ? (t.replyText || "") : ("error: " + ((data && data.message) || ""))).slice(0, 200),
+      });
+    } catch {}
+    if (ok && (t.replyText || "").length > 80) {
+      try { agentMemory.learnFromMission(settings.activeProfile(), s.agent, t.userText || "", t.replyText || ""); } catch {}
+    }
   }
 
   // Persist one completed turn (user + assistant text) to the chat-history store.
@@ -116,6 +135,7 @@ class SessionManager {
     const s = { mode: req.mode, cwd: req.cwd, history: [], controller: null, sdkSessionId: null, permMode: req.permissionMode || "default" };
     if (req.agent && req.agent.instructions) s.agent = req.agent; // custom agent: { name, description, instructions, tools }
     if (req.team && Array.isArray(req.team.members) && req.team.members.length) s.team = req.team; // agent team: { name, mode: "relay"|"manager", members: [agent objects] }
+    if (req.resumeMission) s.resumeMission = true; // durable missions: reuse checkpointed member outputs
     if (req.mode === "project") {
       s.projectId = req.projectId;
       s.conversationId = req.conversationId;
@@ -141,16 +161,44 @@ class SessionManager {
   }
 
   // ---- custom agents (Agents builder) ----
-  // System prompt for a session bound to a user-built agent.
-  _agentSys(s) {
-    const a = s.agent;
-    if (!a) return null;
-    const now = new Date();
-    const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
-    return `You are "${a.name || "a custom agent"}", an agent the user built in BrainEdge.` +
-      (a.description ? ` Purpose: ${a.description}` : "") + ` ${dateLine}` +
-      `\n\nAgent instructions (always follow):\n${a.instructions}` +
-      agentKnowledge(a);
+  // System prompt for a session bound to a user-built agent. Knowledge passages are
+  // retrieved per task (RAG-lite) and the agent's memory of past missions is injected.
+  _agentSys(s, taskText) {
+    if (!s.agent) return null;
+    return agentPrompt.agentSystem(s.agent, { taskText: taskText || "" });
+  }
+
+  // Agent Browser binding: only for agents with the Browser capability on, bound
+  // to that agent's site allowlist. Desktop only (Electron window).
+  _browserFor(agentLike) {
+    if (!agentLike || !agentLike.tools || !agentLike.tools.browser) return null;
+    try {
+      const ab = require("./agent-browser.cjs");
+      if (!ab.isEnabled()) return null; // admin master switch is off
+      return ab.forAllowlist(agentLike.browserAllow || "");
+    } catch { return null; }
+  }
+
+  // Agent-as-tool handoffs for interactive sessions: a roster agent runs as a
+  // "member" so its tool calls and permission prompts surface in THIS session's UI
+  // (no silent bypass). One level deep — a called agent can't call further agents.
+  _rosterFor(s, cfg) {
+    return (cfg.agents || []).filter((a) => a && a.instructions && (!s.agent || a.id !== s.agent.id));
+  }
+  _makeCallAgent(s, profile, cfg, emit, signal) {
+    return async (name, task) => {
+      const cfg2 = settings.load();
+      const target = this._rosterFor(s, cfg2).find((a) =>
+        (a.name || "").toLowerCase() === String(name || "").toLowerCase()) ||
+        this._rosterFor(s, cfg2).find((a) => String(name || "").toLowerCase().includes((a.name || "§").toLowerCase()));
+      if (!target) return `(no agent named "${name}" on the roster)`;
+      const started = Date.now();
+      let text = "", ok = true;
+      try { text = await this._runMember(target, String(task || ""), profile, cfg2, emit, signal, s); }
+      catch (e) { if (e.name === "AbortError") throw e; ok = false; text = "(handoff failed: " + String(e.message || e) + ")"; }
+      try { agentHistory.record({ agentId: target.id, name: target.name, ok: ok && !!text, ms: Date.now() - started, tokens: Math.round((String(task || "").length + text.length) / 4), source: "handoff", summary: text.slice(0, 200) }); } catch {}
+      return text || "(no output)";
+    };
   }
   // Connectors/skills config filtered by the agent's enabled tools.
   _agentExtras(s, cfg) {
@@ -204,7 +252,7 @@ class SessionManager {
     // Exception: when the turn carries images, take the plain inline-vision path so a
     // vision-capable model (e.g. a NIM VLM) receives real pixels rather than a Read-file note.
     const cfg = settings.load();
-    const agentExtras = s.agent && s.agent.tools && (s.agent.tools.connectors || s.agent.tools.skills);
+    const agentExtras = s.agent && s.agent.tools && (s.agent.tools.connectors || s.agent.tools.skills || s.agent.tools.browser);
     const hasExtras = agentExtras || (cfg.skillsDirs || []).length > 0 || (cfg.connectors || []).some((c) => c.enabled);
     if (profile.kind !== "anthropic" && hasExtras && cleanImgs(images).length === 0) {
       return this._chatAgentTurn(sessionId, userText, profile, cfg, images);
@@ -225,7 +273,11 @@ class SessionManager {
         prompt: userText, mode: "chat", cwd: null, profile, permMode: "default",
         history: s.history, emit, permissions: this.permissions, signal: controller.signal,
         connectors: ex.connectors, skillsDir: ex.skillsDir, disabledSkills: ex.disabledSkills, globalInstructions: withLang(cfg),
-        systemOverride: this._agentSys(s) || null,
+        systemOverride: this._agentSys(s, userText) || null,
+        allowAskUser: true,
+        roster: this._rosterFor(s, cfg),
+        callAgent: this._makeCallAgent(s, profile, cfg, emit, controller.signal),
+        browser: this._browserFor(s.agent), // chat-mode agents can browse too
       });
     } finally {
       s.controller = null;
@@ -254,12 +306,8 @@ class SessionManager {
     return fallback;
   }
 
-  _memberSys(member) {
-    return `You are "${member.name}", one agent on a team inside BrainEdge.` +
-      (member.description ? ` Purpose: ${member.description}` : "") +
-      `\n\nAgent instructions (always follow):\n${member.instructions || ""}` +
-      agentKnowledge(member) +
-      `\n\nYou receive a task (possibly with work from teammates). Do YOUR part thoroughly and reply with your complete work product as plain text — a teammate or coordinator consumes it next, so be complete and self-contained.`;
+  _memberSys(member, taskText) {
+    return agentPrompt.memberSystem(member, taskText || "");
   }
 
   // Run one member to completion, capturing its final text. Member tool calls and
@@ -269,13 +317,13 @@ class SessionManager {
     const t = member.tools || {};
     let buf = "";
     if (prof.kind === "anthropic") {
-      const { text } = await streamChat(prof, [{ role: "system", content: this._memberSys(member) }, { role: "user", content: task }], { signal, onDelta: () => {} });
+      const { text } = await streamChat(prof, [{ role: "system", content: this._memberSys(member, task) }, { role: "user", content: task }], { signal, onDelta: () => {} });
       return text || "";
     }
     const innerEmit = (e) => {
       if (e.kind === "assistant_delta") { buf += (e.data && e.data.text) || ""; return; }
       if (e.kind === "assistant_message" || e.kind === "result" || e.kind === "init") return; // member lifecycle stays internal
-      emit(e); // tool_use / tool_result / permission_request / permission_denied / error → visible
+      emit(e); // tool_use / tool_result / permission_request / user_question / error → visible
     };
     await runOpenAIAgentTurn({
       prompt: task,
@@ -286,7 +334,9 @@ class SessionManager {
       connectors: t.connectors ? (cfg.connectors || []) : [],
       skillsDir: t.skills ? (cfg.skillsDirs || []) : [],
       disabledSkills: cfg.disabledSkills || [],
-      systemOverride: this._memberSys(member),
+      systemOverride: this._memberSys(member, task),
+      allowAskUser: true, // members can pause the mission with a question for the user
+      browser: this._browserFor(member),
     });
     return buf.trim();
   }
@@ -303,11 +353,68 @@ class SessionManager {
     const started = Date.now();
     const members = team.members.slice(0, 6); // hard cap — cost discipline
     const rid = () => newId("team_");
+    const convId = s.chatConvId || null;
+
+    // Cost guardrail — per-mission token budget (team setting, else global; 0 = off).
+    // Tokens are estimated from characters (~4 chars/token), same basis as Consumption.
+    const budget = Number(team.budgetTokens) || Number(cfg.missionTokenBudget) || 0;
+    let usedTokens = 0;
+    const addUsage = (...texts) => {
+      usedTokens += Math.round(texts.reduce((n, x) => n + String(x || "").length, 0) / 4);
+      if (budget) emit({ kind: "budget", data: { used: usedTokens, max: budget } });
+    };
+    const overBudget = () => budget > 0 && usedTokens >= budget;
+    let budgetNote = "";
+
+    // Durable missions — when resuming, restore checkpointed member outputs so only
+    // the remaining stations run.
+    let restored = [];
+    let savedPlan = null;
+    if (s.resumeMission && convId) {
+      const prev = missionStore.get(convId);
+      if (prev && !prev.finished && prev.userText === userText && Array.isArray(prev.outputs)) {
+        restored = prev.outputs.filter((o) => o && o.name && o.text);
+        savedPlan = Array.isArray(prev.plan) && prev.plan.length ? prev.plan : null;
+      }
+      s.resumeMission = false;
+    }
+    const checkpoint = (plan, outputs, finished) => {
+      if (!convId) return;
+      try {
+        missionStore.save(convId, {
+          teamName: team.name || "", mode: team.mode, userText,
+          plan: (plan || []).map((p) => ({ member: p.member.name, task: p.task })),
+          outputs, finished: !!finished,
+        });
+      } catch {}
+    };
+
+    // Run one member, fully instrumented: tool cards for Mission Control, per-agent
+    // run history (track record), memory learning, and budget accounting.
+    const runStep = async (member, task, label) => {
+      const stepId = rid();
+      emit({ kind: "tool_use", data: { id: stepId, name: `${member.name} (teammate)`, input: { task: label || "sub-task" }, auto: true } });
+      const t0 = Date.now();
+      let text = "", ok = true;
+      try { text = await this._runMember(member, task, profile, cfg, emit, signal, s); }
+      catch (e) { if (e.name === "AbortError") throw e; ok = false; text = "(member failed: " + String(e.message || e) + ")"; }
+      if (!text) { text = "(no output)"; ok = false; }
+      emit({ kind: "tool_result", data: { id: stepId, output: text.slice(0, 4000) } });
+      addUsage(task, text);
+      try { agentHistory.record({ agentId: member.id, name: member.name, ok, ms: Date.now() - t0, tokens: Math.round((task.length + text.length) / 4), source: "team", summary: text.slice(0, 200) }); } catch {}
+      if (ok && text.length > 200) { try { agentMemory.learnFromMission(this._memberProfile(member, profile), member, task, text); } catch {} }
+      return { name: member.name, text };
+    };
+
+    let plan = members.map((m) => ({ member: m, task: "" }));
     try {
       // 1) Plan. Relay = everyone in order, work flows down the line.
       //    Manager = a coordinator assigns each member a specific sub-task first.
-      let plan = members.map((m) => ({ member: m, task: "" }));
-      if (team.mode === "manager") {
+      if (team.mode === "manager" && savedPlan) {
+        // Resuming: reuse the original plan so completed steps line up with stations.
+        const mapped = savedPlan.map((p) => ({ member: members.find((m) => m.name === p.member), task: p.task || "" })).filter((p) => p.member);
+        if (mapped.length) plan = mapped;
+      } else if (team.mode === "manager") {
         const roster = members.map((m) => `- ${m.name}: ${m.description || m.instructions.slice(0, 120)}`).join("\n");
         const planId = rid();
         emit({ kind: "tool_use", data: { id: planId, name: `Team plan — ${team.name || "your team"}`, input: { mission: userText }, auto: true } });
@@ -328,40 +435,79 @@ class SessionManager {
         } catch (e) {
           emit({ kind: "tool_result", data: { id: planId, output: "(planning failed — falling back to relay order: " + String(e.message || e) + ")" } });
         }
+        addUsage(userText);
+      }
+
+      // Mission Control: stamp restored stations as done without re-running them.
+      const doneNames = new Set(restored.map((o) => o.name));
+      for (const o of restored) {
+        const restId = rid();
+        emit({ kind: "tool_use", data: { id: restId, name: `${o.name} (teammate)`, input: { task: "resumed from checkpoint" }, auto: true } });
+        emit({ kind: "tool_result", data: { id: restId, output: String(o.text).slice(0, 4000) } });
       }
 
       // 2) Execute. Managed → PARALLEL FAN-OUT: sub-tasks are independent, so every member
       //    works at the same time and the coordinator merges. Relay → strictly in order,
       //    each member receiving all prior teammates' work (that chaining is the point).
-      let outputs = [];
+      const outputs = [...restored];
+      checkpoint(plan, outputs, false);
       if (team.mode === "manager") {
-        const jobs = plan.map((step) => {
-          const stepId = rid();
-          emit({ kind: "tool_use", data: { id: stepId, name: `${step.member.name} (teammate)`, input: { task: step.task || "full mission" }, auto: true } });
+        const todo = plan.filter((step) => !doneNames.has(step.member.name));
+        await Promise.all(todo.map((step) => {
           const task = `MISSION (from the user):\n${userText}` + (step.task ? `\n\nYOUR ASSIGNED SUB-TASK (do only this part):\n${step.task}` : "");
-          return this._runMember(step.member, task, profile, cfg, emit, signal, s)
-            .catch((e) => { if (e.name === "AbortError") throw e; return "(member failed: " + String(e.message || e) + ")"; })
-            .then((text) => {
-              emit({ kind: "tool_result", data: { id: stepId, output: (text || "(no output)").slice(0, 4000) } });
-              return { name: step.member.name, text: text || "(no output)" };
-            });
-        });
-        outputs = await Promise.all(jobs);
+          return runStep(step.member, task, step.task || "full mission")
+            .then((o) => { outputs.push(o); checkpoint(plan, outputs, false); return o; });
+        }));
         if (signal.aborted) throw Object.assign(new Error("interrupted"), { name: "AbortError" }); // don't synthesize after a mid-flight stop
+
+        // 2b) Conditional flows v1 — the coordinator REVIEWS the results and can launch
+        // follow-up waves ("if Scout found nothing, send Radar; else proceed"), and may
+        // recruit from the user's full agent roster, not just the fixed line-up.
+        const bench = (cfg.agents || []).filter((a) => a && a.instructions && !members.some((m) => m.id === a.id));
+        const findByName = (nm) => members.find((m) => m.name === nm) || bench.find((a) => a.name === nm) ||
+          members.find((m) => String(nm || "").toLowerCase().includes((m.name || "§").toLowerCase())) || null;
+        for (let wave = 0; wave < 2 && !signal.aborted; wave++) {
+          if (overBudget()) { budgetNote = `Token budget reached (~${usedTokens.toLocaleString()} of ${budget.toLocaleString()} est. tokens) — stopped before follow-up waves. Raise the team's budget to let the coordinator keep going.`; break; }
+          const reviewId = rid();
+          emit({ kind: "tool_use", data: { id: reviewId, name: "Coordinator review", input: { round: wave + 1 }, auto: true } });
+          let decision = null;
+          try {
+            const rosterTxt = members.map((m) => `- ${m.name} (on the team): ${m.description || ""}`)
+              .concat(bench.slice(0, 10).map((a) => `- ${a.name} (bench — can be recruited): ${a.description || ""}`)).join("\n");
+            const body = outputs.map((o) => `=== ${o.name} ===\n${String(o.text).slice(0, 6000)}`).join("\n\n");
+            const { text } = await streamChat(profile, [
+              { role: "system", content: `You are the coordinator of an agent team reviewing mission progress. Available agents:\n${rosterTxt}\n\nDecide whether follow-up work is needed (a member found nothing, results conflict, a clear gap remains) or the mission is complete. Reply with ONLY JSON, no prose: {"done":true,"reason":"<short>"} OR {"done":false,"steps":[{"member":"<exact agent name>","task":"<specific follow-up sub-task>"}]} — max 3 steps, and only steps that materially improve the deliverable. Be decisive; "done" is the common correct answer.` },
+              { role: "user", content: `Mission:\n${userText}\n\nResults so far:\n${body}` },
+            ], { signal, onDelta: () => {} });
+            const i = text.indexOf("{"); const j = text.lastIndexOf("}");
+            decision = i >= 0 && j > i ? JSON.parse(text.slice(i, j + 1)) : null;
+          } catch {}
+          addUsage(userText);
+          const steps = decision && decision.done === false && Array.isArray(decision.steps)
+            ? decision.steps.map((p) => ({ member: findByName(p.member), task: String(p.task || "") })).filter((p) => p.member && p.task).slice(0, 3)
+            : [];
+          if (!steps.length) {
+            emit({ kind: "tool_result", data: { id: reviewId, output: decision && decision.reason ? `Mission complete — ${decision.reason}` : "Mission complete — no follow-up needed." } });
+            break;
+          }
+          emit({ kind: "tool_result", data: { id: reviewId, output: "Follow-up wave: " + steps.map((p) => `${p.member.name} — ${p.task}`).join("; ") } });
+          const ctx = outputs.map((o) => `=== ${o.name} ===\n${String(o.text).slice(0, 6000)}`).join("\n\n");
+          await Promise.all(steps.map((step) =>
+            runStep(step.member, `MISSION (from the user):\n${userText}\n\nWORK SO FAR:\n${ctx}\n\nYOUR FOLLOW-UP SUB-TASK (do only this part):\n${step.task}`, step.task)
+              .then((o) => { outputs.push(o); checkpoint(plan, outputs, false); return o; })));
+        }
+        if (signal.aborted) throw Object.assign(new Error("interrupted"), { name: "AbortError" });
       } else {
         for (const step of plan) {
           if (signal.aborted) throw Object.assign(new Error("interrupted"), { name: "AbortError" });
+          if (doneNames.has(step.member.name)) continue; // restored from checkpoint
+          if (overBudget()) { budgetNote = `Token budget reached (~${usedTokens.toLocaleString()} of ${budget.toLocaleString()} est. tokens) — remaining stations were skipped. Raise the team's budget and resume to finish.`; break; }
           // Trim each teammate's contribution so the hand-off context can't balloon past limits.
           const prior = outputs.map((o) => `=== Work from ${o.name} ===\n${String(o.text).slice(0, 12000)}`).join("\n\n");
           const task = `MISSION (from the user):\n${userText}` +
             (prior ? `\n\nWORK FROM YOUR TEAMMATES SO FAR:\n${prior}` : "");
-          const stepId = rid();
-          emit({ kind: "tool_use", data: { id: stepId, name: `${step.member.name} (teammate)`, input: { task: "mission + teammates' work" }, auto: true } });
-          let text = "";
-          try { text = await this._runMember(step.member, task, profile, cfg, emit, signal, s); }
-          catch (e) { if (e.name === "AbortError") throw e; text = "(member failed: " + String(e.message || e) + ")"; }
-          outputs.push({ name: step.member.name, text: text || "(no output)" });
-          emit({ kind: "tool_result", data: { id: stepId, output: (text || "(no output)").slice(0, 4000) } });
+          outputs.push(await runStep(step.member, task, "mission + teammates' work"));
+          checkpoint(plan, outputs, false);
         }
       }
 
@@ -375,12 +521,19 @@ class SessionManager {
           { role: "user", content: `Mission:\n${userText}\n\nTeam output:\n${body}` },
         ], { signal, onDelta: (d) => emit({ kind: "assistant_delta", data: { text: d } }) });
         finalText = text;
+        addUsage(finalText);
       } else {
         finalText = (outputs[outputs.length - 1] || {}).text || "(the team produced no output)";
         emit({ kind: "assistant_delta", data: { text: finalText } });
       }
+      if (budgetNote) {
+        const note = `\n\n> ⚠ ${budgetNote}`;
+        finalText += note;
+        emit({ kind: "assistant_delta", data: { text: note } });
+      }
       s.history.push({ role: "user", content: userText });
       s.history.push({ role: "assistant", content: finalText });
+      checkpoint(plan, outputs, true); // mission complete — clears the resume banner
       emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
       emit({ kind: "result", data: { subtype: "success", num_turns: plan.length + 1, duration_ms: Date.now() - started } });
     } catch (err) {
@@ -415,8 +568,8 @@ class SessionManager {
     const gi = settings.load().globalInstructions;
     const now = new Date();
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Use this whenever a date is needed; never say you don't know it.`;
-    const sysChat = (this._agentSys(s) || ("You are BrainEdge, a helpful assistant. " + dateLine +
-      " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence.")) +
+    const sysChat = (this._agentSys(s, userText) || ("You are BrainEdge, a helpful assistant. " + dateLine +
+      " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence." + ARTIFACT_RULE)) +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const messages = [{ role: "system", content: sysChat }, ...s.history];
     const started = Date.now();
@@ -511,7 +664,7 @@ class SessionManager {
     // Custom agent in a folder session: inject its instructions once, up front (SDK path),
     // and as systemOverride on the self-built loop below.
     if (s.agent && profile.kind === "anthropic" && !s._agentInjected) {
-      userText = `${this._agentSys(s)}\n\n----- TASK -----\n${userText}`;
+      userText = `${this._agentSys(s, userText)}\n\n----- TASK -----\n${userText}`;
       s._agentInjected = true;
     }
 
@@ -530,12 +683,16 @@ class SessionManager {
         const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
         // A custom agent keeps the mode's file-tool system prompt and appends its own
         // instructions (a full override would lose the tool-usage guidance).
-        const agentSys = this._agentSys(s);
+        const agentSys = this._agentSys(s, userText);
         await runOpenAIAgentTurn({
           prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: s.permMode,
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
           connectors: ex.connectors, skillsDir: ex.skillsDir, disabledSkills: ex.disabledSkills,
           globalInstructions: agentSys ? `${agentSys}\n\n${withLang(cfg)}` : withLang(cfg),
+          allowAskUser: true,
+          roster: this._rosterFor(s, cfg),
+          callAgent: this._makeCallAgent(s, profile, cfg, emit, controller.signal),
+          browser: this._browserFor(s.agent),
         });
       } finally {
         s.controller = null;

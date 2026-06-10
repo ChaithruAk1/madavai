@@ -1,0 +1,12 @@
+{
+  "_readme": "Copy this file to scripts/qa-config.json (it is gitignored) and fill in what you use. Email needs a Gmail App Password (myaccount.google.com → Security → 2-Step Verification → App passwords). SMS needs a Twilio account (twilio.com) — the text lands in the iPhone Messages app; Apple offers no public iMessage API. With neither configured, the code prints in the QA Console's terminal window.",
+  "smtpHost": "smtp.gmail.com",
+  "smtpPort": 465,
+  "smtpUser": "your-sending-gmail@gmail.com",
+  "smtpPass": "your-16-char-gmail-app-password",
+  "otpEmail": "chaithrodaya.sukruth@gmail.com",
+  "twilioSid": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "twilioToken": "your-twilio-auth-token",
+  "twilioFrom": "+1XXXXXXXXXX",
+  "otpPhone": "+16159068147"
+}

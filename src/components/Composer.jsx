@@ -153,10 +153,44 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
 
   const openSlashFromMenu = () => { setMenuOpen(false); setText("/"); setSlashOpen(true); setSlashQuery(""); setSlashIdx(0); loadSkills(); ref.current && ref.current.focus(); };
 
-  const toggleMic = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert("Voice input isn't available in this build. It needs a speech engine; a Whisper endpoint can be wired in."); return; }
+  // Push-to-talk: click to record, click again to stop → transcribed through the
+  // user's own Whisper-capable key (OpenAI/Groq) in the main process. Falls back to
+  // the Web Speech API on browsers that have it (web build in Chrome).
+  const toggleMic = async () => {
     if (listening) { try { recRef.current && recRef.current.stop(); } catch {} return; }
+    if (bridge.transcribe && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mime = window.MediaRecorder && MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
+        const rec = new MediaRecorder(stream, { mimeType: mime });
+        const chunks = [];
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = async () => {
+          setListening(false);
+          stream.getTracks().forEach((t) => t.stop());
+          try {
+            const blob = new Blob(chunks, { type: mime });
+            const b64 = await new Promise((res, rej) => {
+              const fr = new FileReader();
+              fr.onload = () => res(String(fr.result).split(",")[1] || "");
+              fr.onerror = rej;
+              fr.readAsDataURL(blob);
+            });
+            const r = await bridge.transcribe({ b64, mime });
+            if (r && r.text) setText((p) => (p ? p + " " : "") + r.text);
+            else if (r && r.error) alert(r.error);
+          } catch (e) { alert("Transcription failed: " + String((e && e.message) || e)); }
+          ref.current && ref.current.focus();
+        };
+        rec.start();
+        setListening(true);
+        recRef.current = rec;
+        return;
+      } catch { setListening(false); alert("Microphone access was blocked — allow it in your system settings and try again."); return; }
+    }
+    // Web fallback: browser-native speech recognition where available.
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert("Voice input needs the desktop app (with an OpenAI or Groq key for Whisper), or Chrome on the web."); return; }
     try {
       const rec = new SR();
       rec.lang = "en-US"; rec.interimResults = false; rec.continuous = false;

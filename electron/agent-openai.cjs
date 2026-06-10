@@ -24,6 +24,48 @@ const LOAD_SKILL_TOOL = {
   },
 };
 
+// Mid-mission "ask the human": the mission pauses, the user answers, work resumes.
+const ASK_USER_TOOL = {
+  type: "function",
+  function: {
+    name: "ask_user",
+    description: "Pause and ask the user ONE clarifying question or decision; their answer comes back as the tool result. Use sparingly — only when genuinely blocked on a choice you cannot make yourself (never for permission to use tools; that is handled separately).",
+    parameters: { type: "object", properties: {
+      question: { type: "string", description: "one short, specific question" },
+      options: { type: "array", items: { type: "string" }, description: "optional 2-4 suggested answers the user can pick from" },
+    }, required: ["question"] },
+  },
+};
+
+// Agent Browser tools — drive a real, visible browser window (Electron Chromium).
+// Text-mode browsing: works with any model, no vision needed.
+const BROWSER_TOOLS = (allow) => [
+  { type: "function", function: { name: "browse_open", description: "Open a URL in the Agent Browser window and return the page as readable text plus numbered interactive elements." + (allow.length ? ` Allowed sites only: ${allow.join(", ")}.` : ""),
+    parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } },
+  { type: "function", function: { name: "browse_read", description: "Re-read the current page (text + numbered interactive elements). Use after the page changes.",
+    parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "browse_click", description: "Click interactive element [n] from the latest browse_read/browse_open listing. Returns the resulting page.",
+    parameters: { type: "object", properties: { n: { type: "number", description: "the element number" } }, required: ["n"] } } },
+  { type: "function", function: { name: "browse_fill", description: "Type text into input/textarea/select element [n]. Never works on password or payment fields — those are human-only. Set submit=true to submit the form after filling.",
+    parameters: { type: "object", properties: { n: { type: "number" }, text: { type: "string" }, submit: { type: "boolean" } }, required: ["n", "text"] } } },
+  { type: "function", function: { name: "browse_back", description: "Go back one page in the Agent Browser and return the page.",
+    parameters: { type: "object", properties: {} } } },
+];
+
+// Agent-as-tool handoffs: delegate a focused sub-task to another roster agent.
+const callAgentTool = (roster) => ({
+  type: "function",
+  function: {
+    name: "call_agent",
+    description: "Delegate ONE focused, self-contained sub-task to another agent on the user's roster; its complete answer comes back as the tool result. Available agents:\n" +
+      roster.slice(0, 20).map((a) => `- ${a.name}: ${a.description || (a.instructions || "").slice(0, 100)}`).join("\n"),
+    parameters: { type: "object", properties: {
+      agent: { type: "string", description: "the exact agent name" },
+      task: { type: "string", description: "the full, self-contained sub-task (include all context it needs)" },
+    }, required: ["agent", "task"] },
+  },
+});
+
 // ---- tool schemas (OpenAI function-calling format) ----
 const TOOLS = [
   { type: "function", function: { name: "list_dir", description: "List files in a directory (relative to the working folder).",
@@ -47,7 +89,7 @@ const TOOLS = [
 const READS = new Set(["list_dir", "read_file", "search_text", "find_files"]);
 
 // permMode: "default" (ask before changes) | "acceptEdits" | "bypass" (act, trust all) | "plan" (read-only)
-const SAFE = (name) => READS.has(name) || name === "load_skill"; // read-only, never needs approval
+const SAFE = (name) => READS.has(name) || name === "load_skill" || name === "browse_read"; // read-only, never needs approval
 function isAuto(permMode, name) {
   if (SAFE(name)) return true;
   if (permMode === "bypass") return true;
@@ -59,10 +101,14 @@ function isBlocked(permMode, name) {
   return permMode === "plan" && !SAFE(name); // plan = read-only (reads + load_skill allowed)
 }
 
+// Shared artifact-iteration rule (Studio "live preview" behaves like Claude artifacts):
+// always emit the WHOLE file in one fenced block so it renders, and re-emit it whole on edits.
+const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
+
 const SYSTEM = (mode) =>
   mode === "chat"
     ? `You are BrainEdge, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
-      `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.`
+      `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.` + ARTIFACT_RULE
     : mode === "code"
     ? `You are BrainEdge, an expert software engineer working in the user's repository. ` +
       `Always explore before editing: use find_files and search_text to locate code, read_file to understand it, then make minimal, correct edits with edit_file/write_file. ` +
@@ -170,7 +216,17 @@ function askPermission(emit, permissions, toolUseId, toolName, input) {
   });
 }
 
-async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "" }) {
+// ask_user reuses the permission plumbing: the UI answers via resolvePermission
+// with { behavior: "allow", answer } — no new IPC channel needed.
+function askUserQuestion(emit, permissions, toolUseId, question, options) {
+  return new Promise((resolve) => {
+    const requestId = "ask_" + Math.random().toString(36).slice(2, 9);
+    permissions.set(requestId, (res) => resolve(String((res && res.answer) || "(the user didn't answer — proceed with your best judgment)")));
+    emit({ kind: "user_question", data: { requestId, toolUseId, question: String(question || ""), options: Array.isArray(options) ? options.slice(0, 4).map(String) : [] } });
+  });
+}
+
+async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
   const gi = globalInstructions ? `\n\nUser's custom instructions (always follow these):\n${globalInstructions}` : "";
   const sys = (systemOverride || SYSTEM(mode)) + gi + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
@@ -183,6 +239,9 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // Build the tool set. Chat gets skills + connectors only; agent modes also get file/shell tools.
   let tools = mode === "chat" ? [] : [...TOOLS];
   if (skills.length) tools.push(LOAD_SKILL_TOOL);
+  if (allowAskUser) tools.push(ASK_USER_TOOL);
+  if (callAgent && Array.isArray(roster) && roster.length) tools.push(callAgentTool(roster));
+  if (browser) tools = [...tools, ...BROWSER_TOOLS(browser.allow || [])];
   try {
     const mcpTools = await mcp.openAiTools(connectors);
     if (mcpTools.length) tools = [...tools, ...mcpTools];
@@ -228,6 +287,68 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     for (const tc of toolCalls) {
       let args = {};
       try { args = JSON.parse(tc.arguments || "{}"); } catch {}
+
+      // Mid-mission question: pause for the human, resume with their answer.
+      if (tc.name === "ask_user") {
+        emit({ kind: "tool_use", data: { id: tc.id, name: "ask_user", input: { question: args.question }, auto: true } });
+        const answer = allowAskUser
+          ? await askUserQuestion(emit, permissions, tc.id, args.question, args.options)
+          : "(no user available on this run — proceed with your best judgment and state your assumption)";
+        emit({ kind: "tool_result", data: { id: tc.id, output: answer.slice(0, 4000) } });
+        history.push({ role: "tool", tool_call_id: tc.id, content: answer.slice(0, 8000) });
+        continue;
+      }
+
+      // Agent-as-tool handoff: run a roster agent on a sub-task, return its work.
+      if (tc.name === "call_agent") {
+        if (permMode === "plan" || !callAgent) {
+          const out = permMode === "plan" ? "(blocked: plan mode is read-only — describe the delegation instead)" : "(agent handoffs unavailable on this run)";
+          emit({ kind: "tool_use", data: { id: tc.id, name: `call_agent → ${args.agent || "?"}`, input: args, auto: true } });
+          emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+          history.push({ role: "tool", tool_call_id: tc.id, content: out });
+          continue;
+        }
+        emit({ kind: "tool_use", data: { id: tc.id, name: `call_agent → ${args.agent || "?"}`, input: { task: args.task }, auto: true } });
+        let out;
+        try { out = String(await callAgent(args.agent, args.task) || "(no output)"); }
+        catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+        emit({ kind: "tool_result", data: { id: tc.id, output: out.slice(0, 4000) } });
+        history.push({ role: "tool", tool_call_id: tc.id, content: out.slice(0, 12000) });
+        continue;
+      }
+
+      // Agent Browser tools — browse_read is free; navigation/click/fill honor the
+      // permission mode like any other mutation (the user approves each move).
+      if (browser && tc.name.startsWith("browse_")) {
+        if (isBlocked(permMode, tc.name)) {
+          emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: args, auto: false } });
+          emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "plan mode (read-only)" } });
+          const out = "(blocked: plan mode is read-only)";
+          emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+          history.push({ role: "tool", tool_call_id: tc.id, content: out });
+          continue;
+        }
+        const auto = isAuto(permMode, tc.name);
+        emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: args, auto } });
+        let allowed = auto;
+        if (!allowed) allowed = await askPermission(emit, permissions, tc.id, tc.name, args);
+        let out;
+        if (!allowed) {
+          emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "declined" } });
+          out = "(user declined this browser action)";
+        } else {
+          try {
+            if (tc.name === "browse_open") out = await browser.open(String(args.url || ""));
+            else if (tc.name === "browse_read") out = await browser.read();
+            else if (tc.name === "browse_click") out = await browser.click(Number(args.n));
+            else if (tc.name === "browse_fill") out = await browser.fill(Number(args.n), String(args.text == null ? "" : args.text), !!args.submit);
+            else out = await browser.back();
+          } catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+        }
+        emit({ kind: "tool_result", data: { id: tc.id, output: String(out).slice(0, 4000) } });
+        history.push({ role: "tool", tool_call_id: tc.id, content: String(out).slice(0, 16000) });
+        continue;
+      }
 
       // Plan mode: refuse mutations outright.
       if (isBlocked(permMode, tc.name)) {

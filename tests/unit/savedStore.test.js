@@ -33,8 +33,9 @@ describe("saved-store", () => {
     expect(savedStore.listSaved().find((x) => x.id === rec.id)).toBeUndefined();
   });
 
-  it("sorts newest first", () => {
+  it("sorts newest first", async () => {
     const a = savedStore.addSaved({ text: "first" });
+    await new Promise((r) => setTimeout(r, 5)); // distinct timestamps — same-ms adds made this flaky
     const b = savedStore.addSaved({ text: "second" });
     const list = savedStore.listSaved();
     expect(list[0].id).toBe(b.id);

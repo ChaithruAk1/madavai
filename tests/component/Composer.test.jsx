@@ -15,7 +15,7 @@ describe("Composer", () => {
     const ta = screen.getByRole("textbox");
     fireEvent.change(ta, { target: { value: "/" } });
     expect(screen.getByText("/new")).toBeInTheDocument();
-    expect(screen.getByText("/settings")).toBeInTheDocument();
+    expect(screen.getByText("/folder")).toBeInTheDocument(); // /settings was retired when slash commands became inline actions
   });
 
   it("filters commands by the slash query", () => {

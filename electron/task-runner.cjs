@@ -45,6 +45,26 @@ async function runTask(task) {
   };
 
   try {
+    // Agent / team triggers — the Scheduler (and webhooks) can run your workforce
+    // headless: the agent's instructions, knowledge, memory, and tools all apply,
+    // run history is recorded, and learnings are extracted — same as interactive runs.
+    if (target.type === "agent") {
+      const mission = require("./mission-runner.cjs");
+      const agent = mission.findAgent(cfg, target.agentId);
+      if (!agent) return { status: "error", output: "Agent not found — it may have been deleted." };
+      const r = await mission.runAgentHeadless({
+        agent, prompt: task.prompt, cwd: target.folder || null, source: "schedule",
+        profile: task.model ? profile : null, // task-level model pin wins over the agent's
+      });
+      return { status: r.ok ? "success" : "error", output: r.text.slice(0, 20000) };
+    }
+    if (target.type === "team") {
+      const mission = require("./mission-runner.cjs");
+      const team = mission.findTeam(cfg, target.teamId);
+      if (!team) return { status: "error", output: "Team not found — it may have been deleted." };
+      const r = await mission.runTeamHeadless({ team, prompt: task.prompt, source: "schedule", profile: task.model ? profile : null });
+      return { status: r.ok ? "success" : "error", output: r.text.slice(0, 20000) };
+    }
     if (target.type === "project") {
       const project = store.getProject(target.projectId);
       if (!project) return { status: "error", output: "Project not found." };

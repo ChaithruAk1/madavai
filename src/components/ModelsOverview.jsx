@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect } from "react";
-import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench } from "lucide-react";
+import { useMemo, useState, useEffect, Fragment } from "react";
+import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench, Scale, Gauge, Gift, Cpu, Layers, ChevronRight } from "lucide-react";
 import { MODELS, CATEGORIES, freeInfo } from "../data/modelCatalog.js";
 import { classifyProvider, isModelFree } from "../data/providerRules.js";
 import { benchFor, AGENTIC_RANK, agenticTone, thinkingTone } from "../data/benchmarks.js";
@@ -228,7 +228,15 @@ const FILTERS = [
   { key: "reasoning", label: "Reasoning", test: (m) => !!m.thinking },
   { key: "fast", label: "Fast", test: (m) => /flash|mini|lite|haiku|tiny|small|turbo|nano/i.test(m.run || m.name || "") || (sizeNum(m.size) > 0 && sizeNum(m.size) <= 9) },
   { key: "general", label: "General", test: (m) => (m.cat || "") === "General" },
+  { key: "open", label: "Open-weight", test: (m) => dl(m).open },
 ];
+
+// Tiny in-cell meter — turns numbers into instantly comparable visuals.
+function Meter({ pct, tone = "var(--accent)" }) {
+  if (pct == null || pct < 0) return null;
+  return <span className="mo-meter"><span style={{ width: Math.max(2, Math.min(100, pct)) + "%", background: tone }} /></span>;
+}
+const ctxPct = (k) => (!k ? -1 : Math.min(100, (Math.log10(k) / 4) * 100)); // log scale: 10K→25%, 10M→100%
 
 export default function ModelsOverview({ activeModel }) {
   const [q, setQ] = useState("");
@@ -241,6 +249,10 @@ export default function ModelsOverview({ activeModel }) {
   const [orCat, setOrCat] = useState(null);
   const [dlMenu, setDlMenu] = useState(null); // model name whose download-source chooser is open
   const [speedMap, setSpeedMap] = useState({}); // measured tokens/sec from the Speed Check, by model id
+  const [expanded, setExpanded] = useState(null); // row name expanded inline (learn without leaving the screen)
+  const [cmp, setCmp] = useState(() => new Set()); // models picked for side-by-side compare (max 4)
+  const [cmpOpen, setCmpOpen] = useState(false);
+  const toggleCmp = (name) => setCmp((s) => { const n = new Set(s); if (n.has(name)) n.delete(name); else if (n.size < 4) n.add(name); return n; });
   const copy = (text, label) => { try { navigator.clipboard.writeText(text); setCopied(label); setTimeout(() => setCopied(""), 1400); } catch {} };
 
   // Pull measured speeds from the last Speed Check run (real tokens/sec where the user has tested).
@@ -336,6 +348,17 @@ export default function ModelsOverview({ activeModel }) {
   const activeNorm = norm(activeModel);
   const isActive = (m) => activeNorm && (activeNorm.includes(norm(m.run)) || activeNorm.includes(norm(m.name)) || norm(m.run).includes(activeNorm));
   const speedVal = (m) => speedMap[norm(m.run)] ?? speedMap[norm(m.name)] ?? null;
+  const maxSpeed = useMemo(() => Math.max(1, ...Object.values(speedMap)), [speedMap]);
+
+  // Insight band — live stats that are also one-click filters. The dashboard answers
+  // "what do I have?" before the user reads a single row.
+  const stats = useMemo(() => ({
+    total: allModels.length,
+    free: allModels.filter((m) => isFree(m)).length,
+    agentic: allModels.filter((m) => capAgentic(m)).length,
+    open: allModels.filter((m) => dl(m).open).length,
+    tested: allModels.filter((m) => speedVal(m) != null).length,
+  }), [allModels, speedMap]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const COLS = [
     { key: "name", label: "Model", sort: (m) => m.name },
@@ -388,6 +411,23 @@ export default function ModelsOverview({ activeModel }) {
         </div>
       </div>
 
+      {/* Insight band — every tile is a live stat AND a one-click filter */}
+      <div className="mo-tiles">
+        {[
+          { k: "total", n: stats.total, label: "Models loaded", icon: Layers, act: resetFilters, on: noFilters },
+          { k: "free", n: stats.free, label: "Free to use", icon: Gift, act: () => toggle("free"), on: active.has("free") },
+          { k: "agentic", n: stats.agentic, label: "Agent-ready", icon: Bot, act: () => toggle("agentic"), on: active.has("agentic") },
+          { k: "open", n: stats.open, label: "Open-weight", icon: Download, act: () => toggle("open"), on: active.has("open") },
+          { k: "tested", n: stats.tested, label: "Speed-tested by you", icon: Gauge, act: () => { setSortKey("speed"); setDir("desc"); }, on: sortKey === "speed" },
+        ].map((t) => { const I = t.icon; return (
+          <button key={t.k} className={`mo-tile ${t.on ? "on" : ""}`} onClick={t.act} title={t.k === "tested" ? "Sort by your measured speed" : "Click to filter"}>
+            <span className="mo-tile-ico"><I size={15} /></span>
+            <span className="mo-tile-n">{t.n}</span>
+            <span className="mo-tile-k">{t.label}</span>
+          </button>
+        ); })}
+      </div>
+
       <div className="mo-filters">
         <div className="mo-search">
           <Search size={14} />
@@ -406,6 +446,7 @@ export default function ModelsOverview({ activeModel }) {
         <table className="mo-table">
           <thead>
             <tr>
+              <th title="Pick up to 4 models to compare side by side"><Scale size={13} /></th>
               {COLS.map((c) => (
                 <th key={c.key} onClick={() => setSort(c.key)} className={sortKey === c.key ? "sorted" : ""} title={c.hint || ""}>
                   <span>{c.label}</span>
@@ -416,14 +457,18 @@ export default function ModelsOverview({ activeModel }) {
           </thead>
           <tbody>
             {rows.map((m) => (
-              <tr key={m.name} className={isActive(m) ? "active" : ""} onClick={() => setDetail(m)} style={{ cursor: "pointer" }}>
-                <td><div className="mo-name">{m.name}{isActive(m) && <span className="mo-activebadge">active</span>}</div><div className="mo-sub"><MakerLogo maker={m.maker} /> {m.maker}{m.year ? " · " + m.year : ""}</div></td>
+              <Fragment key={m.name}>
+              <tr className={`${isActive(m) ? "active" : ""} ${expanded === m.name ? "expanded" : ""}`} onClick={() => setExpanded(expanded === m.name ? null : m.name)} style={{ cursor: "pointer" }}>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" className="mo-cmpck" title="Compare" checked={cmp.has(m.name)} disabled={!cmp.has(m.name) && cmp.size >= 4} onChange={() => toggleCmp(m.name)} />
+                </td>
+                <td><div className="mo-name"><ChevronRight size={12} className={`mo-caret ${expanded === m.name ? "open" : ""}`} />{m.name}{isActive(m) && <span className="mo-activebadge">active</span>}</div><div className="mo-sub"><MakerLogo maker={m.maker} /> {m.maker}{m.year ? " · " + m.year : ""}</div></td>
                 <td><div className="mo-best">{m.bestForFull || m.bestFor}</div></td>
-                <td className="mo-num" title={m.ctx ? fmtCtx(m.ctx) + " tokens" : ""}>{fmtCtx(m.ctx)}</td>
-                <td>{(() => { const p = priceLabel(m); return <span className={`mo-cost ${p.free ? "free" : "paid"}`} title={p.free ? "Free to use" : "Per 1M tokens — input / output"}>{p.text}</span>; })()}</td>
-                <td className="mo-num">{sweFor(m)}</td>
-                <td className="mo-num">{humanFor(m)}</td>
-                <td className="mo-num" title={speedVal(m) != null ? "measured" : "run a Speed Check to measure"}>{speedVal(m) != null ? speedVal(m) + " t/s" : "—"}</td>
+                <td className="mo-num" title={m.ctx ? fmtCtx(m.ctx) + " tokens" : ""}>{fmtCtx(m.ctx)}<Meter pct={ctxPct(m.ctx)} tone="#5aa0ff" /></td>
+                <td>{(() => { const p = priceLabel(m); return <span className={`mo-cost tier-${costTier(m)}`} title={p.free ? "Free to use" : "Per 1M tokens — input / output"}>{p.text}</span>; })()}</td>
+                <td className="mo-num">{sweFor(m)}<Meter pct={pctNum(sweFor(m))} tone="#3ecf8e" /></td>
+                <td className="mo-num">{humanFor(m)}<Meter pct={pctNum(humanFor(m))} tone="#b692f6" /></td>
+                <td className="mo-num" title={speedVal(m) != null ? "measured" : "run a Speed Check to measure"}>{speedVal(m) != null ? speedVal(m) + " t/s" : "—"}{speedVal(m) != null && <Meter pct={(speedVal(m) / maxSpeed) * 100} tone="var(--accent)" />}</td>
                 <td><Cap v={capCoding(m)} /></td>
                 <td><span className="mo-qual" style={{ color: thinkingTone(thinkingLabel(m)) }}>{thinkingLabel(m)}</span></td>
                 <td><Cap v={m.vision} /></td>
@@ -446,11 +491,102 @@ export default function ModelsOverview({ activeModel }) {
                     </div>
                   : <span className="mo-sub">API only</span>}</td>
               </tr>
+              {expanded === m.name && (
+                <tr className="mo-exp">
+                  <td colSpan={COLS.length + 1}>
+                    <div className="mo-exp-grid">
+                      <div className="mo-exp-main">
+                        <div className="mo-exp-desc">{m.bestForFull || blurbFor(m)}</div>
+                        {!m.sparse && (
+                          <div className="mo-exp-wm">
+                            {winsFor(m).map((w, i) => <span key={"w" + i} className="mo-exp-chip win"><Check size={11} /> {w}</span>)}
+                            {missesFor(m).map((w, i) => <span key={"m" + i} className="mo-exp-chip miss"><X size={11} /> {w}</span>)}
+                          </div>
+                        )}
+                        <div className="mo-exp-acts">
+                          <button className="btn ghost" onClick={(e) => { e.stopPropagation(); setDetail(m); }}>Full details</button>
+                          <button className="btn ghost" onClick={(e) => { e.stopPropagation(); copy(m.run, m.name); }}>{copied === m.name ? "Copied ✓" : "Copy model id"}</button>
+                          {dl(m).open && dl(m).targets.map((t) => (
+                            <button key={t.id} className="btn ghost" onClick={(e) => { e.stopPropagation(); openExt(t.url); }}><Download size={12} /> {t.label}</button>
+                          ))}
+                          <button className="btn ghost" disabled={!cmp.has(m.name) && cmp.size >= 4} onClick={(e) => { e.stopPropagation(); toggleCmp(m.name); }}><Scale size={12} /> {cmp.has(m.name) ? "Remove from compare" : "Add to compare"}</button>
+                        </div>
+                      </div>
+                      <div className="mo-exp-side">
+                        {[["Context", fmtCtx(m.ctx), ctxPct(m.ctx), "#5aa0ff"], ["SWE-bench", sweFor(m), pctNum(sweFor(m)), "#3ecf8e"], ["HumanEval", humanFor(m), pctNum(humanFor(m)), "#b692f6"], ["Your speed", speedVal(m) != null ? speedVal(m) + " t/s" : "not tested", speedVal(m) != null ? (speedVal(m) / maxSpeed) * 100 : -1, "var(--accent)"]].map(([k, v, pct, tone]) => (
+                          <div key={k} className="mo-exp-stat"><span className="mo-exp-k">{k}</span><span className="mo-exp-v">{v}</span><Meter pct={pct} tone={tone} /></div>
+                        ))}
+                        <div className="mo-exp-stat"><span className="mo-exp-k">Thinking</span><span className="mo-exp-v" style={{ color: thinkingTone(thinkingLabel(m)) }}>{thinkingLabel(m)}</span></div>
+                        <div className="mo-exp-stat"><span className="mo-exp-k">Agentic</span><span className="mo-exp-v" style={{ color: agenticTone(agenticLabel(m)) }}>{agenticLabel(m)}</span></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
-            {rows.length === 0 && <tr><td colSpan={COLS.length} style={{ textAlign: "center", color: "var(--text-2)", padding: 24 }}>No models match your filters.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={COLS.length + 1} style={{ textAlign: "center", color: "var(--text-2)", padding: 24 }}>No models match your filters.</td></tr>}
           </tbody>
         </table>
       </div>
+
+      {/* Floating compare bar — appears once 2+ models are picked */}
+      {cmp.size >= 2 && !cmpOpen && (
+        <div className="mo-cmpbar">
+          <Scale size={14} /> {cmp.size} models selected
+          <button className="btn primary" onClick={() => setCmpOpen(true)}>Compare side by side</button>
+          <button className="btn ghost" onClick={() => setCmp(new Set())}>Clear</button>
+        </div>
+      )}
+
+      {/* Side-by-side comparison — the best value in each row is highlighted */}
+      {cmpOpen && (() => {
+        const picks = allModels.filter((m) => cmp.has(m.name)).slice(0, 4);
+        const metrics = [
+          { k: "Context", v: (m) => fmtCtx(m.ctx), n: (m) => m.ctx || -1, best: "max" },
+          { k: "Cost · $/1M", v: (m) => priceLabel(m).text, n: (m) => (isFree(m) ? 0 : (m.priceIn != null && m.priceIn >= 0 ? m.priceIn : 9e9)), best: "min" },
+          { k: "SWE-bench", v: (m) => sweFor(m), n: (m) => pctNum(sweFor(m)), best: "max" },
+          { k: "HumanEval", v: (m) => humanFor(m), n: (m) => pctNum(humanFor(m)), best: "max" },
+          { k: "Your speed", v: (m) => (speedVal(m) != null ? speedVal(m) + " t/s" : "—"), n: (m) => speedVal(m) ?? -1, best: "max" },
+          { k: "Thinking", v: (m) => thinkingLabel(m), n: () => null },
+          { k: "Agentic", v: (m) => agenticLabel(m), n: () => null },
+          { k: "Host", v: (m) => hostLabel(m), n: () => null },
+          { k: "Params", v: (m) => (m.size && m.size !== "—" ? m.size : "—"), n: (m) => sizeNum(m.size), best: "max" },
+          { k: "License", v: (m) => m.license || "—", n: () => null },
+        ];
+        const bestIdx = (met) => {
+          if (!met.best) return -1;
+          const vals = picks.map((m) => met.n(m));
+          if (vals.every((x) => x == null || x < 0 || x === 9e9)) return -1;
+          let bi = -1, bv = met.best === "max" ? -Infinity : Infinity;
+          vals.forEach((x, i) => { if (x == null || x < 0) return; if (met.best === "max" ? x > bv : x < bv) { bv = x; bi = i; } });
+          return bi;
+        };
+        return (
+          <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setCmpOpen(false); }}>
+            <div className="mo-cmpcard">
+              <div className="mo-card-head">
+                <div className="mo-card-title"><Scale size={16} /> Compare models</div>
+                <button className="icon-btn" onClick={() => setCmpOpen(false)}><X size={16} /></button>
+              </div>
+              <div className="mo-cmpwrap">
+                <table className="mo-cmptable">
+                  <thead><tr><th></th>{picks.map((m) => (
+                    <th key={m.name}><div className="mo-name" style={{ fontSize: 13 }}>{m.name}</div><div className="mo-sub"><MakerLogo maker={m.maker} /> {m.maker}</div></th>
+                  ))}</tr></thead>
+                  <tbody>
+                    {metrics.map((met) => { const bi = bestIdx(met); return (
+                      <tr key={met.k}><td className="mo-cmpk">{met.k}</td>
+                        {picks.map((m, i) => <td key={m.name} className={i === bi ? "best" : ""}>{met.v(m)}{i === bi && <span className="mo-cmpbest">best</span>}</td>)}
+                      </tr>
+                    ); })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {detail && (
         <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setDetail(null); }}>

@@ -42,9 +42,16 @@ contextBridge.exposeInMainWorld("brainedge", {
   getOpenRouterCatalog: (opts) => ipcRenderer.invoke("brainedge:getOpenRouterCatalog", opts),
 
   // --- persisted chat history (Talk / Collaborate / Build) ---
-  listSessions: (mode) => ipcRenderer.invoke("brainedge:listSessions", mode),
+  listSessions: (mode, agentScope) => ipcRenderer.invoke("brainedge:listSessions", mode, agentScope),
   searchSessions: (q, mode) => ipcRenderer.invoke("brainedge:searchSessions", { q, mode }),
   getAppVersion: () => ipcRenderer.invoke("brainedge:getAppVersion"),
+  qaStart: () => ipcRenderer.invoke("brainedge:qaStart"),
+  qaStatus: () => ipcRenderer.invoke("brainedge:qaStatus"),
+  qaHistory: () => ipcRenderer.invoke("brainedge:qaHistory"),
+  qaDiagnose: (test) => ipcRenderer.invoke("brainedge:qaDiagnose", test),
+  qaApplyFix: (fix) => ipcRenderer.invoke("brainedge:qaApplyFix", fix),
+  qaRollback: (args) => ipcRenderer.invoke("brainedge:qaRollback", args),
+  onQaEvent: (cb) => { const h = (_e, m) => cb(m); ipcRenderer.on("brainedge:qa", h); return () => ipcRenderer.removeListener("brainedge:qa", h); },
   getSession: (id) => ipcRenderer.invoke("brainedge:getSession", id),
   deleteSession: (id) => ipcRenderer.invoke("brainedge:deleteSession", id),
 
@@ -85,6 +92,25 @@ contextBridge.exposeInMainWorld("brainedge", {
   getConversation: (id) => ipcRenderer.invoke("brainedge:getConversation", id),
   createConversation: (projectId) => ipcRenderer.invoke("brainedge:createConversation", projectId),
   deleteConversation: (id) => ipcRenderer.invoke("brainedge:deleteConversation", id),
+
+  // --- agent engine: memory · track record · missions · versions · swarms · webhooks ---
+  getAgentMemory: (agentId) => ipcRenderer.invoke("brainedge:getAgentMemory", agentId),
+  setAgentMemory: (agentId, notes) => ipcRenderer.invoke("brainedge:setAgentMemory", { agentId, notes }),
+  clearAgentMemory: (agentId) => ipcRenderer.invoke("brainedge:clearAgentMemory", agentId),
+  getAgentHistory: (agentId) => ipcRenderer.invoke("brainedge:getAgentHistory", agentId),
+  getAgentStats: () => ipcRenderer.invoke("brainedge:getAgentStats"),
+  getMission: (convId) => ipcRenderer.invoke("brainedge:getMission", convId),
+  exportAgent: (agent) => ipcRenderer.invoke("brainedge:exportAgent", agent),
+  importAgent: () => ipcRenderer.invoke("brainedge:importAgent"),
+  snapshotAgentVersion: (agent) => ipcRenderer.invoke("brainedge:snapshotAgentVersion", agent),
+  listAgentVersions: (agentId) => ipcRenderer.invoke("brainedge:listAgentVersions", agentId),
+  applyWebhooks: () => ipcRenderer.invoke("brainedge:applyWebhooks"),
+  webhookStatus: () => ipcRenderer.invoke("brainedge:webhookStatus"),
+  newWebhookToken: () => ipcRenderer.invoke("brainedge:newWebhookToken"),
+  transcribe: (args) => ipcRenderer.invoke("brainedge:transcribe", args),
+  runSwarm: (args) => ipcRenderer.invoke("brainedge:runSwarm", args),
+  cancelSwarm: (swarmId) => ipcRenderer.invoke("brainedge:cancelSwarm", swarmId),
+  onSwarmEvent: (cb) => { const h = (_e, m) => cb(m); ipcRenderer.on("brainedge:swarm", h); return () => ipcRenderer.removeListener("brainedge:swarm", h); },
 
   // --- background + scheduled tasks ---
   listTasks: () => ipcRenderer.invoke("brainedge:listTasks"),

@@ -12,6 +12,9 @@ function load() {
   try { return JSON.parse(fs.readFileSync(file(), "utf8")); } catch { return []; }
 }
 function persist(list) {
+  // Ensure the userData dir exists before writing — on a fresh machine it may not yet,
+  // and a silent write failure would make saves vanish (matches sessions-/task-store).
+  try { fs.mkdirSync(path.dirname(file()), { recursive: true }); } catch {}
   try { fs.writeFileSync(file(), JSON.stringify(list, null, 2)); } catch {}
   return list;
 }

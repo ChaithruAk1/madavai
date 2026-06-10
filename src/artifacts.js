@@ -35,7 +35,52 @@ const CDN = {
   tailwind: "https://cdn.tailwindcss.com",
   mermaid: "https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js",
   marked: "https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js",
+  // Libraries commonly used by generated React artifacts (matches the set Claude provides).
+  reactIs: "https://cdnjs.cloudflare.com/ajax/libs/react-is/18.3.1/umd/react-is.production.min.js",
+  propTypes: "https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js",
+  lodash: "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js",
+  d3: "https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js",
+  recharts: "https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.js",
+  papaparse: "https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js",
+  chartjs: "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js",
+  mathjs: "https://cdnjs.cloudflare.com/ajax/libs/mathjs/13.0.3/math.min.js",
+  lucide: "https://cdnjs.cloudflare.com/ajax/libs/lucide/0.378.0/lucide.min.js",
 };
+
+// Bare-module imports → global assignments, so transpiled artifact code can use the
+// libraries loaded above (Babel-standalone doesn't resolve ESM specifiers). React's own
+// imports are handled specially to avoid clashing with the hooks we pre-declare.
+const BLANKET_HOOKS = ["useState", "useEffect", "useRef", "useMemo", "useCallback", "useReducer", "Fragment"];
+const MODULE_GLOBALS = { recharts: "Recharts", "lucide-react": "LucideReact", lodash: "_", d3: "d3", papaparse: "Papa", mathjs: "math", "chart.js": "Chart" };
+function rewriteImports(src) {
+  const out = [];
+  for (const raw of String(src).split("\n")) {
+    const line = raw;
+    if (/^\s*import\s+["'][^"']+["'];?\s*$/.test(line)) continue;            // side-effect import → drop
+    const m = line.match(/^\s*import\s+(.+?)\s+from\s+["']([^"']+)["'];?\s*$/);
+    if (!m) { out.push(line); continue; }
+    const clause = m[1].trim(); const mod = m[2];
+    // Parse the clause into default + named.
+    let def = null, named = null, ns = null;
+    let mm;
+    if ((mm = clause.match(/^\*\s+as\s+(\w+)$/))) ns = mm[1];
+    else if ((mm = clause.match(/^(\w+)\s*,\s*\{([^}]*)\}$/))) { def = mm[1]; named = mm[2]; }
+    else if (/^\{([^}]*)\}$/.test(clause)) named = clause.replace(/^\{|\}$/g, "");
+    else if (/^\w+$/.test(clause)) def = clause;
+    const namedToDecl = (s) => s.split(",").map((x) => x.trim()).filter(Boolean).map((x) => x.replace(/\s+as\s+/, ": ")).join(", ");
+    if (mod === "react") {
+      if (named) { const extra = named.split(",").map((x) => x.trim().split(/\s+as\s+/)[0]).filter((n) => n && !BLANKET_HOOKS.includes(n)); if (extra.length) out.push(`const { ${namedToDecl(named)} } = React;`); }
+      continue; // default React + blanket hooks already provided
+    }
+    if (mod.startsWith("react-dom")) continue;
+    const g = MODULE_GLOBALS[mod];
+    if (!g) continue; // unknown module → drop (can't resolve); code that needs it will surface a clear error
+    if (ns && ns !== g) out.push(`const ${ns} = ${g};`);       // skip "const d3 = d3" self-decl
+    if (def && def !== g) out.push(`const ${def} = (${g} && ${g}.default) || ${g};`); // skip "const _ = _ || _"
+    if (named) out.push(`const { ${namedToDecl(named)} } = ${g};`);
+  }
+  return out.join("\n");
+}
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 // Graceful CDN failure: if a preview library can't load (strict/offline network), say so
@@ -68,19 +113,38 @@ blockquote{border-left:3px solid #ddd;margin:1em 0;padding-left:14px;color:#555}
 <script>window.addEventListener("load",()=>{ if (window.marked) document.getElementById("c").innerHTML=marked.parse(${JSON.stringify(a.code)}); });</script></body>`;
 
     case "react": {
-      let body = a.code.replace(/^\s*import[^\n]*\n/gm, "");   // React + hooks are provided as globals
       let comp = "App";
-      const m1 = body.match(/export\s+default\s+function\s+(\w+)/);
-      const m2 = body.match(/export\s+default\s+(\w+)\s*;?/);
+      const m1 = a.code.match(/export\s+default\s+function\s+(\w+)/);
+      const m2 = a.code.match(/export\s+default\s+(\w+)\s*;?/);
       if (m1) comp = m1[1]; else if (m2) comp = m2[1];
-      body = body.replace(/export\s+default\s+/g, "");
+      let body = rewriteImports(a.code).replace(/export\s+default\s+/g, "");
+      // Optional libraries load WITHOUT the fatal onerror — a blocked optional lib just
+      // leaves its global undefined (a clear runtime error if used), instead of nuking the page.
       return `<!doctype html><html><head><meta charset="utf-8">
 <script src="${CDN.tailwind}"></script>
-<script src="${CDN.react}" ${CDN_FAIL}></script><script src="${CDN.reactDom}" ${CDN_FAIL}></script><script src="${CDN.babel}" ${CDN_FAIL}></script>
+<script src="${CDN.react}" ${CDN_FAIL}></script><script src="${CDN.reactDom}" ${CDN_FAIL}></script>
+<script src="${CDN.reactIs}"></script><script src="${CDN.propTypes}"></script>
+<script src="${CDN.lodash}"></script><script src="${CDN.d3}"></script><script src="${CDN.papaparse}"></script>
+<script src="${CDN.recharts}"></script><script src="${CDN.chartjs}"></script><script src="${CDN.mathjs}"></script>
+<script src="${CDN.lucide}"></script>
+<script src="${CDN.babel}" ${CDN_FAIL}></script>
 <style>body{margin:0;font-family:system-ui}</style></head>
 <body><div id="root"></div>
 <script type="text/babel" data-presets="react">
 const {useState,useEffect,useRef,useMemo,useCallback,useReducer,Fragment} = React;
+// lucide-react shim: any icon name → a React component rendering the matching lucide glyph
+// (falls back to an empty box if the icon set didn't load), so icon imports never crash.
+const LucideReact = new Proxy({}, { get(_t, name) {
+  return function LucideIcon(props) {
+    props = props || {};
+    const size = props.size || 24;
+    const set = (window.lucide && window.lucide.icons) || {};
+    const node = set[name] || set[String(name).replace(/([a-z])([A-Z])/g, "$1-$2")] || [];
+    const base = { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+    const kids = (Array.isArray(node) ? node : []).map((c, i) => React.createElement(c[0], Object.assign({ key: i }, c[1])));
+    return React.createElement("svg", Object.assign(base, props, { width: size, height: size }), kids);
+  };
+}});
 try {
 ${body}
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(${comp}));

@@ -11,13 +11,19 @@
     "brainedge": "cli/brainedge.mjs"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "cross-env VITE_INCLUDE_QA=1 vite",
     "build": "vite build",
+    "build:admin": "cross-env VITE_INCLUDE_QA=1 vite build",
     "preview": "vite preview",
     "wait-electron": "wait-on http://localhost:5174 && cross-env NODE_ENV=development electron .",
     "electron:dev": "concurrently -k -n VITE,ELECTRON -c cyan,yellow npm:dev npm:wait-electron",
     "electron:build": "vite build && electron-builder --win",
     "rebuild": "electron-rebuild -f -w @homebridge/node-pty-prebuilt-multiarch",
+    "qa": "node scripts/qa-external.mjs",
+    "qa:ui": "node scripts/qa-external-ui.mjs",
+    "qa:fast": "node scripts/qa-external.mjs --no-build",
+    "qa:restore": "node scripts/qa-external.mjs restore",
+    "qa:list": "node scripts/qa-external.mjs list",
     "test": "vitest",
     "test:run": "vitest run",
     "verify": "vite build && vitest run"
@@ -63,6 +69,9 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "!electron/qa-runner.cjs",
+      "!electron/qa-fixer.cjs",
+      "!electron/admin-roster.cjs",
       "package.json"
     ],
     "extraResources": [

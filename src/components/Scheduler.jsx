@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer } from "lucide-react";
+import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer, Webhook, Copy, Check } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
 
@@ -44,6 +44,8 @@ const BLANK = { name: "", description: "", prompt: "", target: { type: "chat" },
 export default function Scheduler() {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [agents, setAgents] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [modelGroups, setModelGroups] = useState([]);
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("name");
@@ -57,6 +59,8 @@ export default function Scheduler() {
     load();
     bridge.listProjects().then(setProjects);
     bridge.getSettings().then((s) => {
+      setAgents(s.agents || []);
+      setTeams(s.teams || []);
       const groups = [{ group: "Default", items: [{ id: DEFAULT_MODEL, name: "Default model", prov: "" }] }];
       for (const p of Object.values(s.profiles || {})) {
         const ids = (p.cachedModels && p.cachedModels.length) ? p.cachedModels : (p.model ? [p.model] : []);
@@ -155,15 +159,89 @@ export default function Scheduler() {
       </div>
       </div>
 
+      <div style={{ maxWidth: 1000 }}>
+        <WebhooksCard agents={agents} teams={teams} tasks={tasks} />
+      </div>
+
       {editing && (editing._wizard
         ? <WizardModal draft={editing} setDraft={setEditing} projects={projects} onSave={saveTask} onClose={closeModal} />
-        : <TaskModal draft={editing} setDraft={setEditing} projects={projects} modelGroups={modelGroups} onSave={saveTask} onClose={closeModal} />
+        : <TaskModal draft={editing} setDraft={setEditing} projects={projects} agents={agents} teams={teams} modelGroups={modelGroups} onSave={saveTask} onClose={closeModal} />
       )}
     </div>
   );
 }
 
-function TaskModal({ draft, setDraft, projects, modelGroups, onSave, onClose }) {
+// Webhook triggers — let ANY external system (Zapier, mail filter, CI, cron) fire an
+// agent, a team, or a task: POST /hook/agent/<id> with a prompt. Desktop only.
+function WebhooksCard({ agents, teams, tasks }) {
+  const [cfg, setCfg] = useState(null);
+  const [st, setSt] = useState(null);
+  const [kind, setKind] = useState("agent");
+  const [target, setTarget] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    bridge.getSettings().then((s) => setCfg(s.webhooks || { enabled: false, port: 8765, token: "" })).catch(() => {});
+    bridge.webhookStatus && bridge.webhookStatus().then(setSt).catch(() => {});
+  }, []);
+  if (!cfg || !bridge.applyWebhooks) return null; // web build — webhooks need the desktop app
+
+  const saveApply = async (next) => {
+    setCfg(next);
+    const s = await bridge.getSettings();
+    await bridge.saveSettings({ ...s, webhooks: next });
+    try { setSt(await bridge.applyWebhooks()); } catch {}
+  };
+  const toggle = async () => {
+    const next = { ...cfg, enabled: !cfg.enabled };
+    if (next.enabled && !next.token && bridge.newWebhookToken) next.token = await bridge.newWebhookToken();
+    await saveApply(next);
+  };
+  const list = kind === "agent" ? agents : kind === "team" ? teams : tasks;
+  const id = target || (list[0] && list[0].id) || "<id>";
+  const curl = `curl -X POST http://127.0.0.1:${cfg.port || 8765}/hook/${kind}/${id} -H "Authorization: Bearer ${cfg.token || "<token>"}" -H "Content-Type: application/json" -d "{\\"prompt\\":\\"your mission here\\"}"`;
+  const copy = async () => { try { await navigator.clipboard.writeText(curl); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} };
+
+  return (
+    <div className="acc-card" style={{ padding: "14px 16px", marginTop: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Webhook size={15} style={{ color: cfg.enabled && st && st.running ? "var(--accent)" : "var(--text-2)" }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Webhook triggers</div>
+          <div className="mo-sub">Let other systems fire your agents — mail rules, Zapier, CI, cron. POST a prompt; the agent runs headless and replies with its result.</div>
+        </div>
+        {cfg.enabled && <span className="mo-sub">{st && st.running ? `listening on :${st.port}` : (st && st.error) ? `error: ${st.error}` : "starting…"}</span>}
+        <label className="chip" style={{ cursor: "pointer" }}>
+          <input type="checkbox" checked={!!cfg.enabled} onChange={toggle} style={{ marginRight: 6 }} /> Enabled
+        </label>
+      </div>
+      {cfg.enabled && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span className="mo-sub">Port</span>
+            <input className="model-search" type="number" style={{ marginBottom: 0, width: 90 }} value={cfg.port || 8765}
+              onChange={(e) => saveApply({ ...cfg, port: Number(e.target.value) || 8765 })} />
+            <span className="mo-sub" style={{ marginLeft: 8 }}>Fire a</span>
+            <select className="model-search" style={{ marginBottom: 0, width: "auto" }} value={kind} onChange={(e) => { setKind(e.target.value); setTarget(""); }}>
+              <option value="agent">Agent</option>
+              <option value="team">Team</option>
+              <option value="task">Scheduled task</option>
+            </select>
+            <select className="model-search" style={{ marginBottom: 0, width: "auto", maxWidth: 220 }} value={target} onChange={(e) => setTarget(e.target.value)}>
+              {list.length === 0 && <option value="">none yet</option>}
+              {list.map((x) => <option key={x.id} value={x.id}>{x.name || "Untitled"}</option>)}
+            </select>
+            <button className="btn" onClick={copy} style={{ marginLeft: "auto" }}>{copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copied" : "Copy example"}</button>
+          </div>
+          <div className="mo-sub" style={{ marginTop: 8, fontFamily: "var(--mono)", fontSize: 11, wordBreak: "break-all", userSelect: "all" }}>{curl}</div>
+          <div className="mo-sub" style={{ marginTop: 6 }}>Token-protected, local-only by default (127.0.0.1). Anyone with the token can run your agents — treat it like a password.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TaskModal({ draft, setDraft, projects, agents = [], teams = [], modelGroups, onSave, onClose }) {
   const d = draft;
   const set = (p) => setDraft({ ...d, ...p });
   const setTarget = (p) => set({ target: { ...d.target, ...p } });
@@ -202,11 +280,30 @@ function TaskModal({ draft, setDraft, projects, modelGroups, onSave, onClose }) 
             <option value="chat">Let's Chat (plain)</option>
             <option value="project">Work in a project</option>
             <option value="folder">Let's Collaborate (folder)</option>
+            <option value="agent">Run an agent</option>
+            <option value="team">Run an agent team</option>
           </select>
           {d.target?.type === "project" && (
             <select className="model-search" style={{ marginBottom: 0, width: "auto", flex: 1 }} value={d.target?.projectId || ""} onChange={(e) => setTarget({ projectId: e.target.value })}>
               <option value="">Select project…</option>
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
+          {d.target?.type === "agent" && (
+            <>
+              <select className="model-search" style={{ marginBottom: 0, width: "auto", flex: 1 }} value={d.target?.agentId || ""} onChange={(e) => setTarget({ agentId: e.target.value })}>
+                <option value="">Select agent…</option>
+                {agents.map((a) => <option key={a.id} value={a.id}>{a.name || "Untitled agent"}</option>)}
+              </select>
+              <button className="btn" title="Optional working folder (for agents with file tools)" onClick={async () => { const dir = await bridge.chooseFolder(); if (dir) setTarget({ folder: dir }); }}>
+                <FolderInput size={13} /> {d.target?.folder ? "Folder ✓" : "Folder (optional)"}
+              </button>
+            </>
+          )}
+          {d.target?.type === "team" && (
+            <select className="model-search" style={{ marginBottom: 0, width: "auto", flex: 1 }} value={d.target?.teamId || ""} onChange={(e) => setTarget({ teamId: e.target.value })}>
+              <option value="">Select team…</option>
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name || "Untitled team"}</option>)}
             </select>
           )}
           {d.target?.type === "folder" && (

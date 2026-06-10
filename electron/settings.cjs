@@ -25,6 +25,7 @@ function mapSecrets(s, fn) {
   if (!s) return s;
   if (typeof s.googleClientSecret === "string") s.googleClientSecret = fn(s.googleClientSecret);
   if (s.messaging && typeof s.messaging.telegramToken === "string") s.messaging.telegramToken = fn(s.messaging.telegramToken);
+  if (s.webhooks && typeof s.webhooks.token === "string") s.webhooks.token = fn(s.webhooks.token);
   for (const k of Object.keys(s.profiles || {})) {
     const p = s.profiles[k];
     if (p && typeof p.apiKey === "string") p.apiKey = fn(p.apiKey);
@@ -53,6 +54,16 @@ const DEFAULTS = {
   proxyUrl: "", // optional corporate proxy, e.g. http://proxy.corp:8080 (applied on startup)
   noProxy: "", // optional comma-separated hosts to bypass the proxy (defaults to localhost)
   messaging: { enabled: false, platform: "telegram", telegramToken: "", telegramAllowedUserIds: "", target: "chat", folder: "" },
+  webhooks: { enabled: false, port: 8765, token: "", lan: false }, // local webhook triggers (POST /hook/agent/<id> …)
+  missionTokenBudget: 0, // global per-mission token cap for teams (estimated; 0 = off). Teams can override per-team.
+  // Agent Browser guardrails (admin-controllable; secure defaults). Relaxing any of
+  // these widens what a browsing agent can do on hostile web pages — change with care.
+  agentBrowser: {
+    enabled: true,            // MASTER switch — off disables the Agent Browser feature for ALL agents
+    enforceAllowlist: true,   // confine agents to each agent's allowed sites (off = any site, redirects unchecked)
+    shieldInjection: true,    // mark page text UNTRUSTED so embedded "instructions" stay inert (off = injection risk)
+    allowSecretFields: false, // let agents type into password/payment/OTP fields (off = human-only; ON is dangerous)
+  },
   profiles: {
     p_local: {
       id: "p_local",

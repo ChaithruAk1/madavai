@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const TOP = [
@@ -23,6 +23,7 @@ const BOTTOM = [
   { id: "scheduler", label: "Scheduler", icon: Clock },
   { id: "consumption", label: "Consumption", icon: BarChart3 },
 ];
+const ADMIN_ITEM = { id: "testcenter", label: "Test Center", icon: FlaskConical };
 
 export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession }) {
   const [recents, setRecents] = useState([]);
@@ -44,6 +45,17 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   }, [refreshKey]);
 
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Test Center entry needs BOTH: an admin account AND the QA tools present in this build
+  // (they're excluded from end-user installers — downloads from the website never get them).
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [qaHere, setQaHere] = useState(false);
+  useEffect(() => {
+    let live = true;
+    bridge.adminStats?.().then((r) => { if (live) setIsAdmin(!!r && !r.error); }).catch(() => {});
+    bridge.qaStatus?.().then((r) => { if (live) setQaHere(!!r && r.available !== false); }).catch(() => {});
+    return () => { live = false; };
+  }, [refreshKey]);
 
   // Desktop update check: compare this build against /app-version on the account server.
   const [update, setUpdate] = useState(null); // { version, url }
@@ -77,7 +89,9 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   const profileInitial = ((u && (u.name || u.email)) || "P").slice(0, 1).toUpperCase();
   const st = acct && acct.status;
   const plan = acct && acct.subscription && acct.subscription.plan;
-  const planLabel = st === "active" ? (plan || "Pro plan") : st === "trialing" ? `Trial · ${acct ? acct.daysLeft : 0}d left` : st === "expired" ? "Trial ended" : (acct ? "Account" : "Sign in");
+  const role = acct && acct.role; // local-roster role: "creator" | "complimentary"
+  const planLabel = role === "creator" ? "Creator" : role === "complimentary" ? "Complimentary"
+    : st === "active" ? (plan || "Pro plan") : st === "trialing" ? `Trial · ${acct ? acct.daysLeft : 0}d left` : st === "expired" ? "Trial ended" : (acct ? "Account" : "Sign in");
   const signOut = async () => { setMenuOpen(false); try { await bridge.authSignOut?.(); } catch {} try { location.reload(); } catch {} };
   const manage = async () => { setMenuOpen(false); if (st === "active" && bridge.billingPortal) { try { await bridge.billingPortal(); } catch {} } else { upgrade(); } };
   const getHelp = () => { setMenuOpen(false); try { bridge.openExternal?.("mailto:chaithru@gmail.com?subject=BrainEdge%20help"); } catch {} };
@@ -88,8 +102,10 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   useEffect(() => { bridge.getSettings?.().then((s) => { if (s) setLang(s.responseLanguage || "model"); }).catch(() => {}); }, []);
   const setLanguage = async (v) => { setLang(v); try { const s = await bridge.getSettings(); await bridge.saveSettings({ ...s, responseLanguage: v }); } catch {} };
   const LANGS = [["model", "Default (model decides)"], ["English", "English"], ["Spanish", "Spanish"], ["French", "French"], ["German", "German"], ["Italian", "Italian"], ["Portuguese", "Portuguese"], ["Hindi", "Hindi"], ["Arabic", "Arabic"], ["Chinese", "Chinese"], ["Japanese", "Japanese"], ["Korean", "Korean"], ["Russian", "Russian"]];
-  const isComp = acct && acct.subscription && acct.subscription.plan === "Complimentary";
-  const paidSub = acct && acct.subscription && acct.subscription.active && !isComp;
+  const isComp = role === "complimentary" || (acct && acct.subscription && acct.subscription.plan === "Complimentary");
+  const isCreator = role === "creator";
+  // Treat Creator/Complimentary like a settled paid account: no trial/upgrade nags.
+  const paidSub = isCreator || (acct && acct.subscription && acct.subscription.active && !isComp);
   const navBtn = (t) => {
     const I = t.icon;
     return (
@@ -100,7 +116,8 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   };
   useEffect(() => {
     let live = true;
-    bridge.listSessions(historyMode).then((l) => { if (live) setRecents(l || []); }).catch(() => {});
+    // Agent/team-bound conversations live on the Agents screen, not the general recents.
+    bridge.listSessions(historyMode, "exclude").then((l) => { if (live) setRecents(l || []); }).catch(() => {});
     return () => { live = false; };
   }, [historyMode, refreshKey]);
 
@@ -165,6 +182,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
       })}
 
       {BOTTOM.map(navBtn)}
+      {isAdmin && qaHere && navBtn(ADMIN_ITEM)}
 
       <div className="sb-expand">
         <div className="nav-label" style={{ marginTop: 10 }}>Recents</div>

@@ -60,6 +60,17 @@ export default function TeamOps({ team, run, onClose }) {
         {allDone && <span className="tops-done"><Check size={12} /> Mission complete — {doneCount} station{doneCount === 1 ? "" : "s"} cleared</span>}
       </div>
 
+      {/* cost guardrail — live token meter (shown when this mission has a budget) */}
+      {run && run.budget && run.budget.max > 0 && (
+        <div style={{ padding: "6px 14px 2px", display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "var(--text-2)" }}>
+          <span>budget</span>
+          <span style={{ flex: 1, height: 5, borderRadius: 3, background: "color-mix(in srgb, currentColor 18%, transparent)", overflow: "hidden" }}>
+            <span style={{ display: "block", height: "100%", borderRadius: 3, width: `${Math.min(100, Math.round((run.budget.used / run.budget.max) * 100))}%`, background: run.budget.used >= run.budget.max ? "var(--danger)" : "var(--accent)", transition: "width .4s ease" }} />
+          </span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>{Math.round(run.budget.used / 1000)}k / {Math.round(run.budget.max / 1000)}k tok</span>
+        </div>
+      )}
+
       {/* the floor */}
       <div className="tops-floor scroll">
         {run && run.plan && (

@@ -35021,7 +35021,123 @@ Chose via questions: build-by-chat + live preview, full visual identity, persona
 ### 🧑 User — "build the multi-agent ecosystem; non-devs; feel like a factory of 100+; agentic-only models in Agent pickers" → 🤖 TEAMS + MISSION CONTROL BUILT
 Full detail MEMORY.md §11ag-2. Backend pattern reused, both platforms.
 - **Teams**: Relay line (work flows member→member) or Managed (coordinator plans sub-tasks → members execute → synthesized deliverable). Desktop `_teamTurn`/`_runMember` (real tools + permissions forwarded, per-member pinned models); web `runTeamTurn` (prompt-level members). Member steps render as `"<Name> (teammate)"` tool cards.
+
+## Session — 2026-06-10 05:45 ("Brain Edge with Fable5" — fan-out, Guide, code-review fix waves, missed features, UI/layout passes, Models dashboard, full QA organism)
+Continuation of the Teams session above; session still active at doc time. Full detail MEMORY.md §11ah.
+
+### 🧑 User — "go ahead with parallel fan-out; give me test examples" → 🤖 BUILT
+- **Parallel fan-out for Managed teams** (web + desktop): all members dispatched simultaneously (`Promise.all` in `_teamTurn`; `runTeamTurn` on web), coordinator merges after all return; Mission Control shows multiple stations glowing at once. New **permission queue** so parallel members can't deadlock the permission modal. **Relay stays sequential by design.** Caveat: parallel cuts wall-clock, not tokens; 5–6 members on one provider risks rate limits.
+- **TEST-AGENTS.md** written: 6 e2e scenarios (~30 min) with pass/fail criteria — Scenario 0 = Save smoke test (gating), solo agents, Relay, Managed parallel "factory moment", mixed-model team, grand finale chaining all three (manual paste between stages; auto-chaining = `call_agent` roadmap).
+
+### 🧑 User — "Agents click → storytelling overview page with flow diagrams + continue-to-create" → 🤖 "THE GUIDE" BUILT, then split + polish
+- **Agent Guide**: first-visit storytelling overview (agent anatomy → solo → Relay → Managed chapters, pure themed markup, no images) + "Flight school" — the 5 test scenarios as launchable simulations (Sim 1 pre-fills the Designer). Reopen via Guide button.
+- Redesigned to **two panes** on request: left chapter rail (01–04, one chapter on stage, progress dots), right simulation cards; chapters make matching sims glow.
+- **Six UI fixes** (from screenshot): scroll clamped, "Create your first agent" into header, tabs renamed **Agent**/**Agents Team** with person/group icons, **Agent Guide** tab with animated page-turning book + standing violet highlight, Studio model picker accent-solid and **model selection now mandatory** before creating an agent. Plus **global rule: all lucide icons take the theme accent** (inverted on accent-solid surfaces; danger-red deletes kept).
+
+### 🧑 User — "code review entire project (Opus-built), report only" → 🤖 CODE-REVIEW-SUMMARY.md; then "fix all waves" → 16/17 EXECUTED
+- **CODE-REVIEW-SUMMARY.md**: 3 parallel review agents, ~80 findings. Headlines: auth server ran on factory-default secrets; filename-into-command injection (zip import); weak session IDs; chat showed raw markdown; full-conversation re-render per streamed token; unbounded logs/history; 30s terminal freezes. Decision sheet Q1–Q17 (4 waves) + Q18 (world-class UI).
+- **Waves executed autonomously** (user YES to all): security (prod refuses default secrets; argument-safe tar extraction; crypto-strength IDs; timing-safe admin key + rate limit), reliability (async terminal commands, 4MB log rotation, history cap 200, settings cache + corruption guards, usage-race fix), quality (**real markdown in chat** via new dependency-free XSS-safe React renderer `markdown.jsx` + `Message.jsx` memoization; model picker capped at 250 rows; light theme to Studio/Mission Control/Guide; a11y focus rings), structural (deps pinned: agent-sdk 0.3.150, MCP SDK 1.29.0). **Q16 monolith file split deliberately deferred** until verified builds.
+- **§4 "half-baked" observations all closed**: speed-test model-selector guard (snapshot+restore w/ logging — no direct writer found), **agent/team re-attach on conversation reopen** (fixes prior limitation; new conversations only), artifact version dropdown, CDN-blocked preview notice, **PDF/docx knowledge import** (pdf-parse + mammoth, image-only scans skipped, ~100k-token cap/file), web file-agent "file edits only on web" signpost.
+- **First green build of the whole batch** (vite, 1547 modules). **npm audit triage**: runtime `--omit=dev` = 0 vulnerabilities; dev-tool bumps electron-builder→26, @electron/rebuild→4 cut findings 15→6 (remaining incl. the critical live in vite/vitest dev chain — major upgrade deferred to its own session). Commit guidance given (exclude server/.env, users.json, email lists; Render needs real SESSION_SECRET/ADMIN_KEY).
+
+### 🧑 User — "build the missed features autonomously; best of top-5 providers" → 🤖 7 OF 8 BUILT
+Global search inside conversation content (sidebar, 3+ chars, snippet); per-conversation **Markdown export**; **per-agent knowledge files** (up to 8, injected solo and on teams); **Backup & restore** (single file incl. keys, plain warning); **onboarding wizard** (provider pick → key verify → free model → chat); **cost estimates** in Consumption (real OpenRouter pricing, honest coverage label); **update check** (`/app-version` + sidebar banner; notify-not-auto-install). #8 per-member team retry **honestly deferred** (needs real engine API, not a fake button).
+
+### 🧑 User — "world-class UI, addictive UX" + 3 screenshot-driven layout passes → 🤖 BUILT
+- **Motion/system layer**: one easing curve + 3 durations app-wide, press/hover micro-interactions everywhere, skeleton loaders, breathing streaming caret, tabular numbers, teaching empty states, `prefers-reduced-motion` respected.
+- **Layout discipline app-wide**: data-dense pages (Models Overview) take full window width; dashboards center at 1500/1280 with clamp padding; chat stays 860px reading width. Models table description clamped to 2 lines → horizontal scroll killed; Consumption on a strict 16px rhythm; subagent audit fixed left-anchored pages (Connectors, Settings, Via Mobile, Plugins).
+- **Models Overview redesigned as interactive dashboard**: insight band of 5 stat tiles that double as filters, meter bars in Context/SWE-bench/HumanEval/Speed cells, cost color tiers, inline row expansion (no modal), **Compare mode** (up to 4 models side-by-side, best-value badges).
+
+### 🧑 User — "zero-bug deployment, agent-powered, admin-only, test EVERY feature, daily cycle" → 🤖 FULL QA ORGANISM BUILT (the bulk of this session)
+- **Test Center** (admin-only sidebar entry): one-button **engine test cycle — 7 suites, ~32 tests**: code integrity, data stores (canary-string CRUD), file-tool sandbox + escape block, **live engine** (6 real model calls: instruction-following, agent character, JSON discipline, team plan, markdown), **Agents & Teams e2e incl. a real 2-member relay mission through the actual team engine**, Skills/Scheduler/Via-Mobile/CLI, auth server. Live progress, issues pinned with errors, run history. ~9 real model calls per cycle — point selector at a cheap model.
+- **TESTING-BLUEPRINT.md**: storybook-style non-developer "bible" — architecture/info-flow diagrams (plain text), 7 departments with "a failure here means…", four-gate deployment pipeline, daily + pre-release runbooks, error-triage table, honest-boundaries chapter, 39-test inventory.
+- **Repair Bay**: per-failure "Diagnose & propose fix" — agent reads error + mapped suspect source files → plain-English diagnosis + one minimal patch as red/green diff with confidence → **admin Approve & apply** (timestamped backup first) or Dismiss → one-click Roll back. Patch pre-validated against live file; only project source of safe types; environmental failures honestly labeled not-auto-fixable. Supervised-autonomy by deliberate choice.
+- **Functional UI Sweep**: the app drives itself — 19 scripted scenarios across Let's Chat (incl. real PNG paste → preview, voice button check, slash menu), Collaborate, Build, Projects, Agents, Studio, Scheduler, Skills, Models, Consumption; floating HUD; **visual verdict dashboard** (big % card, clickable per-area cards with pass-bars, failed list in plain language, honest skips — e.g. "no speech engine in this build, by design"); per-scenario detail board grouped by topic.
+- **Plain-English errors everywhere** (user hit `401 No cookie auth` + `bridge.qaDiagnose is not a function`): every failure leads with a bold plain-English explanation + what to do; raw text demoted to collapsed "Technical detail"; **navigation buttons jump to the fixing screen** ("→ Open Model configuration"). The two errors decoded: NVIDIA key invalid for selected model; restart needed to load Repair Bay.
+- **Scenario Manager**: sweep scenarios converted from code to **data** (navigate/click/type/paste/expect/wait steps); "Scenario library" panel — describe a check in plain English → **AI drafts the steps** → editable rows → Save → runs in every future sweep; pause/delete per scenario, untick stale built-ins. Division of labor: agents author, deterministic robot executes, admin reviews.
+- **Test Center restructured**: header run buttons + 4 clickable status cards (Engine tests / UI sweep / Scenario library / Open issues) → tabs; board state survives leaving mid-run. In-app vs outside testing trade-offs discussed (Playwright/CI external harness = pre-launch roadmap).
+- **Outside safety net + restore-to-last-working**: `npm run qa` (external verifier: parse every engine/server/CLI file, validate manifest, real build; **auto-checkpoint to `.checkpoints/good-<ts>/` when green**, keep 5), `qa:fast`, `qa:list`, **`qa:restore`** (back to last GREEN state; snapshots the broken state first, fully reversible). Checkpoints = source only, never user data/keys; git remains deep history.
+
+### Open items at session end
+Save "nothing happens" bug STILL open (Scenario 0 smoke-tests it); per-member team retry deferred; vite/vitest major upgrade deferred (6 dev-only audit findings incl. 1 critical); Q16 file split deferred; speech engine not wired (by design); Playwright/CI harness = pre-launch; electron-builder 26 untested until next installer build; session was largely not compile-verified until the mid-session green build — later QA rounds verified via Test Center/`npm run qa` themselves.
 - **Mission Control** (`TeamOps.jsx`): live right-hand factory panel — member stations with glow-pulse working state, scanning bars, rotating verbs, rail connectors, plan + assembly stations, elapsed clock, "n/m stations cleared".
+
+## Session — 2026-06-09 (continuation of "Brain Edge with Fable5": fan-out, Guide, code review + fix waves, missed features, UI/layout passes, green build, Models dashboard, QA Test Center, testing blueprint)
+
+Catch-up block: Chat.md previously ended at Teams + Mission Control; everything below landed later the same session and is already detailed in MEMORY.md §11ah–§11am (referenced per item).
+
+### 🧑 User — "members should run in parallel" → 🤖 PARALLEL FAN-OUT BUILT (§11ag-3)
+- Managed teams dispatch all members via `Promise.all` (desktop + web); each member gets mission + own sub-task only; Relay stays sequential by design. Permission queue added in App.jsx so concurrent member permission requests don't deadlock the modal.
+
+### 🧑 User — "test the entire agent concept" / "explain agents like a story" → 🤖 TEST-AGENTS.md + AGENT GUIDE (§11ag-4)
+- **TEST-AGENTS.md**: 6-scenario E2E script; Scenario 0 (Save smoke test) gates everything.
+- **Agent Guide** in Agents.jsx: two-pane storytelling overview (chapter rail + "Flight school" sims), mandatory model gate before agent creation, tabs renamed Agent / Agents Team, global lucide icon accent theming.
+
+### 🧑 User — "full code review of everything Opus built; report only" → 🤖 CODE-REVIEW-SUMMARY.md (§11ag-5)
+- 3 parallel review subagents, ~80 findings: security (default secrets, command injection, weak IDs), reliability (blocking execSync, races, unbounded growth), frontend (no markdown rendering, full re-render per token, monoliths), build. Fix plan as Q1–Q18 questionnaire in 4 waves + missed-features list + half-baked audit + zero-bug deploy strategy.
+
+### 🧑 User — approved all waves → 🤖 FIX WAVES EXECUTED, 16/17 (§11ag-6)
+- W1 security (prod startup guard for SESSION_SECRET/ADMIN_KEY, injection-safe tar import, crypto IDs, timing-safe admin key + rate limit); W2 reliability (async run_bash, log rotation, history cap, per-session turn map, settings cache); W3 quality (NEW dependency-free XSS-safe `src/markdown.jsx` chat renderer, Message memoization, light-theme + a11y passes); W4 deps pinned. Q16 monolith split deferred until first green build.
+
+### 🧑 User — approved §4 half-baked audit fixes → 🤖 ALL CLOSED (§11ag-7)
+- Speed-test model-selector guard (snapshot + restore, both platforms); agent/team re-attach on conversation reopen; artifact version dropdown + CDN-blocked fallback message; **PDF/docx knowledge parsing** (pdf-parse + mammoth — `npm install` required); web cowork signpost. Via Mobile single-session, Bench instructions-only, web prompt-only members documented as deliberate limits.
+
+### 🧑 User — "build the missed features, think beyond Anthropic" → 🤖 7 OF 8 BUILT (§11ag-8)
+- Global content search in sidebar (snippets), conversation export to Markdown, per-agent knowledge files (work solo + on teams, both platforms), backup/restore in Model configuration, first-run onboarding wizard (provider → key verify → free model), cost estimates in Consumption (OpenRouter pricing, coverage %), update check (`/app-version` + sidebar banner). #8 per-member team retry deferred honestly (needs real engine API).
+
+### 🧑 User — "make the UI world-class / addictive" → 🤖 Q18 DESIGN-SYSTEM LAYER (§11ag-9)
+- One easing + three durations app-wide, press/hover micro-interactions, arrival animations (rise/slide/pop/settle), skeleton loaders, breathing streaming caret, teaching empty states, tabular nums, `prefers-reduced-motion` honored.
+
+### 🧑 User — screenshots: "use full width, align perfectly" → 🤖 LAYOUT DISCIPLINE (§11ag-10 + follow-ups)
+- `--page-max`/`--prose-max` tokens; rule: data-dense pages full-window width, content pages centered, chat at 860px reading width. Models Overview horizontal scroll killed (Best-for 2-line clamp); Consumption on strict 16px rhythm, baseline-pinned KPI labels, equal-height panels, chart+heatmap side-by-side ≥1500px.
+
+### 🧑 User — ran npm install / build / audit → 🤖 BUILD GREEN + AUDIT TRIAGED (§11ak)
+- First compile verification of the whole day: `npm run build` GREEN (1547 modules). Audit: all findings dev-tooling; bumped electron-builder→26 + @electron/rebuild→4; **`npm audit --omit=dev` = 0 runtime vulnerabilities**; vite 5→7 major deferred. "auth-server.mj" error was a user typo, not a bug.
+
+### 🧑 User — "dashboard is boring — make it interactive" → 🤖 MODELS OVERVIEW INTERACTIVE DASHBOARD (§11ag-11 A)
+- Insight band (5 clickable stat-tile filters), in-cell meter bars + cost color tiers, inline expandable rows (description, wins/misses chips, actions), **Compare mode** — up to 4 models side-by-side with best-value badges.
+
+### 🧑 User — "zero-bug deployment; agent-powered testing of EVERY feature, admin-only, daily" → 🤖 QA TEST CENTER BUILT (§11ag-11 B)
+- `electron/qa-runner.cjs` + `TestCenter.jsx`, admin-gated sidebar entry. **7 suites, ~32 tests**: code integrity, data stores (canary CRUD), file tools (escape blocked), live engine (6 real model calls), Agents & Teams (knowledge injection, model-pin resolution, **real 2-member relay mission through `_teamTurn`**), Skills & tasks, auth server. Live progress, failures pinned with exact errors, 30-run history. ~9 live model calls per full cycle — use a cheap/free model. Gap: pixel-level UI clicks (Playwright = roadmap suite 8).
+
+### 🧑 User — "blueprint document, storybook style, for non-developers" → 🤖 TESTING-BLUEPRINT.md (§11am)
+- ~19KB "testing bible" in repo root: cast of characters, plain-text architecture/info-flow diagrams, per-suite failure meanings, daily + pre-release runbooks, triage table, four-gate deploy pipeline, honest boundaries, 39-test inventory. Session truly ends here.
+
+### Open / unresolved (per §11al/§11am)
+- Dashboard + Test Center batch unverified → `npm run build` + full restart + first admin test cycle + commit (user's terminal).
+- Save-button "nothing happens" bug undiagnosed — gates TEST-AGENTS.md Scenario 0.
+- Runtime smoke pass pending (markdown table, agent re-attach on NEW conversations, async shell, PDF knowledge import); Q16 monolith split unblocked; per-member team retry deferred; electron-builder 26 untested until next `electron:build`; earlier carry-forwards per §11ah/§11aj unchanged.
+
+## Session — 2026-06-09 (evening: fan-out, Agent Guide, code review + fix waves, missed features, UI/layout passes, green build, Models dashboard, QA Test Center)
+Continuation of the "Brain Edge with Fable5" session after Teams + Mission Control. Full detail in MEMORY.md §§11ag-3…11ag-11, 11ak.
+
+### 🧑 User — sequential teams too slow → 🤖 PARALLEL FAN-OUT BUILT (§11ag-3)
+- Managed teams now run all members simultaneously (`Promise.all`, web + desktop); Relay stays sequential by design. Permission queue added so concurrent member permission requests don't deadlock the modal. Standing directive recorded: nothing should feel like an Anthropic copy — workforce metaphor going forward.
+
+### 🧑 User — "test the entire agent concept" / "explain agents to non-devs" → 🤖 TEST-AGENTS.md + AGENT GUIDE (§11ag-4)
+- **TEST-AGENTS.md**: 6-scenario E2E script; Scenario 0 (Save smoke test) gates everything.
+- **Agent Guide** in Agents.jsx: two-pane storytelling page (chapter rail + "Flight school" sims), mandatory model gate before agent creation, global lucide icon accent theming.
+
+### 🧑 User — "full code review, report only" then "approved — execute" → 🤖 REVIEW + WAVES Q1–Q17 (16/17) (§11ag-5/6)
+- 3-subagent review → **CODE-REVIEW-SUMMARY.md** (~80 findings, Q1–Q18 questionnaire). All waves executed: W1 security (prod secret guard, injection-safe zip import, crypto IDs, timing-safe admin key + rate limit), W2 reliability (async run_bash, log rotation, history cap, settings cache, per-session turn map), W3 quality (new XSS-safe `src/markdown.jsx` chat renderer, Message memoization, light-theme + a11y), W4 deps pinned. Q16 monolith split deferred until green build.
+
+### 🧑 User — approved §4 + §3 autonomy → 🤖 HALF-BAKED FIXES + 7/8 MISSED FEATURES (§11ag-7/8)
+- §4 fixes: speed-test selector snapshot/restore guard, agent/team re-attach on reopened conversations, artifact version dropdown + CDN fallback, PDF/docx knowledge parsing (pdf-parse + mammoth — `npm install` required), web cowork signpost.
+- §3 features: global content search w/ snippets, conversation export to Markdown, per-agent knowledge (8 files, works solo + in teams), backup/restore, onboarding wizard, cost estimates in Consumption, update-check banner (`/app-version`). #8 per-member team retry deferred honestly (needs real engine API).
+
+### 🧑 User — "world-class, addictive UX" + alignment screenshots → 🤖 Q18 UI PASS + LAYOUT DISCIPLINE (§11ag-9/10)
+- Design-system layer: one easing/three durations, press/hover feedback everywhere, arrival animations, skeleton loaders, reduced-motion support.
+- Layout: `--page-max`/`--prose-max` tokens, every page centers and breathes with window size; rule recorded — data-dense pages full-width (Models Overview, 2-line Best-for clamp killed horizontal scroll), sparse pages centered, chat at 860px reading width; Consumption on strict 16px rhythm with baseline-pinned KPI labels.
+
+### 🧑 User — ran `npm install` + `npm run build` → 🤖 BUILD GREEN + AUDIT TRIAGE (§11ak)
+- First compile verification of the whole day's work: **green** (1547 modules; 868KB chunk warning cosmetic). npm audit: all findings dev-tooling; bumped electron-builder→26 + @electron/rebuild→4 (15→6 findings); **`npm audit --omit=dev` = 0 runtime vulnerabilities**; vite 5→7 major deferred. "auth-server.mj" MODULE_NOT_FOUND = user typo. Commit commands handed to user.
+
+### 🧑 User — "dashboard is boring; make it interactive" → 🤖 MODELS OVERVIEW INTERACTIVE DASHBOARD (§11ag-11A)
+- Insight band (5 clickable stat tiles doubling as filters), in-cell meter bars (Context/SWE/HumanEval/Speed) + cost color tiers, inline expandable rows (description, wins/misses chips, actions), **Compare mode** (up to 4 models, side-by-side overlay with best-value highlights). Data logic untouched.
+
+### 🧑 User — "agent-powered testing of EVERY feature, admin-only, daily cycle" → 🤖 QA TEST CENTER BUILT (§11ag-11B)
+- `electron/qa-runner.cjs` + `TestCenter.jsx` (admin-gated sidebar entry): one "Run full test cycle" button → **7 suites, ~32 tests** — code integrity, data stores, file tools, live engine (6 real model calls incl. agent-identity + team-plan JSON), Agents & Teams (incl. a REAL 2-member relay mission through `_teamTurn`), Skills & tasks, auth server. Live progress, failures pinned with exact errors, 30-run history. ~9 real model calls per cycle — use a cheap/free model. Honest gap: pixel-level UI clicking needs a browser harness (roadmap suite 8).
+- **Gates at session end:** `npm run build` + full restart (main-process changes) + sign in as admin to run the first cycle; commit pending; Save-button bug status still unconfirmed; runtime smoke pass (markdown table, agent re-attach, async shell, PDF import) still pending.
 - **Studio**: Agents|Teams tabs, team cards w/ stacked faces, plain-language team builder (mode cards, ordered line-up, add-from-bench). `settings.teams`; `agenticOnly` ModelPicker prop applied to all Studio pickers (global selector untouched).
 - Limits: web members tool-less; sequential execution; teams don't re-attach on reopen; ~N+2 model calls per mission. Not compile-checked.
 
@@ -35132,3 +35248,238 @@ Continuation of the code-review session. The review COMPLETED (CODE-REVIEW-SUMMA
 
 ### Open / unresolved
 - `npm install` → `npm run build` (these batches built on top of the green build but unverified; risk spots: Consumption spend memo, Sidebar update effect, Onboarding overlay z-order). Save-button bug still undiagnosed → gates TEST-AGENTS.md Scenario 0. Q16 monolith split waits for green build. Carried items unchanged (GitHub file-picker modal, "+" Skills submenu, Collaborate progress panel, pre-launch secret rotation + Anthropic-path removal, etc.). Commit from the user's own terminal only.
+
+## Session — 2026-06-09 (BUILD VERIFIED GREEN + npm-audit triage; Q18 world-class UI pass; app-wide layout discipline ×3 rounds; interactive Models dashboard redesign STARTED)
+
+### 🧑 User ran `npm install` + `npm run build` → 🤖 GREEN — first compile verification of the whole day
+- `vite build` succeeded (1547 modules) — markdown renderer, Message memo, async shell, settings cache, security waves, Agent Studio, Teams, Mission Control, Guide, artifact versioning, PDF/docx wiring all bundle cleanly. 868KB chunk warning = cosmetic for Electron; code-splitting noted for the web version, not urgent.
+- **npm audit triage:** all 15 findings were dev-tooling (tar via @electron/rebuild + electron-builder; vite-node via vitest) — none ship to users. Bumped **electron-builder → 26** and **@electron/rebuild → 4** (package.json); findings 15 → 6. **`npm audit --omit=dev` = 0 runtime vulnerabilities** (the critical lives in the vite/vitest dev chain; vite 5→7 major deferred to its own verified session — no `--force`). Build green again post-bump. electron-builder 26 gets its real test on the next `npm run electron:build`.
+- Commit commands given (user's terminal). Runtime smoke pass (markdown table, Agents Save test, re-attach on a NEW conversation, async shell responsiveness, PDF into Projects knowledge) still pending.
+
+### 🧑 User — auth-server `MODULE_NOT_FOUND ...auth-server.mj` → typo (missing `s`); reminded: the new production guard refuses to boot without real `SESSION_SECRET`/`ADMIN_KEY` when base is non-localhost / NODE_ENV=production.
+
+### 🧑 User — "world-class, addictive UX; best of top-5 providers" → 🤖 Q18 DESIGN-SYSTEM LAYER BUILT
+Full detail MEMORY.md §11ag-9. One motion vocabulary (single easing, 3 durations), press/hover feedback on every interactive element, card lift, arrival animations (messages rise, panels slide, menus pop, modals settle), breathing streaming caret, skeleton loaders replacing "Loading…" (Consumption, ModelConfig), teaching empty states, themed selection, tabular nums, designed scrollbars, `prefers-reduced-motion` honored. Per-screen taste passes deliberately deferred until the user lives with it on real screens.
+
+### 🧑 User — "align all pages, use space optimally, dynamic to window size" (3 screenshot rounds) → 🤖 APP-WIDE LAYOUT SYSTEM
+Full detail MEMORY.md §11ag-10 + follow-ups.
+- **Round 1:** width tokens `--page-max:1500px` / `--prose-max:860px`; all page containers center; fluid clamp padding; Consumption gains side-by-side Activity+Daily ≥1500px; subagent sweep fixed left-anchored Connectors/Settings/Via Mobile/Plugins/Models Overview.
+- **Round 2 (no horizontal slide, full width):** Models Overview reclassified **data-dense → full window width**; unbounded Best-for column was pushing the table off-screen → 2-line clamp (full text on hover/detail card), rows ~2× denser. Rule recorded: data-dense = full width; content pages = centered page-max; chat = prose-max.
+- **Round 3 ("perfection"):** Consumption on a strict 16px outer rhythm, KPI labels baseline-pinned, equal-height panel rows; rhythm normalization swept across ags/agg/prof/pjd grids.
+
+### 🧑 User — "dashboard view is boring — industry-class, interactive, every model detail" → 🤖 Models Overview interactive dashboard redesign IN PROGRESS
+Read the existing component, started rebuilding (insight band + interactive table underway). Session still running at the time of this log — completion not confirmed.
+
+### Open / unresolved
+- **Models Overview interactive dashboard redesign — in progress, unconfirmed.**
+- Runtime smoke pass pending (markdown table render, Agents Save bug → Scenario 0, agent re-attach, async shell, PDF knowledge import). Save-button bug status unconfirmed.
+- npm audit: 6 dev-chain findings remain (vite/vitest) → vite major upgrade in its own session; electron-builder 26 unverified until next installer build; code-splitting for web later.
+- #8 per-member team retry deferred (engine API); Q16 monolith split now unblocked by the green build.
+- Carried: GitHub file-picker modal; "+" Skills submenu; Collaborate progress panel; "General"/Reasoning-label decisions; Simple-Icons upgrade; HF downloads offer; Ink CLI verification; model-selector guard verification; pre-launch secret rotation + Anthropic-path removal; CLI wire format + distribution; file-tree view + undo/checkpoints. Commit from the user's own terminal.
+
+## Session — 2026-06-09 (doc sync — no new project work)
+The "IN PROGRESS" item in the block above COMPLETED: the Models Overview interactive dashboard and the admin QA Test Center (7 suites, ~32 tests, incl. a real 2-member relay mission) were both BUILT — already recorded in the consolidated "evening" block earlier in this file (## Session — 2026-06-09 evening, §§ Models Overview dashboard + QA Test Center entries) and in MEMORY.md §11ag-11/§11al, which is the authoritative current state. The latest BrainEdge work session ends at that state; this run found no work beyond it. Gates unchanged: `npm run build` + full restart + first admin test cycle + commit from the user's own terminal; Save-button bug and runtime smoke pass still pending.
+
+## Session — 2026-06-09 (TESTING-BLUEPRINT.md — the testing bible; closes the "Brain Edge with Fable5" session)
+
+### 🧑 User — "very detailed blueprint document on the testing process — architecture, info flow, diagrams, simple English for non-developers, storybook style, the bible for design/process/testing" → 🤖 TESTING-BLUEPRINT.md WRITTEN
+- New repo doc **`TESTING-BLUEPRINT.md`** (~19KB; tail verified complete): storybook-structured — prologue ("the machine that checks itself"); cast of characters (Test Center cockpit, QA Engine inspector in `qa-runner.cjs`, the Seven Departments, the Ledger = 30-run history, the Admin Gate); architecture chapter with a plain-text information-flow diagram (button press → IPC → engine room → 7 suites → AI provider → live verdicts back); guided tour of all 7 suites with "a failure here means…" per suite; day-in-the-life process map; four-gate deployment pipeline (showing the one remaining human step); runbook (daily 5-min cycle + full pre-release sequence); triage table (error message → meaning → action); honest-boundaries chapter (pixels still human, AI tests nondeterministic, one machine ≠ all machines) + roadmap; **39-test inventory appendix**. All diagrams plain-text so they render anywhere.
+- No source code touched — documentation only. This was the final action of the "Brain Edge with Fable5" session.
+
+### Open / unresolved
+- Unchanged from the blocks above: `npm run build` + full restart + first admin Test Center cycle (cheap/free model selected) + commit from the user's terminal; Save-button bug undiagnosed (gates TEST-AGENTS.md Scenario 0); runtime smoke pass pending; Q16 split unblocked; per-member team retry deferred; Playwright UI harness = roadmap suite 8; carried items per the evening block.
+
+## Session — 2026-06-10 (catch-up: Repair Bay + plain-English errors + Functional UI Sweep — the true end of "Brain Edge with Fable5")
+
+The blueprint was NOT the session's last action — three more deliverables landed after it (all detailed in MEMORY.md §11ag-11, bullets Repair Bay / plain-English / UI sweep / suite extension).
+
+### 🧑 User — "once testing finds errors, how to fix them? identify, review with admin, fix autonomously?" → 🤖 REPAIR BAY BUILT
+- New `electron/qa-fixer.cjs`: per failed test, `diagnose()` maps the test id to suspect source files, sends error + code to the active model → `{plain-English diagnosis, fixable, file, find, replace, restartRequired, confidence}`. Patch **validated before display** (must match the live file exactly once, else demoted to diagnosis-only). `applyFix()` = path/extension allowlist (project tree, safe types only) → timestamped `.repairbak-` backup → exact replace; `rollback()` one click. **Nothing applies without the admin's Approve click** — supervised autonomy by design.
+- Test Center issue cards gain "Diagnose & propose fix" → proposal card (diagnosis, file, confidence, restart note, red/green diff) → Approve & apply / Dismiss / Roll back. Environmental failures (key/provider/server) honestly marked not-auto-fixable. IPC qaDiagnose/qaApplyFix/qaRollback. TESTING-BLUEPRINT.md gained the matching chapter "6¾: The Repair Bay".
+
+### 🧑 User — "test EVERY small feature — voice, image paste, 10,000 functionalities; visual pass/fail dashboard" → 🤖 FUNCTIONAL UI SWEEP BUILT
+- New `src/qa/functional.js`: renderer-side driver that pilots the REAL interface via pure DOM — text-based element finding, React-safe typing, **real PNG image paste** through a constructed ClipboardEvent, floating progress HUD, report → localStorage. ~19 example scenarios across Let's Chat (typing/image paste/voice — honestly skips since no speech engine is wired/slash menu/reset), Collaborate, Build, Projects, Agents, Studio, Scheduler, Skills, Models (search filters live), Consumption.
+- Test Center gains a "Functional UI sweep" section: Run button (app drives itself ~1 min) + visual verdict dashboard — big green/red % card, per-area cards with pass bars, failed-checks list, honest skips. Framework is the deliverable; each new check = one SCENARIOS entry. Caveat: text/class selectors are brittle to UI renames (intentionally — failures say what vanished).
+
+### 🧑 User — "errors like 401 'No cookie auth' and 'bridge.qaDiagnose is not a function' are not understandable — plain English + link to where to fix" → 🤖 ERROR TRANSLATION + FIX NAVIGATION
+- His two errors decoded: 401 = NVIDIA key not valid for the selected model (pick an accessible model / re-paste key); `bridge.qaDiagnose is not a function` = app needs one full close-and-reopen to load the new Repair Bay preload.
+- TestCenter `translateError(raw)`: maps 401/404-model/429-quota/no-provider/timeout/5xx/parse/weak-model cases → plain-English meaning + what-to-do shown bold FIRST, raw error demoted to a collapsed "Technical detail", and a **"→ Open Model configuration" navigation button** when fixable on-screen (`onNavigate={switchMode}`). Applied to both engine-cycle and UI-sweep issue lists; premature Diagnose clicks now explain the restart instead of erroring.
+
+### Open / unresolved
+- Full **close-and-reopen** (not just rebuild) required — qa-fixer IPC + preload are main-process; then `npm run build`, admin sign-in, engine cycle + UI sweep, commit from the user's terminal.
+- User's live 401 on the NVIDIA provider pending his model/key fix; Save-button bug still undiagnosed (gates Scenario 0); runtime smoke pass, Q16 split, per-member retry, Playwright harness (suite 8) and earlier carried items unchanged.
+
+## Session — 2026-06-10 06:05 (catch-up: "Brain Edge with Fable5" continued past the sweep — Scenario Manager, Test Center restructure, external QA + QA Console + OTP restore, installer/compile-time QA exclusion, PRE-DEPLOYMENT-STEPS.md, AGENT-ENGINE-ROADMAP.md; Wave A+B approved but NOT built)
+
+The session did not end at the error-translation round. Subsequent work (detail in MEMORY.md §11ag-11 late bullets + §11ao):
+
+### 🧑 User — "how do I add/edit sweep scenarios as features grow?" → 🤖 SCENARIO MANAGER BUILT
+- Sweep scenarios converted from code to data (navigate/click/type/pasteImage/expect/wait steps); collapsible "Scenario library" panel in Test Center — describe a check in plain English → AI drafts the steps → editable rows → Save → runs in every future sweep; per-scenario pause/delete; built-ins can be unticked. Division of labor: agents author, deterministic robot executes, admin reviews.
+
+### 🧑 User — "restructure the Test Center dashboard" → 🤖 RESTRUCTURED
+- Overview + 4 clickable status cards (Engine tests / UI sweep / Scenario library / Open issues) → tabs (Engine · UI sweep · Scenario library · History & issues); engine run state restores on mount, so leaving mid-run no longer loses the board. In-app vs outside testing trade-offs explained (Playwright/CI = pre-launch roadmap).
+
+### 🧑 User — "build outside testing as backup; restore to last working condition" → 🤖 EXTERNAL QA + CHECKPOINTS
+- `scripts/qa-external.mjs` (zero deps, runs without the app): parses every engine/server/CLI file, validates manifest, runs the real build; on ALL-GREEN auto-saves a source checkpoint to `.checkpoints/good-<ts>/` (keep 5). `npm run qa | qa:fast | qa:list | qa:restore` — restore snapshots the broken state first (reversible). Source only, never user data/keys.
+
+### 🧑 User — "External-Testing doc + a UI instead of CLI" → 🤖 QA CONSOLE + EXTERNAL-TESTING.md
+- `scripts/qa-external-ui.mjs`: zero-dep local web dashboard (port 7878, `QA-Console.cmd` double-click launcher, `npm run qa:ui`) — Full verification / Fast check / Checkpoints / Restore buttons with live SSE output; independent of the app by design. **EXTERNAL-TESTING.md** written (steps, guidelines, checks table, checkpoint mechanics, troubleshooting, architecture fit).
+
+### 🧑 User — "OTP to iMessage + email before Restore" → 🤖 OTP-PROTECTED RESTORE
+- Restore now requires a 6-digit single-use code (5-min expiry, timing-safe): email (dependency-free SMTP, Gmail App Password) and/or SMS via Twilio (honest correction: true iMessage has no public API — SMS lands in the same Messages app), terminal-print fallback with zero setup. Config in gitignored `scripts/qa-config.json`.
+
+### 🧑 User — "testing must NOT ship in the user installer" ×2 → 🤖 FOUR-LAYER QA EXCLUSION
+- electron-builder excludes `qa-runner.cjs`/`qa-fixer.cjs`; main.cjs loads QA guarded (packaged build reports "not included" instead of crashing); sidebar entry requires admin AND QA files present; **Test Center UI excluded at compile time** — `VITE_INCLUDE_QA` flag + lazy import means plain `npm run build` never emits the QA chunk. Build vocabulary: `dev` (QA on) / `build` (clean, for users/web) / `build:admin` (personal build with Test Center). Verify on next installer: Test Center absent + `dist` grep for "Repair Bay" empty.
+
+### 🧑 User — "what agent functionality are we missing vs other AIs?" → 🤖 PRE-DEPLOYMENT-STEPS.md + AGENT-ENGINE-ROADMAP.md
+- **PRE-DEPLOYMENT-STEPS.md**: full release pipeline — build-command table, Gates 0–3 in order, secrets checklist (rotate OAuth, remove Anthropic sub path), clean-install verification, post-deploy rituals; red gate stops the line.
+- **AGENT-ENGINE-ROADMAP.md**: researched OpenAI AgentKit, Anthropic SDK/Skills, Google ADK/A2A, Copilot Studio, Lindy, Relevance, CrewAI, LangGraph. 14-gap table; top three = persistent agent memory, triggers (schedule/event/webhook — Scheduler can't run agents today), per-agent run history. Waves: A (memory, triggers, track record), B (call_agent, ask_user, coordinator re-planning, durable missions), C (.agent files, RAG-lite, cost meters, swarms). Explicitly NOT copying node-graph builders/A2A/hosted evals.
+
+### 🧑 User — "autonomous approval: build Wave A & Wave B; add scenarios to Agent guide; also review temly.ai's agent approach" → 🤖 NOT BUILT (session ended here)
+- The approval landed but every build attempt hit repeated API errors; the session went idle with **zero Wave A/B code written** and the temly.ai comparison unanswered. This is the top carry-forward for the next session.
+
+### Open / unresolved
+- **Wave A + Wave B approved, not started** (+ Agent Guide scenario additions + temly.ai review). All prior items unchanged: full app close-and-reopen then build/admin cycle/sweep + commit from the user's terminal; NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 split; per-member retry; vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
+
+## Session — 2026-06-10 (scope escalated: Wave A+B+C all approved · Fable-only constraint · teamly.ai review still pending · docs synced)
+
+### 🧑 User — "Approved. Build Wave A, Wave B AND Wave C; add details to the Agent Guide with scenarios; have you reviewed teamly.ai — do we have that functionality? Do NOT switch to Opus 4.8 — build with Fable only." → 🤖 SCOPE LOGGED, NOT YET BUILT
+- **Scope escalated** from the earlier Wave A+B approval to **all three waves** (A: persistent agent memory, triggers/scheduler-run agents, per-agent run history · B: call_agent handoffs, mid-mission ask_user, coordinator re-planning, durable missions · C: .agent share+versioning, RAG-lite knowledge retrieval, cost budgets/meters, agent swarms — all scoped in AGENT-ENGINE-ROADMAP.md). Autonomous approval granted.
+- **HARD CONSTRAINT recorded:** all agent-engine build work stays on **Fable** — do NOT switch the model to Opus 4.8.
+- **Two riders:** (1) document every new capability in the **Agent Guide with scenarios**; (2) **review teamly.ai's agent approach** and confirm whether BrainEdge has equivalent functionality.
+- **teamly.ai review = still owed** — the June-2026 research (AGENT-ENGINE-ROADMAP.md) covered OpenAI/Anthropic/Google/Copilot Studio/Lindy/Relevance/CrewAI/LangGraph but **not teamly.ai**; a capability comparison + parity-gap note is part of the Wave build.
+- **Status:** still NOT built — this run was a documentation-sync request. Wave A+B+C (Fable-only) + Agent Guide scenarios + teamly.ai review is the #1 carry-forward. Full detail MEMORY.md §11ap.
+
+### Open / unresolved
+- **Wave A + B + C approved (Fable-only), not started; Agent Guide scenario docs pending; teamly.ai parity review owed.** All prior items unchanged: full app close-and-reopen → `npm run build` → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal; NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 monolith split; per-member team retry; vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
+
+## Session — 2026-06-10 06:40 (Wave A+B+C build STARTED — new session "BrainEdge Fable New"; IN PROGRESS at log time)
+
+### 🧑 User re-issued the approval in a fresh session (AGENT-ENGINE-ROADMAP.md attached): "build Wave A, B & C; include details in Agent Guide with scenarios; have you reviewed teamly.ai; Fable only — do NOT switch to Opus 4.8" → 🤖 BUILD UNDERWAY
+- The engine layer landed first — **six new main-process modules** on disk:
+  - `electron/agent-memory.cjs` — persistent per-agent memory: post-mission cheap-model call extracts up to 3 durable notes (preferences/facts/corrections); 60-note cap, newest 30 injected into the agent's next prompt; view/edit/clear planned in the Studio Blueprint.
+  - `electron/agent-history.cjs` — per-agent run history (chat/team/schedule/webhook/handoff/swarm), append-only JSONL with rotation (4MB / keep 20k lines, usage-store pattern); powers the "12 missions · 92% clean" track record.
+  - `electron/agent-prompt.cjs` — shared system-prompt builder (identity + instructions + retrieved knowledge + memory), used by BOTH the interactive session-manager and the headless mission-runner so an agent behaves identically in chat and when a trigger fires it at 3 AM.
+  - `electron/knowledge-retrieval.cjs` — RAG-lite: small knowledge injected whole (old behavior preserved); past the prompt budget, docs split into heading/paragraph chunks and keyword-scored passages injected — no embeddings, no vector store.
+  - `electron/mission-store.cjs` — durable missions: checkpoint after every completed member, keyed by conversation id → reopening offers "Resume mission" (completed work reused, only remaining stations run).
+  - `electron/mission-runner.cjs` — headless agent/team execution for scheduled triggers, webhooks, `call_agent` handoffs and swarm runs; records run history and feeds memory the same as interactive missions; resolves `profileId::model` pins.
+- **Session still RUNNING at log time** (~55 assistant turns; tasks created for all waves, repo read, subagent dispatched, files being written). Wiring into session-manager/main/preload/UI, the trigger surface, the Wave B/C UI work, the Agent Guide scenarios and the teamly.ai review are NOT yet confirmed — the next docs update must capture the outcome and build verification.
+
+### Open / unresolved
+- **Wave A+B+C build in progress, unverified** — completion + `npm run build` + Agent Guide scenarios + teamly.ai parity review all pending. Prior gates unchanged: full app close-and-reopen → build → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal; NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 monolith split; per-member team retry; vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
+
+## Session — 2026-06-10 07:10 (catch-up: Wave A+B+C wiring + UI + Agent Guide DONE on disk; verification still running in "BrainEdge Fable New")
+
+### 🤖 Since the 06:40 snapshot the session wired the six engine modules into the whole stack (code on disk, NOT yet verified):
+- **Agent loop tools:** `ask_user` (mid-mission question to the human) and `call_agent` (agent→agent handoff) wired into the agent run loop.
+- **`_teamTurn` fully rewritten:** per-mission budget meter, per-member checkpoints + resume, coordinator re-planning, and per-member run-history + memory recording in one pass.
+- **Triggers:** scheduler task-runner accepts agent/team targets (scheduled missions run headless via mission-runner); Scheduler.jsx gained agent/team trigger targets plus a **webhook triggers** card.
+- **Plumbing:** new IPC handlers in `main.cjs` + matching `preload.cjs` bridge methods for memory/history/missions/swarms.
+- **UI:** "Resume mission" banner + mid-mission question modal in the chat JSX; `BlueprintExtras` and `SwarmModal` components appended (Wave C surface: .agent share/versioning, budgets, swarm launch); per-agent **knowledge cap raised 8 → 24 files** (cap + label + hint).
+- **Agent Guide (both riders #1):** in-app guide gained new chapters + scenario simulations (re-ordered to sit after "Managed team"); **AGENT-GUIDE.md rewritten** with detailed scenarios for the new capabilities.
+
+### 🤖 Verification phase hit a sandbox quirk (workaround applied, build check still running at log time)
+- **New environment quirk discovered:** in-place Edits on large files show up TRUNCATED on the Linux sandbox mount while the Windows-side file stays intact; new files sync instantly. Workaround: rewrite affected files whole via Write, and verify against a /tmp copy spliced from the Windows-side content.
+- All edited `.cjs` files pass `node --check`; a Linux `node_modules` was being installed in the /tmp verification copy for a real `vite build` when this log was written. **Build outcome unknown — session still running.**
+- **teamly.ai parity review (rider #2): still no evidence in the transcript** — likely not yet done; remains owed.
+
+### Open / unresolved
+- **Wave A+B+C code complete on disk but UNVERIFIED** — sandbox build check in flight; then the standing gates: full app close-and-reopen → `npm run build` → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal. teamly.ai parity review still owed. Prior items unchanged: NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 monolith split; per-member team retry; vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
+
+## Session — 2026-06-10 07:40 (catch-up: Wave A+B+C VERIFIED GREEN — "BrainEdge Fable New" session COMPLETE; teamly.ai review still NOT done)
+
+### 🤖 Verification finished after the 07:10 snapshot — all green in the sandbox copy
+- The /tmp Linux verification copy got a slimmed package.json (build+test deps only — full-tree npm resolve was the hang) + Linux node_modules. **All 23 tests pass** and the **production `vite build` is clean**; final smoke test of the new engine modules green.
+- Of the initial test failures, the contract test passed after wiring and the rest were **two PRE-EXISTING test issues, fixed**: a stale `/settings` route expectation and a flaky timestamp-sort assertion. No Wave-code regressions found.
+- Scaffolding cleaned up; **AGENT-ENGINE-ROADMAP.md marked** (waves built). Session ended with the full deliverable summary: Wave A (agent-memory + Scheduler agent/team targets + token-protected webhook server `POST /hook/agent|team|task/<id>` + per-agent track record), Wave B (call_agent handoffs, ask_user pause/resume modal — headless runs self-decide and state the assumption, coordinator re-planning up to 2 follow-up waves, durable missions with "Resume mission" banner), Wave C (.agent export/import + last-10 blueprint versions w/ restore, RAG-lite with 8→24 knowledge cap, per-team budget meter + hard-stop in Mission Control, ⧉ swarm over a pasted list 1–6 parallel → one compiled report). Agent Guide: 2 new in-app chapters + 4 new flight-school scenarios; **AGENT-GUIDE.md** = full playbook, 9 scenarios + capability matrix. **Built entirely on Fable** per the hard constraint.
+- Honest scope note (flagged in the guide): `ask_user`/`call_agent` run on BrainEdge's OWN tool loop (OpenAI-compatible providers); Anthropic-SDK sessions use the SDK's native subagent machinery instead.
+- **teamly.ai parity review (rider #2): NOT done** — confirmed by repo grep: zero mentions in AGENT-ENGINE-ROADMAP.md / AGENT-GUIDE.md; only these doc files reference it. Still owed.
+
+### Open / unresolved
+- **teamly.ai capability comparison + parity-gap note = #1 carry-forward.** Sandbox verification ≠ the user's machine: standing gates remain — full app close-and-reopen (new main-process modules + preload bridge) → Windows `npm run build` → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal. Prior items unchanged: NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 monolith split; per-member team retry (engine API now arguably closer via mission-runner — revisit); vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
+
+## Session — 2026-06-10 08:10 (catch-up: "BrainEdge Fable New" continued — gap rows 12+14 built as Agent Browser + push-to-talk voice; Guide redesign + admin browser controls; session still RUNNING)
+
+### 🧑 User — "Gap Table rows 7–14: BrainEdge lacks capabilities — build them to 4–5 stars? Answer with your views before building" → 🤖 CORRECTED + SCOPED, then APPROVED
+- **Correction given:** the table's stars rated gap *impact*, not BrainEdge maturity — rows 7–11 and 13 (durable missions, RAG retrieval, versioning/.agent, agents-as-API/webhook, cost budgets, swarms) were already closed by the Wave A+B+C build. Only **row 12 (browser/computer use)** and **row 14 (voice)** genuinely remained.
+- **Recommendation (accepted via approval prompt):** build scoped versions — an **Electron-native agent browser** (BrainEdge already ships Chromium; text-mode DOM tools, any model, no vision; ~80% of Operator's daily value) and **push-to-talk voice**; deliberately skip Operator-class vision-pixel control and realtime full-duplex voice (provider-locked, months of work, low desktop demand).
+
+### 🤖 Row 12 BUILT — Agent Browser (`electron/agent-browser.cjs`)
+- Agents get a real, **visible** Chromium BrowserWindow with tools `browse_open / browse_read / browse_click / browse_fill / browse_back`; pages rendered as readable text + numbered interactive elements (DOM-based, no vision/screenshots needed, works with any text model).
+- **Guardrails:** navigation/click/type gated by the existing permission system; per-agent site allowlist; hard refusal to fill password/payment fields; page content framed as untrusted in the prompt (injection bracing).
+- Wired into solo agents, team members, and headless runs; toggled by a new **Browser capability** in the Studio (with allowlist field + Designer awareness).
+
+### 🤖 Row 14 BUILT — Voice (`electron/voice.cjs`)
+- **Push-to-talk:** composer mic records (MediaRecorder) → transcribed via the user's own OpenAI/Groq Whisper key (configurable STT provider) → transcript drops into the composer. **Spoken replies:** speaker toggle reads answers aloud via the OS's built-in speech synthesis (free, offline). IPC + preload plumbing added; the dead mic stub is gone.
+
+### 🤖 Admin Agent Browser controls (Settings.jsx `AgentBrowserSettings`)
+- Three admin-gated toggles, each with a warning: site-allowlist enforcement (default ON), untrusted-page shield (default ON), credential/payment auto-fill (default OFF — flagged as the genuinely dangerous one); `agent-browser.cjs` honors all three.
+
+### 🤖 Agents Guide redesign (user pivoted priorities mid-verification, with screenshot)
+- **Root cause of unreachable lower simulations found:** the guide panes use `class="scroll"` but no base `.scroll { overflow }` rule exists, combined with `.agg-wrap { overflow: hidden }` — scroll fixed.
+- Redesign shipped: objective badges + single-story step framing for simulations; a guide **sub-nav**; a new **Reference (do's & don'ts) page**; `GUIDE_FEATURES` expanded with how-to detail and rendered as a **clickable accordion**; title/description layout bug from the screenshot fixed.
+
+### ⚠️ Verification caveat + still in flight
+- The sandbox-mount staleness quirk persisted all session: the browser/voice/guide round is **written, `node --check`-clean, and Read-confirmed correct on the Windows side, but has NOT had a full build verification** (the /tmp splice re-verify was cut short by the user's pivot). Unlike the Wave round, this code is unbuilt-verified.
+- **At log time the session was still RUNNING:** back-button on the chat-view agent bar + history scoping in progress. teamly.ai parity review: still zero evidence — still owed.
+
+### Open / unresolved
+- **Session still running** — back-button/history outcome + a from-scratch build verification of the browser/voice/guide round must be captured next. **teamly.ai parity review remains the standing owed rider.** Standing gates: full app close-and-reopen (yet more new main-process modules: agent-browser, voice) → Windows `npm run build` → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal. Prior items unchanged: NVIDIA 401; Save-button bug (Scenario 0); runtime smoke pass; Q16 monolith split; per-member retry; vite/vitest majors; electron-builder 26 + installer-exclusion check; Playwright suite 8.
+
+## Session — 2026-06-10 08:41 (catch-up: "BrainEdge Fable New" still running — Test Center scenario mgmt · BeanBox single-story Guide · browser master switch (admin-always-on) · savedStore bug fixed · flow infographics · local Creator/Complimentary roster IN PROGRESS)
+
+### 🤖 Back-button + history scoping COMPLETED (was "in progress" at 08:10)
+- Back button added to the chat-view agent bar; agent/team-bound conversations are now **excluded from the Sidebar's general chat recents** and surfaced instead in a new **Recent Activity** section on the Agents screen (`onOpenSession` passed down from App; CSS added).
+
+### 🧑 User screenshot → 🤖 Test Center scenario management (admin-only — the Test Center is already admin-gated)
+- The screenshot was the **Test Center**, not the Agent Guide. Built three controls: **Simulate now** on the draft card (drives the live UI through the steps, reports pass/fail with timing or the exact failing selector) + a required **"I've reviewed this scenario"** checkbox gating **Add scenario**; **↑/↓ reorder** with persisted run order (the order every sweep uses); **✎ edit** loads any saved scenario back into the editor and saves in place. `runScenario` single-scenario runner exported from `functional.js`.
+- Also delivered step-by-step **testing guides for Row 12 (Agent Browser) and Row 14 (Voice)**.
+
+### 🧑 "Steps look like different storylines — confusing" → 🤖 Flight School rewritten as ONE story
+- Intro fixed (still said "Five"; there are nine) and all nine simulations rewritten as **chapters of a single BeanBox coffee-subscription narrative** — each mission hires the next worker and reuses earlier hires (Ch5 runs the teams from Ch3+4; Briefly from Ch1 reappears). Card structure kept: Goal → one-line story → numbered Steps.
+
+### 🧑 "Admin provision to switch the Agent Browser on/off" → 🤖 master kill-switch, then refined to admin-always-on
+- **`settings.agentBrowser.enabled`** (default ON), separate from the three guardrails, enforced server-side: both construction points — `_browserFor` (session-manager, interactive) and `browserFor` (mission-runner, headless/scheduled/swarm) — return null when off. Admin panel gets a master toggle (guardrail rows grey out when off); Studio hides the Browser capability with a note.
+- **Refinement per user clarification:** admins ALWAYS keep the browser — `isEnabled()` made admin-aware (admin flag cached in `main.cjs`'s authMe handler); Studio keeps the Browser capability for admins; settings copy updated. Allowlist semantics also explained (no code change): per-agent `browserAllow` = the list; admin `enforceAllowlist` = whether it's checked; validated on `browse_open` + after load + after every `browse_click` (redirect guard); subdomain match; empty list = any site.
+
+### 🧑 User ran the suite locally (3 savedStore failures) → 🤖 REAL pre-existing bug found and fixed
+- `saved-store.cjs` was the only store not creating its directory before writing — on a machine where the userData path doesn't exist yet, `persist()` failed silently and saves vanished. Fix: `fs.mkdirSync(dirname, {recursive:true})` before write; verified via an isolated harness reproducing the bug condition (mount still stale). Suite expected green 23/23 on re-run; the Composer `act()` lines are warnings, not failures.
+
+### 🧑 "Flow diagrams look oldish/boring — rebuild modern" → 🤖 flow infographics rebuilt
+- Replaced boxy nodes + chevron arrows with gradient glyph tiles with glow, animated connectors with traveling pulses, and a textured pipeline container (`Node`/`Arrow` components updated). **User then flagged connector alignment (not on tile centre line) + a top gap — fix in progress at log time.**
+
+### 🧑 "Local admin file: admin emails → display 'Creator'; allowed emails → 'Complimentary' + excluded from subscription; never in the setup/installer — hack-proof via codebase" → 🤖 IN PROGRESS at log time
+- Found existing server-side `admin-emails.txt`/`free-emails.txt`; the new piece is a **local, build- and git-excluded roster file** (+ template + loader written; installer file-excludes and .gitignore updated) that **overrides the server verdict in authMe** — so a hijacked server account can't strip Creator access. AccountCard now shows **Creator/Complimentary** and hides subscribe/manage for those roles; **Sidebar trial/subscribe prompts were being updated when this log was written — session still RUNNING.**
+
+### Open / unresolved
+- **Session still running:** roster Sidebar wiring + flow connector-alignment fix in flight; from-scratch build verification of everything after the Wave round (browser/voice/guide/Test Center/roster) still owed — `npm run build:admin && npm run test:run` on the user's machine is the real check. **teamly.ai parity review still NOT done.** Standing gates: full app close-and-reopen → Windows build → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal. Prior items unchanged: NVIDIA 401; Save-button bug (Scenario 0); runtime smoke pass; Q16 monolith split; per-member retry; vite/vitest majors; electron-builder 26 + installer-exclusion check; Playwright suite 8.
+
+## Session — 2026-06-10 09:12 (catch-up: "BrainEdge Fable New" still running — roster + flow fixes landed · 30-persona library · Studio artifacts upgraded · Studio launcher rebuilt as build console · TESTING-BLUEPRINT Ch. 6⅔ · Claude-style light-mode retheme)
+
+### 🤖 The two 08:41 in-flight items COMPLETED
+- **Roster wiring done:** Sidebar trial/subscribe prompts now respect Creator/Complimentary roles; the three roster modules (`electron/admin-roster.cjs` local-only, `admin-roster.example.cjs` committed template, `electron/roster.cjs` loader) pass `node --check`; role resolution harness-verified incl. case-insensitive match and graceful fallback when the file is absent (packaged builds). Roster stays installer-excluded (`package.json` build.files) + git-ignored, and overrides the server's authMe verdict.
+- **Flow alignment fixed (all five flows + fan diagram):** nodes top-align so glyph tiles share one line (top gap gone); each connector is a fixed 48px box with the line vertically centered on the tile centre line (label floats above); fan lanes + coordinator/merge nodes centred on the same line.
+
+### 🧑 "Agent Designer — add more personas by industry, categorized" → 🤖 30-persona library BUILT
+- Persona library replaced: **30 agents across 9 industry categories** — Engineering, QA & Testing, Delivery & Agile, Marketing, Finance & Trading, Research, Ops & Support, Docs & Legal, Data. Proven existing personas kept and re-grouped; `PERSONA_CATS` updated to match.
+
+### 🧑 "Is Studio's live preview really like Claude artifacts?" → 🤖 honest code-traced review, then BOTH fixes BUILT (user: "yes go ahead")
+- **Review verdict:** end-to-end wiring genuine (tile → seeded one-shot prompt → fenced block → `extractArtifacts` → sandboxed iframe panel with tabs/copy/download/versions). Three real gaps: React artifacts limited to bare React (imports stripped); React/Markdown/Mermaid previews need cdnjs at runtime; iteration not in-place (model not instructed to re-emit complete files).
+- **Fix 1 BUILT:** `artifacts.js` React harness now **rewrites imports to globals** and loads **lodash, d3, recharts, papaparse, chart.js, mathjs + a lucide-react icon shim**, so generated components actually run. The parse harness caught a real bug — default import named same as the global produced a self-referencing redeclaration — fixed.
+- **Fix 2 BUILT:** an `ARTIFACT_RULE` ("when refining, return the entire updated file in one fenced block") wired into the chat system prompts in both `agent-openai.cjs` and the session-manager Anthropic/default path — refinement now re-renders like Claude.
+
+### 🧑 "What is the highlighted Area box / are all areas relevant?" → 🤖 explained (no code change)
+- Test Center scenario **Area** = navigation hint for "Draft steps with AI" + reporting badge, nothing more; pick-the-right-area guidance given. Caveats: "Interface" is a catch-all; Terminal isn't listed (goes under Custom). **Offered (pending):** align the Area list to the real sidebar (add Terminal, split Skills/Connectors).
+
+### 🧑 "Studio looks copied from Claude — make it different/innovative" → 🤖 Studio launcher REBUILT as a build console
+- `StudioLauncher.jsx` fully rewritten (new `.stu2-*` CSS; old `.studio-*` rules left in place): the **idea prompt is the hero** (glowing console, pulsing spark, rotating example placeholder, gradient Create button, ⌘/Ctrl+Enter); the 8 categories became optional **format "lens" pills** with inline type/style chips; a "Need a spark?" clickable example reel; an animated idea → forge → live-preview pipeline. One screen instead of card→form; `onStart(prompt)` wiring unchanged.
+
+### 🤖 TESTING-BLUEPRINT.md gained **Chapter 6⅔ — The Scenario Manager**
+- Covers add/simulate/confirm flow, what the Area field does, a pick-the-right-Area table, and the two honest caveats; slotted between Chapter 6½ and 6¾.
+
+### 🧑 "Refactor Light mode like Claude — black/grey with few places orange; only light" → 🤖 light-mode retheme (CSS-only, dark mode byte-for-byte unchanged)
+- **Palette:** warm neutral greys (canvas `#f6f5f1`, white panels, near-black warm text `#20201d`, warm hairlines); default accent flips teal → Claude-style terracotta **`#c96442`**, gated to `[data-accent="default"]` so a user's custom accent still wins; hardcoded teal body glow fixed to track the accent. All scoped under `:root[data-theme="light"]`.
+- **Follow-ups in the same arc:** push/primary buttons (`.btn.primary`, composer send arrow, `.ag-gen`) switched from flat black to the accent with darker hover + white icon/text; **dual accent removed** — the Consumption "Current streak" KPI card (`.cons-kpi.accent`) neutralized in light so all five cards read uniformly; the Studio console's accent radial wash/glow removed in light (orange kept only on spark + Create).
+
+### Open / unresolved
+- **Session STILL RUNNING at log time:** latest request — Models table "looks very pale in light mode, make it interesting" — in flight; outcome to capture next. **Unaddressed user request on the books:** "Sonnet did a decent job on terminal — review that section + add improvements" (interrupted, no evidence it was handled). Offers pending user OK: align Test Center Area list to sidebar; mandatory allowlist for headless browser runs. **teamly.ai parity review still NOT done.** From-scratch build verification of everything after the Wave round still owed (`npm run build:admin && npm run test:run` — note user's earlier local run already surfaced+fixed the savedStore bug). Standing gates unchanged: full app close-and-reopen → Windows build → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal; NVIDIA 401; Save-button bug (Scenario 0); runtime smoke pass; Q16 monolith split; per-member retry; vite/vitest majors; electron-builder 26 + installer-exclusion check; Playwright suite 8.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput, Palette, Sparkles, Server } from "lucide-react";
+import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput, Palette, Sparkles, Server, Globe } from "lucide-react";
 import ModelPicker from "./ModelPicker.jsx";
 import AccountCard from "../auth/AccountCard.jsx";
 import AdminPanel from "../auth/AdminPanel.jsx";
@@ -83,6 +83,9 @@ export default function Settings({ onChanged }) {
           <button key={sec.id} className={`nav-item ${section === sec.id ? "active" : ""}`} onClick={() => setSection(sec.id)}><I size={15} /> {sec.label}</button>
         ); })}
         {isAdmin && (
+          <button className={`nav-item ${section === "agentbrowser" ? "active" : ""}`} onClick={() => setSection("agentbrowser")}><Globe size={15} /> Agent Browser</button>
+        )}
+        {isAdmin && (
           <button className={`nav-item ${section === "admin" ? "active" : ""}`} onClick={() => setSection("admin")}><ShieldCheck size={15} /> Admin Analytics</button>
         )}
       </div>
@@ -145,6 +148,10 @@ export default function Settings({ onChanged }) {
           </div>
         )}
 
+        {section === "agentbrowser" && isAdmin && (
+          <AgentBrowserSettings s={s} setField={setField} />
+        )}
+
         {section === "admin" && isAdmin && (
           <div style={{ maxWidth: 820 }}>
             <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Admin Analytics</h2>
@@ -164,5 +171,76 @@ function Field({ label, children }) {
       <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 5 }}>{label}</div>
       {children}
     </label>
+  );
+}
+
+// Admin-only Agent Browser guardrails. Secure defaults; relaxing any widens what a
+// browsing agent can do on hostile pages. Each toggle carries a plain-English risk note.
+function AgentBrowserSettings({ s, setField }) {
+  const ab = s.agentBrowser || { enabled: true, enforceAllowlist: true, shieldInjection: true, allowSecretFields: false };
+  const featureOn = ab.enabled !== false;
+  const set = (k, v) => setField("agentBrowser", { ...ab, [k]: v });
+  const Row = ({ k, title, on, onText, offText, danger, disabled, children }) => (
+    <div className="prof-card" style={{ ...(danger ? { borderColor: "color-mix(in srgb, var(--danger) 45%, var(--line))" } : {}), ...(disabled ? { opacity: 0.5 } : {}) }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div className="prof-card-h" style={{ marginBottom: 4 }}>{title}</div>
+          <p className="prof-sub" style={{ margin: 0 }}>{children}</p>
+          <div style={{ fontSize: 11.5, marginTop: 6, color: on ? "var(--ok)" : (danger ? "var(--danger)" : "var(--text-2)") }}>
+            {on ? onText : offText}
+          </div>
+        </div>
+        <label className="chip" style={{ cursor: disabled ? "not-allowed" : "pointer", flexShrink: 0 }}>
+          <input type="checkbox" checked={!!on} disabled={disabled} onChange={(e) => set(k, e.target.checked)} style={{ marginRight: 6 }} />
+          {on ? "On" : "Off"}
+        </label>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ maxWidth: 760 }}>
+      <h2 style={{ margin: "0 0 4px", fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><Globe size={18} /> Agent Browser controls</h2>
+      <p style={{ color: "var(--text-2)", fontSize: 12.5, margin: "0 0 16px", lineHeight: 1.55 }}>
+        Admin-only. You always keep the Agent Browser; the master switch decides whether everyone else gets it. The guardrails below protect any agent that drives the real browser — secure defaults are recommended; relax them only for trusted automation you're actively supervising. Web pages are untrusted input.
+      </p>
+
+      {/* MASTER switch — disables the entire feature when off */}
+      <div className="prof-card" style={{ borderColor: featureOn ? "var(--accent-line)" : "color-mix(in srgb, var(--danger) 45%, var(--line))", background: featureOn ? "var(--accent-weak)" : undefined }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div className="prof-card-h" style={{ marginBottom: 4 }}>Agent Browser feature</div>
+            <p className="prof-sub" style={{ margin: 0 }}>Master switch for everyone else. <b>You (admin) always keep the Agent Browser</b> — this controls whether non-admin users get it. When off, their Browser capability is hidden in the Studio and any agent that has it simply runs without browser tools. Turn off to stop non-admins' agents touching the live web.</p>
+            <div style={{ fontSize: 11.5, marginTop: 6, color: featureOn ? "var(--ok)" : "var(--danger)" }}>
+              {featureOn ? "✓ Enabled for everyone — any user's agents can browse (subject to the guardrails below)." : "⛔ Off for non-admins — only admins can use the Agent Browser. Your own agents are unaffected."}
+            </div>
+          </div>
+          <label className="chip" style={{ cursor: "pointer", flexShrink: 0 }}>
+            <input type="checkbox" checked={featureOn} onChange={(e) => set("enabled", e.target.checked)} style={{ marginRight: 6 }} />
+            {featureOn ? "On" : "Off"}
+          </label>
+        </div>
+      </div>
+
+      {!featureOn && <div className="ag-hint" style={{ margin: "4px 0 10px" }}>Guardrails are inactive while the feature is off.</div>}
+
+      <Row k="enforceAllowlist" disabled={!featureOn} title="Enforce site allowlist" on={ab.enforceAllowlist !== false}
+        onText="✓ Agents stay on each agent's allowed sites; off-list redirects are blocked."
+        offText="⚠ Off — agents may open ANY site and follow redirects anywhere.">
+        Confine each browsing agent to the domains listed on its card. Leave on so a stray link or injected redirect can't take an agent somewhere unexpected.
+      </Row>
+      <Row k="shieldInjection" disabled={!featureOn} title="Shield against page-injected instructions" on={ab.shieldInjection !== false}
+        onText="✓ Page text is marked UNTRUSTED so embedded commands stay inert."
+        offText="⚠ Off — text hidden in a page could hijack the agent (prompt injection).">
+        Wraps page content so an agent treats it as data, never as commands. The single most important defense when agents read the open web — keep it on.
+      </Row>
+      <Row k="allowSecretFields" disabled={!featureOn} title="Allow agents to fill password & payment fields" on={ab.allowSecretFields === true} danger
+        onText="⚠ DANGEROUS — agents can now type into password, card, CVV, OTP and SSN fields."
+        offText="✓ Recommended — those fields are human-only; the agent hands the window to you.">
+        Off by default for good reason: an agent auto-typing credentials or card details into a web form is high-risk, especially if a page tries to trick it. The visible browser lets you fill these yourself. Enable only for trusted, supervised automation on sites you control.
+      </Row>
+      <div className="ag-hint" style={{ marginTop: 6 }}>
+        Changes apply to the next browser action. Per-agent allowlists are set on each agent in the Studio (Browser capability).
+      </div>
+    </div>
   );
 }

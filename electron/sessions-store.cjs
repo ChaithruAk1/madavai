@@ -17,9 +17,20 @@ function raw() {
   }
   return out;
 }
-function listSessions(mode) {
+// agentScope: undefined = all; "only" = only agent/team-bound; "exclude" = general chats only.
+function listSessions(mode, agentScope) {
   return raw().filter((s) => s.mode === mode)
-    .map((s) => ({ id: s.id, mode: s.mode, title: s.title, cwd: s.cwd, updatedAt: s.updatedAt, count: (s.messages || []).length }))
+    .filter((s) => {
+      const bound = !!(s.agent || (s.team && s.team.members && s.team.members.length));
+      if (agentScope === "only") return bound;
+      if (agentScope === "exclude") return !bound;
+      return true;
+    })
+    .map((s) => ({
+      id: s.id, mode: s.mode, title: s.title, cwd: s.cwd, updatedAt: s.updatedAt, count: (s.messages || []).length,
+      agentName: s.agent ? s.agent.name : null,
+      teamName: s.team && s.team.members && s.team.members.length ? s.team.name : null,
+    }))
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 function getSession(id) { try { return JSON.parse(fs.readFileSync(file(id), "utf8")); } catch { return null; } }
