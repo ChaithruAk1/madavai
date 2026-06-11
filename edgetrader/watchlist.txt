@@ -1,0 +1,4 @@
+# EdgeTrader watchlist — one ticker per line. Lines starting with # are ignored.
+NVDA
+AAPL
+MSFT

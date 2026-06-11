@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "watchlist_file": "watchlist.txt",
+  "reports_dir": "reports",
+  "signals_file": "signals/signals.jsonl",
+  "decision_log": "decisions/decision-log.md",
+  "lessons_file": "decisions/lessons.md",
+  "benchmark": "SPY",
+  "horizon_days": 5,
+  "batch_concurrency": 2,
+  "webhook": {
+    "base_url": "http://127.0.0.1:8765",
+    "token": "",
+    "team_id": ""
+  },
+  "execution": {
+    "enabled": false,
+    "paper_only": true,
+    "kill_switch": false,
+    "alpaca_base_url": "https://paper-api.alpaca.markets",
+    "max_position_usd": 1000,
+    "max_orders_per_day": 5,
+    "min_conviction_to_propose": 7,
+    "orders_dir": "orders"
+  }
+}

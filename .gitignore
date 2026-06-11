@@ -14,3 +14,10 @@ stripe.exe
 .checkpoints/
 *.repairbak-*
 scripts/qa-config.json
+
+# EdgeTrader — local config holds the webhook token (secret); runtime outputs stay local
+edgetrader/config.json
+edgetrader/reports/
+edgetrader/signals/
+edgetrader/decisions/
+edgetrader/orders/
