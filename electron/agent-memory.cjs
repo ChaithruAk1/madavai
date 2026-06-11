@@ -15,6 +15,19 @@ const NOTE_CHARS = 500;
 const dir = () => path.join(app.getPath("userData"), "agent-memory");
 const file = (id) => path.join(dir(), String(id).replace(/[^\w.-]/g, "_") + ".json");
 
+// Per-agent write serialization: append/setNotes/clear all do read-modify-write on the
+// same file, so concurrent missions for one agent id could clobber each other's notes.
+// Queue mutations per id on a promise chain (ordering preserved even when callers
+// fire-and-forget; the synchronous read-modify-write runs inside the chained task).
+const _locks = new Map();
+function _serialize(id, doWrite) {
+  const key = String(id);
+  const prev = _locks.get(key) || Promise.resolve();
+  const next = prev.then(doWrite).catch(() => {});
+  _locks.set(key, next);
+  return next;
+}
+
 function get(id) {
   if (!id) return { notes: [] };
   try { const m = JSON.parse(fs.readFileSync(file(id), "utf8")); return { notes: [], ...m, notes: Array.isArray(m.notes) ? m.notes : [] }; }
@@ -30,30 +43,40 @@ function save(id, mem) {
 }
 
 // Replace the whole note list (the user edited it in the Blueprint).
+// Returns a promise (resolving to the saved memory) — writes are serialized per id.
 function setNotes(id, notes) {
-  const list = (Array.isArray(notes) ? notes : [])
-    .map((n) => (typeof n === "string" ? { at: Date.now(), text: n } : n))
-    .filter((n) => n && String(n.text || "").trim())
-    .map((n) => ({ at: n.at || Date.now(), text: String(n.text).trim().slice(0, NOTE_CHARS) }))
-    .slice(-MAX_NOTES);
-  return save(id, { ...get(id), notes: list });
+  return _serialize(id, () => {
+    const list = (Array.isArray(notes) ? notes : [])
+      .map((n) => (typeof n === "string" ? { at: Date.now(), text: n } : n))
+      .filter((n) => n && String(n.text || "").trim())
+      .map((n) => ({ at: n.at || Date.now(), text: String(n.text).trim().slice(0, NOTE_CHARS) }))
+      .slice(-MAX_NOTES);
+    return save(id, { ...get(id), notes: list });
+  });
 }
 
-// Append new learnings, de-duplicated, capped.
+// Append new learnings, de-duplicated, capped. Fire-and-forget by callers, but the
+// read-modify-write runs inside the per-id lock so concurrent appends never clobber.
 function append(id, texts) {
-  if (!id) return null;
-  const m = get(id);
-  for (const t of Array.isArray(texts) ? texts : [texts]) {
-    const txt = String(t || "").trim().slice(0, NOTE_CHARS);
-    if (!txt || txt.length < 8) continue;
-    if (m.notes.some((n) => n.text.toLowerCase() === txt.toLowerCase())) continue;
-    m.notes.push({ at: Date.now(), text: txt });
-  }
-  m.notes = m.notes.slice(-MAX_NOTES);
-  return save(id, m);
+  if (!id) return Promise.resolve(null);
+  return _serialize(id, () => {
+    const m = get(id);
+    for (const t of Array.isArray(texts) ? texts : [texts]) {
+      const txt = String(t || "").trim().slice(0, NOTE_CHARS);
+      if (!txt || txt.length < 8) continue;
+      if (m.notes.some((n) => n.text.toLowerCase() === txt.toLowerCase())) continue;
+      m.notes.push({ at: Date.now(), text: txt });
+    }
+    m.notes = m.notes.slice(-MAX_NOTES);
+    return save(id, m);
+  });
 }
 
-function clear(id) { try { fs.unlinkSync(file(id)); } catch {} return { notes: [] }; }
+// Returns a promise resolving to the empty memory — serialized so a clear can't race
+// an in-flight append for the same id.
+function clear(id) {
+  return _serialize(id, () => { try { fs.unlinkSync(file(id)); } catch {} return { notes: [] }; });
+}
 
 // Prompt block injected into the agent's system prompt ("" when empty or memory off).
 function block(agent) {

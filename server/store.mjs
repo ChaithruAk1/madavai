@@ -82,7 +82,10 @@ async function pgStore(url) {
     },
     async patchUser(id, patch) {
       const sets = [], vals = []; let i = 1;
-      for (const k in patch) { sets.push(`${COLS[k] || k}=$${i++}`); vals.push(patch[k]); }
+      for (const k in patch) {
+        if (!COLS[k]) { console.warn("[store] patchUser: ignoring unmapped field", k); continue; } // never interpolate a raw key as SQL identifier
+        sets.push(`${COLS[k]}=$${i++}`); vals.push(patch[k]);
+      }
       if (!sets.length) return; vals.push(id);
       await pool.query(`update users set ${sets.join(",")} where id=$${i}`, vals);
     },

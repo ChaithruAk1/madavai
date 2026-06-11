@@ -45,7 +45,7 @@ async function ensureOk(res, provider) {
   throw err;
 }
 
-function apiBase(baseUrl) {
+export function apiBase(baseUrl) {
   const b = (baseUrl || "").replace(/\/$/, "");
   return /\/v\d|\/openai/.test(b) ? b : b + "/v1";
 }

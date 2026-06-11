@@ -40,13 +40,16 @@ async function runTask(task) {
   // Prior turns, so a continued session (e.g. handed off to Telegram) keeps its context.
   const history = Array.isArray(task.history) ? task.history.slice() : [];
 
-  const agent = (opts) => {
+  const runAgent = (opts) => {
     // The agent only applies its system prompt when history[0] is a system slot; a
     // continued session's history starts with user/assistant turns, so ensure one exists.
     if (history.length && (!history[0] || history[0].role !== "system")) history.unshift({ role: "system", content: "" });
     return runOpenAIAgentTurn({
       prompt: task.prompt, profile, permMode: "bypass", history, emit, permissions,
       connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [],
+      // Webhook-fired folder/chat/brief runs carry an attacker-influenceable prompt — strip
+      // the shell tool just like mission-runner's guardWebhookRun does for agent/team runs.
+      ...(source === "webhook" ? { noShell: true } : {}),
       ...opts,
     });
   };
@@ -105,11 +108,11 @@ async function runTask(task) {
         const r = await streamChat(profile, [{ role: "system", content: sys }, ...history, { role: "user", content: task.prompt }], { onDelta: () => {} });
         text = r.text;
       } else {
-        await agent({ mode: project.folder ? "cowork" : "chat", cwd: project.folder || null, systemOverride: sys });
+        await runAgent({ mode: project.folder ? "cowork" : "chat", cwd: project.folder || null, systemOverride: sys });
       }
     } else if (target.type === "folder" && target.folder) {
       if (profile.kind === "anthropic") return { status: "error", output: "Folder tasks need an OpenAI-compatible provider." };
-      await agent({ mode: "cowork", cwd: target.folder });
+      await runAgent({ mode: "cowork", cwd: target.folder });
     } else {
       // plain chat
       const hasExtras = (cfg.skillsDirs || []).length || (cfg.connectors || []).some((c) => c.enabled);
@@ -118,7 +121,7 @@ async function runTask(task) {
         const r = await streamChat(profile, [{ role: "system", content: sys }, ...history, { role: "user", content: task.prompt }], { onDelta: () => {} });
         text = r.text;
       } else {
-        await agent({ mode: "chat", cwd: null, systemOverride: task.systemOverride });
+        await runAgent({ mode: "chat", cwd: null, systemOverride: task.systemOverride });
       }
     }
     const out = (text.trim() || notes.join("\n") || "(no output)").slice(0, 20000);

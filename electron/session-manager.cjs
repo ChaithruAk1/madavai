@@ -156,9 +156,11 @@ class SessionManager {
     } else {
       // Persisted chat history for Let's Talk / Collaborate / Build.
       let conv = req.conversationId ? sstore.getSession(req.conversationId) : null;
-      if (!conv) conv = sstore.createSession(req.mode, req.cwd);
+      if (!conv) conv = sstore.createSession(req.mode, req.cwd, req.projectId);
       s.chatConvId = conv.id;
-      if (req.projectId) s.projectId = req.projectId; // Cowork task scoped to a project
+      if (req.projectId) s.projectId = req.projectId; // Collaborate task scoped to a project
+      // Older record reopened with a project scope: tag it so it lists under the project.
+      if (req.projectId && !conv.projectId) { conv.projectId = req.projectId; try { sstore.saveSession(conv); } catch {} }
       // Seed the model context from saved messages so reopened chats continue coherently.
       // Cap at the newest 200 messages — a giant history would balloon RAM and every request.
       if (conv.messages && conv.messages.length) s.history = conv.messages.slice(-200).map((m) => ({ role: m.role, content: m.content }));
@@ -486,8 +488,9 @@ class SessionManager {
         await Promise.all(todo.map((step) => {
           const task = `MISSION (from the user):\n${userText}` + (step.task ? `\n\nYOUR ASSIGNED SUB-TASK (do only this part):\n${step.task}` : "");
           return runStep(step.member, task, step.task || "full mission")
-            .then((o) => { outputs.push(o); checkpoint(plan, outputs, false); return o; });
+            .then((o) => { outputs.push(o); return o; }); // checkpoint ONCE after the join (avoid O(N²) re-serialize)
         }));
+        checkpoint(plan, outputs, false); // single post-wave checkpoint contains all member outputs for resume
         if (signal.aborted) throw Object.assign(new Error("interrupted"), { name: "AbortError" }); // don't synthesize after a mid-flight stop
 
         // 2b) Conditional flows v1 — the coordinator REVIEWS the results and can launch
@@ -524,7 +527,8 @@ class SessionManager {
           const ctx = outputs.map((o) => `=== ${o.name} ===\n${String(o.text).slice(0, 6000)}`).join("\n\n");
           await Promise.all(steps.map((step) =>
             runStep(step.member, `MISSION (from the user):\n${userText}\n\nWORK SO FAR:\n${ctx}\n\nYOUR FOLLOW-UP SUB-TASK (do only this part):\n${step.task}`, step.task)
-              .then((o) => { outputs.push(o); checkpoint(plan, outputs, false); return o; })));
+              .then((o) => { outputs.push(o); return o; }))); // checkpoint ONCE after the join (avoid O(N²) re-serialize)
+          checkpoint(plan, outputs, false); // single post-wave checkpoint contains all outputs for resume
         }
         if (signal.aborted) throw Object.assign(new Error("interrupted"), { name: "AbortError" });
       } else {

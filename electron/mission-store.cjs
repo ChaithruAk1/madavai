@@ -18,10 +18,12 @@ function get(convId) {
 // state: { teamName, mode, userText, plan:[{member,task}], outputs:[{name,text}], finished, at }
 function save(convId, state) {
   if (!convId) return null;
-  fs.mkdirSync(dir(), { recursive: true });
-  const s = { ...state, at: Date.now() };
-  fs.writeFileSync(file(convId), JSON.stringify(s, null, 2));
-  return s;
+  try {
+    fs.mkdirSync(dir(), { recursive: true });
+    const s = { ...state, at: Date.now() };
+    fs.writeFileSync(file(convId), JSON.stringify(s, null, 2));
+    return s;
+  } catch { return null; }
 }
 
 function clear(convId) { try { fs.unlinkSync(file(convId)); } catch {} return true; }

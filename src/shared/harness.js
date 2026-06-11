@@ -71,11 +71,16 @@ export function headTail(text, { headLines = 80, tailLines = 40, maxChars = 8000
 }
 
 // Wave 4.2 — squash stale tool results so old logs stop hogging the window.
+// Text-mode result prefix: some agent loops feed tool results back as a user-role message that begins
+// with this marker (instead of a tool-role message). Those are squashed exactly like tool results.
+// Mirror of electron/harness.cjs — keep the two in sync.
+const TEXT_RESULT_PREFIX = "[result of";
 export function squashStale(history, { keepRecent = 14, cap = 180 } = {}) {
   const cut = history.length - keepRecent;
   for (let i = 1; i < cut; i++) {
     const m = history[i];
-    if (m.role !== "tool" || typeof m.content !== "string") continue;
+    const isTextResult = m.role === "user" && typeof m.content === "string" && m.content.startsWith(TEXT_RESULT_PREFIX);
+    if (!(m.role === "tool" || isTextResult) || typeof m.content !== "string") continue;
     if (m.content.length <= cap || m._squashed) continue;
     const first = m.content.split("\n", 1)[0].slice(0, cap);
     m.content = first + " … (older result compressed)";

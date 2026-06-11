@@ -16,9 +16,14 @@ function encStr(v) {
   if (!v || typeof v !== "string" || v.startsWith(ENC_PREFIX) || !canEncrypt()) return v;
   try { return ENC_PREFIX + safeStorage.encryptString(v).toString("base64"); } catch { return v; }
 }
+// True when ANY secret failed to decrypt this run (different binary/fuses/OS user can't
+// read the old ciphertext). save() uses this to PRESERVE the on-disk ciphertext instead
+// of overwriting it with "" — a failed decrypt must mean "unreadable", never "deleted".
+let _decryptFailed = false;
 function decStr(v) {
   if (typeof v !== "string" || !v.startsWith(ENC_PREFIX)) return v;
-  try { return safeStorage.decryptString(Buffer.from(v.slice(ENC_PREFIX.length), "base64")); } catch { return ""; }
+  try { return safeStorage.decryptString(Buffer.from(v.slice(ENC_PREFIX.length), "base64")); }
+  catch { _decryptFailed = true; return ""; }
 }
 // Apply fn to every secret string in a settings object (in place).
 function mapSecrets(s, fn) {
@@ -126,6 +131,26 @@ function save(settings) {
   // Encrypt secrets at rest (deep copy so the in-memory object stays plaintext for the app).
   const onDisk = JSON.parse(JSON.stringify(settings));
   mapSecrets(onDisk, encStr);
+  // KEY-WIPE GUARD: if a secret failed to decrypt this run, the in-memory "" is NOT a
+  // deletion — keep the existing ciphertext on disk so the binary that CAN read it
+  // (e.g. the dev app vs the packaged app) still has the key. Without this, the launch
+  // auto-save of any app that can't decrypt would permanently destroy every API key.
+  if (_decryptFailed) {
+    try {
+      const prev = JSON.parse(fs.readFileSync(file(), "utf8"));
+      const keep = (cur, old) => (cur === "" && typeof old === "string" && old.startsWith(ENC_PREFIX)) ? old : cur;
+      if (typeof onDisk.googleClientSecret === "string") onDisk.googleClientSecret = keep(onDisk.googleClientSecret, prev.googleClientSecret);
+      if (onDisk.messaging && prev.messaging && typeof onDisk.messaging.telegramToken === "string") onDisk.messaging.telegramToken = keep(onDisk.messaging.telegramToken, prev.messaging.telegramToken);
+      if (onDisk.webhooks && prev.webhooks && typeof onDisk.webhooks.token === "string") onDisk.webhooks.token = keep(onDisk.webhooks.token, prev.webhooks.token);
+      for (const k of Object.keys(onDisk.profiles || {})) {
+        const p = onDisk.profiles[k], q = prev.profiles && prev.profiles[k];
+        if (p && q && typeof p.apiKey === "string") p.apiKey = keep(p.apiKey, q.apiKey);
+      }
+    } catch {} // unreadable previous file: nothing to preserve
+  }
+  // Safety net: keep ONE backup of the previous settings file so no writer — including a
+  // corrupted-file DEFAULTS fallback — can ever wipe settings irrecoverably.
+  try { if (fs.existsSync(file())) fs.copyFileSync(file(), file() + ".bak"); } catch {}
   fs.writeFileSync(file(), JSON.stringify(onDisk, null, 2), "utf8");
   _cache = null; // invalidate the read cache — next load() re-reads what we just wrote
   return settings;

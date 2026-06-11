@@ -7,6 +7,21 @@
 > NOTE: Sections 1–9 below are older. **Section 10/11 (bottom) is the current authoritative state** and
 > corrects stale facts (app is now "BrainEdge" not "Chai"; bridge is `window.brainedge`; the "Dispatch"
 > feature was renamed; copyright owner is Samskruthi Harish). Read Section 10 first.
+>
+> ⚡ NEWEST STATE: see **§14 (very bottom)** — 2026-06-11: full code review (CODE-REVIEW-2026-06-11.md) +
+> ALL findings fixed (5 high / 12 med / 14 low + error boundary) + project-scoped Let's Collaborate
+> (categorized project Chats/Tasks, "Start work in Let's Collaborate"). Still ONE big uncompiled diff.
+> Older context: §13 — 2026-06-10/11 sessions. After the user committed the
+> HARNESS batch, ONE large uncommitted diff added: 6 competitive-gap features (cross-chat memory,
+> in-chat office files, selector image-gen, Study&Learn tutor, editable canvas, daily brief) + Sage
+> rounds (Windows mic, walkthrough mode, scope-lock, learning memory, multicultural looks/Sara) +
+> chat humanization (tool cards, command translation, WorkStrip) + attachment/Excel parsing + browser
+> page-trim perf + agent-picker fix + many UI fixes. **GATES: `npm install` (done) → `npm run build`
+> → FULL restart → commit. NOTHING compile-checked (sandbox down all arc).** Standing QUEUE: Deep
+> Research mode, Shareable links, screenshots-in-agent-knowledge, Designer-follow-up robustness,
+> local-model capability registry, minimize-but-full-speed browser toggle, Save-button bug (console
+> output still owed). Standing rules: Sage = app-only/no-web; every new tool needs a ToolCard
+> describe() entry; styles.css targeted edits only; single-writer; web+desktop parity.
 
 ---
 
@@ -1019,3 +1034,27 @@ User granted full autonomy ("implement Wave 1,2,3,4,5 … you have autonomous po
 ### Gates
 - This session touched **main.cjs / preload.cjs / settings.cjs / agent-transport.cjs / providers.cjs / agent-openai.cjs / session-manager.cjs / mission-runner.cjs / task-runner.cjs (+ NEW harness.cjs, model-stats.cjs, win-speech.cjs, user-memory.cjs, imagegen.cjs)** (main process) + webBridge/mockBridge/package.json/APP-GUIDE/AGENT-GUIDE/RESEARCH/PLAN docs + **SageDock.jsx/Portrait.jsx/Agents.jsx/ModelsOverview.jsx/Composer.jsx/UserGuide.jsx/Settings.jsx/ToolCard.jsx/ArtifactPanel.jsx/Scheduler.jsx/App.jsx/markdown.jsx/styles.css/userguide.css (+ NEW src/shared/harness.js, src/sageMemory.js, src/office.js, HARNESS.md)** (renderer) → **`npm install` (4 new office deps!) → `npm run build` + FULL close-and-reopen**, then commit from the user's terminal. Harness batch committed by user mid-session; everything after (Sage round 2 + mic fix + scope lock + the 6 competitive-gap features) is the current uncommitted diff. Nothing compile-checked (sandbox down).
 - Carried opens unchanged from §12g: commit global Sage mount (if still uncommitted), rotate OAuth secrets + ALLOW_DEV_LOGIN=0 + 2FA, SIGNING.md + cert, electron:build EPERM Defender exclusion, packaged runAsNode fuse test, bundle code-split before web launch, Q16 split, vite/vitest majors, Playwright suite 8.
+
+---
+
+## 14. SESSION — 2026-06-11 (Fable: FULL CODE REVIEW → ALL FIXES BUILT + project-scoped Collaborate — NEWEST authoritative state)
+
+### Code review (CODE-REVIEW-2026-06-11.md, repo root)
+- 3 parallel review passes (engine / renderer / web+server+CLI) over everything since the 2026-06-09 review. **No build breakers found**; verified solid: streamChat {text} contract everywhere, win-speech injection-safe, permission/noShell/plan gates intact, base64-never-in-history, harness web twin export-matched, markdown XSS-safe, office.js APIs real, bridge degradation graceful.
+- Findings: 5 high (A1 webhook folder tasks ran bypass+shell; A2 /proxy forwarded keys to arbitrary hosts; A3 detached-session events leaked into the visible timeline; A4 Craft inputs lost focus per keystroke (Section-in-render); A5 browser fill-guard regex gaps pin/secret/ssn), 12 medium (B1-B12), 14 low (C1-C14). Full detail in the report.
+
+### ALL FIXES BUILT (user approved "critical to low + improvements, start now") — 3 parallel fix agents, disjoint file sets
+- **Engine:** A1 task-runner webhook noShell for folder/chat/brief targets; A5 single FORBIDDEN_FIELD_SRC drives both fill guards; B1 justCompacted flag + 6k tail hard-trim after compaction; B2 agent-memory per-id promise-chain locks (NOTE: setNotes/clear now return promises — IPC callers fine); B3 knowledgeText 50MB stat guard (all formats); B12 tier="C" on text-mode flip (tier now `let`); C2 squashStale also squashes user-role "[result of " (mirrored in src/shared/harness.js); C3 mission-store.save try/catch; C4 team checkpoint once post-wave (relay per-step unchanged); C12 task-runner helper renamed runAgent; C13 _browseIdxs append-only comment.
+- **Renderer:** A3 strict event guard + init-binding (`init` binds sessionRef when null — web bridge emits init BEFORE start() resolves); A4 Section hoisted to module scope (open/setOpen props, 4 call sites); B4 ArtifactPanel keyed remount + undo() out of updater; B5 Message memo compares handler presence + handlersRef for fresh closures; B6 send/startProjectChat/startProjectCowork try/catch → "⚠ Couldn't start" timeline item; B7 Sage tip now ask()s (skips walk tips); B8 mic engine tracking SageDock+Composer (winSpeech = "stops automatically" label, web rec refs cleared on end/error); B9 artifactVersions useMemo; C1 ToolCard describe() null guards; **NEW src/ErrorBoundary.jsx wrapping AuthGate+App in main.jsx**; C8 Sage timer/pointer-listener leak cleanup; C9 GOTO multiline strip + GOTO! gets no button; C10 Composer replace function-form.
+- **Web/server/CLI:** A2 PROXY_HOST_ALLOW (13 provider hosts, +PROXY_HOSTS env adds) on /proxy/chat+models, loopback exempt, /proxy/fetch confirmed key-free and untouched; B10 webGenImage uses apiBase() (**apiBase now EXPORTED from src/shared/providers.js** — load-bearing export); B11 CLI sub-agents now confirm destructive ops ("[sub-agent] " prefix, --yes respected); C5 persistSession per-session promise chain; C6 store.mjs patchUser skips+warns unmapped columns (no raw SQL identifiers); C7 CLI tolerantParse ported (zero-dep copy, "keep in sync with src/shared/harness.js" comment) at all 3 arg-parse sites (agent-core, brainedge.mjs, tui.mjs).
+- NOT done from the report: C14 xlsx CDN-tarball note (decision only), context-window catalog feed (improvement #5, queued), Q16 split (still after green build).
+
+### Project-scoped Let's Collaborate (user request, built BEFORE the fix batch)
+- Bug: "Start a task in Cowork" from a project dumped into the GENERIC Collaborate screen (coworkProj was set but never rendered anywhere) and cowork tasks never listed under the project.
+- Built: sessions-store records + lists `projectId` (createSession 3rd arg; session-manager passes it + back-tags older reopened records); ProjectsBrowser detail now has **categorized sections "Chats · Let's Chat" and "Tasks · Let's Collaborate"** (tasks via listSessions("cowork") filtered by projectId; open via App.openSession; per-task delete) + `openId` prop (mount-opens straight to a project's page); **button renamed "Start work in Let's Collaborate"** (alert reworded; no visible "Cowork" left); App.jsx: coworkProj hero header (project name + "What would you like to work on in this project?"), hero chip + in-chat bar with **← back to the project's page** (`backToProject` + `projOpenId`; sidebar Projects click clears it → list); openSession re-attaches coworkProj from the record's projectId via getProject; webBridge listSessions/getSession expose projectId (+count/cwd).
+
+### Gates (CURRENT — supersedes the §13 gates above)
+- §13's uncommitted diff + THIS session (review fixes + Projects/Collaborate) = ONE big uncommitted, **uncompiled** diff. No new deps this session. **GATE: `npm run build` → FULL close-and-reopen → smoke pass → commit from user's terminal.** First-failure suspects this session: App.jsx (event guard + hero branches + handlersRef), Agents.jsx Section hoist, ErrorBoundary/main.jsx, agent-memory promise change, auth-server allowlist block.
+- Smoke checklist: create project → link folder → "Start work in Let's Collaborate" → project header shows → send → ← back chip → task listed under "Tasks · Let's Collaborate" → reopen task (project re-attaches). Then: type in Craft economy-model input (A4), navigate away mid-turn and watch the old turn NOT bleed in (A3), attach an xlsx, Sage mic.
+- **OWED NEXT (user request, not yet built): agents working on DESKTOP APPLICATIONS** — proposed path: Windows UI Automation-based `desktop-driver.cjs` tool suite (app_open/app_read/app_click/app_type — text element tree, NO vision model needed, mirroring agent-browser's design: permission-gated, per-app allowlist, credential-field guards, master switch) + Office COM automation quick wins via the existing shell; vision-pixel (Operator-class) control stays deferred. Build AFTER the build gate clears, as its own commit.
+- Carried: rotate OAuth secrets + ALLOW_DEV_LOGIN=0 + 2FA; signing cert; electron:build EPERM Defender exclusion; bundle code-split; Q16 split (A4 was a symptom — split Agents.jsx after green build); vite/vitest majors; Playwright suite 8; Deep Research + Share links specs (§13 queue); Save-button bug console output still owed.

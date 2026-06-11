@@ -333,7 +333,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   const tracker = history._plan;
   const guard = history._guard;
   const model = profile.model || "";
-  const tier = agentOpts.textTools ? "C" : harness.tierFor(modelStats.summary(model));
+  let tier = agentOpts.textTools ? "C" : harness.tierFor(modelStats.summary(model));
   modelStats.bump(model, "missions");
   const gi = globalInstructions ? `\n\nUser's custom instructions (always follow these):\n${globalInstructions}` : "";
   // Spell the browser out in the system prompt — without this, weaker models ignore the
@@ -397,21 +397,36 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   let planNudged = false;        // Wave 2.1 — one "finish your plan" nudge per turn
   let selfReviewed = false;      // Wave 2.4 — one self-review pass per turn
   let reviewsDone = 0;           // Wave 5.2 — reviewer call budget per turn
+  let justCompacted = false;     // skip re-triggering compaction the step right after it ran
   const textToolList = () => tools.map((t) => `- ${t.function.name} ${JSON.stringify((t.function.parameters && t.function.parameters.properties) || {}).slice(0, 160)}`).join("\n");
   for (let step = 0; step < MAX_STEPS; step++) {
     // Wave 1.3 — auto-compaction: at ~70% of the model's window, compress the
-    // mission into working notes (exactly what /compact does in the CLI).
-    if (harness.estTokens(history) > 0.7 * ctxBudget) {
+    // mission into working notes (exactly what /compact does in the CLI). Guard
+    // against a no-progress loop: never compact two steps in a row, and after
+    // compaction hard-trim any one over-long message in the kept tail.
+    if (!justCompacted && harness.estTokens(history) > 0.7 * ctxBudget) {
       const cid = "compact_" + Date.now().toString(36);
       emit({ kind: "tool_use", data: { id: cid, name: "compact_context", input: { reason: "approaching the model's context window" }, auto: true } });
       try {
         const sr = await streamChat(profile, harness.buildCompactionMessages(history), { onDelta: () => {}, signal });
         harness.applyCompaction(history, (sr && sr.text) || "");
         history._browseIdxs = []; // compaction rebuilt the array — old indices are void
+        // A single huge message in the kept tail can leave us right back over budget
+        // next step → infinite compaction. Hard-trim any tail message > ~6000 chars
+        // (preserve role/shape; never touch the system message at index 0).
+        for (let k = 1; k < history.length; k++) {
+          const hm = history[k];
+          if (hm && hm.role !== "system" && typeof hm.content === "string" && hm.content.length > 6000) {
+            hm.content = harness.headTail(hm.content, { maxChars: 6000 });
+          }
+        }
+        justCompacted = true; // skip compaction on the very next step
         emit({ kind: "tool_result", data: { id: cid, output: "Mission history compacted into working notes (goal, decisions, files, remaining work)." } });
       } catch (e) {
         emit({ kind: "tool_result", data: { id: cid, output: "(compaction skipped: " + String((e && e.message) || e).slice(0, 160) + ")" } });
       }
+    } else if (justCompacted) {
+      justCompacted = false; // clear after one step so future compaction can trigger again
     }
     // Wave 3.2 — tier-B drift guard: re-pin the discipline note every 6 steps.
     if (tier === "B" && step > 0 && step % 6 === 0) {
@@ -440,6 +455,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       // once, and remember it for this model so future missions skip the failure.
       if (!textMode && /tool|function/i.test(String(e.message || "")) && step === 0) {
         textMode = true;
+        tier = "C"; // text mode IS tier C — stop the tier-B re-pin from firing redundantly
         modelStats.flag(model, "nativeBroken", 1);
         modelStats.bump(model, "textMode");
         continue; // retry this step in text mode
@@ -626,6 +642,9 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         // #1 prompt bloat on browser missions (WhatsApp Web pages are huge): the
         // moment a newer read lands, every earlier one shrinks to a stub — cutting
         // per-step prompt size by half or more on long missions.
+        // NOTE: these indices assume history is APPEND-ONLY within a turn. Any future
+        // code that splices history MUST rebuild or reset _browseIdxs (applyCompaction
+        // already resets it) — otherwise these indices point at the wrong messages.
         if (!Array.isArray(history._browseIdxs)) history._browseIdxs = [];
         for (const bi of history._browseIdxs) {
           const bm = history[bi];

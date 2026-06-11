@@ -86,7 +86,7 @@ function App() {
         if (!toolCalls.length) { msgs.current.push({ role: "assistant", content: content || "" }); break; }
         msgs.current.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((x) => ({ id: x.id, type: "function", function: { name: x.name, arguments: x.arguments } })) });
         for (const call of toolCalls) {
-          let a = {}; try { a = JSON.parse(call.arguments || "{}"); } catch {}
+          const a = core.tolerantParse(call.arguments);
           push("tool", { name: call.name, label: call.name === "run_command" ? a.command : (a.path || a.query || a.task || a.name || "") });
           let out; try { out = await core.execTool(call.name, a, { confirm: askConfirm, onSubTool: (n, sa) => push("tool", { name: "↳ " + n, label: sa.path || sa.command || sa.query || "" }) }); } catch (e) { out = "Error: " + (e.message || e); }
           msgs.current.push({ role: "tool", tool_call_id: call.id, content: String(out).slice(0, 60000) });

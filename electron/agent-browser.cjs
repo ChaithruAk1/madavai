@@ -182,7 +182,10 @@ async function click(w, n, allow) {
 }
 
 // Fields an agent must never fill — credentials and payment data stay human-only.
-const FORBIDDEN_FIELD = /passw|cvv|cvc|card.?num|cardnumber|ccnum|expir|ssn|social.?sec|secret|otp|pin\b/i;
+// ONE source of truth, used for FORBIDDEN_FIELD here AND injected into the in-page fill
+// check below, so the two guards can never drift apart again.
+const FORBIDDEN_FIELD_SRC = "passw|cvv|cvc|card.?num|cardnumber|ccnum|cc-(number|exp|csc)|expir|ssn|social.?sec|secret|otp|\\bpin\\b";
+const FORBIDDEN_FIELD = new RegExp(FORBIDDEN_FIELD_SRC, "i");
 
 async function fill(w, n, text, submit) {
   const allowSecret = controls().allowSecretFields;
@@ -192,7 +195,8 @@ async function fill(w, n, text, submit) {
     if (!el) return { err: "stale" };
     const type = (el.getAttribute("type") || "").toLowerCase();
     const meta = [type, el.name || "", el.id || "", el.getAttribute("autocomplete") || "", el.getAttribute("aria-label") || "", el.placeholder || ""].join(" ");
-    if (!allowSecret && (type === "password" || /passw|cvv|cvc|card-?num|cc-(number|exp|csc)|expir|ssn|otp/i.test(meta))) return { err: "forbidden" };
+    const FORBIDDEN = new RegExp(${JSON.stringify(FORBIDDEN_FIELD_SRC)}, "i");
+    if (!allowSecret && (type === "password" || FORBIDDEN.test(meta))) return { err: "forbidden" };
     el.scrollIntoView({ block: "center" });
     el.focus();
     // Rich-text composers (WhatsApp Web, Slack, Gmail…) are contenteditable DIVs, not

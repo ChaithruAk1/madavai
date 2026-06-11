@@ -1,5 +1,5 @@
 // © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
-import { useEffect, useRef, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, lazy, Suspense } from "react";
 import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestion, Volume2, VolumeX } from "lucide-react";
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
@@ -70,7 +70,8 @@ export default function App() {
   const [modelsByProfile, setModelsByProfile] = useState({});
   const [cwd, setCwd] = useState(null);
   const [projectCtx, setProjectCtx] = useState(null);
-  const [coworkProj, setCoworkProj] = useState(null); // { id, name } when a Cowork task is scoped to a project
+  const [coworkProj, setCoworkProj] = useState(null); // { id, name } when a Collaborate task is scoped to a project
+  const [projOpenId, setProjOpenId] = useState(null); // Projects screen opens straight to this project's page (back-from-task)
   const [online, setOnline] = useState(null);
   const [artifact, setArtifact] = useState(null);
   const [repo, setRepo] = useState({ open: false, url: "", busy: false, err: "" });
@@ -132,9 +133,14 @@ export default function App() {
   }, [timeline, streaming]);
 
   const onEvent = useCallback((e) => {
+    // Bind the session from the FIRST init event: the web bridge emits `init`
+    // synchronously inside bridge.start() — before the caller's await resolves
+    // and assigns sessionRef — so a strict guard alone would drop it.
+    if (e.kind === "init" && e.sessionId && !sessionRef.current) sessionRef.current = e.sessionId;
     // Events from a PREVIOUS session (e.g. one detached by navigation) must not
-    // mutate the conversation currently on screen.
-    if (e.sessionId && sessionRef.current && e.sessionId !== sessionRef.current) return;
+    // mutate the conversation currently on screen. Strict: when no session is
+    // bound (after a detach), foreign events are ignored instead of passing through.
+    if (e.sessionId && e.sessionId !== sessionRef.current) return;
     switch (e.kind) {
       case "init":
         if (e.data.permissionMode) setPermissionMode(e.data.permissionMode);
@@ -302,6 +308,20 @@ export default function App() {
     setTimeline((tl) => tl.slice(0, i)); sessionRef.current = null; streamOpen.current = false;
     send(newText, item.images || []);
   };
+  // Latest-handler indirection: Message is memoized and may keep an old onEdit/onRetry
+  // closure — routing through this ref guarantees the call always hits the CURRENT
+  // retryAt/editAt (fresh timeline), regardless of which render created the prop.
+  const handlersRef = useRef({});
+  handlersRef.current = { retryAt, editAt };
+
+  // Version history for the open artifact — memoized so long timelines aren't
+  // re-scanned (filter + extractArtifacts) on every unrelated render.
+  const artifactVersions = useMemo(
+    () => artifact
+      ? timeline.filter((it) => it.type === "message" && it.role === "assistant").flatMap((it) => extractArtifacts(it.text)).filter((a) => a.kind === artifact.kind)
+      : [],
+    [timeline, artifact]
+  );
 
   const send = async (text, images = [], agentOv = null, teamOv = null, opts = {}) => {
     const ag = agentOv || agentCtx; // explicit override beats state (avoids a stale closure on seeded launches)
@@ -312,15 +332,20 @@ export default function App() {
     setBusy(true);
     streamOpen.current = false;
     replyBufRef.current = "";
-    if (!sessionRef.current) {
-      const req = projectCtx
-        ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId, images }
-        : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined, team: tm || undefined, resumeMission: opts.resumeMission || undefined };
-      const { sessionId, conversationId } = await bridge.start(req);
-      sessionRef.current = sessionId;
-      if (!projectCtx && conversationId) setActiveConvId(conversationId);
-    } else {
-      bridge.sendInput(sessionRef.current, text, images);
+    try {
+      if (!sessionRef.current) {
+        const req = projectCtx
+          ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId, images }
+          : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined, team: tm || undefined, resumeMission: opts.resumeMission || undefined };
+        const { sessionId, conversationId } = await bridge.start(req);
+        sessionRef.current = sessionId;
+        if (!projectCtx && conversationId) setActiveConvId(conversationId);
+      } else {
+        bridge.sendInput(sessionRef.current, text, images);
+      }
+    } catch (e) {
+      setBusy(false);
+      setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ Couldn't start: ${(e && e.message) || e}` }]);
     }
   };
 
@@ -347,6 +372,10 @@ export default function App() {
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
     setProjectCtx(null); setCoworkProj(null);
+    // Re-attach the project scope this Collaborate task ran under (saved on the record).
+    if (conv.projectId && bridge.getProject) {
+      bridge.getProject(conv.projectId).then((p) => { if (p) setCoworkProj({ id: p.id, name: p.name }); }).catch(() => {});
+    }
     // Re-attach the agent/team this conversation ran with (saved on the record).
     setAgentCtx(conv.agent || null);
     setTeamCtx(conv.team && conv.team.members && conv.team.members.length ? conv.team : null);
@@ -412,6 +441,13 @@ export default function App() {
     sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const backToProjects = () => { setProjectCtx(null); setTimeline([]); sessionRef.current = null; setBusy(false); };
+  // Back from a project-scoped Collaborate task to THAT project's page (not the projects list).
+  const backToProject = () => {
+    if (!coworkProj) return;
+    setProjOpenId(coworkProj.id);
+    setMode("project"); setProjectCtx(null); setCoworkProj(null);
+    setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+  };
 
   // Start a new project conversation from the Projects detail composer (opens the chat surface + sends).
   const startProjectChat = async (project, text) => {
@@ -421,15 +457,20 @@ export default function App() {
     sessionRef.current = null; streamOpen.current = false;
     if (text) {
       setBusy(true);
-      const { sessionId } = await bridge.start({ mode: "project", prompt: text, projectId: project.id, conversationId: conv.id });
-      sessionRef.current = sessionId;
+      try {
+        const { sessionId } = await bridge.start({ mode: "project", prompt: text, projectId: project.id, conversationId: conv.id });
+        sessionRef.current = sessionId;
+      } catch (e) {
+        setBusy(false);
+        setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ Couldn't start: ${(e && e.message) || e}` }]);
+      }
     }
   };
 
   // Start a Cowork task scoped to a project: uses the project's linked folder as the
   // working dir and injects its instructions + knowledge as context.
   const startProjectCowork = async (project, text) => {
-    if (!project.folder) { alert("Link a folder to this project first (Files & sources) to run a Cowork task."); return; }
+    if (!project.folder) { alert("Link a folder to this project first (Files & sources) to start work in Let's Collaborate."); return; }
     setMode("cowork"); setChatMode("cowork");
     setProjectCtx(null); setCoworkProj({ id: project.id, name: project.name });
     setCwd(project.folder);
@@ -437,9 +478,14 @@ export default function App() {
     setActiveConvId(null); sessionRef.current = null; streamOpen.current = false;
     if (text) {
       setBusy(true);
-      const { sessionId, conversationId } = await bridge.start({ mode: "cowork", prompt: text, cwd: project.folder, permissionMode, projectId: project.id });
-      sessionRef.current = sessionId;
-      if (conversationId) setActiveConvId(conversationId);
+      try {
+        const { sessionId, conversationId } = await bridge.start({ mode: "cowork", prompt: text, cwd: project.folder, permissionMode, projectId: project.id });
+        sessionRef.current = sessionId;
+        if (conversationId) setActiveConvId(conversationId);
+      } catch (e) {
+        setBusy(false);
+        setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ Couldn't start: ${(e && e.message) || e}` }]);
+      }
     }
   };
 
@@ -511,6 +557,7 @@ export default function App() {
         setBusy(false); // a restored (non-live) conversation is never mid-turn
       }
     } else if (m === "project") {
+      setProjOpenId(null); // sidebar navigation always lands on the projects LIST
       setProjectCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; setBusy(false); setSoloRun(null);
     }
     // Secondary views (settings/skills/connectors/viamobile/consumption): leave the
@@ -704,7 +751,7 @@ export default function App() {
           <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
             tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : "models")} />
         ) : (mode === "project" && !projectCtx) ? (
-          <ProjectsBrowser onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} />
+          <ProjectsBrowser onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} openId={projOpenId} />
         ) : (
           <div className="work-split">
             <div className="work-main">
@@ -735,6 +782,14 @@ export default function App() {
                           <div className="hero-agent-sub">{agentCtx.description || "Custom agent"} · ready when you are</div>
                         </div>
                       </div>
+                    ) : coworkProj ? (
+                      <div className="hero-greet hero-agent">
+                        <span className="hero-agent-ic"><FolderKanban size={24} /></span>
+                        <div>
+                          <h1 className="greeting">{coworkProj.name}</h1>
+                          <div className="hero-agent-sub">What would you like to work on in this project? Its instructions &amp; knowledge are applied.</div>
+                        </div>
+                      </div>
                     ) : (
                       <div className="hero-greet"><ThinkLogo size={40} animated={false} /><h1 className="greeting">{greeting}</h1></div>
                     )}
@@ -743,6 +798,12 @@ export default function App() {
                       <div className="hero-opts">
                         <button className="chip" onClick={backToProjects}>← Projects</button>
                         <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
+                      </div>
+                    )}
+                    {coworkProj && !projectCtx && (
+                      <div className="hero-opts">
+                        <button className="chip" onClick={backToProject} title="Back to this project's page">← {coworkProj.name}</button>
+                        <span className="chip">Let's Collaborate · project task</span>
                       </div>
                     )}
                     {(agentCtx || teamCtx) && (
@@ -799,6 +860,14 @@ export default function App() {
                       <span style={{ color: "var(--text-2)" }}>· {projectCtx.title}</span>
                     </div>
                   )}
+                  {coworkProj && !projectCtx && (
+                    <div className="folder-bar">
+                      <button className="btn ghost" onClick={backToProject} style={{ padding: "4px 8px" }} title="Back to this project's page">← {coworkProj.name}</button>
+                      <FolderKanban size={14} />
+                      <span className="path">{coworkProj.name}</span>
+                      <span style={{ color: "var(--text-2)" }}>· Let's Collaborate task</span>
+                    </div>
+                  )}
                   {agentCtx && (
                     <div className="folder-bar agent-bar">
                       <button className="btn ghost" style={{ padding: "3px 9px" }} title="Back to the Agents screen" onClick={backToAgents}>← Agents</button>
@@ -835,8 +904,8 @@ export default function App() {
                         const out = []; let buf = [];
                         const renderMsg = (item, i) => (
                           <Message key={i} item={item} onOpenArtifact={setArtifact} userName={_who || "You"}
-                            onRetry={!busy && item.type === "message" && item.role === "assistant" ? () => retryAt(i) : undefined}
-                            onEdit={!busy && item.type === "message" && item.role === "user" ? (t) => editAt(i, t) : undefined}
+                            onRetry={!busy && item.type === "message" && item.role === "assistant" ? () => handlersRef.current.retryAt(i) : undefined}
+                            onEdit={!busy && item.type === "message" && item.role === "user" ? (t) => handlersRef.current.editAt(i, t) : undefined}
                             streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
                         );
                         const flush = () => {
@@ -860,7 +929,8 @@ export default function App() {
               )}
             </div>
             {artifact && <ArtifactPanel artifact={artifact}
-              versions={timeline.filter((it) => it.type === "message" && it.role === "assistant").flatMap((it) => extractArtifacts(it.text)).filter((a) => a.kind === artifact.kind)}
+              key={artifact.kind + ":" + (artifact.code || "").slice(0, 80)}
+              versions={artifactVersions}
               onClose={() => setArtifact(null)} />}
             {teamCtx && !artifact && <TeamOps team={teamCtx} run={teamRun} onClose={clearTeam} />}
             {agentCtx && !teamCtx && !artifact && soloRun && <AgentOps agent={agentCtx} run={soloRun} onClose={() => setSoloRun(null)} />}

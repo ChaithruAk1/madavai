@@ -2105,6 +2105,19 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 
 // ---------------- Blueprint extras: memory · track record · versions · export ----------------
 // Desktop-only sections (each hides itself when the bridge method isn't available).
+// Hoisted to module scope: declared inside BlueprintExtras it was a NEW component type
+// every render, so React remounted each section per keystroke (inputs lost focus).
+function Section({ id, icon: I, label, count, open, setOpen, children }) {
+  return (
+    <>
+      <button className="ags-bp-toggle" style={{ marginTop: 8 }} onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>
+        <I size={12} /> {label}{count != null ? ` (${count})` : ""} {open[id] ? "▾" : "▸"}
+      </button>
+      {open[id] && <div style={{ padding: "6px 2px 2px" }}>{children}</div>}
+    </>
+  );
+}
+
 function BlueprintExtras({ draft, setDraft, onExport }) {
   const [memNotes, setMemNotes] = useState(null);   // null = not loaded; array of {at,text}
   const [memEdit, setMemEdit] = useState(null);     // editable text, or null when not editing
@@ -2133,20 +2146,11 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
 
   if (!bridge.getAgentMemory && !bridge.getAgentHistory) return null;
 
-  const Section = ({ id, icon: I, label, count, children }) => (
-    <>
-      <button className="ags-bp-toggle" style={{ marginTop: 8 }} onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>
-        <I size={12} /> {label}{count != null ? ` (${count})` : ""} {open[id] ? "▾" : "▸"}
-      </button>
-      {open[id] && <div style={{ padding: "6px 2px 2px" }}>{children}</div>}
-    </>
-  );
-
   return (
     <div style={{ marginTop: 10, borderTop: "1px solid color-mix(in srgb, currentColor 12%, transparent)", paddingTop: 8 }}>
       {/* Memory — what this agent has learned */}
       {bridge.getAgentMemory && (
-        <Section id="memory" icon={Brain} label={`Memory — what ${draft.name.trim() || "this agent"} has learned`} count={memNotes ? memNotes.length : undefined}>
+        <Section id="memory" icon={Brain} open={open} setOpen={setOpen} label={`Memory — what ${draft.name.trim() || "this agent"} has learned`} count={memNotes ? memNotes.length : undefined}>
           <label className="chip" style={{ cursor: "pointer", display: "inline-flex", marginBottom: 8 }}>
             <input type="checkbox" checked={memoryOn} onChange={() => setDraft({ ...draft, memory: memoryOn ? false : undefined })} style={{ marginRight: 6 }} />
             Learn across missions
@@ -2177,7 +2181,7 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
 
       {/* Track record — persisted run history */}
       {bridge.getAgentHistory && (
-        <Section id="runs" icon={History} label="Track record" count={runs ? runs.length : undefined}>
+        <Section id="runs" icon={History} open={open} setOpen={setOpen} label="Track record" count={runs ? runs.length : undefined}>
           {(runs || []).length === 0 && <div className="ag-hint" style={{ margin: 0 }}>No missions recorded yet — every chat run, team mission, scheduled trigger, webhook and swarm lands here.</div>}
           {(runs || []).slice(0, 10).map((r, i) => (
             <div key={i} style={{ fontSize: 12, padding: "5px 0", borderBottom: "1px dashed color-mix(in srgb, currentColor 10%, transparent)", display: "flex", gap: 8, alignItems: "baseline" }}>
@@ -2191,7 +2195,7 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
 
       {/* Versions — rollback to an earlier blueprint */}
       {bridge.listAgentVersions && (
-        <Section id="versions" icon={Clock} label="Versions" count={versions ? versions.length : undefined}>
+        <Section id="versions" icon={Clock} open={open} setOpen={setOpen} label="Versions" count={versions ? versions.length : undefined}>
           {(versions || []).length === 0 && <div className="ag-hint" style={{ margin: 0 }}>No earlier versions yet — each Studio save keeps the previous blueprint (last 10).</div>}
           {(versions || []).map((v, i) => (
             <div key={i} style={{ fontSize: 12, padding: "5px 0", display: "flex", gap: 8, alignItems: "center", borderBottom: "1px dashed color-mix(in srgb, currentColor 10%, transparent)" }}>
@@ -2208,7 +2212,7 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
       )}
 
       {/* Craft — harness quality/cost toggles (PLAN-AGENT-PARITY waves) */}
-      <Section id="craft" icon={Hammer} label="Craft — quality vs cost">
+      <Section id="craft" icon={Hammer} open={open} setOpen={setOpen} label="Craft — quality vs cost">
         <div className="ag-hint" style={{ margin: "0 0 8px" }}>
           The reliability layer (plan tracking, self-repair, context compaction, read-before-edit) is always on and free.
           These three trade a little extra cost for extra rigor:

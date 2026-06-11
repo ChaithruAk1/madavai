@@ -197,6 +197,19 @@ function isLoopbackCaller(req) {
   const a = req.socket.remoteAddress || "";
   return a === "::1" || a.startsWith("127.") || a.startsWith("::ffff:127.");
 }
+// /proxy destination allowlist — the caller forwards their apiKey to baseUrl, so restrict targets to
+// known providers (suffix-match on hostname, case-insensitive). Extend with env PROXY_HOSTS (CSV, ADDS).
+const PROXY_HOST_ALLOW = [
+  "openrouter.ai", "api.openai.com", "api.anthropic.com", "generativelanguage.googleapis.com",
+  "integrate.api.nvidia.com", "api.groq.com", "api.mistral.ai", "api.together.xyz", "api.deepseek.com",
+  "api.fireworks.ai", "api.cerebras.ai", "api.x.ai", "api.cohere.com",
+  ...String(process.env.PROXY_HOSTS || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
+];
+function isAllowedProxyHost(urlString) {
+  let t; try { t = new URL(urlString); } catch { return false; }
+  const h = t.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  return PROXY_HOST_ALLOW.some((d) => h === d || h.endsWith("." + d));
+}
 
 // Static serving for the WEB app: serves the built Vite bundle (dist/) so the web app and the API
 // share one origin (no CORS, OAuth redirects come back here). SPA fallback to index.html.
@@ -456,6 +469,8 @@ const server = http.createServer(async (req, res) => {
     if (!baseUrl || !model) return json(res, 400, { error: "baseUrl and model required" });
     // SSRF guard — except a loopback caller (the desktop app) may use localhost providers (Ollama/LM Studio).
     if (!isLoopbackCaller(req) && isForbiddenTarget(baseUrl)) return json(res, 403, { error: "blocked host" });
+    // Provider allowlist: we forward the caller's apiKey, so only relay to supported providers (loopback exempt).
+    if (!isLoopbackCaller(req) && !isAllowedProxyHost(baseUrl)) return json(res, 400, { error: "unsupported provider host — set PROXY_HOSTS to allow it" });
     try {
       let url, headers, payload;
       if (kind === "anthropic") {
@@ -487,6 +502,8 @@ const server = http.createServer(async (req, res) => {
     if (!baseUrl) return json(res, 400, { error: "baseUrl required" });
     // SSRF guard — except a loopback caller (the desktop app) may use localhost providers (Ollama/LM Studio).
     if (!isLoopbackCaller(req) && isForbiddenTarget(baseUrl)) return json(res, 403, { error: "blocked host" });
+    // Provider allowlist: we forward the caller's apiKey, so only relay to supported providers (loopback exempt).
+    if (!isLoopbackCaller(req) && !isAllowedProxyHost(baseUrl)) return json(res, 400, { error: "unsupported provider host — set PROXY_HOSTS to allow it" });
     try {
       const bb = (baseUrl || "").replace(/\/$/, ""); const apib = /\/v\d|\/openai/.test(bb) ? bb : bb + "/v1";
       const headers = {};

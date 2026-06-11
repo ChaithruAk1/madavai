@@ -186,7 +186,11 @@ function squashStale(history, { keepRecent = 14, cap = 180 } = {}) {
   const cut = history.length - keepRecent;
   for (let i = 1; i < cut; i++) {
     const m = history[i];
-    if (m.role !== "tool" || typeof m.content !== "string") continue;
+    if (typeof m.content !== "string") continue;
+    // Native tool results are role "tool"; text-mode results are user-role messages
+    // whose content starts with the "[result of " prefix (see agent-openai pushToolResult).
+    const isTextModeResult = m.role === "user" && m.content.startsWith("[result of ");
+    if (m.role !== "tool" && !isTextModeResult) continue;
     if (m.content.length <= cap || m._squashed) continue;
     const first = m.content.split("\n", 1)[0].slice(0, cap);
     m.content = first + " … (older result compressed)";

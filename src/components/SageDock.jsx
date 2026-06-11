@@ -83,13 +83,24 @@ function tipFor(mode) {
   }
 }
 
+// A saved position is only trustworthy on the window it was dragged on: clamp it to the
+// CURRENT viewport so Sage can never be restored off-screen (smaller window/monitor).
+function clampPos(p) {
+  if (!p || typeof p.left !== "number" || typeof p.top !== "number" || typeof window === "undefined") return null;
+  const pad = 8, sz = 60;
+  return {
+    left: Math.max(pad, Math.min(window.innerWidth - sz - pad, p.left)),
+    top: Math.max(pad, Math.min(window.innerHeight - sz - pad, p.top)),
+  };
+}
+
 export default function SageDock({ mode, onNavigate }) {
   const [msgs, setMsgs] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.thread") || "[]"); } catch { return []; } });
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(() => { try { return localStorage.getItem("be.sage.hidden") === "1"; } catch { return false; } });
-  const [pos, setPos] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.pos") || "null"); } catch { return null; } });
+  const [pos, setPos] = useState(() => { try { return clampPos(JSON.parse(localStorage.getItem("be.sage.pos") || "null")); } catch { return null; } });
   const [look, setLook] = useState(() => { try { return Number(localStorage.getItem("be.sage.look")) || 0; } catch { return 0; } });
   const [lookPick, setLookPick] = useState(false);
   const [peek, setPeek] = useState(() => { try { return localStorage.getItem("be.sage.greeted") !== "1"; } catch { return false; } });
@@ -104,13 +115,31 @@ export default function SageDock({ mode, onNavigate }) {
   const endRef = useRef(null);
   const tipDismissed = useRef({});
   const recRef = useRef(null);
+  const micEngineRef = useRef(null); // "win" | "web" — which speech engine is live while listening
+  const winListenersRef = useRef([]); // active window pointer listeners (drag/resize) → removed on unmount
   const lookObj = SAGE_LOOKS[look] || SAGE_LOOKS[0];
   const name = lookName(lookObj); // female looks answer as Sara, the rest as Sage
 
   useEffect(() => { try { localStorage.setItem("be.sage.thread", JSON.stringify(msgs.slice(-40))); } catch {} }, [msgs]);
   useEffect(() => { if (open) endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy, open]);
   useEffect(() => { if (peek) { try { localStorage.setItem("be.sage.greeted", "1"); } catch {} const t = setTimeout(() => setPeek(false), 5000); return () => clearTimeout(t); } }, []); // eslint-disable-line
-  useEffect(() => { const id = setInterval(() => { setPeek(true); setTimeout(() => setPeek(false), 4000); }, 300000); return () => clearInterval(id); }, []);
+  useEffect(() => {
+    let peekT = null;
+    const id = setInterval(() => { setPeek(true); peekT = setTimeout(() => setPeek(false), 4000); }, 300000);
+    return () => { clearInterval(id); if (peekT) clearTimeout(peekT); };
+  }, []);
+  // Unmount safety net: drop any window pointer listeners a drag/resize left behind.
+  useEffect(() => () => { winListenersRef.current.forEach(([t, fn]) => window.removeEventListener(t, fn)); winListenersRef.current = []; }, []);
+  // Window shrank? Pull Sage back into view (and persist the corrected spot).
+  useEffect(() => {
+    const onResize = () => setPos((p) => {
+      const c = clampPos(p);
+      if (c && p && (c.left !== p.left || c.top !== p.top)) { posRef.current = c; try { localStorage.setItem("be.sage.pos", JSON.stringify(c)); } catch {} return c; }
+      return p;
+    });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   // proactive tip per screen
   useEffect(() => {
     setTip(null);
@@ -215,9 +244,18 @@ export default function SageDock({ mode, onNavigate }) {
     setInput((p) => (p ? p.trim() + " " : "") + text);
   };
   const toggleMic = async () => {
-    if (listening) { try { recRef.current && recRef.current.stop && recRef.current.stop(); } catch {} return; }
+    if (listening) {
+      // Windows engine: there's nothing to stop from here — it ends on its own
+      // (silence/timeout); the button title says so. Web engine: stop the live
+      // recognizer, and clear the ref so a stale .stop() can never fire later.
+      if (micEngineRef.current === "win") return;
+      try { recRef.current && recRef.current.stop && recRef.current.stop(); } catch {}
+      recRef.current = null;
+      return;
+    }
     // Desktop: the Windows engine, and ONLY the Windows engine.
     if (bridge.winSpeech) {
+      micEngineRef.current = "win";
       setListening(true);
       try {
         const r = await bridge.winSpeech({ timeoutSec: 10 });
@@ -227,6 +265,7 @@ export default function SageDock({ mode, onNavigate }) {
         setMsgs((m) => [...m, { role: "mentor", text: "Voice hiccup: " + String((e && e.message) || e) }]);
       }
       setListening(false);
+      micEngineRef.current = null;
       return;
     }
     // Web build: the browser's own speech engine (Chromium browsers).
@@ -236,11 +275,11 @@ export default function SageDock({ mode, onNavigate }) {
         const rec = new SR();
         rec.lang = "en-US"; rec.interimResults = false; rec.continuous = false;
         rec.onresult = (e) => heard(e.results[0][0].transcript);
-        rec.onend = () => setListening(false);
-        rec.onerror = () => setListening(false);
-        rec.start(); setListening(true); recRef.current = rec;
+        rec.onend = () => { setListening(false); recRef.current = null; micEngineRef.current = null; };
+        rec.onerror = () => { setListening(false); recRef.current = null; micEngineRef.current = null; };
+        rec.start(); setListening(true); micEngineRef.current = "web"; recRef.current = rec;
         return;
-      } catch { setListening(false); }
+      } catch { setListening(false); recRef.current = null; micEngineRef.current = null; }
     }
     setMsgs((m) => [...m, { role: "mentor", text: "Voice isn't available here — on Windows desktop it works out of the box; on the web use a Chromium browser like Chrome or Edge." }]);
   };
@@ -260,17 +299,21 @@ export default function SageDock({ mode, onNavigate }) {
     };
     const stop = () => {
       window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop);
+      winListenersRef.current = winListenersRef.current.filter(([, f]) => f !== move && f !== stop);
       setSize((s) => { if (s) { try { localStorage.setItem("be.sage.size", JSON.stringify(s)); } catch {} } return s; });
     };
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", stop);
+    winListenersRef.current.push(["pointermove", move], ["pointerup", stop]);
     e.preventDefault(); e.stopPropagation();
   };
 
-  const gotoKey = (m) => { const x = /(?:^|\n)\s*GOTO[:!]\s*([a-z]+)/i.exec(m.text || ""); const k = x && x[1].toLowerCase(); return GOTO_MODE[k] ? k : null; };
-  // Display cleanup: drop the GOTO line and any markdown clutter the model slips in
+  // "Take me there" button only for GOTO: (suggestions); GOTO! already navigated on its own.
+  const gotoKey = (m) => { const x = /(?:^|\n)\s*GOTO:\s*([a-z]+)/i.exec(m.text || ""); const k = x && x[1].toLowerCase(); return GOTO_MODE[k] ? k : null; };
+  // Display cleanup: drop GOTO lines (wherever they appear — m flag matches line ends,
+  // not just the end of the whole text) and any markdown clutter the model slips in
   // (the persona says plain text; this is the safety net so ** never reaches the user).
   const clean = (t) => String(t || "")
-    .replace(/(?:^|\n)\s*GOTO[:!]\s*[a-z]+\s*$/i, "")
+    .replace(/(?:^|\n)\s*GOTO[:!]\s*[a-z]+\s*$/gim, "")
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
     .replace(/(^|\n)\s*#{1,4}\s+/g, "$1")
@@ -292,10 +335,12 @@ export default function SageDock({ mode, onNavigate }) {
     };
     const up = () => {
       window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up);
+      winListenersRef.current = winListenersRef.current.filter(([, f]) => f !== move && f !== up);
       if (posRef.current) { try { localStorage.setItem("be.sage.pos", JSON.stringify(posRef.current)); } catch {} }
       if (fromFab && !d.moved) openDock();
     };
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+    winListenersRef.current.push(["pointermove", move], ["pointerup", up]);
     e.preventDefault();
   };
 
@@ -360,7 +405,10 @@ export default function SageDock({ mode, onNavigate }) {
             <div ref={endRef} />
           </div>
           <div className="sage-panel-input">
-            <button className={`sage-mic ${listening ? "rec" : ""}`} aria-label={listening ? "Stop listening" : `Talk to ${name}`} title={listening ? "Listening — click to stop" : `Talk to ${name}`} onClick={toggleMic}><Mic size={15} /></button>
+            <button className={`sage-mic ${listening ? "rec" : ""}`}
+              aria-label={listening ? (micEngineRef.current === "win" ? "Listening — stops automatically" : "Stop listening") : `Talk to ${name}`}
+              title={listening ? (micEngineRef.current === "win" ? "Listening — stops automatically" : "Listening — click to stop") : `Talk to ${name}`}
+              onClick={toggleMic}><Mic size={15} /></button>
             <input value={input} placeholder={listening ? "Listening…" : `Ask ${name} anything…`} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
             <button className="agsd-send" aria-label={`Ask ${name}`} disabled={busy || !input.trim()} onClick={send}><ArrowUp size={15} /></button>
           </div>
@@ -370,7 +418,7 @@ export default function SageDock({ mode, onNavigate }) {
           <button className="sage-fab" title={`Ask ${name} — drag to move me`} onPointerDown={startDrag}><SageFace size={52} look={lookObj} /></button>
           <button className="sage-fab-hide" title={`Tuck ${name} away`} onClick={hide}><X size={11} /></button>
           {tip
-            ? <span className="sage-tip" onClick={() => { const a = tip.ask || ("Help me with " + mode); setTip(null); openDock(); }}>
+            ? <span className="sage-tip" onClick={() => { const a = tip.ask || ("Help me with " + mode); const isWalk = tip.id === "walk"; setTip(null); openDock(); if (!isWalk) ask(a); }}>
                 <span className="sage-tip-msg">{tip.msg}</span>
                 <button className="sage-tip-x" title="Dismiss" onClick={(e) => { e.stopPropagation(); tipDismissed.current[tip.id] = true; setTip(null); }}><X size={11} /></button>
               </span>

@@ -146,7 +146,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
     if (!entry) return;
     const raw = entry.type === "connector" ? entry.data.name : entry.data.name;
     const token = /\s/.test(raw) ? `@"${raw}"` : `@${raw}`;
-    setText((v) => v.replace(/@([\w./-]*)$/, token + " "));
+    setText((v) => v.replace(/@([\w./-]*)$/, () => token + " ")); // function form: names with "$" must not be treated as replacement patterns
     closeAt();
     if (ref.current) ref.current.focus();
   };
@@ -204,7 +204,14 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   // user's own Whisper-capable key (OpenAI/Groq) in the main process. Falls back to
   // the Web Speech API on browsers that have it (web build in Chrome).
   const toggleMic = async () => {
-    if (listening) { try { recRef.current && recRef.current.stop(); } catch {} return; }
+    if (listening) {
+      // Guard the stop: a MediaRecorder must actually be recording, and the ref is
+      // cleared so a stale recorder can never be stopped by a later click.
+      const rec = recRef.current;
+      try { if (rec && rec.stop && (!("state" in rec) || rec.state === "recording")) rec.stop(); } catch {}
+      recRef.current = null;
+      return;
+    }
     // Windows-native engine (no key, no model): used once chosen — the Whisper path
     // below flips this flag the first time it finds no usable key.
     let winVoice = false; try { winVoice = localStorage.getItem("be.voice.engine") === "win"; } catch {}
@@ -262,10 +269,10 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
       const rec = new SR();
       rec.lang = "en-US"; rec.interimResults = false; rec.continuous = false;
       rec.onresult = (e) => { const t = e.results[0][0].transcript; setText((p) => (p ? p + " " : "") + t); };
-      rec.onend = () => setListening(false);
-      rec.onerror = () => setListening(false);
+      rec.onend = () => { setListening(false); recRef.current = null; };
+      rec.onerror = () => { setListening(false); recRef.current = null; };
       rec.start(); setListening(true); recRef.current = rec;
-    } catch { setListening(false); }
+    } catch { setListening(false); recRef.current = null; }
   };
 
   const placeholder = skill

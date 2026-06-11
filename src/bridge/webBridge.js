@@ -8,7 +8,7 @@
 //   • Chat + model listing -> stream directly from the browser to the user's provider.
 //   • Local-machine features (folders, installing skills, MCP connector processes, Telegram,
 //     local models) can't run in a browser -> they return a clear "desktop app" result.
-import { streamChat, streamChatTools, listModels as provListModels, ping as provPing } from "../shared/providers.js";
+import { streamChat, streamChatTools, listModels as provListModels, ping as provPing, apiBase } from "../shared/providers.js";
 import * as webfs from "./webfs.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
 // head+tail truncation, stale-result squash, identical-call loop breaker.
@@ -375,7 +375,7 @@ const COWORK_TOOLS = [
 // OpenAI-compatible chat/completions with modalities ["image","text"].
 async function webGenImage(prof, prompt) {
   if (!prof || !prof.baseUrl || prof.kind === "anthropic") throw new Error("Pick an image-output model in the model picker (e.g. google/gemini-2.5-flash-image on OpenRouter).");
-  const res = await fetch(prof.baseUrl.replace(/\/+$/, "") + "/chat/completions", {
+  const res = await fetch(apiBase(prof.baseUrl) + "/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(prof.apiKey ? { Authorization: `Bearer ${(prof.apiKey || "").trim()}` } : {}) },
     body: JSON.stringify({ model: prof.model, messages: [{ role: "user", content: String(prompt || "").slice(0, 2000) }], modalities: ["image", "text"] }),
@@ -568,6 +568,10 @@ async function runTurn(sess, text, images) {
 
 // ================= chat history (localStorage) =================
 const HISTORY_KEY = "be.sessions";
+// Per-session write queue: a slow IndexedDB commit must not be overtaken by the next turn's snapshot,
+// or an older messages array could win and lose the latest turn. Each persistSession chains onto the
+// previous write for the same session id. Fire-and-forget from the caller's view; one-time fail warning.
+const _persistChains = new Map(); // sessionId -> Promise
 function persistSession(sess) {
   const rec = { id: sess.id, mode: sess.mode || "code", title: sess.title || "Untitled", updatedAt: Date.now(),
     messages: sess.messages, projectId: sess.projectId || null, convId: sess.convId || null,
@@ -575,13 +579,15 @@ function persistSession(sess) {
     agent: sess.agent || null, team: sess.team ? { name: sess.team.name, mode: sess.team.mode, members: sess.team.members, identity: sess.team.identity } : null };
   // Surface save failures instead of losing history silently: warn once per session in the
   // chat (as a system-style event) + always in the console, then keep running.
-  idbPut(rec).catch((e) => {
+  const prev = _persistChains.get(sess.id) || Promise.resolve();
+  const next = prev.catch(() => {}).then(() => idbPut(rec)).catch((e) => {
     console.warn("[brainedge] chat history save failed:", e);
     if (!persistSession._warned) {
       persistSession._warned = true;
       try { emit(sess.id, "error", { message: "⚠ This browser is blocking history storage (private mode or full disk?). Your chat continues, but it won't be saved." }); } catch {}
     }
-  });
+  }).finally(() => { if (_persistChains.get(sess.id) === next) _persistChains.delete(sess.id); });
+  _persistChains.set(sess.id, next);
 }
 
 // Streaks (consecutive active calendar days) + a friendly peak-hour label, from a set of YYYY-MM-DD keys.
@@ -708,14 +714,14 @@ export const webBridge = {
   // ---- chat history ----
   async listSessions(mode) {
     const all = await idbAll();
-    return all.filter((x) => !mode || x.mode === mode).sort((a, b) => b.updatedAt - a.updatedAt).map((x) => ({ id: x.id, title: x.title, updatedAt: x.updatedAt, mode: x.mode }));
+    return all.filter((x) => !mode || x.mode === mode).sort((a, b) => b.updatedAt - a.updatedAt).map((x) => ({ id: x.id, title: x.title, updatedAt: x.updatedAt, mode: x.mode, projectId: x.projectId || null, count: (x.messages || []).length }));
   },
   async getSession(id) {
     const rec = await idbGet(id); if (!rec) return null;
     const asText = (c) => (typeof c === "string" ? c : (Array.isArray(c) ? (c.find((p) => p.type === "text")?.text || "") : ""));
     // The renderer maps conv.messages -> bubbles; strip system and flatten content to text.
     const messages = (rec.messages || []).filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: asText(m.content) }));
-    return { id: rec.id, mode: rec.mode, title: rec.title, messages };
+    return { id: rec.id, mode: rec.mode, title: rec.title, messages, projectId: rec.projectId || null, cwd: rec.cwd || null };
   },
   async deleteSession(id) { await idbDel(id); return true; },
   // Global search across message CONTENT (parity with desktop).

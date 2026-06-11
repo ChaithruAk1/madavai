@@ -28,13 +28,14 @@ function listSessions(mode, agentScope) {
     })
     .map((s) => ({
       id: s.id, mode: s.mode, title: s.title, cwd: s.cwd, updatedAt: s.updatedAt, count: (s.messages || []).length,
+      projectId: s.projectId || null, // Collaborate tasks scoped to a project list under that project
       agentName: s.agent ? s.agent.name : null,
       teamName: s.team && s.team.members && s.team.members.length ? s.team.name : null,
     }))
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 function getSession(id) { try { return JSON.parse(fs.readFileSync(file(id), "utf8")); } catch { return null; } }
-function createSession(mode, cwd) { const s = { id: rand("ses_"), mode, cwd: cwd || "", title: "New task", messages: [], createdAt: Date.now(), updatedAt: Date.now() }; saveSession(s); return s; }
+function createSession(mode, cwd, projectId) { const s = { id: rand("ses_"), mode, cwd: cwd || "", projectId: projectId || null, title: "New task", messages: [], createdAt: Date.now(), updatedAt: Date.now() }; saveSession(s); return s; }
 function saveSession(s) { ensure(); s.updatedAt = Date.now(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); return s; }
 function deleteSession(id) { try { fs.unlinkSync(file(id)); } catch {} return true; }
 

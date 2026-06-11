@@ -448,6 +448,10 @@ ipcMain.handle("brainedge:addKnowledgeText", (_e, { projectId, name, content }) 
 // the file is skipped with a clear reason instead of importing garbage.
 async function knowledgeText(fp) {
   const ext = path.extname(fp).toLowerCase();
+  // Size guard (all formats): refuse files over 50 MB before reading/parsing them,
+  // surfaced through the same skipped[]/reason mechanism as image-only PDFs.
+  try { if (fs.statSync(fp).size > 52428800) throw new Error("file too large (max 50 MB)"); }
+  catch (e) { if (/file too large/.test(String(e.message || e))) throw e; }
   if (ext === ".xlsx" || ext === ".xls") {
     // Spreadsheets become CSV per sheet so models can reason over the rows.
     const XLSX = require("xlsx"); // lazy: only loaded when a spreadsheet is imported

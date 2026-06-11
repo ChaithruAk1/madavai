@@ -13,9 +13,10 @@ function rel(ts) {
   return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork }) {
+export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork, onOpenTask, openId }) {
   const [projects, setProjects] = useState([]);
   const [view, setView] = useState("list");      // list | detail
+  const [tasks, setTasks] = useState([]);        // Let's Collaborate tasks scoped to this project
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", desc: "" });
   const [q, setQ] = useState("");
@@ -33,11 +34,20 @@ export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork }) 
 
   const loadList = async () => setProjects(await bridge.listProjects());
   useEffect(() => { loadList(); }, []);
+  // Returning from a project-scoped Collaborate task: land directly on that project's page.
+  useEffect(() => { if (openId) open(openId); }, []); // eslint-disable-line
 
+  const loadTasks = async (id) => {
+    try {
+      const all = (await bridge.listSessions("cowork")) || [];
+      setTasks(all.filter((t) => t.projectId === id));
+    } catch { setTasks([]); }
+  };
   const open = async (id) => {
     const p = await bridge.getProject(id);
     setSelId(id); setProject(p); setInstr(p?.instructions || ""); setSrc(""); setGhUrl(""); setChat("");
     setConvs(await bridge.listConversations(id));
+    loadTasks(id);
     setView("detail");
   };
   const back = () => { setView("list"); setProject(null); setSelId(null); loadList(); };
@@ -123,20 +133,42 @@ export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork }) 
 
             <Composer mode="project" busy={false} onSend={(text) => onStartChat && onStartChat(project, text)} onStop={() => {}} />
             <button className="pjd-cowork" onClick={() => onStartCowork && onStartCowork(project)}>
-              <Users size={15} /> Start a task in Cowork
+              <Users size={15} /> Start work in Let's Collaborate
             </button>
 
             <div className="pjd-convs">
-              {convs.length === 0 ? (
-                <div className="pjd-convs-empty">Start a chat to keep conversations organized and re‑use this project's knowledge.</div>
-              ) : convs.map((c) => (
-                <div key={c.id} className="pjd-conv" onClick={() => onOpen(project, c)}>
-                  <MessageSquare size={14} style={{ color: "var(--accent)" }} />
-                  <span className="pjd-conv-title">{c.title || "Conversation"}</span>
-                  <span className="mo-sub">{c.count || 0} msgs</span>
-                  <button className="btn ghost" onClick={(e) => { e.stopPropagation(); delConv(c.id); }} style={{ padding: "2px 6px" }}><Trash2 size={13} /></button>
-                </div>
-              ))}
+              {convs.length === 0 && tasks.length === 0 ? (
+                <div className="pjd-convs-empty">Start a chat or a Collaborate task to keep this project's work organized and re‑use its knowledge.</div>
+              ) : (
+                <>
+                  {convs.length > 0 && (
+                    <>
+                      <div className="pjd-railhead" style={{ margin: "10px 0 6px" }}>Chats · Let's Chat</div>
+                      {convs.map((c) => (
+                        <div key={c.id} className="pjd-conv" onClick={() => onOpen(project, c)}>
+                          <MessageSquare size={14} style={{ color: "var(--accent)" }} />
+                          <span className="pjd-conv-title">{c.title || "Conversation"}</span>
+                          <span className="mo-sub">{c.count || 0} msgs</span>
+                          <button className="btn ghost" onClick={(e) => { e.stopPropagation(); delConv(c.id); }} style={{ padding: "2px 6px" }}><Trash2 size={13} /></button>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {tasks.length > 0 && (
+                    <>
+                      <div className="pjd-railhead" style={{ margin: "14px 0 6px" }}>Tasks · Let's Collaborate</div>
+                      {tasks.map((t) => (
+                        <div key={t.id} className="pjd-conv" onClick={() => onOpenTask && onOpenTask(t.id)}>
+                          <Users size={14} style={{ color: "var(--accent)" }} />
+                          <span className="pjd-conv-title">{t.title || "Task"}</span>
+                          <span className="mo-sub">{t.count || 0} msgs · {rel(t.updatedAt)}</span>
+                          <button className="btn ghost" onClick={async (e) => { e.stopPropagation(); await bridge.deleteSession(t.id); loadTasks(selId); }} style={{ padding: "2px 6px" }}><Trash2 size={13} /></button>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
 

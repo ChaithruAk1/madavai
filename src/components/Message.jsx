@@ -73,4 +73,5 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
 // Memoized: while streaming, only the LIVE message's props change — settled messages skip
 // re-rendering entirely, which keeps long conversations smooth during token streams.
 export default memo(Message, (prev, next) =>
-  prev.item === next.item && prev.streaming === next.streaming && prev.userName === next.userName);
+  prev.item === next.item && prev.streaming === next.streaming && prev.userName === next.userName
+  && !!prev.onEdit === !!next.onEdit && !!prev.onRetry === !!next.onRetry);

@@ -59,7 +59,7 @@ function plain() {
       if (!toolCalls.length) { messages.push({ role: "assistant", content: content || "" }); break; }
       messages.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((x) => ({ id: x.id, type: "function", function: { name: x.name, arguments: x.arguments } })) });
       for (const call of toolCalls) {
-        let a = {}; try { a = JSON.parse(call.arguments || "{}"); } catch {}
+        const a = core.tolerantParse(call.arguments);
         console.log(col("dim", `  ⚙ ${call.name} ${call.name === "run_command" ? a.command : (a.path || a.query || "")}`));
         let out; try { out = await core.execTool(call.name, a, { confirm }); } catch (e) { out = "Error: " + (e.message || e); }
         messages.push({ role: "tool", tool_call_id: call.id, content: String(out).slice(0, 60000) });

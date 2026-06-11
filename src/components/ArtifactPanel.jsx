@@ -65,12 +65,13 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
     finally { setAiBusy(false); }
   };
   const undo = () => {
-    setEditHistory((h) => {
-      if (!h.length) return h;
-      setDraft(h[h.length - 1]);
-      setNonce((n) => n + 1);
-      return h.slice(0, -1);
-    });
+    // Compute from the current state OUTSIDE the updater — calling other setters
+    // inside a state updater is a side effect React may run twice or defer.
+    const h = editHistory;
+    if (!h.length) return;
+    setDraft(h[h.length - 1]);
+    setNonce((n) => n + 1);
+    setEditHistory(h.slice(0, -1));
   };
 
   const copy = async () => { try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch {} };

@@ -5,6 +5,8 @@ import { Folder, FileText, FilePlus, FilePen, TerminalSquare, Search, Wrench, Lo
 // EVERY tool the engine can emit needs a human label here — raw names like
 // "browse_fill" are engine vocabulary and must never reach the user.
 function describe(name, input = {}) {
+  input = input || {};          // default param doesn't cover an explicit null
+  name = String(name || "");    // undefined/null name must not throw on .startsWith
   const p = input.path || input.file_path || input.filePath || "";
   const trim = (s, n = 70) => { s = String(s || ""); return s.length > n ? s.slice(0, n) + "…" : s; };
   switch (name) {

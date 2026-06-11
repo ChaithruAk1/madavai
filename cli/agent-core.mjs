@@ -34,6 +34,54 @@ export function loadConfig() {
 export const cfg = loadConfig();
 export const configured = () => !!(cfg.baseUrl && cfg.model);
 
+// ---------- tolerant JSON parse for tool-call arguments (weak models emit sloppy JSON) ----------
+// keep in sync with src/shared/harness.js (tolerantParse). The CLI must stay zero-dep / no src/ imports,
+// so the repair ladder is copied here: direct parse → strip fences → quote-repair → trailing commas →
+// control-char strip → newline-escape → balanced-brace extraction. Returns {} on total failure.
+const _CTRL_RE = new RegExp("[" + String.fromCharCode(0) + "-" + String.fromCharCode(8) + String.fromCharCode(11) + String.fromCharCode(12) + String.fromCharCode(14) + "-" + String.fromCharCode(31) + String.fromCharCode(127) + "]", "g");
+export function tolerantParse(raw) {
+  const s0 = String(raw == null ? "" : raw).trim();
+  if (!s0) return {};
+  try { return JSON.parse(s0); } catch {}
+  let s = s0;
+  s = s.replace(/^```[a-z]*\s*/i, "").replace(/\s*```$/, "").trim();
+  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  s = s.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, (m, inner) => '"' + inner.replace(/"/g, '\\"') + '"');
+  s = s.replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3');
+  s = s.replace(/,\s*([}\]])/g, "$1");
+  s = s.replace(_CTRL_RE, "");
+  try { return JSON.parse(s); } catch {}
+  try {
+    let out = "", inStr = false, esc = false;
+    for (const ch of s) {
+      if (esc) { out += ch; esc = false; continue; }
+      if (ch === "\\") { out += ch; esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; out += ch; continue; }
+      if (inStr && ch === "\n") { out += "\\n"; continue; }
+      if (inStr && ch === "\t") { out += "\\t"; continue; }
+      out += ch;
+    }
+    return JSON.parse(out);
+  } catch {}
+  const start = s.indexOf("{");
+  if (start >= 0) {
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < s.length; i++) {
+      const ch = s[i];
+      if (esc) { esc = false; continue; }
+      if (ch === "\\") { esc = true; continue; }
+      if (ch === '"') inStr = !inStr;
+      else if (!inStr && ch === "{") depth++;
+      else if (!inStr && ch === "}") {
+        depth--;
+        if (depth === 0) { try { return JSON.parse(s.slice(start, i + 1)); } catch {} break; }
+      }
+    }
+  }
+  console.warn("[brainedge] tool arguments were not valid JSON; using {} fallback");
+  return {};
+}
+
 // ---------- provider transport (OpenAI-compatible function calling, streamed) ----------
 export const apiBase = (b) => { b = (b || "").replace(/\/$/, ""); return /\/v\d|\/openai/.test(b) ? b : b + "/v1"; };
 async function* sseLines(res) {
@@ -138,7 +186,7 @@ async function runSubagent(task, ctx) {
     if (!toolCalls.length) return content || "(sub-agent finished)";
     msgs.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((x) => ({ id: x.id, type: "function", function: { name: x.name, arguments: x.arguments } })) });
     for (const call of toolCalls) {
-      let a = {}; try { a = JSON.parse(call.arguments || "{}"); } catch {}
+      const a = tolerantParse(call.arguments);
       ctx && ctx.onSubTool && ctx.onSubTool(call.name, a);
       let out; try { out = await execTool(call.name, a, { ...ctx, sub: true }); } catch (e) { out = "Error: " + (e.message || e); }
       msgs.push({ role: "tool", tool_call_id: call.id, content: String(out).slice(0, 40000) });
@@ -150,8 +198,11 @@ async function runSubagent(task, ctx) {
 // ---------- tool execution. ctx.confirm(label, name, args) -> Promise<boolean> for destructive ops ----------
 const DESTRUCTIVE = new Set(["write_file", "edit_file", "run_command"]);
 export async function execTool(name, a, ctx = {}) {
-  if (DESTRUCTIVE.has(name) && !state.auto && !ctx.sub && ctx.confirm) {
-    const label = name === "run_command" ? `run  ${a.command}` : `${name === "write_file" ? "write" : "edit"}  ${a.path}`;
+  // Destructive ops always pass through the confirm gate (respecting --yes), even for sub-agents —
+  // a sub-agent must not silently run_command/write/edit. The prompt notes when a sub-agent is asking.
+  if (DESTRUCTIVE.has(name) && !state.auto && ctx.confirm) {
+    const verb = name === "run_command" ? `run  ${a.command}` : `${name === "write_file" ? "write" : "edit"}  ${a.path}`;
+    const label = (ctx.sub ? "[sub-agent] " : "") + verb;
     const ok = await ctx.confirm(label, name, a);
     if (!ok) return "(declined by user)";
   }
