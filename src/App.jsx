@@ -719,7 +719,8 @@ export default function App() {
       <div className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`}>
       <Sidebar active={mode} onSelect={switchMode}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
-        onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession} />
+        onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession}
+        extras={(settings && settings.extras) || {}} />
       <div className="main">
         {isSettings ? (
           <Settings onChanged={setSettings} />
@@ -975,7 +976,7 @@ export default function App() {
       )}
 
       {/* Sage — the app-wide buddy: floats over every screen, never disturbs a running session */}
-      <SageDock mode={mode} onNavigate={switchMode} />
+      {(!settings || (settings.extras || {}).sage !== false) && <SageDock mode={mode} onNavigate={switchMode} />}
     </div>
   );
 }

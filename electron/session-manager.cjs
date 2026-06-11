@@ -23,9 +23,14 @@ const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // cry
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
 // Artifact-iteration rule so the Studio "live preview" iterates in place:
 // emit the WHOLE file in one fenced block, and re-emit it whole when the user asks for a change.
-const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview." +
-  // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js):
-  " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
+const ARTIFACT_RULE_BASE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
+// In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js).
+// Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per turn.
+function officeRulePart() {
+  try { if ((settings.load().extras || {}).office === false) return ""; } catch {}
+  return " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
+}
+const ARTIFACT_RULE = ARTIFACT_RULE_BASE; // office part appended at use time (see _chatTurn)
 function withLang(cfg) {
   const gi = cfg.globalInstructions || "";
   const lang = cfg.responseLanguage;
@@ -603,7 +608,7 @@ class SessionManager {
     const now = new Date();
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Use this whenever a date is needed; never say you don't know it.`;
     const sysChat = (this._agentSys(s, userText) || ("You are BrainEdge, a helpful assistant. " + dateLine +
-      " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence." + ARTIFACT_RULE)) +
+      " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence." + ARTIFACT_RULE_BASE + officeRulePart())) +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const messages = [{ role: "system", content: sysChat }, ...s.history];
     const started = Date.now();

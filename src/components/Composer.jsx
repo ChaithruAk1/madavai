@@ -37,7 +37,8 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   }, []);
 
   const loadSkills = () => { bridge.listSkills && bridge.listSkills().then((l) => setSkills((l || []).filter((s) => s.enabled !== false))).catch(() => {}); };
-  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => setConnectors(((s && s.connectors) || []).filter((c) => c.enabled !== false))).catch(() => {}); };
+  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || []).filter((c) => c.enabled !== false)); setVoiceOn(((s && s.extras) || {}).voice !== false); }).catch(() => {}); };
+  const [voiceOn, setVoiceOn] = useState(true); // Extras switchboard: hide the mic when voice input is off
   useEffect(() => { loadSkills(); loadConnectors(); }, []);
   useEffect(() => { if (cwd && bridge.listDir) bridge.listDir(cwd).then((l) => setDirFiles(l || [])).catch(() => setDirFiles([])); else setDirFiles([]); }, [cwd]);
 
@@ -382,7 +383,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
           {controls && <div className="composer-controls">{controls}</div>}
           <span style={{ flex: 1 }} />
 
-          <button className={`icon-btn ${listening ? "rec" : ""}`} onClick={toggleMic} title="Voice input"><Mic size={16} /></button>
+          {voiceOn && <button className={`icon-btn ${listening ? "rec" : ""}`} onClick={toggleMic} title="Voice input"><Mic size={16} /></button>}
           {busy ? (
             <button className="send" onClick={onStop} title="Stop" style={{ background: "var(--bg-3)" }}><Square size={14} /></button>
           ) : (

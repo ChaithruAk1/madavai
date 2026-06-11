@@ -121,14 +121,20 @@ function isBlocked(permMode, name) {
 
 // Shared artifact-iteration rule (Studio "live preview" iterates in place like frontier chat products):
 // always emit the WHOLE file in one fenced block so it renders, and re-emit it whole on edits.
-const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview." +
-  // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js):
-  " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
+const ARTIFACT_RULE_BASE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
+// In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js).
+// Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per
+// turn, never at module load, so the toggle applies without a restart.
+function officeRulePart() {
+  try { if ((require("./settings.cjs").load().extras || {}).office === false) return ""; } catch {}
+  return " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
+}
+const ARTIFACT_RULE = ARTIFACT_RULE_BASE; // kept for any external references; office part is appended at use time
 
 const SYSTEM = (mode) =>
   mode === "chat"
     ? `You are BrainEdge, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
-      `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.` + ARTIFACT_RULE
+      `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.` + ARTIFACT_RULE_BASE + officeRulePart()
     : mode === "code"
     ? `You are BrainEdge, an expert software engineer working in the user's repository. ` +
       `Always explore before editing: use find_files and search_text to locate code, read_file to understand it, then make minimal, correct edits with edit_file/write_file. ` +
@@ -380,7 +386,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   if (mode !== "chat") tools.push(harness.PLAN_TOOL);
   if (cwd && mode !== "chat" && agentOpts.scouts !== false) tools.push(harness.SCOUT_TOOL);
   // Text→image in every mode (selector-powered; see CREATE_IMAGE_TOOL).
-  tools.push(CREATE_IMAGE_TOOL);
+  // Gated by the Extras switchboard (settings.extras.imagegen !== false).
+  let imagegenOn = true;
+  try { imagegenOn = (require("./settings.cjs").load().extras || {}).imagegen !== false; } catch {}
+  if (imagegenOn) tools.push(CREATE_IMAGE_TOOL);
   try {
     const mcpTools = await mcp.openAiTools(connectors);
     if (mcpTools.length) tools = [...tools, ...mcpTools];
@@ -568,6 +577,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         emit({ kind: "tool_use", data: { id: tc.id, name: "create_image", input: { prompt: String(args.prompt || "").slice(0, 300) }, auto: true } });
         let out, image = null;
         if (isBlocked(permMode, tc.name)) out = "(blocked: plan mode is read-only)";
+        else if (!imagegenOn) out = "Image generation is turned off for this install (Settings → Extras)."; // text-mode models can still emit the call
         else {
           try {
             const r = await require("./imagegen.cjs").generateImage(profile, args.prompt);

@@ -1585,20 +1585,38 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           ];
           // mood map: working → running, finished → cheer, resting → sleeping
           const moodFor = (state) => state === "working" ? "running" : state === "happy" ? "cheer" : "sleeping";
-          const tile = ({ a, state, last, scheduled: sch }) => (
-            <div key={a.id} className={`flr-tile ${state} ${sch && state === "idle" ? "sched" : ""}`}>
+          // Click a tile → open that agent's newest conversation (the LIVE one while it's
+          // working), so "working now" is a door, not just a status light.
+          const runFor = (a) => {
+            let best = null;
+            for (const r of recentRuns) {
+              const mine = r.agentName === a.name || teams.some((t) => t.name === r.teamName && t.members.includes(a.id));
+              if (mine && (!best || (r.updatedAt || 0) > (best.updatedAt || 0))) best = r;
+            }
+            return best;
+          };
+          const tile = ({ a, state, last, scheduled: sch }) => {
+            const run = onOpenSession ? runFor(a) : null;
+            return (
+            <div key={a.id} className={`flr-tile ${state} ${sch && state === "idle" ? "sched" : ""}`}
+              role={run ? "button" : undefined} tabIndex={run ? 0 : undefined}
+              style={run ? { cursor: "pointer" } : undefined}
+              title={run ? (state === "working" ? "Open the live session" : "Open this agent's latest conversation") : undefined}
+              onClick={() => run && onOpenSession(run.id)}
+              onKeyDown={(e) => { if (run && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenSession(run.id); } }}>
               <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={layout === "list" ? 48 : 66} mood={moodFor(state)} title={a.name} />
               <div className="flr-main">
                 <div className="flr-name">{agentName(a)}{sch && <Clock size={11} className="flr-sch" title="Runs on a schedule" />}</div>
                 <div className="flr-role">{a.description || "No description"}</div>
                 <div className={`flr-status ${state}`}>
-                  {state === "working" ? "working now" : state === "happy" ? `finished ${rel(last)}` : last ? `resting · last active ${rel(last)}` : "resting · hasn't worked yet"}
+                  {state === "working" ? "working now — click to watch" : state === "happy" ? `finished ${rel(last)}` : last ? `resting · last active ${rel(last)}` : "resting · hasn't worked yet"}
                   {stats[a.id] && stats[a.id].missions > 0 && <span className="flr-tr"> · {stats[a.id].missions} missions · {stats[a.id].cleanPct}% clean</span>}
                 </div>
               </div>
-              <button className="btn ghost flr-go" title="Put to work" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={12} /></button>
+              <button className="btn ghost flr-go" title="Put to work" onClick={(e) => { e.stopPropagation(); onLaunch && onLaunch(a, null); }}><Rocket size={12} /></button>
             </div>
-          );
+            );
+          };
           return (
             <div className="flr">
               {agents.length === 0 ? (

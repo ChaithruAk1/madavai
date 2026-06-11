@@ -106,6 +106,8 @@ export default function SageDock({ mode, onNavigate }) {
   const [peek, setPeek] = useState(() => { try { return localStorage.getItem("be.sage.greeted") !== "1"; } catch { return false; } });
   const [tip, setTip] = useState(null);
   const [listening, setListening] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true); // Extras switchboard: hide the mic when voice input is off
+  useEffect(() => { bridge.getSettings().then((c) => setVoiceOn(((c && c.extras) || {}).voice !== false)).catch(() => {}); }, [open]);
   const [size, setSize] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.size") || "null"); } catch { return null; } });
   // Active walkthrough: Sage's numbered steps become a live guide that follows the
   // user across screens until the whole cycle is done (e.g. agent created + deployed).
@@ -405,10 +407,10 @@ export default function SageDock({ mode, onNavigate }) {
             <div ref={endRef} />
           </div>
           <div className="sage-panel-input">
-            <button className={`sage-mic ${listening ? "rec" : ""}`}
+            {voiceOn && <button className={`sage-mic ${listening ? "rec" : ""}`}
               aria-label={listening ? (micEngineRef.current === "win" ? "Listening — stops automatically" : "Stop listening") : `Talk to ${name}`}
               title={listening ? (micEngineRef.current === "win" ? "Listening — stops automatically" : "Listening — click to stop") : `Talk to ${name}`}
-              onClick={toggleMic}><Mic size={15} /></button>
+              onClick={toggleMic}><Mic size={15} /></button>}
             <input value={input} placeholder={listening ? "Listening…" : `Ask ${name} anything…`} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
             <button className="agsd-send" aria-label={`Ask ${name}`} disabled={busy || !input.trim()} onClick={send}><ArrowUp size={15} /></button>
           </div>

@@ -25,11 +25,14 @@ const BOTTOM = [
 ];
 const ADMIN_ITEM = { id: "testcenter", label: "Test Center", icon: FlaskConical };
 
-export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession }) {
+export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, extras = {} }) {
   const [recents, setRecents] = useState([]);
   const [q, setQ] = useState("");
   const [ifaceOpen, setIfaceOpen] = useState(false);
   const [modelsOpen, setModelsOpen] = useState(false);
+  // Extras switchboard (Settings → Extras): an entry whose feature is switched off
+  // disappears from the nav. Absent flag = ON; only an explicit false hides it.
+  const extraOff = (id) => extras && extras[id] === false;
   // Groups are collapsed by default; auto-open only while you're inside one, and re-collapse when you leave.
   useEffect(() => { setIfaceOpen(INTERFACE.some((t) => t.id === active)); setModelsOpen(MODELS.some((t) => t.id === active)); }, [active]);
   const [acct, setAcct] = useState(null);   // authMe() result: { user, status, daysLeft, subscription }
@@ -154,13 +157,13 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     <aside className="sidebar glass">
       <button className="sb-new" onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
 
-      {TOP.map(navBtn)}
+      {TOP.filter((t) => !extraOff(t.id)).map(navBtn)}
 
       <button className={`nav-item nav-group ${INTERFACE.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setIfaceOpen((o) => !o)}>
         <LayoutGrid size={16} /> <span className="sb-t">Interface</span>
         <span className="nav-caret sb-t">{ifaceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
       </button>
-      {ifaceOpen && INTERFACE.map((t) => {
+      {ifaceOpen && INTERFACE.filter((t) => !extraOff(t.id)).map((t) => {
         const I = t.icon;
         return (
           <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
@@ -182,7 +185,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
         );
       })}
 
-      {BOTTOM.map(navBtn)}
+      {BOTTOM.filter((t) => !extraOff(t.id)).map(navBtn)}
       {isAdmin && qaHere && navBtn(ADMIN_ITEM)}
 
       <div className="sb-expand">

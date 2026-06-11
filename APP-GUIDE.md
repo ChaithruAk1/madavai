@@ -113,6 +113,19 @@ Studio, Agents & Teams, Projects, Scheduler) rather than pointing at outside too
 User Guide (account menu → User Guide) now includes illustrated screen mockups of the key
 screens with the important control highlighted.
 
+## Extras — the feature switchboard (Settings → Extras)
+Visible ONLY to Creator and Complimentary accounts (regular users never see this page).
+It lists this install's optional features, each with an On/Off switch: Sage helper, Voice
+input (mic buttons), Image generation (the create_image tool), Office file creation
+(officedoc spreadsheets/docs/decks/PDFs in chat), Agent Browser and Cross-chat memory
+(these two are unified views over their existing master switches), Studio, Terminal,
+Scheduler, and Via Mobile. Turning a feature off hides it from the interface (sidebar
+entries, mic buttons, the Sage bubble) and — for engine features like image generation
+and office files — removes the capability from the model's tools from the next message.
+Everything is ON by default. If a user asks where a feature went (no mic, no Studio in
+the sidebar, no Sage), the likely answer is that it was switched off in Extras by the
+owner of this install.
+
 ## What does NOT exist (never invent these)
 No vision/pixel control of arbitrary desktop apps (agents use files, terminal, the
 built-in text browser, and connectors instead). No Chrome/Safari/Firefox involvement —

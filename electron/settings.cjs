@@ -52,6 +52,7 @@ const DEFAULTS = {
   githubClientId: "",
   globalInstructions: "", // custom instructions applied to every conversation
   userMemory: { enabled: true }, // cross-chat memory: remember durable facts about the user
+  extras: {}, // feature switchboard (Settings → Extras): { sage, voice, imagegen, office, studio, terminal, scheduler, viamobile } — absent = ON, explicit false = OFF. Keep keys in sync with src/extras.js.
   responseLanguage: "model", // "model" = let the model decide; or a language name to force replies
   theme: "dark", // "dark" | "light" | "system"
   accent: "default", // "default" = original two-tone; or a hex for a monochrome accent
@@ -118,6 +119,7 @@ function load() {
     if (typeof merged.profiles !== "object" || !merged.profiles) merged.profiles = { ...DEFAULTS.profiles };
     if (!Array.isArray(merged.connectors)) merged.connectors = [];
     if (!Array.isArray(merged.disabledSkills)) merged.disabledSkills = [];
+    if (typeof merged.extras !== "object" || !merged.extras || Array.isArray(merged.extras)) merged.extras = {};
     mapSecrets(merged, decStr); // decrypt secrets for in-app use
     _cache = merged; _cacheMtime = fs.statSync(file()).mtimeMs;
     return merged;

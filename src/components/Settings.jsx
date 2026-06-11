@@ -5,6 +5,7 @@ import AccountCard from "../auth/AccountCard.jsx";
 import AdminPanel from "../auth/AdminPanel.jsx";
 import CliAccess from "./CliAccess.jsx";
 import { bridge } from "../bridge/index.js";
+import { EXTRAS, extraOn, setExtra } from "../extras.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 const SECTIONS = [
@@ -20,9 +21,16 @@ export default function Settings({ onChanged }) {
   const [section, setSection] = useState("profile");
   const [busy, setBusy] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [extrasOk, setExtrasOk] = useState(false); // Extras switchboard: Creator + Complimentary accounts only
 
   useEffect(() => { bridge.getSettings().then((cfg) => { setS(cfg); setSelId(cfg.activeProfileId); }); }, []);
-  useEffect(() => { bridge.authMe?.().then((r) => { if (r && !r.error) setIsAdmin(!!r.admin); }).catch(() => {}); }, []);
+  useEffect(() => { bridge.authMe?.().then((r) => {
+    if (r && !r.error) {
+      setIsAdmin(!!r.admin);
+      const role = r.role || (((r.subscription || {}).plan === "Complimentary") ? "complimentary" : null);
+      setExtrasOk(!!r.admin || role === "creator" || role === "complimentary");
+    }
+  }).catch(() => {}); }, []);
   if (!s || !selId) return <div className="empty"><div>Loading settings…</div></div>;
 
   const account = s.account || {};
@@ -82,6 +90,9 @@ export default function Settings({ onChanged }) {
         {SECTIONS.map((sec) => { const I = sec.icon; return (
           <button key={sec.id} className={`nav-item ${section === sec.id ? "active" : ""}`} onClick={() => setSection(sec.id)}><I size={15} /> {sec.label}</button>
         ); })}
+        {extrasOk && (
+          <button className={`nav-item ${section === "extras" ? "active" : ""}`} onClick={() => setSection("extras")}><Sparkles size={15} /> Extras</button>
+        )}
         {isAdmin && (
           <button className={`nav-item ${section === "agentbrowser" ? "active" : ""}`} onClick={() => setSection("agentbrowser")}><Globe size={15} /> Agent Browser</button>
         )}
@@ -150,6 +161,42 @@ export default function Settings({ onChanged }) {
           </div>
         )}
 
+        {section === "extras" && extrasOk && (
+          <div className="prof">
+            <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Extras</h2>
+            <p className="mo-sub" style={{ margin: "0 0 16px" }}>
+              The feature switchboard — turn this install's capabilities on or off for users.
+              Only Creator and Complimentary accounts see this page.
+            </p>
+            {EXTRAS.map((f) => {
+              const on = extraOn(s, f.key);
+              return (
+                <div key={f.key} className="prof-card" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>
+                      {f.label}
+                      {f.map && <span className="mo-sub" style={{ marginLeft: 8, fontSize: 11 }}>master switch</span>}
+                    </div>
+                    <div className="mo-sub" style={{ fontSize: 12, marginTop: 2 }}>{f.desc}</div>
+                  </div>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    <input type="checkbox" checked={on} onChange={async (e) => {
+                      const want = e.target.checked;
+                      const cur = await bridge.getSettings(); // re-read from disk first — never clobber another writer
+                      const next = setExtra(cur, f.key, want);
+                      setS(next); await bridge.saveSettings(next); onChanged?.(next);
+                    }} />
+                    <span style={{ fontSize: 12.5, color: on ? "var(--accent)" : "var(--text-2)", minWidth: 24 }}>{on ? "On" : "Off"}</span>
+                  </label>
+                </div>
+              );
+            })}
+            <div className="ag-hint" style={{ marginTop: 10 }}>
+              Interface features (Sage, Studio, Terminal, Scheduler, Via Mobile, voice) apply immediately.
+              Engine features (image generation, office files) apply from the next message; running missions keep the tools they started with.
+            </div>
+          </div>
+        )}
         {section === "agentbrowser" && isAdmin && (
           <AgentBrowserSettings s={s} setField={setField} />
         )}
