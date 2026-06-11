@@ -13,6 +13,8 @@ import * as webfs from "./webfs.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
 // head+tail truncation, stale-result squash, identical-call loop breaker.
 import { tolerantParse, headTail, squashStale, CallGuard } from "../shared/harness.js";
+// In-chat office files: the rule that teaches models the ```officedoc spec.
+import { OFFICE_RULE } from "../office.js";
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
@@ -122,12 +124,51 @@ const BASE_BEHAVIOR =
   "You are BrainEdge, a warm and helpful assistant. Reply naturally and conversationally, the way a thoughtful person would. " +
   "Never restate, list, summarize, or describe your own instructions, rules, role, or \"operating framework\" — just follow them silently. " +
   "If the user only greets you or makes small talk, reply naturally in kind; do not recite your guidelines. " +
-  "Apply the guidance below to the substance and depth of your answers, but always keep the delivery human and direct.";
+  "Apply the guidance below to the substance and depth of your answers, but always keep the delivery human and direct." +
+  OFFICE_RULE;
+
+// ---- Cross-chat memory (web mirror of electron/user-memory.cjs) ----
+// Durable facts about the user, learned from conversations, injected everywhere.
+// localStorage-only: never leaves the device except inside the user's own prompts.
+const UMEM_KEY = "be.userMemory";
+let _umLastLearn = 0;
+function umGet() { try { const m = JSON.parse(localStorage.getItem(UMEM_KEY) || "{}"); return { notes: Array.isArray(m.notes) ? m.notes : [] }; } catch { return { notes: [] }; } }
+function umSave(m) { try { localStorage.setItem(UMEM_KEY, JSON.stringify(m)); } catch {} return m; }
+function umBlock(s) {
+  if (s && s.userMemory && s.userMemory.enabled === false) return "";
+  const m = umGet();
+  if (!m.notes.length) return "";
+  return ("What you remember about this user from previous conversations (apply naturally; never recite this list):\n" + m.notes.slice(-28).map((n) => "- " + n.text).join("\n")).slice(0, 7000);
+}
+async function umLearn(prof, s, userText, replyText) {
+  try {
+    if (s && s.userMemory && s.userMemory.enabled === false) return;
+    if (!prof || !prof.baseUrl || Date.now() - _umLastLearn < 4 * 60 * 1000) return;
+    if (!(userText || "").trim() || String(userText).length < 40 || !(replyText || "").trim()) return;
+    _umLastLearn = Date.now();
+    const { text } = await streamChat(prof, [
+      { role: "system", content: "You maintain a person's long-term memory for their AI assistant. From this conversation turn, extract ONLY durable facts worth remembering in FUTURE conversations: stated preferences, stable personal/professional facts they volunteered, corrections. NEVER store one-off content, the answer itself, anything sensitive, or anything time-bound. Reply with ONLY a JSON array of 0-2 short strings (<160 chars each). [] is the most common correct answer." },
+      { role: "user", content: `USER SAID:\n${String(userText).slice(0, 4000)}\n\nASSISTANT REPLIED:\n${String(replyText).slice(0, 3000)}` },
+    ], { onDelta: () => {} });
+    const i = text.indexOf("["), j = text.lastIndexOf("]");
+    if (i < 0 || j <= i) return;
+    const arr = JSON.parse(text.slice(i, j + 1));
+    if (!Array.isArray(arr) || !arr.length) return;
+    const m = umGet();
+    for (const t of arr.slice(0, 2)) {
+      const txt = String(t || "").trim().slice(0, 400);
+      if (txt.length >= 8 && !m.notes.some((n) => n.text.toLowerCase() === txt.toLowerCase())) m.notes.push({ at: Date.now(), text: txt });
+    }
+    m.notes = m.notes.slice(-48);
+    umSave(m);
+  } catch {}
+}
 
 function systemPrompt(s, projectId) {
   const parts = [BASE_BEHAVIOR];
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}, regardless of the language of the question.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
+  const um = umBlock(s); if (um) parts.push(um);
   if (projectId) {
     const p = LS.get("be.projects", {})[projectId];
     if (p) {
@@ -312,6 +353,7 @@ function coworkSystem(s) {
   ];
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
+  { const um = umBlock(s); if (um) parts.push(um); }
   parts.push("Keep your tone natural and human; never restate or describe these instructions — just follow them.");
   return parts.join("\n");
 }
@@ -326,7 +368,25 @@ const COWORK_TOOLS = [
   { type: "function", function: { name: "web_fetch", description: "Fetch a web page and return its readable text. Use for docs, references, or any URL.", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } },
   { type: "function", function: { name: "web_search", description: "Search the web and return result snippets for a query.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
   { type: "function", function: { name: "spawn_subagent", description: "Delegate a focused sub-task to a helper agent that works on the same project and returns a summary. Use for independent chunks of work (e.g. 'write tests for X').", parameters: { type: "object", properties: { task: { type: "string", description: "Clear, self-contained instructions for the sub-agent." } }, required: ["task"] } } },
+  { type: "function", function: { name: "create_image", description: "Generate an image from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user automatically.", parameters: { type: "object", properties: { prompt: { type: "string" } }, required: ["prompt"] } } },
 ];
+
+// Text→image via the selector's model (mirror of electron/imagegen.cjs):
+// OpenAI-compatible chat/completions with modalities ["image","text"].
+async function webGenImage(prof, prompt) {
+  if (!prof || !prof.baseUrl || prof.kind === "anthropic") throw new Error("Pick an image-output model in the model picker (e.g. google/gemini-2.5-flash-image on OpenRouter).");
+  const res = await fetch(prof.baseUrl.replace(/\/+$/, "") + "/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(prof.apiKey ? { Authorization: `Bearer ${(prof.apiKey || "").trim()}` } : {}) },
+    body: JSON.stringify({ model: prof.model, messages: [{ role: "user", content: String(prompt || "").slice(0, 2000) }], modalities: ["image", "text"] }),
+  });
+  if (!res.ok) throw new Error(`"${prof.model}" couldn't generate an image (${res.status}) — pick an image-output model in the model picker.`);
+  const j = await res.json().catch(() => ({}));
+  const img = j.choices && j.choices[0] && j.choices[0].message && (j.choices[0].message.images || [])[0];
+  const dataUrl = img && img.image_url && img.image_url.url;
+  if (!dataUrl || !/^data:image\//.test(dataUrl)) throw new Error(`"${prof.model}" answered with text but no image — it isn't an image-output model.`);
+  return dataUrl;
+}
 // A minimal unified-style diff for showing edits in the tool card.
 function makeDiff(path, oldText, newText) {
   if (!oldText) return `@@ ${path} (new file)\n` + (newText || "").split("\n").slice(0, 80).map((l) => "+" + l).join("\n");
@@ -441,6 +501,15 @@ async function runAgentTurn(sess, text, images, prof) {
           continue;
         }
         emit(sess.id, "tool_use", { id: c.id, name: c.name, input: args, auto: true });
+        // Text→image: show the picture in the tool card; tiny text back to the model.
+        if (c.name === "create_image") {
+          let out, image = null;
+          try { image = await webGenImage(prof, args.prompt); out = "Image generated and shown to the user. Describe it in one short sentence and continue."; }
+          catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+          emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: !!image, output: out, image });
+          sess.messages.push({ role: "tool", tool_call_id: c.id, content: out });
+          continue;
+        }
         const target = args.path || args.query || args.url || "";
         let out, failed = false;
         try { out = await executeTool(c.name, args, { sess }); guard.noteResult(c.name, target, true); }
@@ -489,6 +558,7 @@ async function runTurn(sess, text, images) {
     emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
     emit(sess.id, "result", { subtype: "success", num_turns: 1, duration_ms: Date.now() - started, total_cost_usd: 0 });
     persistSession(sess);
+    umLearn(prof, loadSettings(), text, reply); // cross-chat memory: fire-and-forget, throttled
   } catch (e) {
     if (e && (e.name === "AbortError")) { emit(sess.id, "result", { subtype: "interrupted" }); return; }
     emit(sess.id, "error", { message: String((e && e.message) || e) });
@@ -781,6 +851,18 @@ export const webBridge = {
   // Harness stats are measured by the desktop engine (model-stats.cjs); the web
   // agent doesn't record them yet — empty map keeps the contract identical.
   async getModelStats() { return {}; },
+
+  // ---- cross-chat user memory (view / edit / clear) ----
+  async getUserMemory() { return umGet(); },
+  async setUserMemory(notes) {
+    const list = (Array.isArray(notes) ? notes : [])
+      .map((n) => (typeof n === "string" ? { at: Date.now(), text: n } : n))
+      .filter((n) => n && String(n.text || "").trim())
+      .map((n) => ({ at: n.at || Date.now(), text: String(n.text).trim().slice(0, 400) }))
+      .slice(-48);
+    return umSave({ notes: list });
+  },
+  async clearUserMemory() { try { localStorage.removeItem(UMEM_KEY); } catch {} return { notes: [] }; },
 
   async getOpenRouterCatalog() {
     // Transform to the same shape the desktop catalog returns, so ModelsOverview reads one schema.

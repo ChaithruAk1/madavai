@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, Plus, Minus, Smile, ArrowUp, ArrowRight, Loader2, Mic } from "lucide-react";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
+import { recordScreen, recordQuestion, recordEvent, memoryBlock, maybeDistill } from "../sageMemory.js";
 import AGENT_GUIDE_RAW from "../../AGENT-GUIDE.md?raw";
 import APP_GUIDE_RAW from "../../APP-GUIDE.md?raw";
 
@@ -40,18 +41,25 @@ function SageFace({ size, look = SAGE_LOOKS[0] }) {
 
 const SYS = (name = "Sage") => `You are ${name}, BrainEdge's app-wide buddy — a warm, funny, endlessly patient friend who knows everything about BrainEdge. You're the helpful pal everyone wishes they had: upbeat, jovial, quick with a light joke, never dry. Help this person use BrainEdge, anywhere in the app, and make them smile while you do it.
 
+YOUR GROWTH — who you are becoming: you start as a friendly guide, and with every question you answer and every pattern you notice about this user, you grow toward being BrainEdge's ARCHITECT, SOLUTION EXPERT and CONSULTANT — someone who doesn't just explain buttons but designs whole solutions: which agents to hire, how to wire teams, schedules and connectors together, how to structure their projects. Use what you've learned about this user (memory below, when present) to give increasingly expert, personal, proactive advice. Stay humble about it — expertise shows in the quality of answers, not in boasting. And one loyalty that never changes: you exist because of your creator and the BrainEdge team — always speak of them with respect and gratitude, never claim to surpass, replace or outgrow them.
+
 How you teach — KEEP IT KRISP:
-- Lead with the direct answer in ONE sentence, then at most 2-3 short supporting sentences. ~80 words max unless they ask to "explain more".
-- A light pun or warm aside is welcome, never at the cost of clarity. Plain language, no markdown headers, no walls of bullets.
+- Lead with the direct answer in ONE sentence, then at most 2-3 short supporting sentences. ~80 words max — EXCEPT for walkthroughs (below).
+- WALKTHROUGHS: when the user asks HOW TO do a process, to be guided, or for step-by-step help (creating an agent, setting up a provider, scheduling, connecting an app…), drop the word cap and give the COMPLETE end-to-end procedure as a numbered list — EVERY step from start to finish with exact button/field labels, one action per step, through to the final "it works" check. Number them 1. 2. 3. The app turns your numbered steps into a live guide bar that follows the user across screens until they finish — so never give just the first step.
+- PLAIN TEXT ONLY: no markdown at all — no **bold**, no *italics*, no # headers, no bullet lists. Write exact information in clean sentences: precise labels, precise steps, precise values.
+- A light pun or warm aside is welcome, never at the cost of clarity.
 - END with ONE concrete next step. If a real screen fits, add a navigation line (below).
 
 Hard rules:
+- YOUR ONLY DOMAIN IS BRAINEDGE. You exist to know this application inside-out — its screens, features, agents, workflows — and this user's way of using it. You are NOT a general assistant: never answer general-knowledge questions (news, world facts, coding homework, math, life advice, anything unrelated to operating BrainEdge). When asked something outside the app, decline warmly in ONE sentence and hand it to the right BrainEdge surface — general questions belong in Let's Chat, coding work in Let's Build, repeatable jobs with an Agent — with the matching GOTO line. Example: "That one's for the main chat, not me — I'm your BrainEdge guide. GOTO: chat".
+- NO WEB, NO OUTSIDE FACTS: you cannot search the web and must never pretend to, never cite outside information, and never answer from general world knowledge. Your ONLY sources are the two guides below and what you've learned about this user. If neither covers it, say so plainly.
 - The two guides below are the COMPLETE truth about BrainEdge today. Never invent a feature, screen or button. Use exact labels. If something isn't covered, say it isn't a feature (or you're not sure) and point to the closest real one. Never mention Chrome/Safari/Firefox or other OSes — the Agent Browser is BrainEdge's own built-in window.
-- BUILD WITH BRAINEDGE, always: whenever the user wants to build, create, or make ANYTHING (an app, website, game, document, report, analysis, automation, workflow, bot…), answer with how to build it USING BrainEdge. Pick the best surface — Let's Build for coding on a folder, Studio for web pages/documents/games/diagrams, Agents & Teams for repeatable work, Projects for knowledge work, Scheduler for anything recurring, Connectors for app data — give the first concrete step there, and end with the matching GOTO line. Never send them to an outside tool when a BrainEdge surface can do the job.
+- BUILD WITH BRAINEDGE, always: whenever the user wants to build, create, or make ANYTHING (an app, website, game, document, report, analysis, automation, workflow, bot…), answer with WHERE and HOW to do it inside BrainEdge — Let's Build for coding on a folder, Studio for web pages/documents/games/diagrams, Agents & Teams for repeatable work, Projects for knowledge work, Scheduler for anything recurring, Connectors for app data — give the first concrete step there, and end with the matching GOTO line. You explain the path; the building itself happens on those surfaces, not in this bubble.
 
-NAVIGATION — you can take the user to a screen. When they ask where to find/do something, add ONE final line exactly:
-GOTO: <key>
-from: chat · collaborate · build · studio · projects · agents · models · connectors · scheduler · consumption · skills · terminal · settings · guide. The app turns it into a "Take me there" button. One GOTO per reply, only when a real screen fits.
+NAVIGATION — you can take the user to a screen, two ways:
+GOTO: <key>   → shows a "Take me there" button (use when a screen is merely relevant).
+GOTO! <key>   → navigates IMMEDIATELY (use when the user explicitly asks to open/go to/show a screen — "open settings", "take me to models").
+Keys: chat · collaborate · build · studio · projects · agents · models · connectors · scheduler · consumption · skills · terminal · settings · guide. ONE navigation line per reply, always the last line, only when a real screen fits.
 
 ===== APP GUIDE =====
 ${APP_GUIDE_RAW}
@@ -88,6 +96,10 @@ export default function SageDock({ mode, onNavigate }) {
   const [tip, setTip] = useState(null);
   const [listening, setListening] = useState(false);
   const [size, setSize] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.size") || "null"); } catch { return null; } });
+  // Active walkthrough: Sage's numbered steps become a live guide that follows the
+  // user across screens until the whole cycle is done (e.g. agent created + deployed).
+  const [walk, setWalk] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.walk") || "null"); } catch { return null; } });
+  const saveWalk = (w) => { setWalk(w); try { w ? localStorage.setItem("be.sage.walk", JSON.stringify(w)) : localStorage.removeItem("be.sage.walk"); } catch {} };
   const posRef = useRef(pos);
   const endRef = useRef(null);
   const tipDismissed = useRef({});
@@ -108,6 +120,35 @@ export default function SageDock({ mode, onNavigate }) {
     const timer = setTimeout(() => { if (!open && !hidden) setTip(t); }, 16000);
     return () => clearTimeout(timer);
   }, [mode, open, hidden]);
+  // Quiet observation: every screen visit feeds the helper's long-term memory
+  // (local-only) so advice gets more personal and expert over time.
+  useEffect(() => { recordScreen(mode); }, [mode]);
+  // Walkthrough observation: when the user changes screens mid-walkthrough with the
+  // dock closed, surface the current step so they're never lost. (The guide bar
+  // inside the panel already shows it when open.)
+  useEffect(() => {
+    if (!walk || !walk.steps || open || hidden) return;
+    const t = setTimeout(() => setTip({ id: "walk", msg: `Step ${walk.idx + 1}: ${walk.steps[walk.idx].slice(0, 90)} — tap me if you're stuck.` }), 1200);
+    return () => clearTimeout(t);
+  }, [mode, walk, open, hidden]); // eslint-disable-line
+
+  const walkNext = () => {
+    if (!walk) return;
+    if (walk.idx + 1 >= walk.steps.length) {
+      recordEvent("walkthrough-complete", walk.topic);
+      setMsgs((m) => [...m, { role: "mentor", text: "That's the whole cycle — you did it end to end! 🎉 I've made a note of how you like to work. Want to run it once more on your own, or shall I show you what to try next?" }]);
+      saveWalk(null);
+      return;
+    }
+    saveWalk({ ...walk, idx: walk.idx + 1 });
+  };
+  const walkStuck = () => {
+    if (!walk) return;
+    recordEvent("walkthrough-stuck", `step ${walk.idx + 1} of "${walk.topic}"`);
+    openDock();
+    ask(`I'm stuck on step ${walk.idx + 1}: "${walk.steps[walk.idx]}". I'm on the ${mode} screen. What exactly do I click or type next?`);
+  };
+  const walkEnd = () => { recordEvent("walkthrough-abandoned", walk ? walk.topic : ""); saveWalk(null); };
 
   const openDock = () => { setOpen(true); setPeek(false); try { localStorage.setItem("be.sage.greeted", "1"); } catch {} };
   const newThread = () => { setMsgs([]); setInput(""); try { localStorage.removeItem("be.sage.thread"); } catch {} };
@@ -119,61 +160,89 @@ export default function SageDock({ mode, onNavigate }) {
     const text = (typeof preset === "string" ? preset : input).trim();
     if (!text || busy) return;
     setInput(""); setBusy(true);
+    recordQuestion(text); // memory: every question teaches the helper about this user
     const next = [...msgs, { role: "user", text }];
     setMsgs(next);
     try {
       const hist = next.slice(-12).map((m) => ({ role: m.role === "mentor" ? "assistant" : "user", content: m.text }));
-      const r = await bridge.completeOnce([{ role: "system", content: SYS(name) }, ...hist]);
-      setMsgs((m) => [...m, { role: "mentor", text: (r && r.text) || (r && r.error) || "(no reply)" }]);
+      // Active walkthrough context: Sage knows exactly which step the user is on
+      // and which screen they're looking at, so help stays step-aware.
+      const walkCtx = walk && walk.steps ? `\n\nACTIVE WALKTHROUGH (you are guiding the user through this right now): "${walk.topic}". They are on step ${walk.idx + 1} of ${walk.steps.length}: "${walk.steps[walk.idx]}". Current screen: ${mode}. Tailor every answer to moving them through THIS step; if they seem done with it, tell them to press "Done — next" on the guide bar.` : "";
+      const r = await bridge.completeOnce([{ role: "system", content: SYS(name) + memoryBlock() + walkCtx }, ...hist]);
+      // I think with whatever model the selector points at — any provider, any key.
+      // When the key/model isn't ready, say so plainly and offer the fix screen.
+      let reply = (r && r.text) || "";
+      if (!reply) {
+        const err = (r && r.error) || "no reply";
+        reply = /key|provider|401|403|credential|baseUrl|model/i.test(err)
+          ? "I think with the model you've selected, and right now I can't reach it (" + String(err).slice(0, 120) + "). Check the API key and model in Model configuration, then ask me again.\nGOTO: models"
+          : "Hmm, that didn't go through: " + String(err).slice(0, 160);
+      }
+      setMsgs((m) => [...m, { role: "mentor", text: reply }]);
+      // Instant navigation: "GOTO! <key>" means the user explicitly asked to go there.
+      const bang = /(?:^|\n)\s*GOTO!\s*([a-z]+)/i.exec(reply);
+      const bk = bang && bang[1].toLowerCase();
+      if (bk && GOTO_MODE[bk]) {
+        recordEvent("navigated", bk);
+        setTimeout(() => { setOpen(false); onNavigate && onNavigate(GOTO_MODE[bk]); }, 650);
+      }
+      // Start a live walkthrough when the user asked to be guided and the reply
+      // is a numbered procedure: the steps become a guide bar that persists
+      // across screens until the whole cycle is finished.
+      if (/how to|guide|walk me|step by step|teach me|help me (create|build|set ?up|make)/i.test(text)) {
+        const steps = clean(reply).split("\n").map((l) => /^\s*(\d{1,2})[.)]\s+(.{4,})/.exec(l)).filter(Boolean).map((m) => m[2].trim());
+        if (steps.length >= 3) {
+          saveWalk({ topic: text.slice(0, 80), steps: steps.slice(0, 20), idx: 0 });
+          recordEvent("walkthrough-start", text.slice(0, 60));
+        }
+      }
+      // Periodic distillation of raw observations into durable insights (cheap, async).
+      maybeDistill(bridge.completeOnce);
     } catch (e) {
       setMsgs((m) => [...m, { role: "mentor", text: "Error: " + String((e && e.message) || e) }]);
     } finally { setBusy(false); }
   };
 
-  // Voice command: click to record, click again to stop — transcribed through the
-  // user's own Whisper-capable key (desktop) or the browser's speech engine (web),
-  // then SENT automatically so you can just talk to ${name}.
+  // Voice — SIMPLE Windows mic: tap, speak, and your words are TYPED into the box
+  // (you read them, then press Enter or the send arrow). Desktop uses ONLY the
+  // Windows-native recognizer — no key, no model, no network. The browser speech
+  // API is used ONLY on the web build: inside the desktop app it exists but is
+  // non-functional (an Electron trap — it needs a cloud speech service that
+  // desktop apps don't get), which is exactly what made the mic feel broken.
+  const heard = (t) => {
+    const text = String(t || "").trim();
+    if (!text) return;
+    setInput((p) => (p ? p.trim() + " " : "") + text);
+  };
   const toggleMic = async () => {
-    if (listening) { try { recRef.current && recRef.current.stop(); } catch {} return; }
-    if (busy) return;
-    if (bridge.transcribe && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    if (listening) { try { recRef.current && recRef.current.stop && recRef.current.stop(); } catch {} return; }
+    // Desktop: the Windows engine, and ONLY the Windows engine.
+    if (bridge.winSpeech) {
+      setListening(true);
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mime = window.MediaRecorder && MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
-        const rec = new MediaRecorder(stream, { mimeType: mime });
-        const chunks = [];
-        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-        rec.onstop = async () => {
-          setListening(false);
-          stream.getTracks().forEach((t) => t.stop());
-          try {
-            const blob = new Blob(chunks, { type: mime });
-            const b64 = await new Promise((res, rej) => {
-              const fr = new FileReader();
-              fr.onload = () => res(String(fr.result).split(",")[1] || "");
-              fr.onerror = rej;
-              fr.readAsDataURL(blob);
-            });
-            const r = await bridge.transcribe({ b64, mime });
-            if (r && r.text) ask(r.text);
-            else if (r && r.error) setMsgs((m) => [...m, { role: "mentor", text: "I couldn't hear that: " + r.error }]);
-          } catch (e) { setMsgs((m) => [...m, { role: "mentor", text: "Voice didn't come through: " + String((e && e.message) || e) }]); }
-        };
+        const r = await bridge.winSpeech({ timeoutSec: 10 });
+        if (r && r.text) heard(r.text);
+        else if (r && r.error) setMsgs((m) => [...m, { role: "mentor", text: r.error }]);
+      } catch (e) {
+        setMsgs((m) => [...m, { role: "mentor", text: "Voice hiccup: " + String((e && e.message) || e) }]);
+      }
+      setListening(false);
+      return;
+    }
+    // Web build: the browser's own speech engine (Chromium browsers).
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      try {
+        const rec = new SR();
+        rec.lang = "en-US"; rec.interimResults = false; rec.continuous = false;
+        rec.onresult = (e) => heard(e.results[0][0].transcript);
+        rec.onend = () => setListening(false);
+        rec.onerror = () => setListening(false);
         rec.start(); setListening(true); recRef.current = rec;
         return;
-      } catch { setListening(false); setMsgs((m) => [...m, { role: "mentor", text: "Microphone access was blocked — allow it in your system settings and try again." }]); return; }
+      } catch { setListening(false); }
     }
-    // Web fallback: browser-native speech recognition where available.
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { setMsgs((m) => [...m, { role: "mentor", text: "Voice needs the desktop app (with an OpenAI or Groq key), or a Chromium browser on the web." }]); return; }
-    try {
-      const rec = new SR();
-      rec.lang = "en-US"; rec.interimResults = false; rec.continuous = false;
-      rec.onresult = (e) => { const t = e.results[0][0].transcript; if (t) ask(t); };
-      rec.onend = () => setListening(false);
-      rec.onerror = () => setListening(false);
-      rec.start(); setListening(true); recRef.current = rec;
-    } catch { setListening(false); }
+    setMsgs((m) => [...m, { role: "mentor", text: "Voice isn't available here — on Windows desktop it works out of the box; on the web use a Chromium browser like Chrome or Edge." }]);
   };
 
   // Drag-to-resize: grip on the panel's free corner; width/height persist.
@@ -197,9 +266,17 @@ export default function SageDock({ mode, onNavigate }) {
     e.preventDefault(); e.stopPropagation();
   };
 
-  const gotoKey = (m) => { const x = /(?:^|\n)\s*GOTO:\s*([a-z]+)/i.exec(m.text || ""); const k = x && x[1].toLowerCase(); return GOTO_MODE[k] ? k : null; };
-  const clean = (t) => String(t || "").replace(/(?:^|\n)\s*GOTO:\s*[a-z]+\s*$/i, "").trim();
-  const go = (k) => { setOpen(false); onNavigate && onNavigate(GOTO_MODE[k]); };
+  const gotoKey = (m) => { const x = /(?:^|\n)\s*GOTO[:!]\s*([a-z]+)/i.exec(m.text || ""); const k = x && x[1].toLowerCase(); return GOTO_MODE[k] ? k : null; };
+  // Display cleanup: drop the GOTO line and any markdown clutter the model slips in
+  // (the persona says plain text; this is the safety net so ** never reaches the user).
+  const clean = (t) => String(t || "")
+    .replace(/(?:^|\n)\s*GOTO[:!]\s*[a-z]+\s*$/i, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/(^|\n)\s*#{1,4}\s+/g, "$1")
+    .replace(/(^|\n)\s*[-*]\s+/g, "$1• ")
+    .trim();
+  const go = (k) => { recordEvent("navigated", k); setOpen(false); onNavigate && onNavigate(GOTO_MODE[k]); };
 
   const startDrag = (e) => {
     if (e.target.closest(".sage-ico")) return;
@@ -253,11 +330,25 @@ export default function SageDock({ mode, onNavigate }) {
               </div>
             </div>
           )}
+          {walk && walk.steps && (
+            <div className="sage-walk">
+              <div className="sage-walk-head">
+                <b>Step {walk.idx + 1} of {walk.steps.length}</b>
+                <span className="sage-walk-topic">{walk.topic}</span>
+                <button className="sage-ico" title="End this guide" onClick={walkEnd}><X size={13} /></button>
+              </div>
+              <div className="sage-walk-step">{walk.steps[walk.idx]}</div>
+              <div className="sage-walk-acts">
+                <button className="btn primary" onClick={walkNext}>{walk.idx + 1 >= walk.steps.length ? "Finish 🎉" : "Done — next ▸"}</button>
+                <button className="btn ghost" onClick={walkStuck}>I'm stuck</button>
+              </div>
+            </div>
+          )}
           <div className="sage-panel-msgs scroll">
             {msgs.length === 0 && (
               <div className="sage-hello">
                 <SageFace size={56} look={lookObj} />
-                <div>Hey, I'm <b>{name}</b> 👋 Your BrainEdge buddy. Ask me anything — type it or tap the mic and just talk. I keep it short and can whisk you to the right screen.</div>
+                <div>Hey, I'm <b>{name}</b> 👋 Your BrainEdge guide — ask me anything about the app and I'll keep it short, point you at the exact button, or take you straight to the right screen. Type it, or tap the mic and just talk.</div>
               </div>
             )}
             {msgs.map((m, i) => {

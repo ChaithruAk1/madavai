@@ -46,6 +46,7 @@ const DEFAULTS = {
   googleClientSecret: "",
   githubClientId: "",
   globalInstructions: "", // custom instructions applied to every conversation
+  userMemory: { enabled: true }, // cross-chat memory: remember durable facts about the user
   responseLanguage: "model", // "model" = let the model decide; or a language name to force replies
   theme: "dark", // "dark" | "light" | "system"
   accent: "default", // "default" = original two-tone; or a hex for a monochrome accent

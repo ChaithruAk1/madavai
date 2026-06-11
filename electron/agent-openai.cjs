@@ -30,6 +30,18 @@ const LOAD_SKILL_TOOL = {
   },
 };
 
+// Text→image through the model selector (imagegen.cjs). The image lands in the
+// tool card directly; the model only sees a tiny confirmation string (no base64
+// ever enters the conversation — that would explode the token budget).
+const CREATE_IMAGE_TOOL = {
+  type: "function",
+  function: {
+    name: "create_image",
+    description: "Generate an image from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user and saved automatically. Call this whenever the user asks for a picture, illustration, logo, diagram-as-image, or photo-style image.",
+    parameters: { type: "object", properties: { prompt: { type: "string", description: "a vivid, complete description of the image" } }, required: ["prompt"] },
+  },
+};
+
 // Mid-mission "ask the human": the mission pauses, the user answers, work resumes.
 const ASK_USER_TOOL = {
   type: "function",
@@ -109,7 +121,9 @@ function isBlocked(permMode, name) {
 
 // Shared artifact-iteration rule (Studio "live preview" iterates in place like frontier chat products):
 // always emit the WHOLE file in one fenced block so it renders, and re-emit it whole on edits.
-const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
+const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview." +
+  // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js):
+  " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
 
 const SYSTEM = (mode) =>
   mode === "chat"
@@ -365,6 +379,8 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // Wave 2.1 — the visible working plan; Wave 5.1 — parallel scouts (folder missions).
   if (mode !== "chat") tools.push(harness.PLAN_TOOL);
   if (cwd && mode !== "chat" && agentOpts.scouts !== false) tools.push(harness.SCOUT_TOOL);
+  // Text→image in every mode (selector-powered; see CREATE_IMAGE_TOOL).
+  tools.push(CREATE_IMAGE_TOOL);
   try {
     const mcpTools = await mcp.openAiTools(connectors);
     if (mcpTools.length) tools = [...tools, ...mcpTools];
@@ -391,6 +407,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       try {
         const sr = await streamChat(profile, harness.buildCompactionMessages(history), { onDelta: () => {}, signal });
         harness.applyCompaction(history, (sr && sr.text) || "");
+        history._browseIdxs = []; // compaction rebuilt the array — old indices are void
         emit({ kind: "tool_result", data: { id: cid, output: "Mission history compacted into working notes (goal, decisions, files, remaining work)." } });
       } catch (e) {
         emit({ kind: "tool_result", data: { id: cid, output: "(compaction skipped: " + String((e && e.message) || e).slice(0, 160) + ")" } });
@@ -529,6 +546,24 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         continue;
       }
 
+      // Text→image: generate with the active profile/model, show the image in the
+      // tool card (data.image), give the model only a tiny confirmation string.
+      if (tc.name === "create_image") {
+        emit({ kind: "tool_use", data: { id: tc.id, name: "create_image", input: { prompt: String(args.prompt || "").slice(0, 300) }, auto: true } });
+        let out, image = null;
+        if (isBlocked(permMode, tc.name)) out = "(blocked: plan mode is read-only)";
+        else {
+          try {
+            const r = await require("./imagegen.cjs").generateImage(profile, args.prompt);
+            image = r.dataUrl;
+            out = "Image generated and shown to the user" + (r.file ? ` (saved: ${r.file})` : "") + ". Describe it in one short sentence and continue.";
+          } catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+        }
+        emit({ kind: "tool_result", data: { id: tc.id, output: String(out).slice(0, 600), image } });
+        pushToolResult(tc, String(out).slice(0, 600));
+        continue;
+      }
+
       // Mid-mission question: pause for the human, resume with their answer.
       if (tc.name === "ask_user") {
         emit({ kind: "tool_use", data: { id: tc.id, name: "ask_user", input: { question: args.question }, auto: true } });
@@ -587,7 +622,20 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
           } catch (e) { out = "ERROR: " + String((e && e.message) || e); }
         }
         emit({ kind: "tool_result", data: { id: tc.id, output: String(out).slice(0, 4000) } });
+        // Keep only the NEWEST page snapshot at full size. Older page dumps are the
+        // #1 prompt bloat on browser missions (WhatsApp Web pages are huge): the
+        // moment a newer read lands, every earlier one shrinks to a stub — cutting
+        // per-step prompt size by half or more on long missions.
+        if (!Array.isArray(history._browseIdxs)) history._browseIdxs = [];
+        for (const bi of history._browseIdxs) {
+          const bm = history[bi];
+          if (bm && (bm.role === "tool" || bm.role === "user") && typeof bm.content === "string" && bm.content.length > 420 && !bm._pageTrimmed) {
+            bm.content = bm.content.slice(0, 300) + "\n… (older page snapshot trimmed — the newest page read is authoritative)";
+            bm._pageTrimmed = true;
+          }
+        }
         pushToolResult(tc, String(out).slice(0, 16000));
+        history._browseIdxs.push(history.length - 1);
         continue;
       }
 

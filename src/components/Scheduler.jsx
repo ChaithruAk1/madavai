@@ -282,7 +282,11 @@ function TaskModal({ draft, setDraft, projects, agents = [], teams = [], modelGr
             <option value="folder">Let's Collaborate (folder)</option>
             <option value="agent">Run an agent</option>
             <option value="team">Run an agent team</option>
+            <option value="brief">Daily brief (your activity digest)</option>
           </select>
+          {d.target?.type === "brief" && (
+            <span className="ag-hint" style={{ margin: 0 }}>Summarizes recent conversations, agent work and today's schedules each run — set it daily at your morning time. The prompt field adds extra topics to cover.</span>
+          )}
           {d.target?.type === "project" && (
             <select className="model-search" style={{ marginBottom: 0, width: "auto", flex: 1 }} value={d.target?.projectId || ""} onChange={(e) => setTarget({ projectId: e.target.value })}>
               <option value="">Select project…</option>

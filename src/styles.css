@@ -2111,6 +2111,54 @@ svg.lucide { color: var(--accent); }
 .sage-dock.up.left .sage-grip::after, .sage-dock.down.right .sage-grip::after { transform: translate(-50%, -50%) rotate(-45deg); }
 .sage-looks-row { max-height: 170px; overflow-y: auto; padding-right: 2px; }
 
+/* In-chat office file card (```officedoc → real downloadable document) */
+.md-office { display: flex; align-items: center; gap: 11px; margin: 10px 0; padding: 11px 14px; border: 1px solid var(--accent-line, var(--accent)); border-radius: 12px; background: var(--accent-weak, var(--bg-1)); max-width: 480px; }
+.md-office-ico { font-size: 22px; flex: none; }
+.md-office-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.md-office-meta b { font-size: 13px; color: var(--text-0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-office-meta i { font-style: normal; font-size: 11px; color: var(--text-2); }
+.md-office-btn { flex: none; padding: 6px 14px; border-radius: 9px; border: none; background: var(--accent); color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.md-office-btn:disabled { opacity: 0.6; cursor: default; }
+.md-office-err { font-size: 11px; color: var(--danger, #e5736f); }
+
+/* Layout guard: a single unbroken string (binary dump, base64, giant URL) must
+   never stretch a chat bubble past its container — wrap anywhere instead. */
+.msg, .msg * { overflow-wrap: anywhere; }
+.msg pre, .msg code { word-break: break-word; white-space: pre-wrap; }
+
+/* Sage walkthrough guide bar — follows the user across screens until done */
+.sage-walk { border-bottom: 1px solid var(--accent-line, var(--accent)); background: var(--accent-weak, var(--bg-1)); padding: 10px 14px; }
+.sage-walk-head { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-2); }
+.sage-walk-head b { color: var(--accent); font-size: 11.5px; flex: none; }
+.sage-walk-topic { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sage-walk-step { font-size: 13px; color: var(--text-0); line-height: 1.5; margin: 7px 0 9px; }
+.sage-walk-acts { display: flex; gap: 8px; }
+.sage-walk-acts .btn { padding: 4px 12px; font-size: 12px; }
+
+/* WorkStrip — a burst of agent steps collapses to one quiet line in the chat */
+.workstrip-wrap { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.workstrip { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--bg-1); border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; cursor: pointer; transition: color var(--dur-1,120ms) var(--ease,ease), border-color var(--dur-1,120ms) var(--ease,ease); }
+.workstrip:hover { color: var(--text-0); border-color: var(--accent-line, var(--accent)); }
+.workstrip-ok { color: var(--ok, #3ecf8e); }
+.workstrip-spin { width: 10px; height: 10px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: ws-rot 0.8s linear infinite; }
+@keyframes ws-rot { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .workstrip-spin { animation: none; } }
+
+/* Editable Canvas (ArtifactPanel Edit tab) */
+.artifact-edited { font-style: normal; font-size: 11px; color: var(--accent); font-weight: 600; }
+.artifact-canvas { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.artifact-edit { flex: 1; min-height: 0; width: 100%; resize: none; border: none; outline: none; background: var(--bg-0, var(--bg-1)); color: var(--text-0); font-family: var(--mono, monospace); font-size: 12.5px; line-height: 1.55; padding: 14px 16px; box-sizing: border-box; }
+.artifact-revise { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-top: 1px solid var(--line); background: var(--bg-1); }
+.artifact-revise input { flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; color: var(--text-0); font: inherit; font-size: 12.5px; outline: none; }
+.artifact-revise input:focus { border-color: var(--accent-line); }
+.artifact-aierr { padding: 6px 14px; font-size: 11.5px; color: var(--danger, #e5736f); border-top: 1px solid var(--line); }
+
+/* Generated image inside a tool card (create_image) */
+.tool2-img { position: relative; padding: 8px 12px 12px; }
+.tool2-img img { max-width: min(420px, 100%); border-radius: 12px; border: 1px solid var(--line); display: block; }
+.tool2-img-dl { position: absolute; right: 22px; top: 16px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px; background: rgba(0,0,0,0.55); color: #fff; text-decoration: none; opacity: 0; transition: opacity var(--dur-1,120ms) var(--ease,ease); }
+.tool2-img:hover .tool2-img-dl { opacity: 1; }
+
 /* ===== Teams: tabs, builder, Mission Control (TeamOps) ===== */
 .ags-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
 .ags-tab { display: inline-flex; align-items: center; gap: 8px; padding: 9px 17px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text-1); font-size: 14px; font-weight: 500; cursor: pointer; }

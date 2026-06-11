@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, FileText, FileUp, MessageSquare, Github, FolderInput, RefreshCw, Search, ArrowUpDown, ArrowLeft, Send, Users } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import Composer from "./Composer.jsx";
@@ -60,7 +60,42 @@ export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork }) 
   const pull = async () => { setSrc("Pulling…"); const r = await bridge.pullGithub(selId); setSrc(r?.error ? "Error: " + r.error : "Updated from GitHub"); };
   const unlinkSrc = async () => { await bridge.unlinkProjectSource(selId); setSrc(""); refreshProject(); };
   const addText = async () => { if (!knText.trim()) return; await bridge.addKnowledgeText(selId, "Note", knText.trim()); setKnText(""); refreshProject(); };
-  const addFile = async () => { const r = await bridge.addKnowledgeFile(selId); if (!r?.error) refreshProject(); };
+  // Add individual files to the project's knowledge. Desktop: native dialog (parses
+  // PDF/docx via the main process). Web (or as fallback): a file picker whose files
+  // are parsed RIGHT HERE — xlsx → CSV per sheet, docx → text, txt/md/csv inline.
+  const webFileRef = useRef(null);
+  const addFile = async () => {
+    if (bridge.addKnowledgeFile) {
+      const r = await bridge.addKnowledgeFile(selId);
+      if (r?.error) setSrc("Error: " + r.error);
+      else { setSrc(""); refreshProject(); }
+      return;
+    }
+    webFileRef.current && webFileRef.current.click();
+  };
+  const onWebFiles = async (e) => {
+    const files = Array.from(e.target.files || []); e.target.value = "";
+    for (const f of files.slice(0, 8)) {
+      try {
+        const lower = (f.name || "").toLowerCase();
+        let content = "";
+        if (/\.(xlsx|xls)$/.test(lower)) {
+          const XLSX = await import("xlsx");
+          const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+          for (const sn of (wb.SheetNames || []).slice(0, 8)) content += `--- sheet: ${sn} ---\n` + XLSX.utils.sheet_to_csv(wb.Sheets[sn]).slice(0, 20000) + "\n";
+        } else if (/\.docx$/.test(lower)) {
+          const m = await import("mammoth/mammoth.browser.js");
+          content = String((await (m.default || m).extractRawText({ arrayBuffer: await f.arrayBuffer() })).value || "");
+        } else if (/\.pdf$/.test(lower)) {
+          setSrc("Error: PDFs need the desktop app (it extracts their text)."); continue;
+        } else {
+          content = await f.text();
+        }
+        if (content.trim()) await bridge.addKnowledgeText(selId, f.name, content.slice(0, 200000));
+      } catch (err) { setSrc("Error reading " + f.name + ": " + String((err && err.message) || err).slice(0, 80)); }
+    }
+    refreshProject();
+  };
   const removeKn = async (knId) => { await bridge.removeKnowledge(selId, knId); refreshProject(); };
 
   const startChat = async () => {
@@ -135,10 +170,14 @@ export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork }) 
                 </div>
               )}
 
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "6px 0" }}>
+                <button className="btn" onClick={addFile}><FileUp size={14} /> Add files</button>
+                <input ref={webFileRef} type="file" multiple style={{ display: "none" }}
+                  accept=".txt,.md,.csv,.json,.xml,.html,.xlsx,.xls,.docx,.pdf,.js,.ts,.py,.java,.yaml,.yml,.log" onChange={onWebFiles} />
+              </div>
               <div style={{ display: "flex", gap: 6, margin: "6px 0" }}>
                 <input className="model-search" style={{ flex: 1, minWidth: 0, marginBottom: 0 }} placeholder="Paste text…" value={knText} onChange={(e) => setKnText(e.target.value)} />
                 <button className="btn" onClick={addText} title="Add text"><FileText size={14} /></button>
-                <button className="btn" onClick={addFile} title="Add file"><FileUp size={14} /></button>
               </div>
               {kn.length === 0 ? (
                 <div className="pjd-files-empty">Add PDFs, documents, or text to reference in this project.</div>

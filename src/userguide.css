@@ -416,3 +416,69 @@
   .ug-rail { display: none; }
   .ug-grid2 { grid-template-columns: 1fr; }
 }
+
+/* ============================================================================
+   Shot — stylized screen mockups ("beautiful screenshots"), theme-aware
+   ========================================================================== */
+.ug-shot { margin: 16px 0 20px; }
+.ug-shot-win {
+  border: 1px solid var(--line-2, var(--line));
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg-0, var(--bg-1));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+  max-width: 560px;
+}
+.ug-shot-bar { display: flex; align-items: center; gap: 5px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--bg-1); }
+.ug-shot-bar i { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, currentColor 22%, transparent); }
+.ug-shot-bar i:nth-child(1) { background: #e5736f; } .ug-shot-bar i:nth-child(2) { background: #e8b04f; } .ug-shot-bar i:nth-child(3) { background: #69c97e; }
+.ug-shot-bar span { margin-left: 8px; font-size: 10px; font-weight: 700; color: var(--text-2); letter-spacing: 0.06em; }
+.ug-shot-body { display: grid; grid-template-columns: 96px 1fr; min-height: 190px; }
+.ug-shot-side { display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; border-right: 1px solid var(--line); background: var(--bg-1); }
+.ug-shot-logo { width: 16px; height: 16px; border-radius: 5px; background: var(--accent); margin-bottom: 4px; }
+.ug-shot-main { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+/* skeleton bars */
+.ug-sk { display: inline-block; border-radius: 99px; background: color-mix(in srgb, currentColor 16%, transparent); }
+.ug-sk.acc { background: color-mix(in srgb, var(--accent) 55%, transparent); }
+.ug-sk.inv { background: rgba(255, 255, 255, 0.75); }
+/* highlight ring + label */
+.ug-hl { position: relative; display: inline-block; border-radius: 10px; box-shadow: 0 0 0 2px var(--accent); padding: 2px; margin: 8px 2px 14px; }
+.ug-hl-tag {
+  position: absolute; left: 50%; top: 100%; transform: translate(-50%, 4px);
+  font-style: normal; white-space: nowrap; font-size: 10px; font-weight: 700;
+  color: var(--accent); background: var(--bg-1); border: 1px solid var(--accent-line, var(--accent));
+  border-radius: 99px; padding: 1px 8px;
+}
+/* widgets used inside mockups */
+.ug-shot-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ug-shot-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-1); min-width: 0; }
+.ug-shot-card.acc { border-color: var(--accent-line, var(--accent)); }
+.ug-shot-field { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 7px; }
+.ug-shot-btn { font-style: normal; font-size: 9.5px; font-weight: 700; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--line); color: var(--text-1); white-space: nowrap; }
+.ug-shot-btn.acc { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ug-shot-chip { font-style: normal; font-size: 9.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--text-1); white-space: nowrap; }
+.ug-shot-chip.acc { border-color: var(--accent-line, var(--accent)); color: var(--accent); }
+.ug-shot-dot { width: 7px; height: 7px; border-radius: 50%; }
+.ug-shot-dot.ok { background: #3ecf8e; }
+.ug-shot-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--line); }
+.ug-shot-input { flex: 1; display: flex; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 9px; }
+.ug-shot-ico { font-style: normal; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--line); font-size: 11px; flex: none; }
+.ug-shot-ico.acc { border-color: var(--accent-line, var(--accent)); }
+.ug-shot-ico.send { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ug-shot-bub { display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg-1); max-width: 78%; }
+.ug-shot-bub.me { align-self: flex-end; background: var(--accent); border-color: var(--accent); }
+.ug-shot-tool { display: flex; align-items: center; gap: 7px; font-size: 10px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg-1); color: var(--text-2); }
+.ug-shot-tool.ok { color: #3ecf8e; }
+.ug-shot-tool .add { color: #3ecf8e; font-weight: 700; font-size: 9.5px; }
+.ug-shot-tool .del { color: #e5736f; font-weight: 700; font-size: 9.5px; margin-left: 2px; }
+.ug-shot-modal { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--line-2, var(--line)); border-radius: 11px; background: var(--bg-1); box-shadow: 0 10px 26px rgba(0,0,0,0.25); min-width: 180px; }
+.ug-shot-modal > span { display: flex; gap: 6px; }
+.ug-shot-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ug-shot-split > div { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-1); }
+.ug-shot-face { width: 22px; height: 22px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 30%, transparent); border: 1px solid var(--accent-line, var(--accent)); }
+.ug-shot-face.sm { width: 16px; height: 16px; flex: none; }
+.ug-shot-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-1); }
+.ug-shot-row.acc { border-color: var(--accent-line, var(--accent)); }
+.ug-shot-clock { font-style: normal; font-size: 11px; flex: none; }
+.ug-shot-cap { margin-top: 18px; font-size: 12px; color: var(--text-2); line-height: 1.55; max-width: 560px; }
+@media (max-width: 620px) { .ug-shot-body { grid-template-columns: 72px 1fr; } .ug-shot-cards { grid-template-columns: 1fr 1fr; } }

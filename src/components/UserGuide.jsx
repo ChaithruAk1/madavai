@@ -146,6 +146,94 @@ function H3({ children }) {
 }
 
 /* ----------------------------------------------------------------------------
+   Shot — a "beautiful screenshot": a stylized, theme-aware vector mockup of a
+   BrainEdge screen with an accent highlight ring on the control being taught.
+   Drawn with CSS (no images), so it's crisp at any size, matches light AND dark
+   themes, and never goes stale the way a real PNG would after a redesign.
+---------------------------------------------------------------------------- */
+const Sk = ({ w, h = 8, tone }) => <span className={`ug-sk ${tone || ""}`} style={{ width: w, height: h }} />;
+const Hl = ({ label, children }) => (
+  <span className="ug-hl">{children}<i className="ug-hl-tag">{label}</i></span>
+);
+function Shot({ screen, caption }) {
+  return (
+    <figure className="ug-shot">
+      <div className="ug-shot-win">
+        <div className="ug-shot-bar"><i /><i /><i /><span>BrainEdge</span></div>
+        <div className="ug-shot-body">
+          <div className="ug-shot-side">
+            <span className="ug-shot-logo" />
+            <Sk w={46} /><Sk w={58} /><Sk w={40} />
+            {screen === "agents" ? <Hl label="Agents"><Sk w={52} tone="acc" /></Hl> : <Sk w={52} />}
+            {screen === "scheduler" ? <Hl label="Scheduler"><Sk w={56} tone="acc" /></Hl> : <Sk w={56} />}
+            <Sk w={44} />
+          </div>
+          <div className="ug-shot-main">
+            {screen === "providers" && (
+              <>
+                <Sk w="40%" h={10} />
+                <div className="ug-shot-cards">
+                  <Hl label="provider card">
+                    <span className="ug-shot-card acc"><Sk w="60%" h={7} tone="acc" /><Sk w="85%" h={6} /><span className="ug-shot-field"><Sk w="70%" h={6} /><i className="ug-shot-btn">Save</i></span></span>
+                  </Hl>
+                  <span className="ug-shot-card"><Sk w="50%" h={7} /><Sk w="80%" h={6} /><Sk w="65%" h={6} /></span>
+                  <span className="ug-shot-card"><Sk w="55%" h={7} /><Sk w="75%" h={6} /><Sk w="60%" h={6} /></span>
+                </div>
+                <div className="ug-shot-foot"><Hl label="model selector"><i className="ug-shot-chip acc">llama-3.3-70b ▾</i></Hl><i className="ug-shot-dot ok" /><Sk w={40} h={6} /></div>
+              </>
+            )}
+            {screen === "chat" && (
+              <>
+                <span className="ug-shot-bub me"><Sk w="55%" h={6} tone="inv" /></span>
+                <span className="ug-shot-bub"><Sk w="85%" h={6} /><Sk w="70%" h={6} /><Sk w="40%" h={6} /></span>
+                <div className="ug-shot-foot grow">
+                  <Hl label="mic — talk instead of typing"><i className="ug-shot-ico acc">🎙</i></Hl>
+                  <span className="ug-shot-input"><Sk w="60%" h={6} /></span>
+                  <i className="ug-shot-ico send">↑</i>
+                </div>
+              </>
+            )}
+            {screen === "collaborate" && (
+              <>
+                <div className="ug-shot-foot"><Hl label="your folder"><i className="ug-shot-chip acc">📁 my-project</i></Hl><Sk w={60} h={6} /></div>
+                <span className="ug-shot-tool ok">✓ <Sk w="42%" h={6} /></span>
+                <span className="ug-shot-tool"><b className="add">+ 12</b><b className="del">− 3</b> <Sk w="38%" h={6} /></span>
+                <Hl label="approve each change">
+                  <span className="ug-shot-modal"><Sk w="50%" h={7} /><span><i className="ug-shot-btn acc">Allow</i><i className="ug-shot-btn">Deny</i></span></span>
+                </Hl>
+              </>
+            )}
+            {screen === "agents" && (
+              <div className="ug-shot-split">
+                <div>
+                  <Sk w="55%" h={8} tone="acc" /><Sk w="90%" h={6} /><Sk w="75%" h={6} />
+                  <span className="ug-shot-face" /><Sk w="65%" h={6} />
+                </div>
+                <div>
+                  <Sk w="45%" h={8} /><Sk w="85%" h={6} /><Sk w="70%" h={6} />
+                  <Hl label="Put to work"><i className="ug-shot-btn acc">Put to work →</i></Hl>
+                </div>
+              </div>
+            )}
+            {screen === "scheduler" && (
+              <>
+                <Sk w="35%" h={10} />
+                <span className="ug-shot-row"><i className="ug-shot-clock">🕗</i><Sk w="40%" h={6} /><i className="ug-shot-chip">daily 8:00</i></span>
+                <Hl label="agents run on schedules too">
+                  <span className="ug-shot-row acc"><span className="ug-shot-face sm" /><Sk w="35%" h={6} tone="acc" /><i className="ug-shot-chip acc">weekly</i></span>
+                </Hl>
+                <span className="ug-shot-row"><i className="ug-shot-clock">⚡</i><Sk w="30%" h={6} /><i className="ug-shot-chip">webhook</i></span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      {caption && <figcaption className="ug-shot-cap">{caption}</figcaption>}
+    </figure>
+  );
+}
+
+/* ----------------------------------------------------------------------------
    The sections. Each entry: id, short rail title, icon, search keywords, and
    a render function receiving the app's navigation callback.
 ---------------------------------------------------------------------------- */
@@ -226,6 +314,7 @@ const SECTIONS = [
           model. You can keep as many profiles as you like, and they're all available at once; the
           model you pick in the selector decides which provider actually answers.
         </p>
+        <Shot screen="providers" caption="Model configuration: one card per provider — paste a key, save, then pick any of its models from the selector at the bottom of the message box." />
         <H3>Providers that work out of the box</H3>
         <Table
           head={["Provider", "What it's good for", "Key needed?"]}
@@ -289,6 +378,7 @@ const SECTIONS = [
           analysis, and thinking out loud. Replies <strong>stream</strong> in word by word and
           render full Markdown: headings, tables, code blocks with syntax highlighting, and lists.
         </p>
+        <Shot screen="chat" caption="The chat screen: your message on the right, the streamed reply on the left — and the mic button lets you talk instead of typing (built-in Windows voice, no key needed)." />
         <H3>The composer's hidden powers</H3>
         <Table
           head={["Type…", "What happens"]}
@@ -363,6 +453,7 @@ const SECTIONS = [
           system you control. Think of it as a careful assistant working at your desk: it shows you
           each move before making it.
         </p>
+        <Shot screen="collaborate" caption="A folder mission: the linked folder chip, tool cards showing real diffs (+ added / − removed lines), and the permission prompt that puts you in charge of every change." />
         <Flow
           items={[
             { t: "You brief it", s: '"clean up this folder"' },
@@ -592,6 +683,7 @@ const SECTIONS = [
           memory, and pinned model. You build agents in the <strong>Agent Studio</strong> — by
           describing them in plain language. <Go nav={nav} to="agents">Open Agents</Go>
         </p>
+        <Shot screen="agents" caption="The Agent Studio: shape the agent by chatting with the Designer (left), interview it on the Bench (right), then Put to work sends it on real missions." />
         <Flow
           items={[
             { t: "Designer", s: "describe the agent in chat", on: "accent" },
@@ -828,6 +920,7 @@ const SECTIONS = [
           agent, or an entire team on a timetable — or fire them from the outside world with a
           webhook. <Go nav={nav} to="scheduler">Open Scheduler</Go>
         </p>
+        <Shot screen="scheduler" caption="The Scheduler: plain prompts on timers, agents on daily or weekly schedules, and token-protected webhooks so outside systems can put your workforce to work." />
         <H3>Scheduled tasks</H3>
         <Steps>
           <Step n={1} title="New task">

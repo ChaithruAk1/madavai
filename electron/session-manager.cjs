@@ -23,12 +23,18 @@ const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // cry
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
 // Artifact-iteration rule so the Studio "live preview" iterates in place:
 // emit the WHOLE file in one fenced block, and re-emit it whole when the user asks for a change.
-const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
+const ARTIFACT_RULE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview." +
+  // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js):
+  " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
 function withLang(cfg) {
   const gi = cfg.globalInstructions || "";
   const lang = cfg.responseLanguage;
   const langLine = (lang && lang !== "model") ? `Always respond in ${lang}, regardless of the language of the question.` : "";
-  return [BEHAVIOR, langLine, gi].filter(Boolean).join("\n\n");
+  // Cross-chat memory: what BrainEdge remembers about this user follows them into
+  // every conversation (toggle + editor in Settings → Profile → Memory).
+  let mem = "";
+  try { mem = require("./user-memory.cjs").block(cfg); } catch {}
+  return [BEHAVIOR, langLine, gi].filter(Boolean).join("\n\n") + mem;
 }
 const path = require("path");
 const errorExplainer = require("./error-explainer.cjs");
@@ -84,7 +90,13 @@ class SessionManager {
     const t = this._turns.get(sessionId);
     if (t) {
       if (kind === "assistant_delta") { t.replyChars += ((data && data.text) || "").length; t.replyText += (data && data.text) || ""; }
-      else if (kind === "result") { usage.append({ ...t, at: Date.now() }); this._recordAgentRun(sessionId, t, data, true); this._persistTurn(sessionId); this._turns.delete(sessionId); }
+      else if (kind === "result") {
+        usage.append({ ...t, at: Date.now() }); this._recordAgentRun(sessionId, t, data, true); this._persistTurn(sessionId);
+        // Cross-chat memory: fire-and-forget extraction of durable user facts from
+        // this completed turn (throttled inside user-memory; never blocks the UI).
+        try { const cfg = settings.load(); require("./user-memory.cjs").learnFromTurn(settings.activeProfile(cfg), cfg, t.userText, t.replyText); } catch {}
+        this._turns.delete(sessionId);
+      }
       else if (kind === "error") { this._recordAgentRun(sessionId, t, data, false); this._persistTurn(sessionId); this._turns.delete(sessionId); }
     }
     this.rawEmit({ sessionId, seq: seq++, kind, data });

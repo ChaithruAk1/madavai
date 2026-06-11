@@ -43,6 +43,22 @@ const webFolderSupported = isWeb && typeof window !== "undefined" && typeof wind
 // Internal tools we never surface as cards in the chat (plumbing, not user-facing).
 const HIDDEN_TOOLS = new Set(["load_skill"]);
 
+// One quiet line for a burst of agent work — the chat stays a conversation
+// (your words, the agent's words); the steps expand on demand.
+function WorkStrip({ steps, renderMsg }) {
+  const [open, setOpen] = useState(false);
+  const running = steps.some(({ item }) => item.status === "run");
+  return (
+    <div className="workstrip-wrap">
+      <button className="workstrip" onClick={() => setOpen((o) => !o)}>
+        {running ? <span className="workstrip-spin" /> : <span className="workstrip-ok">✓</span>}
+        {running ? "Working" : "Worked"} — {steps.length} steps {open ? "▾" : "▸"}
+      </button>
+      {open && steps.map(({ item, i }) => renderMsg(item, i))}
+    </div>
+  );
+}
+
 export default function App() {
   const [mode, setMode] = useState("chat");
   const [settings, setSettings] = useState(null);
@@ -172,7 +188,7 @@ export default function App() {
           return r;
         });
         setSoloRun((r) => r ? { ...r, steps: r.steps.map((s) => s.id === e.data.id ? { ...s, status: "done" } : s) } : r);
-        setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, output: e.data.output, status: "ok" } : it));
+        setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, output: e.data.output, image: e.data.image || it.image, status: "ok" } : it));
         break;
       case "permission_request":
         // Queue requests: parallel team members can ask at the same time — show one
@@ -811,12 +827,32 @@ export default function App() {
                   )}
                   <div className="chat scroll" ref={chatRef}>
                     <div className="chat-inner">
-                      {timeline.map((item, i) => (
-                        <Message key={i} item={item} onOpenArtifact={setArtifact} userName={_who || "You"}
-                          onRetry={!busy && item.type === "message" && item.role === "assistant" ? () => retryAt(i) : undefined}
-                          onEdit={!busy && item.type === "message" && item.role === "user" ? (t) => editAt(i, t) : undefined}
-                          streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
-                      ))}
+                      {(() => {
+                        // Conversation-first rendering: consecutive routine tool steps
+                        // collapse into ONE quiet "worked" strip (expandable); only the
+                        // user's words, the agent's words, images and questions stand
+                        // alone. The live side panels still show every step as it runs.
+                        const out = []; let buf = [];
+                        const renderMsg = (item, i) => (
+                          <Message key={i} item={item} onOpenArtifact={setArtifact} userName={_who || "You"}
+                            onRetry={!busy && item.type === "message" && item.role === "assistant" ? () => retryAt(i) : undefined}
+                            onEdit={!busy && item.type === "message" && item.role === "user" ? (t) => editAt(i, t) : undefined}
+                            streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
+                        );
+                        const flush = () => {
+                          if (!buf.length) return;
+                          if (buf.length === 1) out.push(renderMsg(buf[0].item, buf[0].i));
+                          else out.push(<WorkStrip key={"ws" + buf[0].i} steps={buf} renderMsg={renderMsg} />);
+                          buf = [];
+                        };
+                        timeline.forEach((item, i) => {
+                          const groupable = item.type === "tool" && !item.image && !/^ask_user/.test(item.name || "");
+                          if (groupable) buf.push({ item, i });
+                          else { flush(); out.push(renderMsg(item, i)); }
+                        });
+                        flush();
+                        return out;
+                      })()}
                     </div>
                   </div>
                   <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} />

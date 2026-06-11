@@ -4,7 +4,8 @@
 // output cannot inject markup or scripts. Covers the constructs models actually emit:
 // headings, bold/italic/strikethrough, inline code, fenced code blocks, links,
 // bullet/numbered lists, blockquotes, horizontal rules, tables (basic).
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
+import { parseOfficeSpec, downloadOffice } from "./office.js";
 
 // ---- inline parsing: code spans first (their content is literal), then links/emphasis ----
 function inline(text, keyBase = "i") {
@@ -43,6 +44,33 @@ function CodeBlock({ lang, code }) {
   );
 }
 
+// In-chat office files: an ```officedoc spec becomes a real downloadable file card.
+// The document is built ON THIS DEVICE when clicked (dynamic import keeps libs lazy).
+const OFFICE_LABEL = { xlsx: "Excel spreadsheet", docx: "Word document", pptx: "PowerPoint deck", pdf: "PDF document" };
+function OfficeCard({ code }) {
+  const [state, setState] = useState(""); // "" | building | done | error:<msg>
+  const parsed = parseOfficeSpec(code);
+  if (!parsed) return <CodeBlock lang="officedoc" code={code} />; // mid-stream or invalid → raw view
+  const dl = async () => {
+    setState("building");
+    try { await downloadOffice(parsed); setState("done"); setTimeout(() => setState(""), 2500); }
+    catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 120)); }
+  };
+  const count = parsed.type === "xlsx" ? `${(parsed.sheets || []).length || 1} sheet(s)`
+    : parsed.type === "pptx" ? `${(parsed.slides || []).length + (parsed.title ? 1 : 0)} slide(s)`
+    : `${(parsed.sections || []).length} section(s)`;
+  return (
+    <div className="md-office">
+      <span className="md-office-ico">{parsed.type === "xlsx" ? "📊" : parsed.type === "pptx" ? "📽" : parsed.type === "pdf" ? "📕" : "📄"}</span>
+      <span className="md-office-meta"><b>{parsed.name}</b><i>{OFFICE_LABEL[parsed.type]} · {count} · built on your device</i></span>
+      <button className="md-office-btn" disabled={state === "building"} onClick={dl}>
+        {state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}
+      </button>
+      {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
+    </div>
+  );
+}
+
 // ---- block parsing ----
 export default function Markdown({ text }) {
   if (!text) return null;
@@ -60,7 +88,8 @@ export default function Markdown({ text }) {
       const buf = []; i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
-      blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
+      if (fence[1] === "officedoc") blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
+      else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
       continue;
     }
     // heading

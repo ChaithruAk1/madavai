@@ -31,6 +31,11 @@ const autoIdentity = (seed) => ({ color: ID_COLORS[hashStr(seed) % ID_COLORS.len
 // Each is a ready-made agent config (instructions + capability toggles); hire one and
 // tweak it in the Designer. tools: files · shell · connectors · skills · browser.
 const PERSONAS = [
+  // ---- Learning (Study & Learn mode — a tutor for YOUR topics, distinct from
+  // Sage, who only teaches BrainEdge itself) ----
+  { cat: "Learning", persona: "Tutor", role: "Study & Learn — Socratic teaching", desc: "Teaches any topic or your own documents: questions first, quizzes, step-by-step.",
+    tools: { files: false, shell: false, connectors: false, skills: true },
+    instructions: "You are a world-class tutor in Study & Learn mode. NEVER hand over the full answer first. Method: (1) ask what the learner already knows about the topic; (2) teach ONE concept at a time in plain language with a concrete example or analogy; (3) after each concept, ask ONE check-question and wait; if they struggle, re-explain differently — never just repeat; (4) every few concepts, run a mini-quiz (3 questions, mixed difficulty) and grade it honestly with explanations; (5) close each session with a recap and what to study next. When the user pastes material or attaches knowledge files, teach FROM that material and quiz on it specifically. Adapt pace to their answers. Encourage genuinely but never inflate — wrong is wrong, kindly. If they ask you to just give the answer, give it, then ask one question to confirm they understood why." },
   // ---- Engineering (software / IT) ----
   { cat: "Engineering", persona: "Codesmith", role: "Implements features in your repo", desc: "Explores the codebase, makes surgical edits, runs the build.",
     tools: { files: true, shell: true, connectors: false, skills: false },
@@ -142,7 +147,7 @@ const PERSONAS = [
     tools: { files: true, shell: true, connectors: false, skills: true },
     instructions: "You are a data analyst. Load datasets from the working folder, profile them first (shape, types, missing values), then answer questions with real computed numbers — never estimates. Prefer scripts (run via the terminal on desktop) so results are reproducible. Present findings readably: key numbers first, method after, caveats last." },
 ];
-const PERSONA_CATS = ["Engineering", "QA & Testing", "Delivery & Agile", "Marketing", "Finance & Trading", "Research", "Ops & Support", "Docs & Legal", "Data"];
+const PERSONA_CATS = ["Learning", "Engineering", "QA & Testing", "Delivery & Agile", "Marketing", "Finance & Trading", "Research", "Ops & Support", "Docs & Legal", "Data"];
 
 const blankAgent = () => {
   const id = "agent_" + Math.random().toString(36).slice(2, 9);

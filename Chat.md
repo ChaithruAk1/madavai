@@ -35608,3 +35608,30 @@ The session did not end at the error-translation round. Subsequent work (detail 
 - **Engineering gotchas recorded:** providers.streamChat returns `{text}` not a string (4 call sites unwrap); never write literal control bytes in source (CTRL_RE built from String.fromCharCode); text-mode tool results must be user-role messages, not tool-role.
 - **Open follow-ups:** Test-Center agentic gauntlet (§8); catalog-exact context windows; web parity for plan/compaction/tiers; CLI harness wiring.
 - **Gates:** `npm run build` + FULL close-and-reopen → run a folder mission and watch for the set_plan card + read-back regions → commit. Built on top of the user's clean commit, so `git diff` isolates exactly this batch.
+
+### 🧑 "Sage improvements: Windows mic, navigate on ask, no **, learning memory + consultant aspiration, screenshots in guide" → 🤖 ALL FIVE BUILT (after the harness commit)
+- **Windows-native voice:** new `electron/win-speech.cjs` drives the OS speech recognizer through PowerShell System.Speech — no API key, no model, works on every Windows machine. Sage's mic uses it FIRST (then browser engine, then Whisper); the main Composer keeps Whisper for quality but auto-switches to the Windows engine permanently the first time it finds no key.
+- **Navigation on ask:** Sage now has two powers — `GOTO:` shows the "Take me there" button, new `GOTO!` navigates immediately when the user explicitly asks ("open settings"). 650ms delay so the answer is readable first.
+- **Clean answers:** persona now mandates plain text with exact labels/steps/values; a display-side scrubber strips any `**`/headers the model slips in (replies render as raw text, so asterisks were showing literally).
+- **Learning memory:** new `src/sageMemory.js` — every question, screen visit and navigation feeds a device-only memory; every 10 questions one cheap call distills it into ≤18 durable insights injected into Sage's prompt. Persona grows guide → architect → solution expert → consultant, with a standing creator-respect rule (never claim to surpass or disrespect the creator/team).
+- **Guide "screenshots":** new `Shot` mockup system in the User Guide — five beautiful theme-aware vector screen mockups (providers, chat w/ mic highlighted, collaborate w/ diffs + permission modal, Agent Studio, Scheduler) with accent highlight rings + captions. Honest choice: vector mockups, not PNGs (no running app to capture; they also never go stale and match light/dark).
+- APP-GUIDE updated so Sage can describe its own new powers. Gates: `npm run build` + full restart; this batch is the uncommitted diff on top of the harness commit.
+
+### 🧑 "Mic not working correctly — simple Windows mic, hear user, type to Sage as text" → 🤖 root-caused + simplified
+- **Root cause:** Electron's `webkitSpeechRecognition` exists but silently does nothing (needs a cloud speech service desktop apps don't get) — any fall-through to it on desktop = "click mic, nothing happens". (A stale preload before full restart produces the same symptom.)
+- **Now:** desktop mic = Windows-native engine ONLY; recognized words are TYPED into Sage's input box for the user to read and send (no auto-send). win-speech.cjs hardened: recognizer-culture fallback, UTF-8, friendly errors with exact Windows Settings paths, babble-abort removed, 10s listen window, hard kill. Web build keeps the browser engine. Composer verified unaffected.
+
+### 🧑 "Sage = app-only expert: learn the app + user, never search the web, not generic knowledge, work with model keys" → 🤖 SCOPE LOCKED (standing directive)
+- SYS hard rules: only domain is BrainEdge + this user; general-knowledge questions declined in one warm sentence and handed to the right surface with a GOTO (chat/build/agents); no web, no outside facts, no pretending — sources are the two guides + learned memory only.
+- Model keys: unchanged engine (completeOnce on the selector's profile — any provider/key); key/model failures now answer plainly with a "GOTO: models" button to Model configuration.
+- Hello copy → "Your BrainEdge guide"; APP-GUIDE updated so Sage self-describes the scope. This is a STANDING rule for all future Sage work.
+
+### 🧑 "Build: cross-chat memory, office files, deep research, image gen, study mode, share links, daily brief, canvas" → 🤖 SIX BUILT, TWO QUEUED WITH SPECS
+- **Cross-chat memory:** user-memory.cjs (+ web mirror) — durable facts about the user follow them into EVERY conversation; learned automatically (throttled), injected via withLang; view/edit/toggle/forget in Settings → Profile → Memory.
+- **In-chat office files:** ask for a spreadsheet/Word/PowerPoint/PDF in any chat → the model emits an officedoc spec → a file card appears → Download builds the REAL file on-device (new deps xlsx/docx/pptxgenjs/jspdf → npm install).
+- **Image generation:** new create_image tool in every mode — uses the SELECTOR's model (e.g. google/gemini-2.5-flash-image on OpenRouter); image shows inside the tool card with hover-Download, saved to creations/; base64 never bloats the conversation.
+- **Study & Learn:** distinct from Sage (app guide) — new Learning category + Tutor persona: Socratic method, one concept at a time, honest mini-quizzes, teaches from attached knowledge files.
+- **Editable Canvas:** ArtifactPanel gained an Edit tab — type directly OR select a region and "Revise with AI" (targeted replacement), 10-step undo, preview/download use the edited content.
+- **Daily brief:** Scheduler target "Daily brief" — digests recent conversations + agent work + today's schedules into a <180-word morning note each run.
+- **Queued w/ full specs in MEMORY.md:** Deep Research mode (research.cjs + deep_research tool) and Shareable conversation links (server endpoints + Share action) — cross-system builds deliberately not rushed at session end.
+- Gates: npm install → npm run build → FULL restart → commit. Everything since the harness commit is one diff.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput, Palette, Sparkles, Server, Globe } from "lucide-react";
+import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput, Palette, Sparkles, Server, Globe, Brain, Pencil } from "lucide-react";
 import ModelPicker from "./ModelPicker.jsx";
 import AccountCard from "../auth/AccountCard.jsx";
 import AdminPanel from "../auth/AdminPanel.jsx";
@@ -131,6 +131,8 @@ export default function Settings({ onChanged }) {
               </div>
             </div>
 
+            <UserMemoryCard s={s} setField={setField} />
+
             <details className="prof-adv">
               <summary><Server size={13} /> Advanced</summary>
               <Field label="Account server URL">
@@ -256,6 +258,57 @@ function AgentBrowserSettings({ s, setField }) {
       <div className="ag-hint" style={{ marginTop: 6 }}>
         Changes apply to the next browser action. Per-agent allowlists are set on each agent in the Studio (Browser capability).
       </div>
+    </div>
+  );
+}
+
+/* Cross-chat memory — what BrainEdge remembers about you, everywhere.
+   Lives in a local file on this device; injected only into your own model's prompts. */
+function UserMemoryCard({ s, setField }) {
+  const [notes, setNotes] = useState(null); // null = loading
+  const [edit, setEdit] = useState(null);   // editable text or null
+  const enabled = !s.userMemory || s.userMemory.enabled !== false;
+  useEffect(() => { bridge.getUserMemory?.().then((m) => setNotes((m && m.notes) || [])).catch(() => setNotes([])); }, []);
+  const saveEdit = async () => {
+    const list = (edit || "").split("\n").map((l) => l.replace(/^[-•]\s*/, "").trim()).filter(Boolean);
+    const m = await bridge.setUserMemory?.(list);
+    setNotes((m && m.notes) || []); setEdit(null);
+  };
+  return (
+    <div className="prof-card">
+      <div className="prof-card-h"><span className="prof-ico"><Brain size={15} /></span> Memory</div>
+      <p className="prof-sub">
+        BrainEdge quietly remembers durable facts about you (preferences, your projects, corrections) and applies them
+        in <b>every</b> conversation. Stored only on this device — view and edit everything below.
+      </p>
+      <label className="chip" style={{ cursor: "pointer", display: "inline-flex", marginBottom: 10 }}>
+        <input type="checkbox" checked={enabled} style={{ marginRight: 6 }}
+          onChange={() => setField("userMemory", { ...(s.userMemory || {}), enabled: !enabled })} />
+        Remember things about me across chats
+      </label>
+      {!enabled && <div className="ag-hint" style={{ margin: "0 0 8px" }}>Memory is off — existing notes are kept but not used, and nothing new is learned.</div>}
+      {edit !== null ? (
+        <>
+          <textarea className="model-search" rows={6} style={{ resize: "vertical", fontFamily: "inherit" }}
+            value={edit} onChange={(e) => setEdit(e.target.value)} placeholder="One memory per line" />
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button className="btn primary" onClick={saveEdit}><Save size={13} /> Save memory</button>
+            <button className="btn ghost" onClick={() => setEdit(null)}>Cancel</button>
+          </div>
+        </>
+      ) : (
+        <>
+          {notes === null && <div className="ag-hint" style={{ margin: 0 }}>Loading…</div>}
+          {notes && notes.length === 0 && <div className="ag-hint" style={{ margin: 0 }}>Nothing remembered yet — as you chat, durable facts you share (preferences, what you're building) will appear here.</div>}
+          {(notes || []).slice().reverse().map((n, i) => (
+            <div key={i} style={{ fontSize: 12.5, padding: "5px 0", borderBottom: "1px dashed color-mix(in srgb, currentColor 10%, transparent)" }}>• {n.text}</div>
+          ))}
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <button className="btn ghost" onClick={() => setEdit((notes || []).map((n) => n.text).join("\n"))}><Pencil size={12} /> Edit</button>
+            {(notes || []).length > 0 && <button className="btn ghost" style={{ color: "var(--danger)" }} onClick={async () => { await bridge.clearUserMemory?.(); setNotes([]); }}><Trash2 size={12} /> Forget everything</button>}
+          </div>
+        </>
+      )}
     </div>
   );
 }

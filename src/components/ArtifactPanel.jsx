@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { X, Eye, Code as CodeIcon, ExternalLink, Copy, Download, RotateCw, Check } from "lucide-react";
+import { useRef, useState } from "react";
+import { X, Eye, Code as CodeIcon, ExternalLink, Copy, Download, RotateCw, Check, Pencil, Sparkles, Undo2, Loader2 } from "lucide-react";
 import { artifactSrcDoc } from "../artifacts.js";
+import { bridge } from "../bridge/index.js";
 
 const EXT = { html: "html", svg: "svg", markdown: "md", react: "jsx", mermaid: "mmd", code: "txt" };
 
@@ -8,14 +9,73 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
   // Version history: when the conversation produced several artifacts of the same type
   // (iterations on one page/diagram/component), let the user flip between them.
   const [vIdx, setVIdx] = useState(-1); // -1 = the artifact that was clicked (latest intent)
-  const artifact = vIdx >= 0 && versions[vIdx] ? versions[vIdx] : artifactProp;
-  const [tab, setTab] = useState(artifact.previewable ? "preview" : "code");
+  const baseArtifact = vIdx >= 0 && versions[vIdx] ? versions[vIdx] : artifactProp;
+  const [tab, setTab] = useState(baseArtifact.previewable ? "preview" : "code");
   const [copied, setCopied] = useState(false);
   const [nonce, setNonce] = useState(0); // bump to reload the preview iframe
 
-  const copy = async () => { try { await navigator.clipboard.writeText(artifact.code); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch {} };
+  // ---- EDITABLE CANVAS ----
+  // The artifact is no longer preview-only: the Edit tab is a live canvas — type
+  // directly, or select a region and ask the AI for a targeted revision. Every AI
+  // revision is undoable; Download/Copy/Preview always use the edited content.
+  const [draft, setDraft] = useState(null);        // null = unedited (show base code)
+  const [editHistory, setEditHistory] = useState([]); // undo stack of previous drafts
+  const [revise, setRevise] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiErr, setAiErr] = useState("");
+  const taRef = useRef(null);
+  const code = draft != null ? draft : baseArtifact.code;
+  const artifact = draft != null ? { ...baseArtifact, code } : baseArtifact;
+  const pickVersion = (i) => { setVIdx(i); setDraft(null); setEditHistory([]); setAiErr(""); };
+
+  const applyAi = async () => {
+    const instruction = revise.trim();
+    if (!instruction || aiBusy) return;
+    setAiBusy(true); setAiErr("");
+    try {
+      const ta = taRef.current;
+      const selStart = ta && ta.selectionStart !== ta.selectionEnd ? ta.selectionStart : -1;
+      const selEnd = ta ? ta.selectionEnd : -1;
+      const strip = (t) => String(t || "").replace(/^```[a-z]*\s*\n?/i, "").replace(/\n?```\s*$/, "").trim();
+      let next;
+      if (selStart >= 0) {
+        // Targeted revision: only the selected region changes; the rest is untouched.
+        const before = code.slice(0, selStart), sel = code.slice(selStart, selEnd), after = code.slice(selEnd);
+        const r = await bridge.completeOnce([
+          { role: "system", content: "You are a precise canvas editor. The user selected a REGION of a document/file and gave an instruction. Output ONLY the replacement for the selected region — no fences, no commentary, no surrounding text." },
+          { role: "user", content: `INSTRUCTION: ${instruction}\n\nCONTEXT BEFORE (do not output):\n…${before.slice(-800)}\n\nSELECTED REGION (replace this):\n${sel}\n\nCONTEXT AFTER (do not output):\n${after.slice(0, 800)}…` },
+        ]);
+        if (!r || r.error || !r.text) throw new Error((r && r.error) || "no reply");
+        next = before + strip(r.text) + after;
+      } else {
+        const r = await bridge.completeOnce([
+          { role: "system", content: "You are a precise canvas editor. Apply the instruction to the document/file and output ONLY the complete updated content — no fences, no commentary." },
+          { role: "user", content: `INSTRUCTION: ${instruction}\n\nCONTENT:\n${code.slice(0, 60000)}` },
+        ]);
+        if (!r || r.error || !r.text) throw new Error((r && r.error) || "no reply");
+        next = strip(r.text);
+      }
+      if (next && next !== code) {
+        setEditHistory((h) => [...h.slice(-9), code]); // keep last 10 undo states
+        setDraft(next);
+        setRevise("");
+        setNonce((n) => n + 1);
+      }
+    } catch (e) { setAiErr(String((e && e.message) || e).slice(0, 140)); }
+    finally { setAiBusy(false); }
+  };
+  const undo = () => {
+    setEditHistory((h) => {
+      if (!h.length) return h;
+      setDraft(h[h.length - 1]);
+      setNonce((n) => n + 1);
+      return h.slice(0, -1);
+    });
+  };
+
+  const copy = async () => { try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch {} };
   const download = () => {
-    const blob = new Blob([artifact.code], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `artifact.${EXT[artifact.kind] || "txt"}`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -39,18 +99,20 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
   return (
     <div className="artifact-wrap" style={{ width: "46%", maxWidth: 760 }}>
       <div className="artifact-head">
-        <span className="artifact-title">{artifact.title}</span>
+        <span className="artifact-title">{artifact.title}{draft != null && <i className="artifact-edited"> · edited</i>}</span>
         {versions.length > 1 && (
-          <select className="artifact-ver" title="Version history" value={vIdx} onChange={(e) => setVIdx(Number(e.target.value))}>
+          <select className="artifact-ver" title="Version history" value={vIdx} onChange={(e) => pickVersion(Number(e.target.value))}>
             <option value={-1}>latest</option>
             {versions.map((_, i) => <option key={i} value={i}>v{i + 1}{i === versions.length - 1 ? " (newest)" : ""}</option>)}
           </select>
         )}
         <div className="artifact-tabs">
           {artifact.previewable && <button className={`artifact-tab ${tab === "preview" ? "active" : ""}`} onClick={() => setTab("preview")}><Eye size={13} /> Preview</button>}
+          <button className={`artifact-tab ${tab === "edit" ? "active" : ""}`} onClick={() => setTab("edit")}><Pencil size={13} /> Edit</button>
           <button className={`artifact-tab ${tab === "code" ? "active" : ""}`} onClick={() => setTab("code")}><CodeIcon size={13} /> Code</button>
         </div>
         <div className="artifact-actions">
+          {editHistory.length > 0 && <button className="artifact-ico" title="Undo last AI revision" onClick={undo}><Undo2 size={14} /></button>}
           {tab === "preview" && artifact.previewable && <button className="artifact-ico" title="Refresh preview" onClick={() => setNonce((n) => n + 1)}><RotateCw size={14} /></button>}
           {artifact.previewable && <button className="artifact-ico" title="Open in new tab" onClick={openTab}><ExternalLink size={14} /></button>}
           <button className="artifact-ico" title="Copy code" onClick={copy}>{copied ? <Check size={14} /> : <Copy size={14} />}</button>
@@ -61,8 +123,34 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
       <div className="artifact-body">
         {tab === "preview" && artifact.previewable ? (
           <iframe key={nonce} className="artifact-frame" sandbox="allow-scripts allow-forms allow-popups allow-modals" srcDoc={artifactSrcDoc(artifact)} title="artifact preview" />
+        ) : tab === "edit" ? (
+          <div className="artifact-canvas">
+            <textarea
+              ref={taRef}
+              className="artifact-edit"
+              value={code}
+              spellCheck={false}
+              onChange={(e) => {
+                if (draft == null) setEditHistory((h) => [...h.slice(-9), code]);
+                setDraft(e.target.value);
+              }}
+            />
+            <div className="artifact-revise">
+              <Sparkles size={14} style={{ flex: "none", color: "var(--accent)" }} />
+              <input
+                value={revise}
+                placeholder="Ask AI to revise — select text first for a targeted edit, or leave unselected to revise the whole thing"
+                onChange={(e) => setRevise(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") applyAi(); }}
+              />
+              <button className="btn primary" disabled={aiBusy || !revise.trim()} onClick={applyAi}>
+                {aiBusy ? <Loader2 size={13} className="ag-spin" /> : "Revise"}
+              </button>
+            </div>
+            {aiErr && <div className="artifact-aierr">{aiErr}</div>}
+          </div>
         ) : (
-          <pre className="artifact-code">{artifact.code}</pre>
+          <pre className="artifact-code">{code}</pre>
         )}
       </div>
     </div>

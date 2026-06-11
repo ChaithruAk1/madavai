@@ -59,16 +59,63 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   const fileMatches = atOpen ? dirFiles.filter((f) => !aq || (f.name || "").toLowerCase().includes(aq)).slice(0, 40) : [];
   const atFlat = [...connMatches.map((c) => ({ type: "connector", data: c })), ...fileMatches.map((f) => ({ type: "file", data: f }))];
 
-  // Read one File into the attachments list — images as data URLs (for vision), text inline.
-  const ingest = (f) => {
+  // Read one File into the attachments list — images as data URLs (for vision),
+  // office files PARSED to text (xlsx → CSV per sheet, docx → raw text), plain text
+  // inline, and unreadable binary REFUSED with a friendly note. Before this guard,
+  // attaching an .xlsx dumped raw ZIP bytes into the chat (and torched the tokens).
+  const BINARY_EXT = /\.(zip|7z|rar|gz|tar|exe|dll|msi|iso|bin|dat|class|jar|so|dylib|woff2?|ttf|otf|mp3|wav|mp4|mov|avi|mkv|pptx?|db|sqlite)$/i;
+  const addFile = (name, content) => setFiles((prev) => [...prev, { name, content }]);
+  const ingest = async (f) => {
     if (!f) return;
-    const r = new FileReader();
-    if ((f.type || "").startsWith("image/")) {
-      r.onload = () => setFiles((prev) => [...prev, { name: f.name || "pasted-image.png", image: true, dataUrl: String(r.result || "") }]);
-      r.readAsDataURL(f);
-    } else {
-      r.onload = () => setFiles((prev) => [...prev, { name: f.name || "pasted-file", content: String(r.result || "").slice(0, 20000) }]);
-      r.readAsText(f);
+    const name = f.name || "pasted-file";
+    const lower = name.toLowerCase();
+    try {
+      if ((f.type || "").startsWith("image/")) {
+        const r = new FileReader();
+        r.onload = () => setFiles((prev) => [...prev, { name: f.name || "pasted-image.png", image: true, dataUrl: String(r.result || "") }]);
+        r.readAsDataURL(f);
+        return;
+      }
+      if (/\.(xlsx|xls)$/i.test(lower)) {
+        // Real spreadsheet support: parse to CSV per sheet so the model can reason over it.
+        const buf = await f.arrayBuffer();
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(buf, { type: "array" });
+        let out = "";
+        for (const sn of (wb.SheetNames || []).slice(0, 8)) {
+          out += `--- sheet: ${sn} ---\n` + XLSX.utils.sheet_to_csv(wb.Sheets[sn]).slice(0, 12000) + "\n";
+        }
+        addFile(name, out.slice(0, 24000) || "(empty spreadsheet)");
+        return;
+      }
+      if (/\.docx$/i.test(lower)) {
+        const buf = await f.arrayBuffer();
+        const m = await import("mammoth/mammoth.browser.js");
+        const mam = m.default || m;
+        const r = await mam.extractRawText({ arrayBuffer: buf });
+        addFile(name, String((r && r.value) || "").slice(0, 24000) || "(empty document)");
+        return;
+      }
+      if (/\.pdf$/i.test(lower)) {
+        addFile(name, `(PDF "${name}" attached — chat can't extract PDF text yet. Add it to a Project's knowledge instead — Projects parse PDFs — and chat there.)`);
+        return;
+      }
+      if (BINARY_EXT.test(lower)) {
+        addFile(name, `(binary file "${name}" attached — it can't be read as text, so its contents were not included)`);
+        return;
+      }
+      // Plain text — with a binary sniff so mystery files can't dump garbage.
+      const text = await f.text();
+      const sample = text.slice(0, 2000);
+      let ctrl = 0;
+      for (let i = 0; i < sample.length; i++) { const c = sample.charCodeAt(i); if (c === 0xfffd || (c < 32 && c !== 9 && c !== 10 && c !== 13)) ctrl++; }
+      if (sample && ctrl / sample.length > 0.05) {
+        addFile(name, `(file "${name}" looks binary — its contents can't be read as text and were not included)`);
+        return;
+      }
+      addFile(name, text.slice(0, 20000));
+    } catch (e) {
+      addFile(name, `(couldn't read "${name}": ${String((e && e.message) || e).slice(0, 100)})`);
     }
   };
 
@@ -158,6 +205,20 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   // the Web Speech API on browsers that have it (web build in Chrome).
   const toggleMic = async () => {
     if (listening) { try { recRef.current && recRef.current.stop(); } catch {} return; }
+    // Windows-native engine (no key, no model): used once chosen — the Whisper path
+    // below flips this flag the first time it finds no usable key.
+    let winVoice = false; try { winVoice = localStorage.getItem("be.voice.engine") === "win"; } catch {}
+    if (winVoice && bridge.winSpeech) {
+      setListening(true);
+      try {
+        const r = await bridge.winSpeech({ timeoutSec: 12 });
+        if (r && r.text) setText((p) => (p ? p + " " : "") + r.text);
+        else if (r && r.error) alert(r.error);
+      } catch {}
+      setListening(false);
+      ref.current && ref.current.focus();
+      return;
+    }
     if (bridge.transcribe && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -178,6 +239,12 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
             });
             const r = await bridge.transcribe({ b64, mime });
             if (r && r.text) setText((p) => (p ? p + " " : "") + r.text);
+            else if (r && r.error && /key/i.test(r.error) && bridge.winSpeech) {
+              // No Whisper key → switch this machine to the built-in Windows voice
+              // engine permanently (no key needed). One more tap and it just works.
+              try { localStorage.setItem("be.voice.engine", "win"); } catch {}
+              alert("No speech key found — switched to the built-in Windows voice engine. Tap the mic again and speak.");
+            }
             else if (r && r.error) alert(r.error);
           } catch (e) { alert("Transcription failed: " + String((e && e.message) || e)); }
           ref.current && ref.current.focus();

@@ -218,6 +218,12 @@ ipcMain.handle("brainedge:getSpeedTestStatus", () => ({ running: speedRunning, s
 const orCatalog = require("./openrouter-catalog.cjs");
 ipcMain.handle("brainedge:getOpenRouterCatalog", (_e, opts) => orCatalog.getCatalog(opts || {}));
 
+// ---- IPC: cross-chat user memory (view / edit / clear from Settings → Profile) ----
+const userMemory = require("./user-memory.cjs");
+ipcMain.handle("brainedge:getUserMemory", () => userMemory.get());
+ipcMain.handle("brainedge:setUserMemory", (_e, notes) => userMemory.setNotes(notes));
+ipcMain.handle("brainedge:clearUserMemory", () => userMemory.clear());
+
 // ---- IPC: measured per-model harness stats (tool discipline; PLAN-AGENT-PARITY 3.1) ----
 ipcMain.handle("brainedge:getModelStats", () => {
   try {
@@ -442,6 +448,17 @@ ipcMain.handle("brainedge:addKnowledgeText", (_e, { projectId, name, content }) 
 // the file is skipped with a clear reason instead of importing garbage.
 async function knowledgeText(fp) {
   const ext = path.extname(fp).toLowerCase();
+  if (ext === ".xlsx" || ext === ".xls") {
+    // Spreadsheets become CSV per sheet so models can reason over the rows.
+    const XLSX = require("xlsx"); // lazy: only loaded when a spreadsheet is imported
+    const wb = XLSX.read(fs.readFileSync(fp), { type: "buffer" });
+    let out = "";
+    for (const sn of (wb.SheetNames || []).slice(0, 12)) {
+      out += `--- sheet: ${sn} ---\n` + XLSX.utils.sheet_to_csv(wb.Sheets[sn]).slice(0, 60000) + "\n";
+    }
+    if (!out.trim()) throw new Error("empty spreadsheet");
+    return out;
+  }
   if (ext === ".pdf") {
     const pdfParse = require("pdf-parse"); // lazy: only loaded when a PDF is imported
     const data = await pdfParse(fs.readFileSync(fp));
@@ -461,7 +478,11 @@ async function knowledgeText(fp) {
 ipcMain.handle("brainedge:addKnowledgeFile", async (_e, projectId) => {
   const r = await dialog.showOpenDialog(win, {
     properties: ["openFile", "multiSelections"],
-    filters: [{ name: "Docs & text", extensions: ["pdf", "docx", "txt", "md", "markdown", "json", "csv", "log", "yml", "yaml", "js", "ts", "py", "html", "xml"] }],
+    filters: [
+      { name: "Documents & data", extensions: ["pdf", "docx", "xlsx", "xls", "csv", "txt", "md", "markdown", "json", "log", "yml", "yaml", "js", "ts", "py", "html", "xml"] },
+      { name: "Spreadsheets", extensions: ["xlsx", "xls", "csv"] },
+      { name: "All files", extensions: ["*"] },
+    ],
   });
   if (r.canceled) return { canceled: true };
   let added = 0; const skipped = [];
@@ -565,6 +586,11 @@ ipcMain.handle("brainedge:newWebhookToken", () => webhookServer.newToken());
 // Voice — push-to-talk transcription via the user's own Whisper-capable key.
 const voice = require("./voice.cjs");
 ipcMain.handle("brainedge:transcribe", (_e, args) => voice.transcribe(args || {}));
+// Windows-native speech-to-text: OS recognizer, no key, no network (win-speech.cjs).
+ipcMain.handle("brainedge:winSpeech", (_e, args) => {
+  try { return require("./win-speech.cjs").recognizeOnce((args || {}).timeoutSec); }
+  catch (e) { return { error: String((e && e.message) || e) }; }
+});
 
 // Swarms — run one agent over a list with a bounded parallel pool.
 const swarmAborts = new Map(); // swarmId -> AbortController

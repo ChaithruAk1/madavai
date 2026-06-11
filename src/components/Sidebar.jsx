@@ -94,8 +94,8 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     : st === "active" ? (plan || "Pro plan") : st === "trialing" ? `Trial · ${acct ? acct.daysLeft : 0}d left` : st === "expired" ? "Trial ended" : (acct ? "Account" : "Sign in");
   const signOut = async () => { setMenuOpen(false); try { await bridge.authSignOut?.(); } catch {} try { location.reload(); } catch {} };
   const manage = async () => { setMenuOpen(false); if (st === "active" && bridge.billingPortal) { try { await bridge.billingPortal(); } catch {} } else { upgrade(); } };
-  // Help now opens the in-app User Guide instead of an external mail link.
-  const getHelp = () => { setMenuOpen(false); onSelect("guide"); };
+  // "Get help" was removed from the menu — it duplicated User Guide exactly
+  // (and Sage floats on every screen for live questions).
 
   // Default-response-language picker, lives in the account menu now.
   const [lang, setLang] = useState("model");
@@ -249,7 +249,6 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
                   ))}
                 </div>
               )}
-              <button className="sb-acct-item" onClick={getHelp}><HelpCircle size={15} /> Get help</button>
               {(paidSub || (!isComp && (st === "trialing" || st === "expired"))) && <div className="sb-acct-div" />}
               {paidSub
                 ? <button className="sb-acct-item" onClick={manage}><CreditCard size={15} /> Manage subscription</button>

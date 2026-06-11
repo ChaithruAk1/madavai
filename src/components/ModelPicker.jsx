@@ -90,10 +90,14 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     for (const g of source) for (const it of g.items) { const k = makerOf(it, g.group); if (k) m.set(k, (m.get(k) || 0) + 1); }
     return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [source]);
+  // Agent Studio no longer HIDES non-agentic models (local models often lack agentic
+  // metadata yet still work as agents). It's now a soft "Agent-ready" TOGGLE the user
+  // can switch on; off by default, every model is selectable.
+  const [agOnly, setAgOnly] = useState(false);
   const groups = source
     .map((g) => ({ ...g, items: g.items.filter((it) => {
       if (!(it.name + it.id).toLowerCase().includes(q.toLowerCase())) return false;
-      if (agenticOnly && !CAPS.agentic(it)) return false; // Agent Studio: tool-capable models only
+      if (agOnly && !CAPS.agentic(it)) return false; // only when the user opts in
       if (maker !== "all" && makerOf(it, g.group) !== maker) return false;
       const free = isFree(it, g.group);
       if (cost === "free" && !free) return false;
@@ -146,13 +150,14 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
               <button key={k} onClick={() => setCost(k)} style={chipStyle(cost === k)}>{label}</button>
             ))}
             <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "2px 4px" }} />
-            {(agenticOnly
-              ? [["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"]]
-              : [["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"], ["agentic", "Agentic"]]
-            ).map(([k, label]) => (
+            {[["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"], ["agentic", "Agentic"]].map(([k, label]) => (
               <button key={k} onClick={() => setCaps((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; })} style={chipStyle(caps.has(k))}>{label}</button>
             ))}
-            {agenticOnly && <span style={pill(PURPOSE_COLOR.agentic)}>agent-ready only</span>}
+            {agenticOnly && (
+              <button onClick={() => setAgOnly((v) => !v)} style={chipStyle(agOnly)} title="Show only models tagged tool-capable. Off by default — local models may work as agents even without the tag.">
+                {agOnly ? "✓ " : ""}Agent-ready only
+              </button>
+            )}
             <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-3)", fontVariantNumeric: "tabular-nums" }}>{shown} of {total}</span>
           </div>
 

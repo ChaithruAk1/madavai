@@ -72,6 +72,31 @@ async function runTask(task) {
       const r = await mission.runTeamHeadless({ team, prompt: task.prompt, source, profile: task.model ? profile : null });
       return { status: r.ok ? "success" : "error", output: r.text.slice(0, 20000) };
     }
+    // Proactive daily brief ("Pulse-lite"): gathers what happened in BrainEdge —
+    // recent conversations, agent runs, today's schedules — and writes a short
+    // morning digest. Schedule it daily; read it in the task's run history (and
+    // on Telegram if Via Mobile is configured — the bot replays task runs).
+    if (target.type === "brief") {
+      let ctx = "";
+      try {
+        const sstore = require("./sessions-store.cjs");
+        const recent = (sstore.listSessions() || []).slice(0, 12).map((s) => `- ${s.title || "(untitled)"} (${new Date(s.updatedAt || s.createdAt || Date.now()).toLocaleString()})`).join("\n");
+        ctx += "RECENT CONVERSATIONS:\n" + (recent || "(none)") + "\n\n";
+      } catch {}
+      try {
+        const ah = require("./agent-history.cjs");
+        const st = ah.stats ? ah.stats() : null;
+        if (st) ctx += "AGENT WORKFORCE (mission stats): " + JSON.stringify(st).slice(0, 1200) + "\n\n";
+      } catch {}
+      try {
+        const ts = require("./task-store.cjs");
+        const all = (ts.list ? ts.list() : []) || [];
+        ctx += "SCHEDULED TASKS:\n" + all.slice(0, 12).map((t) => `- ${t.name || t.prompt?.slice(0, 50) || t.id} (${t.schedule || "manual"})`).join("\n") + "\n\n";
+      } catch {}
+      const sys = "You write a crisp morning brief for the user of BrainEdge (their AI workspace). From the activity context, produce: 1) a 2-3 sentence summary of what's been happening, 2) anything that needs their attention today (scheduled work, unfinished threads), 3) ONE suggested next action. Warm, plain language, no markdown headers, under 180 words." + (task.prompt ? "\nThe user also asked the brief to cover: " + task.prompt : "");
+      const r = await streamChat(profile, [{ role: "system", content: sys }, { role: "user", content: ctx.slice(0, 12000) || "(no activity recorded yet)" }], { onDelta: () => {} });
+      return { status: "success", output: (r.text || "(no brief)").slice(0, 8000) };
+    }
     if (target.type === "project") {
       const project = store.getProject(target.projectId);
       if (!project) return { status: "error", output: "Project not found." };
