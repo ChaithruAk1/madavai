@@ -8,7 +8,9 @@
 > corrects stale facts (app is now "Madav" not "Chai"; bridge is `window.madav`; the "Dispatch"
 > feature was renamed; copyright owner is Samskruthi Harish). Read Section 10 first.
 >
-> ⚡ NEWEST STATE: see **§14 (very bottom)** — 2026-06-11: full code review (CODE-REVIEW-2026-06-11.md) +
+> ⚡ NEWEST STATE: see **§14 (very bottom)**; latest sub-section **§14i** — 2026-06-11 (later): static
+> verification of the whole mega-diff (clean) + skip-autonomy permissions crash FIXED; build gate still
+> pending on the user's machine. Earlier same-day: full code review (CODE-REVIEW-2026-06-11.md) +
 > ALL findings fixed (5 high / 12 med / 14 low + error boundary) + project-scoped Let's Collaborate
 > (categorized project Chats/Tasks, "Start work in Let's Collaborate"). Still ONE big uncompiled diff.
 > Older context: §13 — 2026-06-10/11 sessions. After the user committed the
@@ -41,7 +43,7 @@ talks to providers directly and runs its own agent loop.
 ## 2. Locations / run / commit
 
 - Repo (local): `C:\Projects\ClaudeCodeUI\Madav`
-- GitHub remote: `https://github.com/chaithruak/brainedge.git` (branch `main`)
+- GitHub remote: `https://github.com/chaithruak/madav.git` (branch `main`) — repo renamed 2026-06-11; use this URL everywhere going forward
 - Settings file at runtime: `%APPDATA%\madav\chai-settings.json`
 - Run (browser UI, mock data): `npm install` then `npm run dev` (http://localhost:5174)
 - Run (full desktop app): `npm run electron:dev`
@@ -1109,6 +1111,13 @@ Sequence small→big, 3+4 parallel agents on disjoint files + my wiring pass. NO
 - ROOT CAUSE: the entire **`.agsd-*` block was MISSING from styles.css** (same §12a corruption class — the Designer-room redesign's styles were never restored after the whole-file rewrite incident; only 2 stray `.sage-panel-msgs .agsd-*` refs survived). The Designer pane rendered completely unstyled: dumped persona chips, truncated header/name/composer, overlapping sections.
 - FIXED: (1) **casting call restructured** in Agents.jsx — personas now grouped by profession category (uses the existing `cat` field) with uppercase section headers; hint text folded into the sub-line (it was overlapping the composer); (2) **full `.agsd-*` design block appended** to styles.css (~80 rules): pane = flex column min-height:0 so ONLY the chat scrolls (header/refine/composer/blueprint-toggle fixed), smooth scroll + overscroll-contain, chip pills w/ hover lift, say/sheet bubbles, meter, composer, bp-toggle, vitals, id-pulse; `.ags-split > * { min-height: 0 }` + `.ags-name { flex:1; min-width:140px }` fix the truncations; <880px the chip role labels hide before names truncate. TARGETED APPEND only (standing rule).
 - LESSON recorded: when a screen looks "dumped/unstyled", grep styles.css for the component's class prefix FIRST — missing CSS block = §12a corruption survivor.
+
+### 14i. SESSION — 2026-06-11 (later): PRE-BUILD STATIC VERIFICATION PASS (sandbox down again)
+- Sandbox VM failed to start (same degraded state) → could NOT run npm install/build. Instead: **5 parallel read-only agents statically verified the entire uncompiled mega-diff** (renderer core / Agents+Sage+Composer / webBridge+shared / electron main / server+CLI): all imports resolve, all named imports match real exports, no duplicate declarations, no JSX imbalance, no CJS↔ESM violations, zero contiguous brainedge literals (concat form everywhere), apiBase exported, Section hoist correct, sageKnowledge glob path correct, store.col allowlists + XSS escaping verified. **No build breakers found statically.**
+- **FIXED (real latent crash):** session-manager `_permsFor` "skip" autonomy passed `async () => false` as `permissions`, but agent-openai's askPermission/askUserQuestion call `permissions.set(id, cb)` → "permissions.set is not a function" the moment a skip-autonomy agent hit a gated tool. Now a Map-compatible auto-deny shim (set invokes cb({behavior:"deny"}) on a microtask; UI clears the card via the permission_denied that follows; ask_user falls back to "proceed with your best judgment").
+- **Remaining flagged suspect (not fixed, likely fine):** Composer.jsx `import("mammoth/mammoth.browser.js")` — documented mammoth browser entry, no exports-map restriction, lazy + try/caught; only real build run settles it (known fallback: `import("mammoth")`).
+- **TOOLING QUIRK recorded:** the host Grep tool can MANGLE `//` comment prefixes into `\` in its output (seen in session-manager + agent-openai) — looks like a SyntaxError but isn't. Same rule as §7: **host Read is the source of truth**; confirm any "syntax error" by Reading the exact lines.
+- Gate UNCHANGED: `npm install` (lock regen post-rename) → `npm run build` → FULL restart → smoke (§14 checklist + Extras + both installer channels) → commit. Static pass raises confidence but compiles nothing.
 
 ### 14d. QUEUED (user request 2026-06-11 — specs; NOW BUILT, see 14e)
 Two NEW Settings sections (likely better as sidebar/Settings hybrid — decide at build time). Both need SERVER-side storage (auth-server + store.mjs — community content must be shared across users, not localStorage) and must work web + desktop. Research rider: survey best-in-class implementations (Canny, Productboard, Discourse, GitHub Discussions, Featurebase) and combine the best — minimalistic, futuristic, intuitive, interactive.

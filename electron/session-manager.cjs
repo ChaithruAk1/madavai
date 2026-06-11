@@ -195,7 +195,18 @@ class SessionManager {
   _permsFor(agentLike, fallbackMode) {
     const a = agentLike && agentLike.autonomy;
     if (a === "act") return { permMode: "bypassPermissions", permissions: this.permissions };
-    if (a === "skip") return { permMode: fallbackMode || "default", permissions: async () => false };
+    if (a === "skip") {
+      // Map-compatible AUTO-DENY shim: askPermission/askUserQuestion in agent-openai call
+      // permissions.set(requestId, cb) then emit the request — a bare function here crashed
+      // with "permissions.set is not a function". Invoking cb on a microtask resolves the
+      // prompt as an instant decline (UI clears the card on the permission_denied that follows);
+      // ask_user resolves to its built-in "proceed with your best judgment" fallback.
+      const autoDeny = {
+        set: (_id, cb) => { try { Promise.resolve().then(() => cb({ behavior: "deny" })); } catch {} },
+        get: () => undefined, has: () => false, delete: () => false,
+      };
+      return { permMode: fallbackMode || "default", permissions: autoDeny };
+    }
     return { permMode: fallbackMode || "default", permissions: this.permissions };
   }
 

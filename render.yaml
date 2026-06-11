@@ -1,12 +1,12 @@
 # Render.com blueprint — one service that builds the web app and serves it + the API together.
-# After connecting your repo to Render, this provisions the service; you fill the secret env vars
-# in the dashboard (marked sync:false). See GO-LIVE.md for the full walkthrough.
+# Private-beta launch config per HOSTING-MADAV.md: public-channel web bundle, beta gate ON.
+# Secret env vars (sync:false) are filled in the Render dashboard (Environment tab).
 services:
   - type: web
     name: madav
     runtime: node
-    plan: free
-    buildCommand: npm install && npm run build
+    plan: starter                  # always-on $7/mo (free tier sleeps → OAuth callbacks time out)
+    buildCommand: npm install && npm run build:public
     startCommand: node server/auth-server.mjs
     healthCheckPath: /health
     envVars:
@@ -18,11 +18,19 @@ services:
         generateValue: true        # Render makes a strong random value
       - key: ADMIN_KEY
         generateValue: true
+      - key: AUTH_BASE_URL         # public origin — OAuth redirect URIs are built from this
+        value: https://madav.ai
+      - key: ALLOWED_REDIRECTS     # web app origin allowed as a post-login redirect target
+        value: https://madav.ai
+      - key: PRIVATE_BETA          # beta gate: only admin / complimentary accounts may sign in
+        value: "1"
+      - key: ALLOW_DEV_LOGIN
+        value: "0"
+      - key: ADMIN_EMAILS
+        value: chaithru@gmail.com
+      - key: FREE_EMAILS           # comma-separated tester emails → Complimentary accounts
+        sync: false
       # --- set these yourself in the Render dashboard (Environment tab) ---
-      - key: AUTH_BASE_URL          # your live URL, e.g. https://madav.onrender.com
-        sync: false
-      - key: ALLOWED_REDIRECTS      # same URL (your web app origin)
-        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -31,9 +39,7 @@ services:
         sync: false
       - key: GITHUB_CLIENT_SECRET
         sync: false
-      - key: DATABASE_URL           # Postgres connection string (Supabase/Neon) — keeps data across deploys
-        sync: false
-      - key: ADMIN_EMAILS           # your admin email(s), comma-separated
+      - key: DATABASE_URL          # Supabase Postgres pooling URI — keeps data across deploys
         sync: false
       # --- Stripe (optional; add when you turn on paid plans) ---
       - key: STRIPE_SECRET_KEY
