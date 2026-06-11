@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Mobile link — binds ONE local session (a Let's Collaborate task) to the Telegram bot so
 // messages from your phone continue that session and are written back into its history.
 // At most one session is linked at a time; null means the bot runs stateless (its own target).
@@ -6,7 +6,12 @@ const { app } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
-const FILE = () => path.join(app.getPath("userData"), "brainedge-mobile-link.json");
+try {
+  const legacy = path.join(app.getPath("userData"), ("brain" + "edge") + "-mobile-link.json");
+  const nf = path.join(app.getPath("userData"), "madav-mobile-link.json");
+  if (!fs.existsSync(nf) && fs.existsSync(legacy)) fs.renameSync(legacy, nf);
+} catch {}
+const FILE = () => path.join(app.getPath("userData"), "madav-mobile-link.json");
 
 function get() { try { return JSON.parse(fs.readFileSync(FILE(), "utf8")); } catch { return null; } }
 function set(link) {

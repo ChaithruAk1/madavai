@@ -2,7 +2,7 @@
 
 **Status:** Proposal (research only — no code)
 **Date:** June 2026
-**Scope:** text→image, text→video, image→video, video→transcript — all via the **user's own API keys** (BrainEdge has zero backend compute). Desktop (Electron) writes files locally; web downloads blobs.
+**Scope:** text→image, text→video, image→video, video→transcript — all via the **user's own API keys** (Madav has zero backend compute). Desktop (Electron) writes files locally; web downloads blobs.
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### 1.1 Text → Image
 
-| Provider | API availability | Price (approx.) | Speed | Quality reputation | BYO-key fit for BrainEdge |
+| Provider | API availability | Price (approx.) | Speed | Quality reputation | BYO-key fit for Madav |
 |---|---|---|---|---|---|
 | **OpenAI GPT Image** (gpt-image-1-mini / 1.5 / 2) | GA, self-serve, Images API. DALL·E 2/3 were **removed from the API May 12, 2026** — GPT Image line only | gpt-image-1-mini from ~$0.005; gpt-image-1.5 ~$0.009 (low) – $0.04 (std); gpt-image-2 ~$0.006 (low) / ~$0.053 (med) / ~$0.21 (high) per 1024² | 10–40 s | Excellent text rendering, instruction following; flagship quality | **Excellent** — key already stored (`p_openai`), simple sync REST, base64 or URL response |
 | **Google Gemini image** ("Nano Banana" 2.5 Flash Image; Nano Banana Pro / Gemini 3 Pro Image) | GA on Gemini API (same key as Gemini chat) | ~$0.039/image (2.5 Flash Image); Gemini 3 Pro Image ~$0.134 (1K/2K) – $0.24 (4K); Imagen 4 Fast/Std/Ultra $0.02/$0.04/$0.06 | Fast (Flash tier ~5–15 s) | State of the art editing + multi-turn; Imagen 4 strong photorealism | **Excellent** — key already stored (`p_gemini`); image gen rides the normal `generateContent` shape |
@@ -51,13 +51,13 @@
 **fal.ai pros:** single key + uniform queue API (submit → status → result URL) across image *and* video; hosts Veo, Sora 2, Kling, Pika, FLUX, Wan; latency-optimized; webhooks; often 30–50 % cheaper than rack-rate competitors for hosted OSS models.
 **fal.ai cons:** another account/wallet for the user; pass-through premium on first-party models (Veo via fal ≈ Veo direct price); model deprecations follow upstream; ToS/content moderation layered on top.
 **Replicate pros/cons:** unbeatable breadth (50k+ community models) but cold starts, variable quality, per-second GPU billing is harder to predict.
-**OpenRouter:** already a stored BrainEdge key, now solid for **image** generation (`modalities` param) — meaning P1 image gen may need *zero* new keys for many users. Video support exists but is thin; don't bet P2 on it yet.
+**OpenRouter:** already a stored Madav key, now solid for **image** generation (`modalities` param) — meaning P1 image gen may need *zero* new keys for many users. Video support exists but is thin; don't bet P2 on it yet.
 
 **Verdict:** *Hybrid.* Use **direct keys the user already has** (OpenAI, Gemini, Groq, OpenRouter) for the core path, and add **fal.ai as one optional "power-up" key** that unlocks Kling/Pika/Wan and price-shopping for video. Avoid requiring 5 new accounts.
 
 ---
 
-## 2. Recommended architecture for BrainEdge
+## 2. Recommended architecture for Madav
 
 ### 2.1 Wiring order (which providers first)
 
@@ -74,13 +74,13 @@ Direct-first, aggregator-second (see 1.4). Concretely: a `mediaProviders` regist
 Chat is request/stream; **video is submit/poll (1–6 minutes)**. Proposed shape:
 
 - A **MediaJob** record: `{ id, capability, engine, params, status: queued|running|succeeded|failed, providerJobId, costEstimate, resultPath|resultBlobUrl, createdAt }`, persisted (desktop: userData JSON/SQLite; web: IndexedDB) so jobs survive reload/restart.
-- A **poller** in the Electron main process (and a web worker on web) polls provider status endpoints with exponential backoff (2 s → 15 s). Veo: poll operation until `done`; fal: queue status endpoint; OpenAI Images: synchronous, no poll. Webhooks are *not* usable — BrainEdge has no server — so polling is the design, and that's fine.
+- A **poller** in the Electron main process (and a web worker on web) polls provider status endpoints with exponential backoff (2 s → 15 s). Veo: poll operation until `done`; fal: queue status endpoint; OpenAI Images: synchronous, no poll. Webhooks are *not* usable — Madav has no server — so polling is the design, and that's fine.
 - **Resume on launch:** on app start, re-poll any `running` jobs (provider job IDs are durable for hours on Veo/fal).
 - UI: a "Creations" tray showing in-flight jobs with progress, cancel, and retry; generation must never block chat.
 
 ### 2.4 File handling: desktop vs web
 
-- **Desktop:** download result MP4/PNG via main process to `~/BrainEdge/Creations/` (user-configurable); store path on the job; thumbnail in renderer. ffmpeg static binary for audio extraction + optional re-encode/thumbnail generation.
+- **Desktop:** download result MP4/PNG via main process to `~/Madav/Creations/` (user-configurable); store path on the job; thumbnail in renderer. ffmpeg static binary for audio extraction + optional re-encode/thumbnail generation.
 - **Web:** fetch result as Blob → object URL preview → `download` attribute save. No ffmpeg binary: either ffmpeg.wasm (small files only) or push video-transcript users to Gemini File API. Cap web uploads at ~100 MB inline / 2 GB File API and say so in the UI.
 - **CORS note (web):** some provider endpoints (BFL, fal result URLs are usually CORS-friendly; others aren't). The desktop app has no CORS constraint; web may need to restrict engine list to CORS-permissive providers — verify per-endpoint during implementation.
 
@@ -119,10 +119,10 @@ Chat is request/stream; **video is submit/poll (1–6 minutes)**. Proposed shape
 1. **API churn is brutal in this space.** DALL·E 2/3 *removed* from the API in May 2026; Sora 2 API *sunsets Sept 24, 2026* with no committed successor. Any hard-coded model ID will rot — keep model lists data-driven and remotely-updatable (or at least trivially patchable).
 2. **Pricing volatility.** Veo pricing has shifted across 3.0→3.1→Lite tiers within months; Runway changed plan inclusions twice in six months. Cost estimates must be config, not constants, and labeled "estimate."
 3. **Regional/account limits.** Veo and GPT Image impose org verification for some tiers; Kling direct API is China-centric; some providers gate by region or require billing history. The UI must surface provider errors ("your key doesn't have Veo access") legibly rather than failing silently.
-4. **Content policy mismatch.** Each provider moderates differently (e.g., Sora rejects input images containing human faces; Gemini/OpenAI block various prompt classes). BrainEdge must pass through refusals clearly and never retry-loop a blocked prompt.
+4. **Content policy mismatch.** Each provider moderates differently (e.g., Sora rejects input images containing human faces; Gemini/OpenAI block various prompt classes). Madav must pass through refusals clearly and never retry-loop a blocked prompt.
 5. **Web app is second-class for media.** No ffmpeg binary, CORS unknowns per endpoint, blob memory limits on long 1080p videos. Set expectations: desktop is the full experience; web covers image gen + Gemini-based transcription cleanly.
 6. **Cost shock liability.** Per-second video billing on a user's own card is the #1 way to lose trust — the guardrail UX in §2.5 is not optional.
-7. **Aggregator dependency.** If fal becomes the de-facto video path, BrainEdge inherits fal's uptime, markup, and model-removal decisions; keeping the Gemini-direct Veo path primary hedges this.
+7. **Aggregator dependency.** If fal becomes the de-facto video path, Madav inherits fal's uptime, markup, and model-removal decisions; keeping the Gemini-direct Veo path primary hedges this.
 8. **25 MB transcription cap** means ffmpeg extraction is load-bearing on desktop; bundling ffmpeg adds ~80–120 MB or requires a first-run download step (license: use the LGPL static build or download-on-demand to keep the installer lean).
 
 ---
@@ -144,7 +144,7 @@ Chat is request/stream; **video is submit/poll (1–6 minutes)**. Proposed shape
    DESKTOP                         WEB
    electron/media-runner.cjs       src/media/mediaRunner.js
    electron/media-store.cjs        IndexedDB (same idb layer as history)
-   results → ~/BrainEdge/Creations  results → Blob + download
+   results → ~/Madav/Creations  results → Blob + download
    ffmpeg static (on-demand DL)    no ffmpeg → Gemini File API path
         └─────────────┬──────────────┘
                  MediaJob record
@@ -152,7 +152,7 @@ Chat is request/stream; **video is submit/poll (1–6 minutes)**. Proposed shape
      providerJobId, costEst, costActual, resultPath|blobKey, createdAt }
 ```
 
-- **Bridge contract:** `mediaCreate(job)` / `mediaList()` / `mediaCancel(id)` / `mediaRetry(id)` + event `brainedge:mediaJob` — mirrored desktop (IPC) and web (webBridge), per the both-platforms standing rule.
+- **Bridge contract:** `mediaCreate(job)` / `mediaList()` / `mediaCancel(id)` / `mediaRetry(id)` + event `madav:mediaJob` — mirrored desktop (IPC) and web (webBridge), per the both-platforms standing rule.
 - **Sync vs async:** images + transcripts are request/response. Video is submit → **poller** (backoff 2s→15s, resume on app relaunch via stored `providerJobId`). No webhooks (no server compute) — polling is the design.
 - **Engine bindings (P1/P2):** image → Gemini Flash Image (default), GPT Image mini, OpenRouter `modalities:["image","text"]`; transcript → Groq whisper-v3-turbo (default), OpenAI 4o-mini-transcribe, Gemini video understanding (smart mode + web big-file path); video → Veo 3.1 Lite/Fast on the Gemini profile (default), optional `p_fal` profile added later as ONE power-up key (Kling/Pika/Wan).
 
@@ -174,7 +174,7 @@ Chat is request/stream; **video is submit/poll (1–6 minutes)**. Proposed shape
 1. Approve selector-integrated binding (vs a separate media-keys page). ← recommended
 2. Approve P1 scope order (image + transcript first, video as P2).
 3. fal.ai as optional power-up key in P2 — yes/no.
-4. Creations folder location default (`~/BrainEdge/Creations`).
+4. Creations folder location default (`~/Madav/Creations`).
 5. Monthly budget default ($5?).
 
 ---

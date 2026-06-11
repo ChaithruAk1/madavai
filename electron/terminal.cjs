@@ -1,7 +1,7 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Embedded terminal backend. Prefers a REAL PTY (node-pty) so full-screen TUI apps work perfectly
-// inside the app — vim, and BrainEdge's own live slash-menu / truecolor UI. If node-pty isn't built
+// inside the app — vim, and Madav's own live slash-menu / truecolor UI. If node-pty isn't built
 // for this Electron yet, it transparently falls back to a pipe shell (commands/builds still work).
 // Run `npm run rebuild` once to enable PTY mode.
 const { spawn } = require("node:child_process");
@@ -23,8 +23,8 @@ function create(wc, opts = {}) {
   const { cmd, args } = shellCmd();
   const cwd = opts.cwd || process.env.USERPROFILE || process.env.HOME || process.cwd();
   const env = { ...process.env, FORCE_COLOR: "1", TERM: "xterm-256color" };
-  const send = (data) => { try { if (!wc.isDestroyed()) wc.send("brainedge:term:data", { id, data: typeof data === "string" ? data : data.toString("utf8") }); } catch {} };
-  const exit = (code) => { try { if (!wc.isDestroyed()) wc.send("brainedge:term:exit", { id, code }); } catch {} sessions.delete(id); };
+  const send = (data) => { try { if (!wc.isDestroyed()) wc.send("madav:term:data", { id, data: typeof data === "string" ? data : data.toString("utf8") }); } catch {} };
+  const exit = (code) => { try { if (!wc.isDestroyed()) wc.send("madav:term:exit", { id, code }); } catch {} sessions.delete(id); };
 
   // ---- preferred: real PTY ----
   if (pty) {

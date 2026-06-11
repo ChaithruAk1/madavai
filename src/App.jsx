@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 import { useEffect, useRef, useState, useCallback, useMemo, lazy, Suspense } from "react";
 import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestion, Volume2, VolumeX } from "lucide-react";
 import Sidebar from "./components/Sidebar.jsx";
@@ -44,7 +44,7 @@ const ViaMobile = FEAT_VIAMOBILE ? lazy(() => import("./components/ViaMobile.jsx
 // (sidebar entries etc.) — one merged source the rest of the app reads.
 const BUILD_OFF = [!FEAT_SAGE && "sage", !FEAT_STUDIO && "studio", !FEAT_TERMINAL && "terminal", !FEAT_SCHEDULER && "scheduler", !FEAT_VIAMOBILE && "viamobile"].filter(Boolean);
 const NotInBuild = () => (
-  <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">This feature isn't included in this edition of BrainEdge.</div></div></div>
+  <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">This feature isn't included in this edition of Madav.</div></div></div>
 );
 import EnvPicker from "./components/EnvPicker.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
@@ -721,7 +721,7 @@ export default function App() {
         <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget && !repo.busy) setRepo({ open: false, url: "", busy: false, err: "" }); }}>
           <div className="repo-modal">
             <h3 style={{ margin: "0 0 6px", fontSize: 16 }}>Connect a GitHub repo</h3>
-            <p style={{ margin: "0 0 14px", color: "var(--text-2)", fontSize: 13 }}>Paste a public repo URL — BrainEdge clones it and works on it{isWeb ? ". (Cloning needs the desktop app.)" : "."}</p>
+            <p style={{ margin: "0 0 14px", color: "var(--text-2)", fontSize: 13 }}>Paste a public repo URL — Madav clones it and works on it{isWeb ? ". (Cloning needs the desktop app.)" : "."}</p>
             <input className="model-search" autoFocus value={repo.url} placeholder="https://github.com/user/repo"
               onChange={(e) => setRepo((r) => ({ ...r, url: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") connectRepo(); }} />
             {repo.err && <div className="repo-err">{repo.err}</div>}
@@ -757,7 +757,7 @@ export default function App() {
         ) : mode === "testcenter" ? (
           TestCenter
             ? <Suspense fallback={<div className="skel-page"><div className="skel" style={{ width: 240, height: 26 }} /><div className="skel" style={{ height: 200 }} /></div>}><TestCenter onNavigate={switchMode} /></Suspense>
-            : <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">Testing tools are excluded from distributed builds of BrainEdge.</div></div></div>
+            : <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">Testing tools are excluded from distributed builds of Madav.</div></div></div>
         ) : isAgents ? (
           <Agents onLaunch={startAgentSession} onLaunchTeam={startTeamSession} onOpenSession={openSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
         ) : isStudio ? (

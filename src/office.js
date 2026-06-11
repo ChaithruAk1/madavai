@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // office.js — IN-CHAT OFFICE FILE CREATION. The model emits a fenced ```officedoc
 // block containing a small JSON spec; the chat renders it as a file card; clicking
 // Download builds a REAL .xlsx / .docx / .pptx / .pdf entirely on this device
@@ -71,10 +71,10 @@ async function buildPdf(spec) {
   const W = 595, M = 56, LW = W - M * 2;
   let y = M;
   const ensure = (h) => { if (y + h > 842 - M) { doc.addPage(); y = M; } };
-  if (spec.title) { doc.setFontSize(20); doc.setFont(undefined, "bold"); ensure(28); doc.text(String(spec.title), M, y); y += 30; }
+  if (spec.title) { doc.setFontSize(20); doc.setFont("helvetica", "bold"); ensure(28); doc.text(String(spec.title), M, y); y += 30; }
   for (const sec of (spec.sections || []).slice(0, 80)) {
-    if (sec.heading) { doc.setFontSize(14); doc.setFont(undefined, "bold"); ensure(22); y += 6; doc.text(String(sec.heading), M, y); y += 18; }
-    doc.setFontSize(11); doc.setFont(undefined, "normal");
+    if (sec.heading) { doc.setFontSize(14); doc.setFont("helvetica", "bold"); ensure(22); y += 6; doc.text(String(sec.heading), M, y); y += 18; }
+    doc.setFontSize(11); doc.setFont("helvetica", "normal");
     const body = String(sec.text || "") + (sec.bullets || []).map((b) => "\n• " + b).join("");
     for (const line of doc.splitTextToSize(body, LW)) { ensure(15); doc.text(line, M, y); y += 15; }
   }

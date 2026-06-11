@@ -5,7 +5,7 @@ import path from "path";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// Central test library for BrainEdge core features.
+// Central test library for Madav core features.
 //  - tests/component/**  → jsdom (React component behavior)
 //  - everything else     → node (pure logic + static contract checks)
 // The electron alias lets us import the main-process .cjs modules in plain node

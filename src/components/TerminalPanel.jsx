@@ -1,7 +1,7 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Embedded terminal — a real shell rendered inside the app with xterm.js. Streams to/from the main
-// process (electron/terminal.cjs). Type `brainedge` here to run the agent without leaving the app.
+// process (electron/terminal.cjs). Type `madav` here to run the agent without leaving the app.
 import { useEffect, useRef, useState } from "react";
 import { Terminal as TerminalIcon, Plus, Check, Download, Monitor } from "lucide-react";
 import { Terminal } from "xterm";
@@ -73,7 +73,7 @@ export default function TerminalPanel({ cwd }) {
     const perks = [
       "Run any command — git, npm, builds, tests, scripts",
       "Start and watch dev servers and long-running processes",
-      "Run the BrainEdge agent (brainedge) right in your shell",
+      "Run the Madav agent (madav) right in your shell",
       "Full access to your machine and installed tools",
     ];
     return (
@@ -81,7 +81,7 @@ export default function TerminalPanel({ cwd }) {
         <div style={{ maxWidth: 460, textAlign: "center", border: "1px solid var(--line)", borderRadius: 16, padding: "30px 28px", background: "var(--bg-2)" }}>
           <div style={{ width: 52, height: 52, borderRadius: 14, display: "grid", placeItems: "center", margin: "0 auto 14px", background: "rgba(19,196,214,.12)", color: "#13c4d8" }}><TerminalIcon size={26} /></div>
           <h2 style={{ margin: "0 0 6px", fontSize: 19 }}>Terminal lives in the desktop app</h2>
-          <p style={{ color: "var(--text-2)", fontSize: 13, margin: "0 0 18px", lineHeight: 1.5 }}>A real shell needs access to your computer, which a browser can't provide. Get the BrainEdge desktop app to unlock it.</p>
+          <p style={{ color: "var(--text-2)", fontSize: 13, margin: "0 0 18px", lineHeight: 1.5 }}>A real shell needs access to your computer, which a browser can't provide. Get the Madav desktop app to unlock it.</p>
           <div style={{ textAlign: "left", margin: "0 auto 20px", display: "grid", gap: 9 }}>
             {perks.map((p) => (
               <div key={p} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "var(--text)" }}>
@@ -104,7 +104,7 @@ export default function TerminalPanel({ cwd }) {
         <span style={{ color: "#14c4d8", display: "inline-flex", gap: 6, alignItems: "center" }}><TerminalIcon size={14} /> Terminal</span>
         {cwd && <span style={{ color: "var(--text-3)" }}>· {cwd}</span>}
         {mode && <span title={mode === "pty" ? "Full PTY — TUI apps and the live menu work here" : "Compatibility mode — run `npm run rebuild` for full PTY"} style={{ fontSize: 10.5, padding: "1px 7px", borderRadius: 999, border: "1px solid var(--line)", color: mode === "pty" ? "#3ecf8e" : "var(--text-3)" }}>{mode === "pty" ? "PTY" : "compat"}</span>}
-        <button className="chip" style={{ marginLeft: "auto" }} onClick={() => run("brainedge")} title="Start the BrainEdge agent in this shell"><Plus size={12} /> Run brainedge</button>
+        <button className="chip" style={{ marginLeft: "auto" }} onClick={() => run("madav")} title="Start the Madav agent in this shell"><Plus size={12} /> Run madav</button>
       </div>
       <div ref={hostRef} style={{ flex: 1, padding: "8px 10px", overflow: "hidden" }} />
     </div>

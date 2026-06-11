@@ -1,7 +1,7 @@
-# EdgeTrader — multi-agent stock analysis on BrainEdge
+# EdgeTrader — multi-agent stock analysis on Madav
 
 A simplified rebuild of the [TradingAgents](https://github.com/TauricResearch/TradingAgents) concept
-using BrainEdge's own agent workforce: 6 agents in one relay team replace their ~12 LangGraph roles,
+using Madav's own agent workforce: 6 agents in one relay team replace their ~12 LangGraph roles,
 with batch runs, background scheduling, a learning loop, and a gated (off-by-default) paper-trading
 execution adapter.
 
@@ -26,10 +26,10 @@ Prompts live in three editable skills: `skills/edgetrader-equity-analysis`,
 ## Install (one time)
 
 ```
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 pip install -r edgetrader\requirements.txt
-node scripts\install-edgetrader.mjs        (BrainEdge must be CLOSED)
-python edgetrader\selftest.py              (then START BrainEdge and run it again)
+node scripts\install-edgetrader.mjs        (Madav must be CLOSED)
+python edgetrader\selftest.py              (then START Madav and run it again)
 ```
 
 The installer seeds (idempotent, with a settings backup): the 6 agents, the EdgeTrader team
@@ -44,7 +44,7 @@ strongest model for the Chief Strategist.
 
 - **Single ticker (interactive):** Agents Team tab → EdgeTrader → brief it with `NVDA`.
   Watch the stations light up in Mission Control.
-- **Batch (background):** edit `watchlist.txt`, keep BrainEdge running, then
+- **Batch (background):** edit `watchlist.txt`, keep Madav running, then
   `python batch_runner.py` (or wait for the 07:00 scheduled sweep). Outputs:
   - `reports/<TICKER>-<date>.md` — Chief Strategist's decision + rationale
   - `reports/digest-<date>.md` — all tickers ranked by verdict/conviction
@@ -59,9 +59,9 @@ strongest model for the Chief Strategist.
 
 Three independent locks must be opened, in this order, by **you** (never by an agent):
 
-1. Set Alpaca keys in the environment BrainEdge starts from: `ALPACA_KEY_ID`, `ALPACA_SECRET_KEY`
+1. Set Alpaca keys in the environment Madav starts from: `ALPACA_KEY_ID`, `ALPACA_SECRET_KEY`
    (create a free paper account at alpaca.markets).
-2. Enable the `trade-executor` connector in BrainEdge → Connectors.
+2. Enable the `trade-executor` connector in Madav → Connectors.
 3. Set `execution.enabled: true` in `edgetrader/config.json`.
 
 Even then: `paper_only: true` **hard-forces** the paper endpoint (a config typo cannot go
@@ -91,12 +91,12 @@ skills/edgetrader-*            the three playbooks (edit prompts here)
 
 ## Troubleshooting
 
-- *Batch runner: "Cannot reach BrainEdge webhook"* — BrainEdge must be running; check
+- *Batch runner: "Cannot reach Madav webhook"* — Madav must be running; check
   Scheduler page → Webhook triggers on, port matches `config.json`.
 - *Webhook token empty in config.json* — your existing token was OS-encrypted; copy it from
-  the BrainEdge Scheduler page into `config.json → webhook.token`.
+  the Madav Scheduler page into `config.json → webhook.token`.
 - *`python` not found in connectors* — change the connector Command from `python` to `py`
-  or the full path to your Python 3.10+ in BrainEdge → Connectors.
+  or the full path to your Python 3.10+ in Madav → Connectors.
 - *Verdict shows UNPARSED in digest* — the model skipped the JSON block; use a stronger
   model for ET Chief Strategist (pin it in Agent Studio). The prose verdict fallback still ranks.
 - *Analysts report "unavailable" for everything / never call tools* — headless agent runs need

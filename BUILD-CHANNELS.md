@@ -1,4 +1,4 @@
-# BrainEdge — Two-Channel Builds (Admin & Public)
+# Madav — Two-Channel Builds (Admin & Public)
 
 Every release now produces TWO installers, driven by the Extras switchboard
 (Settings → Extras, visible only to Creator/Complimentary accounts).
@@ -13,8 +13,8 @@ builds BOTH installers into `release/`:
 
 | Artifact | Channel | Contents |
 |---|---|---|
-| `BrainEdge-admin-<version>-setup.exe` | **Admin** | Every feature included, regardless of Extras. Your personal/internal build. |
-| `BrainEdge-public-<version>-setup.exe` | **Public** | Anything switched OFF in Settings → Extras at build time is **not in the file at all**. This is what global users download. |
+| `Madav-admin-<version>-setup.exe` | **Admin** | Every feature included, regardless of Extras. Your personal/internal build. |
+| `Madav-public-<version>-setup.exe` | **Public** | Anything switched OFF in Settings → Extras at build time is **not in the file at all**. This is what global users download. |
 
 (Portable .exe variants are produced with the same channel stamps.)
 
@@ -70,4 +70,4 @@ gates that consult `builtIn(key)`.
 3. Verify the public one on a clean profile: excluded sidebar entries absent, mic absent
    (if voice off), Settings → Extras absent for normal users, no excluded .cjs files
    inside `resources/app.asar` (and Test Center absent — standing check).
-4. Ship `BrainEdge-public-…-setup.exe`; keep the admin build for yourself.
+4. Ship `Madav-public-…-setup.exe`; keep the admin build for yourself.

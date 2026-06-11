@@ -1,8 +1,8 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // sageMemory.js — Sage/Sara's growing mind. The helper learns from every question
 // asked, every screen visited, and every action it observes, distilling durable
 // insights about THIS user over time — the path from friendly guide to architect,
-// solution expert and consultant of BrainEdge.
+// solution expert and consultant of Madav.
 // PRIVACY: everything lives in localStorage on this device. Nothing is sent
 // anywhere except inside Sage's own system prompt to the user's chosen model.
 const KEY = "be.sage.memory";

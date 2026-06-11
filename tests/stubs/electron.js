@@ -3,7 +3,7 @@ import os from "os";
 import path from "path";
 import fs from "fs";
 
-const dir = path.join(os.tmpdir(), "brainedge-test");
+const dir = path.join(os.tmpdir(), "madav-test");
 try { fs.mkdirSync(dir, { recursive: true }); } catch {}
 
 export const app = { getPath: () => dir };

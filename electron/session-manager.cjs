@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // SessionManager (main process).
 //  - chat mode  → direct streaming transport (providers.cjs)
 //  - cowork/code → agent transport (agent-transport.cjs)
@@ -36,7 +36,7 @@ function withLang(cfg) {
   const gi = cfg.globalInstructions || "";
   const lang = cfg.responseLanguage;
   const langLine = (lang && lang !== "model") ? `Always respond in ${lang}, regardless of the language of the question.` : "";
-  // Cross-chat memory: what BrainEdge remembers about this user follows them into
+  // Cross-chat memory: what Madav remembers about this user follows them into
   // every conversation (toggle + editor in Settings → Profile → Memory).
   let mem = "";
   try { if (require("./features.cjs").builtIn("memory")) mem = require("./user-memory.cjs").block(cfg); } catch {}
@@ -69,7 +69,7 @@ function inlineContent(userText, images, kind) {
 function materializeImages(images) {
   const imgs = cleanImgs(images);
   if (!imgs.length) return "";
-  const dir = path.join(os.tmpdir(), "brainedge-images");
+  const dir = path.join(os.tmpdir(), "madav-images");
   try { fs.mkdirSync(dir, { recursive: true }); } catch {}
   const paths = [];
   imgs.forEach((im, i) => {
@@ -267,7 +267,7 @@ class SessionManager {
     // Diagnostic: shows in the [ELECTRON] terminal exactly which profile is active.
     // (The Anthropic subscription/OAuth path was removed pre-launch — API keys only.)
     const keyLen = (profile.apiKey || "").length;
-    console.log(`[brainedge] turn → provider="${profile.name}" kind=${profile.kind} model="${profile.model}" baseUrl=${profile.baseUrl} keyLen=${keyLen}`);
+    console.log(`[madav] turn → provider="${profile.name}" kind=${profile.kind} model="${profile.model}" baseUrl=${profile.baseUrl} keyLen=${keyLen}`);
 
     // Clear guard instead of a cryptic upstream 401.
     const isLocal = /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(profile.baseUrl || "");
@@ -636,7 +636,7 @@ class SessionManager {
     const gi = settings.load().globalInstructions;
     const now = new Date();
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Use this whenever a date is needed; never say you don't know it.`;
-    const sysChat = (this._agentSys(s, userText) || ("You are BrainEdge, a helpful assistant. " + dateLine +
+    const sysChat = (this._agentSys(s, userText) || ("You are Madav, a helpful assistant. " + dateLine +
       " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence." + ARTIFACT_RULE_BASE + officeRulePart())) +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const messages = [{ role: "system", content: sysChat }, ...s.history];
@@ -743,7 +743,7 @@ class SessionManager {
         resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds,
       });
     } else {
-      // External OpenAI-compatible model (NIM/OpenRouter/local): BrainEdge's own loop.
+      // External OpenAI-compatible model (NIM/OpenRouter/local): Madav's own loop.
       const controller = new AbortController();
       s.controller = controller;
       try {

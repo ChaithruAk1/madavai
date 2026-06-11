@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Data-driven provider classification used app-wide. To support a NEW provider in future,
 // add ONE rule to PROVIDER_RULES below — nothing else needs to change. Each rule matches a

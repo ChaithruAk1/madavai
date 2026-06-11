@@ -1,6 +1,6 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
-// Agent core for the BrainEdge CLI — all logic, no UI. The Ink TUI (tui.mjs) and the fallback REPL
+// Agent core for the Madav CLI — all logic, no UI. The Ink TUI (tui.mjs) and the fallback REPL
 // both drive this. Provider transport, tools, checkpoints, skills, web access, sub-agents, model list.
 import fs from "node:fs";
 import path from "node:path";
@@ -18,16 +18,42 @@ export const state = { auto: argv.includes("--yes") || argv.includes("-y") };
 export const USER = { name: "", status: "", daysLeft: null };
 
 // ---------- config ----------
+// Legacy brand name, built by concat so future rename sweeps skip it. Used only for one-time
+// adoption of a not-yet-migrated machine's config/sessions and as a fallback read path.
+const LEGACY = "brain" + "edge";
+const HOME_DIR_NEW = path.join(os.homedir(), ".madav");
+const HOME_DIR_OLD = path.join(os.homedir(), "." + LEGACY);
+// One-time adoption: if ~/.madav doesn't exist yet but the legacy home dir does, copy config.json
+// and the sessions dir across so existing users keep their settings + resumable sessions.
+function adoptLegacyHome() {
+  try {
+    if (fs.existsSync(HOME_DIR_NEW)) return;
+    if (!fs.existsSync(HOME_DIR_OLD)) return;
+    fs.mkdirSync(HOME_DIR_NEW, { recursive: true });
+    const oldCfg = path.join(HOME_DIR_OLD, "config.json");
+    if (fs.existsSync(oldCfg)) fs.copyFileSync(oldCfg, path.join(HOME_DIR_NEW, "config.json"));
+    const oldSess = path.join(HOME_DIR_OLD, "sessions");
+    if (fs.existsSync(oldSess)) fs.cpSync(oldSess, path.join(HOME_DIR_NEW, "sessions"), { recursive: true });
+  } catch {}
+}
+adoptLegacyHome();
 export function loadConfig() {
   let cfg = { kind: "openai" };
-  for (const p of [path.join(ROOT, "brainedge.config.json"), path.join(os.homedir(), ".brainedge", "config.json")]) {
+  // Prefer the new names (project madav.config.json, home ~/.madav/config.json); fall back to the
+  // legacy names (built via concat) so a not-yet-migrated machine still finds its config.
+  for (const p of [
+    path.join(ROOT, "madav.config.json"), path.join(HOME_DIR_NEW, "config.json"),
+    path.join(ROOT, LEGACY + ".config.json"), path.join(HOME_DIR_OLD, "config.json"),
+  ]) {
     try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(p, "utf8")) }; break; } catch {}
   }
   const e = process.env;
-  if (e.BRAINEDGE_BASE_URL) cfg.baseUrl = e.BRAINEDGE_BASE_URL;
-  if (e.BRAINEDGE_API_KEY) cfg.apiKey = e.BRAINEDGE_API_KEY;
-  if (e.BRAINEDGE_MODEL) cfg.model = e.BRAINEDGE_MODEL;
-  if (e.BRAINEDGE_KIND) cfg.kind = e.BRAINEDGE_KIND;
+  // New MADAV_* env vars win; legacy BRAINEDGE_* (concat) still honored as a fallback.
+  const LEG = LEGACY.toUpperCase();
+  if (e.MADAV_BASE_URL || e[LEG + "_BASE_URL"]) cfg.baseUrl = e.MADAV_BASE_URL || e[LEG + "_BASE_URL"];
+  if (e.MADAV_API_KEY || e[LEG + "_API_KEY"]) cfg.apiKey = e.MADAV_API_KEY || e[LEG + "_API_KEY"];
+  if (e.MADAV_MODEL || e[LEG + "_MODEL"]) cfg.model = e.MADAV_MODEL || e[LEG + "_MODEL"];
+  if (e.MADAV_KIND || e[LEG + "_KIND"]) cfg.kind = e.MADAV_KIND || e[LEG + "_KIND"];
   if (modelFlag) cfg.model = modelFlag;
   return cfg;
 }
@@ -78,7 +104,7 @@ export function tolerantParse(raw) {
       }
     }
   }
-  console.warn("[brainedge] tool arguments were not valid JSON; using {} fallback");
+  console.warn("[madav] tool arguments were not valid JSON; using {} fallback");
   return {};
 }
 
@@ -111,7 +137,10 @@ export async function streamTurn(messages, tools, onText, signal) {
 
 // ---------- skills + project memory ----------
 export function loadSkills() {
-  const dirs = [path.join(ROOT, ".brainedge", "skills"), path.join(ROOT, "skills"), path.join(os.homedir(), ".brainedge", "skills")];
+  const dirs = [
+    path.join(ROOT, ".madav", "skills"), path.join(ROOT, "skills"), path.join(HOME_DIR_NEW, "skills"),
+    path.join(ROOT, "." + LEGACY, "skills"), path.join(HOME_DIR_OLD, "skills"), // legacy search paths (concat)
+  ];
   const out = [];
   for (const d of dirs) { let names = []; try { names = fs.readdirSync(d); } catch { continue; }
     for (const n of names) { try {
@@ -124,9 +153,9 @@ export function loadSkills() {
 }
 export let SKILLS = loadSkills();
 export function reloadSkills() { SKILLS = loadSkills(); return SKILLS; }
-export function projectMemory() { for (const f of ["BRAINEDGE.md", "CLAUDE.md", "AGENTS.md", ".brainedge.md"]) { try { return `\n\nProject guide (${f}) — always follow:\n` + fs.readFileSync(path.join(ROOT, f), "utf8").slice(0, 8000); } catch {} } return ""; }
+export function projectMemory() { for (const f of ["MADAV.md", "CLAUDE.md", "AGENTS.md", LEGACY.toUpperCase() + ".md", "." + LEGACY + ".md"]) { try { return `\n\nProject guide (${f}) — always follow:\n` + fs.readFileSync(path.join(ROOT, f), "utf8").slice(0, 8000); } catch {} } return ""; }
 const SKILLS_TXT = () => SKILLS.length ? "\n\nAvailable skills (call load_skill with the exact name for full instructions before using one):\n" + SKILLS.map((s) => `- ${s.name}: ${s.description}`).join("\n") : "";
-export const SYSTEM = () => `You are BrainEdge, a terminal coding agent working in the folder: ${ROOT}.
+export const SYSTEM = () => `You are Madav, a terminal coding agent working in the folder: ${ROOT}.
 Use the tools to read, search, write, edit files and run commands. You can also access the web (web_fetch/web_search) and delegate big independent chunks of work with spawn_subagent. Inspect before editing. Keep replies concise.
 Make changes by calling tools — don't just print code unless asked. Every file write is checkpointed (the user can /undo). When done, give a short summary.` + projectMemory() + SKILLS_TXT();
 
@@ -170,7 +199,7 @@ async function webGet(url, query) {
   if (!/^https?:\/\//i.test(target || "")) return "Provide an http(s) url or a query.";
   try {
     const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
-    const r = await fetch(target, { headers: { "User-Agent": "BrainEdge/1.0" }, redirect: "follow", signal: ac.signal }).finally(() => clearTimeout(to));
+    const r = await fetch(target, { headers: { "User-Agent": "Madav/1.0" }, redirect: "follow", signal: ac.signal }).finally(() => clearTimeout(to));
     const ct = r.headers.get("content-type") || ""; let t = (await r.text()).slice(0, 600000);
     if (/html/i.test(ct)) t = t.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<\/(p|div|li|h[1-6]|tr|br)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
     return `# ${r.url} (${r.status})\n\n` + t.slice(0, 30000);
@@ -249,7 +278,7 @@ export async function summarize(messages) {
 }
 
 // ---------- session persistence (for /resume) ----------
-const SESS_DIR = path.join(os.homedir(), ".brainedge", "sessions");
+const SESS_DIR = path.join(HOME_DIR_NEW, "sessions");
 const firstUserText = (messages) => { const u = messages.find((m) => m.role === "user"); return u ? String(u.content).slice(0, 60) : "session"; };
 export function saveSession(id, messages) {
   try { fs.mkdirSync(SESS_DIR, { recursive: true });
@@ -262,9 +291,12 @@ export function listSessions() {
 }
 export function loadSession(id) { try { return JSON.parse(fs.readFileSync(path.join(SESS_DIR, id + ".json"), "utf8")); } catch { return null; } }
 
-// ---------- custom slash commands (markdown in .brainedge/commands or ~/.brainedge/commands) ----------
+// ---------- custom slash commands (markdown in .madav/commands or ~/.madav/commands; legacy dirs kept) ----------
 export function loadCommands() {
-  const dirs = [path.join(ROOT, ".brainedge", "commands"), path.join(os.homedir(), ".brainedge", "commands")];
+  const dirs = [
+    path.join(ROOT, ".madav", "commands"), path.join(HOME_DIR_NEW, "commands"),
+    path.join(ROOT, "." + LEGACY, "commands"), path.join(HOME_DIR_OLD, "commands"), // legacy search paths (concat)
+  ];
   const out = [];
   for (const d of dirs) { let files = []; try { files = fs.readdirSync(d); } catch { continue; }
     for (const f of files) { if (!f.endsWith(".md")) continue; try {
@@ -294,7 +326,7 @@ export async function doctor() {
   checks.push({ name: "Model", ok: !!cfg.model, detail: cfg.model || "not set" });
   checks.push({ name: "API key", ok: !!cfg.apiKey, detail: cfg.apiKey ? "present" : "missing" });
   const p = await ping(); checks.push({ name: "Connectivity", ok: p.ok, detail: p.ok ? "reachable" : (p.detail || "unreachable") });
-  let writable = false; try { const t = path.join(ROOT, ".brainedge-write-test"); fs.writeFileSync(t, "x"); fs.rmSync(t); writable = true; } catch {}
+  let writable = false; try { const t = path.join(ROOT, ".madav-write-test"); fs.writeFileSync(t, "x"); fs.rmSync(t); writable = true; } catch {}
   checks.push({ name: "Folder writable", ok: writable, detail: ROOT });
   checks.push({ name: "Skills", ok: true, detail: String(SKILLS.length) });
   checks.push({ name: "Custom commands", ok: true, detail: String(COMMANDS.length) });
@@ -304,7 +336,7 @@ export async function doctor() {
 
 // ---------- open the project guide in an editor (for /memory) ----------
 export function openMemory() {
-  const f = path.join(ROOT, "BRAINEDGE.md");
+  const f = path.join(ROOT, "MADAV.md");
   try { if (!fs.existsSync(f)) fs.writeFileSync(f, "# Project guide\n\nRules and context the agent should always follow.\n"); } catch {}
   const tryOpen = (cmd, args) => { try { spawn(cmd, args, { detached: true, stdio: "ignore" }).unref(); return true; } catch { return false; } };
   // Prefer VS Code (opens a separate window, won't fight the terminal UI), then OS default.
@@ -320,9 +352,9 @@ export async function verifyEntitlement() {
   if (!cfg.authBaseUrl || !cfg.token) return { ok: true, gated: false };
   try {
     const r = await fetch(cfg.authBaseUrl.replace(/\/$/, "") + "/cli/verify", { headers: { Authorization: "Bearer " + cfg.token } });
-    if (r.status === 401) return { ok: false, gated: true, reason: "Your BrainEdge terminal session is invalid or expired. Re-enable terminal access in the desktop app: Settings → Terminal access." };
+    if (r.status === 401) return { ok: false, gated: true, reason: "Your Madav terminal session is invalid or expired. Re-enable terminal access in the desktop app: Settings → Terminal access." };
     const j = await r.json().catch(() => ({}));
-    if (!j.ok) return { ok: false, gated: true, reason: `Your BrainEdge subscription is ${j.status || "inactive"}. Reactivate it in the app to use the terminal.` };
+    if (!j.ok) return { ok: false, gated: true, reason: `Your Madav subscription is ${j.status || "inactive"}. Reactivate it in the app to use the terminal.` };
     USER.name = j.name || ""; USER.status = j.status || ""; USER.daysLeft = j.daysLeft;
     return { ok: true, gated: true };
   } catch { return { ok: true, gated: true, offline: true }; }

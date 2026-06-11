@@ -1,6 +1,6 @@
 """EdgeTrader finance-data MCP server.
 
-Exposes deterministic market-data tools to BrainEdge agents (stdio MCP):
+Exposes deterministic market-data tools to Madav agents (stdio MCP):
   - get_snapshot(ticker):       1y daily prices + pre-computed technical indicators
   - get_fundamentals(ticker):   valuation ratios + income/balance/cashflow highlights
   - get_news(ticker, days):     recent Yahoo Finance headlines/summaries
@@ -9,7 +9,7 @@ Exposes deterministic market-data tools to BrainEdge agents (stdio MCP):
 
 Free data only (yfinance). No API keys. Read-only — this server can never trade.
 
-Run:  python finance_data_server.py     (BrainEdge connects via the Connectors entry)
+Run:  python finance_data_server.py     (Madav connects via the Connectors entry)
 Deps: pip install -r ../requirements.txt
 """
 from __future__ import annotations
@@ -268,4 +268,4 @@ def resolve_outcome(ticker: str, decision_date: str, horizon_days: int = 5, benc
 
 
 if __name__ == "__main__":
-    mcp.run()  # stdio transport — BrainEdge's mcp-manager connects to this
+    mcp.run()  # stdio transport — Madav's mcp-manager connects to this

@@ -1,6 +1,6 @@
-// BrainEdge ⇄ SessionManager IPC contract (mirrors ARCHITECTURE.md §4).
+// Madav ⇄ SessionManager IPC contract (mirrors ARCHITECTURE.md §4).
 // This file is the single source of truth the renderer codes against. In the
-// real app, an Electron preload exposes `window.brainedge` implementing `Bridge`.
+// real app, an Electron preload exposes `window.madav` implementing `Bridge`.
 // Here, mockBridge.js implements the same shape so the UI runs in a browser.
 
 /**

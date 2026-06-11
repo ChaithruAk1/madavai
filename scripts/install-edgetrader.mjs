@@ -1,10 +1,10 @@
 // EdgeTrader installer — seeds the 6 agents, the relay team, the two MCP connectors,
-// webhook settings, and the two scheduled tasks into BrainEdge's settings/task stores.
+// webhook settings, and the two scheduled tasks into Madav's settings/task stores.
 //
-//   node scripts/install-edgetrader.mjs            (run with BrainEdge CLOSED)
+//   node scripts/install-edgetrader.mjs            (run with Madav CLOSED)
 //
 // Idempotent: re-running replaces the EdgeTrader entries by id, touches nothing else.
-// A timestamped backup of brainedge-settings.json is written first.
+// A timestamped backup of madav-settings.json is written first.
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -14,8 +14,13 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ET = path.join(ROOT, "edgetrader");
 const APPDATA = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
-const USERDATA = path.join(APPDATA, "brainedge");
-const SETTINGS = path.join(USERDATA, "brainedge-settings.json");
+const LEGACY = "brain" + "edge"; // legacy brand, built via concat so rename sweeps skip it
+// Prefer the new userdata dir; fall back to the legacy one for not-yet-migrated machines.
+const USERDATA_NEW = path.join(APPDATA, "madav");
+const USERDATA_OLD = path.join(APPDATA, LEGACY);
+const settingsFile = (dir) => path.join(dir, (dir === USERDATA_OLD ? LEGACY : "madav") + "-settings.json");
+const USERDATA = (fs.existsSync(settingsFile(USERDATA_NEW)) || !fs.existsSync(settingsFile(USERDATA_OLD))) ? USERDATA_NEW : USERDATA_OLD;
+const SETTINGS = settingsFile(USERDATA);
 const TASKS_DIR = path.join(USERDATA, "task-data");
 const TASKS = path.join(TASKS_DIR, "tasks.json");
 
@@ -74,7 +79,7 @@ const TEAM = {
 
 // ---------- run ----------
 console.log("\nEdgeTrader installer\n");
-if (!fs.existsSync(SETTINGS)) fail(`Settings not found: ${SETTINGS}\n  Launch BrainEdge once first, then close it and re-run.`);
+if (!fs.existsSync(SETTINGS)) fail(`Settings not found: ${SETTINGS}\n  Launch Madav once first, then close it and re-run.`);
 
 let s;
 try { s = JSON.parse(fs.readFileSync(SETTINGS, "utf8")); } catch (e) { fail("Could not parse settings file: " + e.message); }
@@ -137,7 +142,7 @@ const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
 cfg.webhook.base_url = "http://127.0.0.1:" + s.webhooks.port;
 cfg.webhook.team_id = TEAM.id;
 if (tokenIsReadable) cfg.webhook.token = s.webhooks.token;
-else log("NOTE: webhook token is OS-encrypted; copy it from BrainEdge Scheduler page into edgetrader/config.json webhook.token");
+else log("NOTE: webhook token is OS-encrypted; copy it from Madav Scheduler page into edgetrader/config.json webhook.token");
 fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), "utf8");
 log("edgetrader/config.json wired (webhook url + team id" + (tokenIsReadable ? " + token)" : ")"));
 
@@ -173,10 +178,10 @@ console.log(`\n✓ EdgeTrader installed.
 
 Next steps:
   1. pip install -r edgetrader\\requirements.txt
-  2. Start BrainEdge — the EdgeTrader team is on the Agents Team tab
+  2. Start Madav — the EdgeTrader team is on the Agents Team tab
   3. Single run: open the team, brief it with just a ticker, e.g.  NVDA
   4. Batch run:  edit edgetrader\\watchlist.txt, then  python edgetrader\\batch_runner.py
-     (BrainEdge must be running — the runner fires the team via the local webhook)
+     (Madav must be running — the runner fires the team via the local webhook)
 
 Trading stays OFF until you set execution.enabled=true in edgetrader\\config.json
 and enable the trade-executor connector. Paper endpoint is enforced by default.\n`);

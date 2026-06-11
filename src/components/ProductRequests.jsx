@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Product requests board. Talks to the account server via bridge.apiCall (generic authed fetch).
 // Endpoints: GET /requests → { requests:[...], canVote }; POST /requests {title,detail};

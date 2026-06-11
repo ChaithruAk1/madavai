@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // User store with two interchangeable backends, selected at startup:
 //   - JSON file (default) — zero dependency, great for local dev / single small instance.

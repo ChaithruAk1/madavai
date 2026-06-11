@@ -1,6 +1,6 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. Reference auth server (Phase 1).
+// © 2026 Samskruthi Harish. Madav — Proprietary. Reference auth server (Phase 1).
 //
-// Zero-dependency Node (>=18) reference implementation of the BrainEdge auth contract (see AUTH.md):
+// Zero-dependency Node (>=18) reference implementation of the Madav auth contract (see AUTH.md):
 //   Google/GitHub OAuth (secrets stay here), 7-day trial, account status, /me, suspend.
 // This is a STARTING POINT for local dev / small deploys. Before production, read the "Security TODO"
 // in AUTH.md (HTTPS, real DB, state/CSRF validation, rate limiting, key rotation, security review).
@@ -46,6 +46,11 @@ if (IS_PROD) {
   }
 }
 const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 7);
+// Private beta gate: when on, only admins (admin-emails/ADMIN_EMAILS) or free/complimentary users
+// (free-emails/FREE_EMAILS or the comped freeAccess flag) may complete sign-in. Everyone else is
+// shown a static notice and gets no token. Toggle with PRIVATE_BETA=1.
+const PRIVATE_BETA = process.env.PRIVATE_BETA === "1";
+if (PRIVATE_BETA) console.log(`[auth-server] PRIVATE_BETA active — only admin / free-access accounts may sign in.`);
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24h; re-validated online so bans still bite quickly
 // Extra redirect targets allowed besides loopback (your web app origin), comma-separated.
 const ALLOWED_REDIRECTS = (process.env.ALLOWED_REDIRECTS || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -66,9 +71,9 @@ const OAUTH = {
     auth: "https://github.com/login/oauth/authorize", token: "https://github.com/login/oauth/access_token",
     scope: "read:user user:email",
     userInfo: async (tok) => {
-      const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tok, "User-Agent": "BrainEdge" } })).json();
+      const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tok, "User-Agent": "Madav" } })).json();
       let email = u.email;
-      if (!email) { try { const es = await (await fetch("https://api.github.com/user/emails", { headers: { Authorization: "Bearer " + tok, "User-Agent": "BrainEdge" } })).json(); email = (es.find((e) => e.primary) || es[0] || {}).email; } catch {} }
+      if (!email) { try { const es = await (await fetch("https://api.github.com/user/emails", { headers: { Authorization: "Bearer " + tok, "User-Agent": "Madav" } })).json(); email = (es.find((e) => e.primary) || es[0] || {}).email; } catch {} }
       return { sub: "github:" + u.id, email, name: u.name || u.login, avatar: u.avatar_url };
     },
   },
@@ -93,6 +98,19 @@ function emailSet(envVar, file) {
 }
 const isFreeEmail = (email) => !!email && emailSet("FREE_EMAILS", FREE_EMAILS_FILE).has(email.toLowerCase());
 const isAdminEmail = (email) => !!email && emailSet("ADMIN_EMAILS", ADMIN_EMAILS_FILE).has(email.toLowerCase());
+
+// Private-beta access check: a user is allowed in when PRIVATE_BETA is off, or they're an admin,
+// or they're a free/complimentary user (free-emails list or the comped freeAccess flag).
+function betaAllowed(user) {
+  if (!PRIVATE_BETA) return true;
+  return isAdminEmail(user.email) || isFreeEmail(user.email) || !!user.freeAccess;
+}
+// Static, script-free "not on the access list" page (200) shown when the beta gate blocks a sign-in.
+function betaDenied(res) {
+  res.setHeader("Content-Security-Policy", HTML_CSP);
+  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+  return res.end(`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Madav — private beta</title><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;display:grid;place-items:center;height:100vh;text-align:center;margin:0"><div style="max-width:420px;padding:24px"><h2 style="margin:0 0 12px">${esc("Madav is in private beta")}</h2><p style="color:#9aa3b2;line-height:1.5">${esc("Madav is in private beta — this account isn't on the access list yet.")}</p></div></body>`);
+}
 
 // Admin endpoints accept EITHER the x-admin-key header OR a signed-in admin-email user's session.
 // Hardened: timing-safe key compare + a strict per-IP rate limit so the key can't be brute-forced.
@@ -356,6 +374,8 @@ const server = http.createServer(async (req, res) => {
       const user = await store.upsertUser(idn);
       await store.logEvent({ userId: user.id, type: existed ? "signin" : "signup", meta: { provider: m[1] } });
       await store.patchUser(user.id, { lastSeenAt: new Date().toISOString() });
+      // Private beta gate: only admins / free-access users may finish sign-in; everyone else gets no token.
+      if (!betaAllowed(user)) return betaDenied(res);
       const token = sign(user.id);
       const redir = ctx.redirect;
       if (redir && isAllowedRedirect(redir)) {
@@ -365,7 +385,7 @@ const server = http.createServer(async (req, res) => {
       }
       // Web fallback: a real deployment sets a cookie / redirects to the SPA. Dev fallback below.
       res.writeHead(200, { "Content-Type": "text/html" });
-      return res.end(`<h2>Signed in to BrainEdge</h2><p>You can close this window.</p>`);
+      return res.end(`<h2>Signed in to Madav</h2><p>You can close this window.</p>`);
     } catch (e) { res.writeHead(500); return res.end("OAuth error: " + (e && e.message)); }
   }
 
@@ -418,11 +438,13 @@ const server = http.createServer(async (req, res) => {
   if (p === "/auth/dev/start" && req.method === "GET") {
     if (process.env.ALLOW_DEV_LOGIN !== "1") return json(res, 404, { error: "not found" });
     const redirect = u.searchParams.get("redirect") || "";
-    const email = u.searchParams.get("email") || "dev@brainedge.local";
+    const email = u.searchParams.get("email") || "dev@madav.local";
     const existed = await store.getUser("dev:" + email);
     const user = await store.upsertUser({ sub: "dev:" + email, email, name: "Dev User", avatar: "" });
     await store.logEvent({ userId: user.id, type: existed ? "signin" : "signup", meta: { provider: "dev" } });
     await store.patchUser(user.id, { lastSeenAt: new Date().toISOString() });
+    // Private beta gate (same as the OAuth callback): only admins / free-access users may finish sign-in.
+    if (!betaAllowed(user)) return betaDenied(res);
     const token = sign(user.id);
     if (redirect && /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(redirect)) {
       const sep = redirect.includes("?") ? "&" : "?";
@@ -553,7 +575,7 @@ const server = http.createServer(async (req, res) => {
       let r;
       try {
         for (let hop = 0; ; hop++) {
-          r = await fetch(target, { headers: { "User-Agent": "BrainEdge/1.0", Accept: "text/html,application/json,text/plain,*/*" }, redirect: "manual", signal: ac.signal });
+          r = await fetch(target, { headers: { "User-Agent": "Madav/1.0", Accept: "text/html,application/json,text/plain,*/*" }, redirect: "manual", signal: ac.signal });
           if (![301, 302, 303, 307, 308].includes(r.status)) break;
           const loc = r.headers.get("location");
           if (!loc) break;
@@ -677,7 +699,7 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { received: true });
   }
 
-  if (p === "/billing/done") return html(res, "<div><h2>Subscription active 🎉</h2><p>You can close this window and return to BrainEdge — it unlocks automatically.</p></div>");
+  if (p === "/billing/done") return html(res, "<div><h2>Subscription active 🎉</h2><p>You can close this window and return to Madav — it unlocks automatically.</p></div>");
   if (p === "/billing/cancel") return html(res, "<div><h2>Checkout canceled</h2><p>No charge was made. You can close this window.</p></div>");
 
   // ===================== FEATURE A — Shareable conversation links =====================
@@ -718,7 +740,7 @@ const server = http.createServer(async (req, res) => {
     const expDate = esc(new Date(share.expiresAt).toISOString().slice(0, 10));
     res.setHeader("Content-Security-Policy", HTML_CSP);
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    return res.end(`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${esc(share.title)} — BrainEdge</title><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;margin:0"><div style="max-width:760px;margin:0 auto;padding:32px 20px"><h1 style="font-size:22px;margin:0 0 24px">${esc(share.title)}</h1>${blocks}<footer style="margin-top:28px;padding-top:16px;border-top:1px solid #1e2533;color:#7c89a0;font-size:13px">Shared from BrainEdge · expires ${expDate}</footer></div></body>`);
+    return res.end(`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${esc(share.title)} — Madav</title><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;margin:0"><div style="max-width:760px;margin:0 auto;padding:32px 20px"><h1 style="font-size:22px;margin:0 0 24px">${esc(share.title)}</h1>${blocks}<footer style="margin-top:28px;padding-top:16px;border-top:1px solid #1e2533;color:#7c89a0;font-size:13px">Shared from Madav · expires ${expDate}</footer></div></body>`);
   }
 
   // DELETE /share/:id — owner only.
@@ -916,4 +938,4 @@ const server = http.createServer(async (req, res) => {
 
 server.headersTimeout = 65000;     // slow-loris guard
 server.requestTimeout = 300000;    // generous: /proxy/chat streams can run for minutes
-server.listen(PORT, () => console.log(`BrainEdge auth server on ${BASE}  (store ${store.kind} · trial ${TRIAL_DAYS}d · dev-login ${process.env.ALLOW_DEV_LOGIN === "1" ? "ON" : "off"} · stripe ${STRIPE_SECRET && STRIPE_PRICE ? "ON" : "off"})`));
+server.listen(PORT, () => console.log(`Madav auth server on ${BASE}  (store ${store.kind} · trial ${TRIAL_DAYS}d · dev-login ${process.env.ALLOW_DEV_LOGIN === "1" ? "ON" : "off"} · stripe ${STRIPE_SECRET && STRIPE_PRICE ? "ON" : "off"})`));

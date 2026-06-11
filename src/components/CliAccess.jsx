@@ -1,6 +1,6 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
-// "Enable terminal access" — one click provisions the BrainEdge CLI on the user's machine, reusing the
+// "Enable terminal access" — one click provisions the Madav CLI on the user's machine, reusing the
 // provider/key already in Settings and a subscription-bound token. No config files, no key re-entry.
 import { useEffect, useState } from "react";
 import { Terminal, CheckCircle2, AlertTriangle, Copy, Download } from "lucide-react";
@@ -29,7 +29,7 @@ export default function CliAccess() {
     return (
       <div className="prof-card">
         <div className="prof-card-h"><span className="prof-ico"><Terminal size={15} /></span> Available in the desktop app</div>
-        <p style={{ color: "var(--text-2)", fontSize: 13, margin: "8px 0 0" }}>The terminal agent runs on your computer, so it's set up from the BrainEdge <b>desktop app</b> (a browser can't write to your shell). Open the desktop app → Settings → Terminal access, and click Enable.</p>
+        <p style={{ color: "var(--text-2)", fontSize: 13, margin: "8px 0 0" }}>The terminal agent runs on your computer, so it's set up from the Madav <b>desktop app</b> (a browser can't write to your shell). Open the desktop app → Settings → Terminal access, and click Enable.</p>
       </div>
     );
   }
@@ -38,12 +38,12 @@ export default function CliAccess() {
 
   return (
     <div className="prof-card">
-      <div className="prof-card-h"><span className="prof-ico"><Terminal size={15} /></span> BrainEdge CLI</div>
+      <div className="prof-card-h"><span className="prof-ico"><Terminal size={15} /></span> Madav CLI</div>
 
       {status && status.configured && status.onPath && !result && (
         <div style={{ display: "flex", gap: 8, alignItems: "center", margin: "10px 0 2px", fontSize: 13 }}>
           <CheckCircle2 size={15} color="#3ECF8E" />
-          <span>Terminal access is <b>active</b> — open any terminal and run <code>brainedge</code>. (Set up automatically for your subscription.)</span>
+          <span>Terminal access is <b>active</b> — open any terminal and run <code>madav</code>. (Set up automatically for your subscription.)</span>
         </div>
       )}
 
@@ -55,7 +55,7 @@ export default function CliAccess() {
       </div>
 
       <p style={{ color: "var(--text-2)", fontSize: 12.5, margin: "8px 0 14px", lineHeight: 1.5 }}>
-        This writes your provider settings to a local config and adds a <code>brainedge</code> command to your PATH. Your subscription is checked each time it starts. You won't re-enter any API key.
+        This writes your provider settings to a local config and adds a <code>madav</code> command to your PATH. Your subscription is checked each time it starts. You won't re-enter any API key.
       </p>
 
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -71,10 +71,10 @@ export default function CliAccess() {
           <div style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 13, fontWeight: 600, marginBottom: 6 }}><CheckCircle2 size={15} color="#3ECF8E" /> Ready — model <code>{result.model}</code></div>
           <p style={{ fontSize: 12.5, color: "var(--text-2)", margin: "0 0 8px" }}>{(result.command && result.command.note) || "Open a new terminal and run:"}</p>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <code style={{ flex: 1, padding: "8px 10px", background: "var(--bg)", borderRadius: 8, fontSize: 13 }}>brainedge</code>
-            <button className="btn" onClick={() => { try { navigator.clipboard.writeText("brainedge"); } catch {} }}><Copy size={13} /> Copy</button>
+            <code style={{ flex: 1, padding: "8px 10px", background: "var(--bg)", borderRadius: 8, fontSize: 13 }}>madav</code>
+            <button className="btn" onClick={() => { try { navigator.clipboard.writeText("madav"); } catch {} }}><Copy size={13} /> Copy</button>
           </div>
-          <p style={{ fontSize: 11.5, color: "var(--text-3)", margin: "10px 0 0" }}>Then <code>cd</code> into any project folder first, and type <code>brainedge</code>. In the CLI: <code>/help</code> lists commands, <code>/undo</code> reverts the last edit.</p>
+          <p style={{ fontSize: 11.5, color: "var(--text-3)", margin: "10px 0 0" }}>Then <code>cd</code> into any project folder first, and type <code>madav</code>. In the CLI: <code>/help</code> lists commands, <code>/undo</code> reverts the last edit.</p>
         </div>
       )}
     </div>

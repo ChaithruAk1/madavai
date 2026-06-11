@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // research.cjs — DEEP RESEARCH mode. A single tool that runs a multi-source web
 // research pass entirely from Electron main: it asks the model to PLAN a few search
 // queries, SEARCHES DuckDuckGo's HTML endpoint, READS the top sources in parallel

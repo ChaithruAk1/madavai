@@ -1,8 +1,8 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Let's Build environment picker. Pick a Local folder, or pull any repo from your
 // connected GitHub account(s) via a clean searchable list. Connect a whole account, or one repo by URL.
-// No cloud sandbox (BrainEdge runs locally), no Remote Control.
+// No cloud sandbox (Madav runs locally), no Remote Control.
 import { useEffect, useState } from "react";
 import { FolderOpen, Github, Plus, ChevronDown, Check, X, Trash2, Loader, Search, FolderGit2, Link2 } from "lucide-react";
 import { bridge, isWeb } from "../bridge/index.js";
@@ -132,7 +132,7 @@ export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl
               <div className="env-connectrow">
                 <button className="btn primary" disabled={loading || !token.trim()} onClick={connect}>{loading ? "Connecting…" : "Connect account"}</button>
                 {accounts.length > 0 && <button className="btn" onClick={() => { setConnecting(false); setErr(""); }}><X size={13} /></button>}
-                <a href="#" className="env-link" onClick={(e) => { e.preventDefault(); bridge.openExternal?.("https://github.com/settings/tokens/new?scopes=repo&description=BrainEdge"); }}>Create a token →</a>
+                <a href="#" className="env-link" onClick={(e) => { e.preventDefault(); bridge.openExternal?.("https://github.com/settings/tokens/new?scopes=repo&description=Madav"); }}>Create a token →</a>
               </div>
             </div>
           )}

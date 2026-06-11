@@ -1,5 +1,5 @@
 # Plan: Frontier-grade agent quality on ANY model
-*How to make BrainEdge's agents and Let's Collaborate perform like the best frontier agent harnesses even when running on external/open models. Written June 2026.*
+*How to make Madav's agents and Let's Collaborate perform like the best frontier agent harnesses even when running on external/open models. Written June 2026.*
 
 > **STATUS 2026-06-10: BUILT — all five waves.** Engine: `electron/harness.cjs` (discipline layer), `electron/model-stats.cjs` (measured tool discipline + harness score), wired through `agent-openai.cjs`, `session-manager.cjs` (`_harnessFor`), `mission-runner.cjs`; web mirror `src/shared/harness.js` → `webBridge.js` (Wave-1 core); per-agent toggles in Studio → Blueprint → "Craft" (thorough / reviewer / text-protocol / economy model); harness score surfaced in Models Overview expanded rows. Plain-English explanation: **HARNESS.md**. Deviations from the plan: 1.3 compaction uses heuristic context windows (catalog hookup later); 3.1 uses live mission stats (no separate gauntlet yet — §8's Test-Center gauntlet remains the open follow-up); 2.3 read-before-edit resets on app restart (per-process memory).
 
@@ -7,11 +7,11 @@
 
 ## 1. The honest frame
 
-An agent's quality = **model capability × harness quality**. BrainEdge can't change the first factor (users bring their own models), but the harness is where frontier products earn most of their perceived "magic" — and BrainEdge's current loop (`electron/agent-openai.cjs`) is a *correct* but *minimal* harness. Closing the harness gap is high-leverage: the same DeepSeek/Qwen/Llama model behaves dramatically better inside a disciplined loop.
+An agent's quality = **model capability × harness quality**. Madav can't change the first factor (users bring their own models), but the harness is where frontier products earn most of their perceived "magic" — and Madav's current loop (`electron/agent-openai.cjs`) is a *correct* but *minimal* harness. Closing the harness gap is high-leverage: the same DeepSeek/Qwen/Llama model behaves dramatically better inside a disciplined loop.
 
 What a frontier harness actually does that a minimal loop doesn't:
 
-| Lever | Minimal loop (BrainEdge today) | Frontier harness |
+| Lever | Minimal loop (Madav today) | Frontier harness |
 |---|---|---|
 | Context | grows until it breaks (cap 200 msgs) | budgeted, compacted, summarized mid-mission |
 | Planning | implicit, in the model's head | explicit working plan the loop enforces |
@@ -44,9 +44,9 @@ What a frontier harness actually does that a minimal loop doesn't:
 
 **2.4 Self-review for deliverables.** For long text/code deliverables (>150 lines), one optional extra turn: "review your deliverable against the brief; fix anything missing" — gated by a per-agent "thorough mode" toggle since it costs a call.
 
-## 4. Wave 3 — Per-model adaptation (BrainEdge's unique advantage)
+## 4. Wave 3 — Per-model adaptation (Madav's unique advantage)
 
-No competitor optimizes per-model because they each ship one family. BrainEdge sees hundreds of models — exploit it:
+No competitor optimizes per-model because they each ship one family. Madav sees hundreds of models — exploit it:
 
 **3.1 Capability profiles.** Keyed by model id: context window + pricing (OpenRouter catalog), native tool-calling support (catalog `tools` flag), and *measured* tool discipline (repair rate + mission success from agent history + Test Center). Stored like the speed-test results; shown as a "harness score".
 
@@ -85,6 +85,6 @@ Add an **agentic gauntlet** to the Test Center: ~10 scripted folder missions (cr
 
 ## 9. Honest limits
 
-A 7-8B local model will not become Fable — harness work narrows the gap (typically: unusable → useful for bounded tasks), it doesn't erase model ceilings. The biggest jumps come from Waves 1-2 (reliability + method), which are model-agnostic and cheap. Waves 3-5 are differentiators no single-model competitor can copy without rebuilding their product around model plurality — that's BrainEdge's moat.
+A 7-8B local model will not become Fable — harness work narrows the gap (typically: unusable → useful for bounded tasks), it doesn't erase model ceilings. The biggest jumps come from Waves 1-2 (reliability + method), which are model-agnostic and cheap. Waves 3-5 are differentiators no single-model competitor can copy without rebuilding their product around model plurality — that's Madav's moat.
 
 **Suggested order:** 1.1 → 1.2 → 1.3 → 2.1 → 2.2 → quick wins → measurement gauntlet → Wave 3 → 4 → 5.

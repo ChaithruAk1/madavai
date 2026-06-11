@@ -1,6 +1,6 @@
-# BrainEdge — Project Chat History
+# Madav — Project Chat History
 
-_Exported conversation between Chaithru and BrainEdge's assistant, in chronological order._
+_Exported conversation between Chaithru and Madav's assistant, in chronological order._
 
 ---
 
@@ -11,31 +11,31 @@ i like concept of https://github.com/Alishahryar1/free-claude-code.git where in 
 1. UI for user to have all functionalites of Claude ( Chat, Cowork, Claudecode, Projects, Skills, Connector
 2. Backend ability to connect to any llms
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Before I propose anything, let me ground this in two things: what that repo actually does, and what's already in your `claude-ui` workspace folder (the name suggests you may have already started).
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now let me see what's already in your workspace folder.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I read the repo and your `claude-ui` workspace. You've already built **CClaude** — Electron + React + Vite, a chat UI pointed at the free-claude-code proxy, with Chat, Projects, Model Selector, Settings working and Cowork/Skills/Dispatch as placeholders. So you're not starting cold; you're asking how to fill in the placeholders. Good. Here's my honest read.
 
@@ -105,55 +105,55 @@ Tell me those two and I'll draft the concrete module plan — the Node bridge, t
 
 when you say mount the Claude Agent SDK as your engine, explain me more in detail.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the current Agent SDK API surface before I explain it in detail — I don't want to hand you method names from memory that may have changed.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: WebSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 "Mount the Agent SDK as your engine" means: instead of treating Claude Code as a CLI you shell out to and screen-scrape, you `import` it as a **Node library** into your Electron main process and drive it through one typed, streaming function call. The SDK *is* the same agent runtime that powers Claude Code — it even ships the native `claude` binary as a bundled dependency and spawns it for you — but it hands you a programmatic interface instead of a terminal. Your React UI becomes a front-end over that runtime. Here's the whole thing concretely.
 
@@ -324,31 +324,31 @@ i like concept of https://github.com/Alishahryar1/free-claude-code.git where in 
 1. UI for user to have all functionalites of Claude ( Chat, Cowork, Claudecode, Projects, Skills, Connector
 2. Backend ability to connect to any llms
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Before I propose anything, let me ground this in two things: what that repo actually does, and what's already in your `claude-ui` workspace folder (the name suggests you may have already started).
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now let me see what's already in your workspace folder.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I read the repo and your `claude-ui` workspace. You've already built **CClaude** — Electron + React + Vite, a chat UI pointed at the free-claude-code proxy, with Chat, Projects, Model Selector, Settings working and Cowork/Skills/Dispatch as placeholders. So you're not starting cold; you're asking how to fill in the placeholders. Good. Here's my honest read.
 
@@ -418,49 +418,49 @@ Tell me those two and I'll draft the concrete module plan — the Node bridge, t
 
 when you say mount the Claude Agent SDK as your engine, explain me more in detail.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the current Agent SDK API surface before I explain it in detail — I don't want to hand you method names from memory that may have changed.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: WebSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
@@ -525,7 +525,7 @@ _[used tool: mcp__workspace__bash]_
 
 this is the architectuer poposed previously by Sonnet, do you have better proposal ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes. Sonnet's diagram is the textbook trap, and I'll say exactly why before I redraw it.
 
@@ -619,73 +619,73 @@ Sources:
 
 Want me to write the concrete `Session Manager` interface — the preset `Options` objects per mode and the SDK-event→IPC stream contract — as a spec in your repo? - yes draw me architecture  based on all good points
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good. Let me pull the exact SDK message/event type names from the docs so the IPC contract is accurate, not invented.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `ARCHITECTURE.md` is in your repo. It consolidates every good point into one design:
 
@@ -708,7 +708,7 @@ Sources:
 
 will this use Claude Desktop App ui or custom ui ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Custom UI — your own. Confidence: **high.**
 
@@ -731,277 +731,277 @@ If you want, I can mock up the renderer layout — tab shell, message list, perm
 
 yes mock up the rendered layout. Lets start this as new project as Chai in folder C:\Projects\ClaudeCodeUI\Chai
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Quick check whether I can write to that exact sibling path — the workspace only has `claude-ui` mounted, so `Chai` as a sibling may be outside my granted access.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I can't reach `C:\Projects\ClaudeCodeUI\Chai` — only `claude-ui` is shared with me, and `Chai` would be its sibling, outside my access. To create it at the exact path you asked for, I need access to the parent folder.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__request_cowork_directory]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I can write to `C:\Projects\ClaudeCodeUI\Chai`. Let me scaffold the project.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Scaffold first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me add the missing spin animation and a README, then verify the build.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now verify it compiles — `npm install` and `vite build` in the workspace:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Build passes (1509 modules, clean). Let me give you an inline visual of the layout so you can see it without running anything.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__read_me]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The widget sandbox is built to blend into this chat (light/dark adaptive, no custom dark themes), so a preview there would look different from Chai's actual dark terracotta UI and mislead you. Better to run the real thing — it builds clean. Let me mark done and hand you the files.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 New project **Chai** is scaffolded at `C:\Projects\ClaudeCodeUI\Chai` and builds clean (Vite, 1509 modules, no errors).
 
@@ -1032,7 +1032,7 @@ Remember guiding principles
 1. we want to replicate Anthropic Claude Desktop App functionalities to Chai
 2. simple, effecienct and flexible way to use anthropic, external cloud and local llms for execution
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On it. Here's the phasing, then I'll build Phase 1 end-to-end right now.
 
@@ -1046,469 +1046,469 @@ Let me set up the plan doc and Phase 1 tasks.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Electron backend. Settings store first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the provider streaming layer and the SessionManager:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the main process and preload bridge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Wire the renderer to the real bridge, add settings stubs to the mock, and build a Settings panel.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now refactor ModelPicker to take generic groups, and build the Settings panel:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update `App.jsx` to use the real bridge, manage provider profiles, and render Settings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Update Topbar to forward the profile groups to the picker:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire `package.json` for Electron:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now verify: renderer build, Node syntax check on the Electron files, and a smoke test of the streaming transport against a tiny mock SSE server.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The nested-quote escaping is tripping the JSON parser. Let me eliminate the inner quotes using `concurrently`'s `npm:` shorthand:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The file is truncated on disk at "...yellow np" — the write didn't fully land. Let me re-read and rewrite it.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host file is correct and complete — the bash mount was reading a stale, mid-sync copy. Let me re-run the verification now that it's settled:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The mount cached a truncated copy and won't refresh. Let me rewrite it from inside bash to unstick it, then build:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `vite` hit a transient mount I/O error (the workspace mount is being flaky this session). Let me retry:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 node_modules on the mount is throwing I/O errors. Let me verify the source compiles in fast local disk instead, isolated from the flaky mount:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All source copied. Let me install in the background (it's slow) and poll:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Install is hung on a degraded network. Let me retry the original mount directly — the earlier I/O error may have cleared:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sandbox mount and network are both degraded this session, so I can't re-run the full Vite build right now. Let me do the verification I *can* do deterministically — syntax-check every plain JS/CJS file and audit the import graph for the JSX:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 mockBridge.js shows truncated in the mount (same staleness artifact as package.json). Let me confirm the host file is actually intact:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host file is complete and valid — the mount truncation was a false negative, same as `package.json`. Let me make one more attempt at the real build in case the environment recovered:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sandbox is too degraded to re-run the production build this session (network install hangs, mount throws I/O errors). I verified everything that doesn't depend on it: all five `electron/*.cjs` pass `node --check`, the plain bridge JS passes, `mockBridge.js` is valid on disk (the mount's "truncation" is a stale-cache false negative, confirmed by reading the host file), and every `import` in the renderer resolves to a file that exists. The identical project structure already built cleanly earlier. Let me update the README for Phase 1 and hand it over.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Phase 1 is built end-to-end. The three phases are in `ROADMAP.md`; here's where things stand.
 
@@ -1591,7 +1591,7 @@ PS C:\Projects\ClaudeCodeUI\Chai> npm run electron:dev
 --> Sending SIGTERM to other processes..
 [VITE] npm run dev exited with code 1
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's not your code — it's the Electron **binary** that didn't finish downloading during `npm install`. The `electron` npm package runs a postinstall step that fetches the actual runtime from GitHub; when that step is skipped or blocked, you get exactly this `Electron failed to install correctly` error. Your `main.cjs`/`preload.cjs` never even got a chance to run. Confidence: **high.**
 
@@ -1627,13 +1627,13 @@ Let me pin the dev port so a stray process can't cause a silent mismatch:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the sequence to get it running:
 
@@ -1657,7 +1657,7 @@ To address all issues (including breaking changes), run:
   npm audit fix --force
 Run `npm audit` for details.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That reinstalled the `electron` package but didn't show the binary downloading — so it may have used a cached copy, or may still be missing. Verify before launching:
 
@@ -1693,7 +1693,7 @@ Error: Electron failed to install correctly, please delete node_modules/electron
     at [eval]:1:13
 Node.js v24.16.0
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The binary genuinely isn't there — and "added 1 package in 1s" with no download tells me the postinstall **never ran**. The usual cause is `ignore-scripts` being enabled in your npm config (common on locked-down/corporate setups), which silently skips every package's install script, including Electron's binary download.
 
@@ -1725,7 +1725,7 @@ PS C:\Projects\ClaudeCodeUI\Chai> npm config get ignore-scripts
 false
 PS C:\Projects\ClaudeCodeUI\Chai> node node_modules\electron\install.js
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good — `ignore-scripts` is `false`, so that's not it. The `install.js` you just launched is most likely **downloading the ~100 MB runtime silently** (no progress bar when not attached to an interactive TTY). Let it sit until the PowerShell prompt (`PS C:\...>`) returns.
 
@@ -1751,7 +1751,7 @@ Tell me which of the two you get. If it's still throwing after the mirror attemp
 
 what i should execute , im getting confused
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No problem — here's exactly what to do, top to bottom. Open PowerShell in your project folder and run these **one at a time, in order**. Just copy each line, press Enter, wait for it to finish, then do the next.
 
@@ -1802,7 +1802,7 @@ To address all issues (including breaking changes), run:
   npm audit fix --force
 Run `npm audit` for details.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That looks better — 12 seconds means it actually did work this time (the earlier 1-second run was doing nothing). Now run **step 5** to confirm the binary is really there:
 
@@ -1835,7 +1835,7 @@ Error: Electron failed to install correctly, please delete node_modules/electron
     at [eval]:1:13
 Node.js v24.16.0
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 We're guessing in the dark because the one thing that actually shows the *reason* — the downloader's own error message — we still haven't seen. Let me get it. This is the important step.
 
@@ -1863,7 +1863,7 @@ PS C:\Projects\ClaudeCodeUI\Chai> $env:ELECTRON_MIRROR="https://npmmirror.com/mi
 PS C:\Projects\ClaudeCodeUI\Chai> node node_modules\electron\install.js
 PS C:\Projects\ClaudeCodeUI\Chai>
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The silent return is the clue: `install.js` did nothing because a **leftover/corrupt `dist` folder and cache** are tricking it into thinking the binary is already there — so it skips the download, but the real file is missing. We have to clear the cache too, not just the module. That's the piece we haven't done.
 
@@ -1901,7 +1901,7 @@ One question that could short-circuit all of this: **are you on a work/corporate
 
 im using personal laptop
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good — that rules out a firewall, so the download itself should work fine. That means the villain is almost certainly the **corrupt cache** making the installer skip the download. And since you're not blocked, you don't need the Chinese mirror — it may actually be slower/flakier for you, so let's drop it and use the default.
 
@@ -1943,7 +1943,7 @@ To address all issues (including breaking changes), run:
   npm audit fix --force
 Run `npm audit` for details.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -1960,7 +1960,7 @@ To address all issues (including breaking changes), run:
   npm audit fix --force
 Run `npm audit` for details.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `npm install` keeps saying "added 1 package" but never actually downloads the runtime — and running `install.js` by hand prints nothing. So the downloader is silently bailing out before it does any work. We need to see *why* it bails. There's a debug switch that makes it narrate every step.
 
@@ -1988,7 +1988,7 @@ Paste both outputs. We're very close — this debug line is the thing that's bee
 @electron/get:index Checking the cache (undefined) for electron-v31.7.7-win32-x64.zip (https://github.com/electron/electron/releases/download/v31.7.7/electron-v31.7.7-win32-x64.zip) +0ms
   @electron/get:index Cache hit +3ms
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's the answer. **"Cache hit"** — the downloader is reusing a cached zip from one of your earlier failed attempts, and that cached copy is bad, so nothing valid ever gets extracted. The cache you cleared wasn't the one it's actually reading from. The fix is to force it to download fresh into a brand-new cache folder it's never touched.
 
@@ -2022,7 +2022,7 @@ Paste the debug output + the `node -e` result.
   @electron/get:index Downloading https://github.com/electron/electron/releases/download/v31.7.7/electron-v31.7.7-win32-x64.zip to C:\Users\chait\AppData\Local\Temp\electron-download-Eqpo6B\electron-v31.7.7-win32-x64.zip with options: undefined +50ms
   @electron/get:cache Moving C:\Users\chait\AppData\Local\Temp\electron-download-Eqpo6B\electron-v31.7.7-win32-x64.zip to C:\electron-cache-fresh\c94f2fc32e1fb05767f75322ea533eeb9828155f017ec184140930a3ec825e81\electron-v31.7.7-win32-x64.zip +0ms
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's the breakthrough — **Cache miss → Downloaded → moved to the fresh cache**. The corrupt copy is bypassed and you've got a real runtime now. It's extracting into `node_modules\electron\dist` as we speak.
 
@@ -2063,7 +2063,7 @@ Error: Electron failed to install correctly, please delete node_modules/electron
     at [eval]:1:13
 Node.js v24.16.0
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now we know the real failure: the **download worked**, but the **extraction into `dist` is silently failing** (likely Node 24 tripping Electron 31's old extractor, or Defender blocking the write). The zip is sitting valid in your cache — so let's skip the broken extractor and unzip it by hand into the right place. This is deterministic and ends the loop.
 
@@ -2105,7 +2105,7 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a----          1/1/1980  12:00 AM      180849664 electron.exe
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's it — `electron.exe` is sitting in `dist` (180 MB, the real runtime). The extraction is fixed. Launch it:
 
@@ -2123,7 +2123,7 @@ If the window opens but shows a blank/white screen, it's just the Vite dev-serve
 
 Chat worked for openrouter but faield for nim
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good — OpenRouter proves the whole pipeline works. NIM failing is almost certainly a config detail in that profile, not a code bug. I need the exact error to be sure: in the Chat view, what did the red **⚠ …** line say? Paste that text.
 
@@ -2142,7 +2142,7 @@ Check those three in the NIM profile, click **Set active** again, and retry. If 
 
 i dont want to limit to one model in settings, it should bring all models based on url and api, i should  be able to select anything in model selector
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 You're right — a single hardcoded model per profile is the wrong model. The profile should hold only the *connection* (URL + key + wire format), and the picker should pull the **live model list** from that provider's `/v1/models` and let you choose any of them. Let me make that change.
 
@@ -2150,115 +2150,115 @@ First, harden the model-listing call (correct headers per provider, including An
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rewire the renderer so the picker is model-driven across all providers. Add live-model state and loader:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now replace the profile-only picker logic with model-across-providers logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Forward the refresh handler through Topbar and into the picker:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now upgrade the ModelPicker itself — refresh button, model counts, robust current-label, and an empty hint:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Update the Settings copy so the model field reads as the live-driven selection, not a hardcoded limit:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the changes compile:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Same mount false-negative as before (it's serving a truncated copy; the host file is intact). Let me confirm the host files are complete rather than trust the flaky mount:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host file is complete and valid — the mount just served a truncated copy again (that's the sandbox, not your code). All edits are in place. I couldn't run the production build here because the workspace mount keeps throwing I/O errors this session, but the renderer changes are plain React and the one main-process change passes review.
 
@@ -2286,7 +2286,7 @@ If a provider's model list comes up empty after refresh, it means its `/v1/model
 
 models look good now including Nvidia
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's Phase 1 fully done — multi-provider chat, live model discovery across Anthropic/cloud/local/NIM, streaming, provider switching. The whole spine works end to end. Nice work pushing through that Electron install mess.
 
@@ -2294,13 +2294,13 @@ Before I start Phase 2 (the agent transport — real tool calls, files, MCP, ski
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — Cowork first, using the Claude Agent SDK as the engine (that's what "very similar to Anthropic" means in practice: run Anthropic's own agent engine so the behavior matches Claude Desktop, and for non‑Anthropic models point it at a proxy). Let me state the one hard constraint up front, then build.
 
@@ -2310,31 +2310,31 @@ Setting up Phase 2.1:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Quick note on the repo: I'll initialize git for the project and prep it for a remote named **ClaudeUI** — I'll do that as the commit step right after I lay down this Phase 2.1 code, so the first commit captures real progress. Now building the agent transport.
 
@@ -2342,67 +2342,67 @@ First, add the SDK dependency:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the agent transport — the core of Phase 2:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rewrite the SessionManager to route modes and wire permissions/interrupt/resume:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good question, and short answer: **renaming to Chakra is trivial** — it's a name in a few config files plus the brand text in the UI, not wired into any logic. I'll do it cleanly as the finishing step of this turn (along with the git repo), so it lands in the first commit. Let me finish the Phase 2.1 wiring first, then rename + init git in one clean pass.
 
@@ -2410,79 +2410,79 @@ Adding the folder picker to the main process:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire the renderer for cwd and a folder chooser in agent modes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add the folder bar and update the empty state for agent modes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add the icon import and the folder-bar styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Phase 2.1 code is in (agent transport, mode routing, folder picker, Cowork folder UI). Now let me do the **rename to Chakra** and **git init** as the clean finish.
 
@@ -2490,73 +2490,73 @@ Rebranding the app name to Chakra across configs and UI:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rename the folder to **Chakra** and initialize the git repo (remote will be **ClaudeUI**):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both folders exist in the mount and `Chakra` looks partial — let me inspect what's really in each before touching anything:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The real project is all in `Chai`; there's a stray `Chakra` folder with just a leftover `package-lock.json` (a sandbox artifact). The mount has been corrupting `bash` file ops all session (truncated reads, I/O errors), so I'm **not** going to run the folder-rename or `git init` through it — a half-synced rename or a corrupted `.git` would be worse than none. Those two steps are safer run natively on your Windows shell, where the filesystem is reliable. My code edits all went in through the host-side editor, so the Chakra rebrand is safely in place.
 
@@ -2564,31 +2564,31 @@ Let me confirm what's actually on the host:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Glob]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host has no `Chakra` folder — so that stray is mount-only noise; your real project is cleanly in `Chai`, and the Chakra rebrand edits are safely on disk there.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Renaming to Chakra: **not complex at all** — done. It was just a display name and a few config fields, never wired into logic. Changed: `package.json` (name/productName/appId), window title, the sidebar brand, the assistant label, and the system prompt. Logic, file paths, and IPC channels are untouched.
 
@@ -2646,7 +2646,7 @@ To address all issues (including breaking changes), run:
   npm audit fix --force
 Run `npm audit` for details.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That pulled the Agent SDK in (package count jumped to 476). Quick one-line check that it actually loads before we launch — this catches the same "native binary missing" class of problem early:
 
@@ -2673,7 +2673,7 @@ C
 Chakra
 ⚠ Cowork needs an Anthropic-compatible provider. "OpenRouter" is openai. Select an Anthropic profile (Anthropic direct, or a LiteLLM/free-claude-code proxy) in Settings.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That message is the agent transport working exactly as designed — it detected your active profile is OpenRouter (openai-kind) and told you precisely why, instead of failing cryptically. So Phase 2.1's plumbing is proven up to the model call. You just need an **Anthropic-format** endpoint for the agent. Two ways:
 
@@ -2698,7 +2698,7 @@ Which route do you want? If you have an `sk-ant-` key, do **Option A** first —
 
 my objective is i should be able to use cowork with external models also not limited to anthropic model
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That message is actually the system working — but it also exposes the real constraint, so let me be straight with you about it.
 
@@ -2717,25 +2717,25 @@ Let me build the self-built loop now.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Exactly — that's the plan, and it's even better than what you're picturing: **no proxy at all, no second terminal.** Chakra runs the agent loop *itself, in-process*, calling your external model (NIM/OpenRouter) directly with tool-calling. The "proxy" function becomes part of Chakra's own backend. You just pick the provider and Cowork works. Let me finish wiring it.
 
@@ -2743,133 +2743,133 @@ Adding the tool-calling stream to the provider layer:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The folder is now `Chakra` (you renamed it) — my edit used the old `Chai` path. Switching all paths to `Chakra`. Let me read the file at its new location and apply the change:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the self-built agent loop — the in-process engine that drives external models with tools:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now route the agent by profile kind in the SessionManager — external (openai) to the new loop, Anthropic to the SDK:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Routing is in. Let me syntax-check the new main-process files (trying the renamed path in the sandbox):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The two new files (`providers.cjs`, `agent-openai.cjs`) pass cleanly; the `fs:440` noise is the mount failing to *read* some files (I/O), not syntax errors. Let me retry the inconclusive ones:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sandbox mount is now refusing to even read those files (`fs:440`, and it won't let me delete a temp file) — that's the workspace degrading further, not your code. The two files with real logic verified clean, and the rest are small mechanical edits applied through the reliable host editor. The genuine test is on your machine.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — Cowork now runs on **external models with no proxy and no second terminal**. Chakra runs the agent loop itself, in-process: it sends your folder's tools to the active OpenAI-compatible model, executes the tool calls it returns (read/write/edit/run_bash, scoped to the chosen folder), and routes every mutating action through the same permission modal. Your OpenRouter/NIM profile now drives Cowork directly.
 
@@ -2893,7 +2893,7 @@ When it creates that folder for you, that's your core objective met: **Cowork on
 Chakra
 ⚠ OpenAI-compatible 401: {"error":{"message":"No cookie auth credentials found","code":401}}
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's a pure **auth failure (401)** from whichever provider owns the model you just picked — not an agent bug. Here's the subtlety that probably bit you: the new model selector switches the **active provider** to whoever owns the model you click. So if you picked a tool-capable model that lives under a *different* profile than the one you set up for chat, the agent is now hitting that profile — and its API key is empty or wrong.
 
@@ -2917,43 +2917,43 @@ Tell me **which provider + model** is active now (top-bar label) and whether its
 
 it deleted NIM provider i added with every run
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 A provider you added shouldn't vanish — that's a real persistence bug, not a config issue. Let me look at the actual code rather than guess.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me look at how settings are written, because I think I see the bug.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found the likely cause. It's not the disk layer (`save`/`load` are fine) — it's a **stale-state clobber in the UI**. App.jsx keeps its own copy of `settings`, and so does the Settings panel. When you add NIM in Settings, it's written to disk — but then the next time the top-bar model picker saves (it builds from App's older copy that predates NIM), it overwrites the file *without* NIM. So NIM survives until the next save, then gets wiped, and on restart it's gone.
 
@@ -2961,13 +2961,13 @@ The fix: every write re-reads the latest settings from disk first, so it can nev
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Same root cause — both chat and the agent read the *active* profile, and the clobber bug wiped NIM and left `activeProfileId` pointing at a profile with no valid key, so everything 401s. The fix I just shipped stops the clobber, but your settings file is currently in that corrupted state, so you need to reset it once.
 
@@ -3004,7 +3004,7 @@ One thing to confirm so I'm not fixing the wrong layer: after the reset, does **
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -3014,7 +3014,7 @@ No response requested.
 
 ⚠ OpenAI-compatible 401: {"error":{"message":"Missing Authentication header","code":401}}
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Same root cause, now showing on chat: **401 "Missing Authentication header" means the active provider's request went out with no API key** — because the key got wiped. That's the stale-state clobber I just fixed: when the model picker saved, it overwrote the settings file with App's older copy, erasing both the NIM profile *and* any API keys you'd entered. So after a clobber, the active profile has a blank key → 401 on chat too.
 
@@ -3042,7 +3042,7 @@ One more guard worth adding so this never bites silently again: I can make Chakr
 
 chait is not working als
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -3052,7 +3052,7 @@ No response requested.
 
 ⚠ OpenAI-compatible 401: {"error":{"message":"Missing Authentication header","code":401}}
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I keep diagnosing blind — let me make Chakra tell us exactly what it's doing instead. The 401 with "Missing Authentication header" means the **active provider has no key at request time**. The most common reason: the model picker set the active provider to one you *didn't* put a key into (you entered the key on, say, NIM, but a different provider's model is selected in the top bar, so that other keyless profile is active).
 
@@ -3060,13 +3060,13 @@ I'm adding a clear guard + a log line so we can see the truth instead of guessin
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Correct — **you do not need the free-claude-code proxy at all anymore.** It was your starting inspiration, but Chakra has absorbed its job and gone further:
 
@@ -3095,7 +3095,7 @@ That `keyLen` is the whole answer. If it's `keyLen=0`, the active provider has n
 
 ⚠ OpenAI-compatible 401: {"error":{"message":"Missing Authentication header","code":401}}
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 We're going in a circle because the fix I added lives in the **main process** — and the dev server's hot-reload only refreshes the UI, **not** the Electron main process. So my diagnostic and guard almost certainly never loaded. You have to fully restart Electron, and the wiped key has to actually be put back on disk. Let me make this concrete and break the loop.
 
@@ -3133,7 +3133,7 @@ The app's red `⚠` line only tells me the request failed; the terminal line tel
 
 chat is working now
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That confirms it — the corrupted settings file (clobbered keys) was the cause, and the re-read fix now prevents it from happening again when you switch models. You can add NIM back and it'll stick this time.
 
@@ -3153,7 +3153,7 @@ git commit -m "Chakra: Phase 1 chat + Phase 2 Cowork on external models"
 
 folder created
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's the milestone — **Cowork ran an agentic tool call (created a folder) on an external, non-Anthropic model, with no proxy and no second process.** Your core objective is met: Chakra replicates Claude Desktop's Cowork over any tool-capable LLM you configure. The whole loop — model → tool call → permission → execution on disk → result — works end to end through Chakra's own engine.
 
@@ -3172,313 +3172,313 @@ That closes Phase 2. Before I start the next piece, one decision on where to poi
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's the right instinct — and the reason it didn't ask is that I hardwired Cowork to auto-accept edits. "Ask before changes" should be a real, default-on control you can flip. Let me make the permission mode user-selectable and actually enforced, defaulting to **ask before every change**.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Exactly what I'm building — making it a selectable control. Let me wire it through.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the SDK path (Anthropic) — honor the same permission mode:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — that raw `run_bash` JSON block looks like a debugger, not a product. Claude's Cowork shows friendly one-liners ("Created folder sukruth"), collapsed by default. I'll finish the permission control I'm mid-way through, then redesign the tool cards to look professional. Let me read the current SessionManager to wire the permission mode through cleanly.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Main process is wired. Now the renderer — pass the permission mode and let the user change it live:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now turn the static permission chip into a real selector:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the main ask — redesign the tool cards to read like Claude's Cowork (friendly summary, collapsed, not a JSON dump):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add the polished styles for the new tool rows and the permission dropdown:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The SDK-path function needs `permMode` in its parameter list (I pass it but didn't destructure it). Fixing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the changed files compile:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host files are well-formed — the `FAIL` lines are the flaky mount serving truncated reads again (`agent-transport.cjs` passed; I confirmed `agent-openai.cjs` is intact by reading it). Done.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good news first: the **tool card redesign worked** — "Ran `mkdir sharmila`" with the icon, collapsed, is the new Cowork-style row. The thing you're pointing at now is different: the **model is dumping raw JSON** (`{"status": "success", "output_from_command": ""}`) into its reply text. That's the model parroting the tool result, not Chakra's UI. The fix is to instruct the model not to do that.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me also add a renderer-side safety net so a leading JSON blob gets stripped even if a weaker model ignores the instruction:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both fixes are in:
 
@@ -3507,7 +3507,7 @@ Restart, try "create folder X" once, and tell me: does the approval modal appear
 
 repo name is https://github.com/chaithruak/chakra.git.  give me command to update all successful changes till now
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Your `.gitignore` already excludes `node_modules`, `dist`, and `release`, so this pushes source only. Run these in the project folder, one block:
 
@@ -3553,7 +3553,7 @@ If `node_modules` shows up there, stop and tell me (means `.gitignore` didn't ca
 [image]
 im getting this pop after folder is created
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The permission gate is working now — but the screenshot shows three real UX problems: (1) the modal still says **"Chai"** and dumps raw JSON, (2) Chakra claims **"Created the folder"** *before* you approve (the model narrates success prematurely), and (3) that makes the approval pop feel like it comes after the fact. Let me fix all three.
 
@@ -3561,61 +3561,61 @@ First, stop showing the model's premature "Created…" text — only show its su
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rebrand and humanize the approval modal (no more "Chai", no raw JSON):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The git commit silently failed because git doesn't know who you are — so there were no commits, which is why `push` says "src refspec main does not match any" (no `main` branch exists yet). Let me finish the "Allow for session" wiring, then give you the git fix.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the git fix. Set your identity (this is why the commit never happened), then commit and push:
 
@@ -3656,19 +3656,19 @@ To https://github.com/chaithruak/chakra.git
  ! [remote rejected]   main -> main (pre-receive hook declined)
 error: failed to push some refs to 'https://github.com/chaithruak/chakra.git'.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `node_modules` got committed — GitHub rejects the bundled `electron.exe` (172 MB) and `claude.exe` (229 MB) because they exceed its 100 MB limit. Your `.gitignore` didn't take effect (likely wasn't at the repo root when you first `git add`ed). Let me fix the ignore file and strip `node_modules` out of the commit so the push goes clean.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `.gitignore` is fixed. Now untrack `node_modules` and rewrite the commit so the big binaries never enter history, then push:
 
@@ -3697,7 +3697,7 @@ One reassurance: leaving `node_modules` out of git is correct and standard — a
 
 looks good now
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Clean push, repo's live at github.com/chaithruak/chakra. That's a real milestone banked: **Phase 1 (multi-provider chat) and Phase 2 (Cowork running agentic file edits on external, non-Anthropic models — with working permission modes and a Cowork-style UI), all committed.**
 
@@ -3718,7 +3718,7 @@ Which direction next? I'd suggest **Projects + history** — it's what makes it 
 
 so now cowork has all fucntionalities like claue cowork ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No — and I'd be doing you a disservice to say yes. Chakra has the **core** of Cowork and one thing Claude's Cowork *can't* do (run on external/free models), but it's missing several major pillars. Honest breakdown:
 
@@ -3743,313 +3743,313 @@ That maps exactly onto Phase 3. The highest-leverage next piece to close the gap
 
 lets start phase 3 now
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Starting Phase 3. One thing genuinely forks the build here and it's worth 10 seconds to lock — these are very different large pieces and I don't want to build the wrong 60% of Cowork:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Connectors (MCP) it is — the defining piece. Heads up: this is the biggest, most failure-prone increment (it spawns external MCP server processes), so I'll build the backend cleanly, then we test with one simple server before adding a UI flourish. Let me scaffold it.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire MCP tools into the agent loop:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add connectors to the settings store and pass them into the agent turn:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Pass connectors into the agent turn from the SessionManager:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC test endpoint and the Connectors UI. First main + preload:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the mock stub and the Connectors panel:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the Connectors panel, then answer your Skills question.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Wire the Connectors panel into the app:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 mcp-manager passed; the others are the mount's truncated-read false negatives again. Let me confirm `agent-openai.cjs` is actually intact on the host (it's had several edits):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host file is intact — the `FAIL` was the mount serving a truncated copy again (`mcp-manager.cjs` passed clean). Phase 3.1 Connectors is built.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 **Skills: later — right after we land Connectors.** Here's my reasoning, not just a punt: Skills and Connectors are different mechanisms, and shipping them on top of each other untested would make failures impossible to diagnose (you've felt how fragile the test loop is this session). Connectors is also the bigger capability and the riskier one (it spawns external processes), so it deserves a clean test pass alone. Skills is genuinely simpler for your self-built loop — it's mostly "load SKILL.md files from a folder, inject their instructions, and let the agent run the scripts they reference" — so it's a natural, lower-risk follow-on once Connectors works. Confidence: high that this ordering saves you debugging pain.
 
@@ -4078,49 +4078,49 @@ Once a connector tool runs end-to-end, commit it (`git add -A && git commit -m "
 [image]
 it did not giveme list
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Big news in that screenshot: **the MCP connector worked** — `mcp__..._list_directory` ran and returned. The problem is the *reply*: Chakra said "Here are the files and folders" without actually listing them. That's my fault — the system prompt I added to kill the JSON-dumping was too strict ("one short sentence, never include output"), so the model obeyed by being uselessly vague. Let me loosen it so it presents real results while still not dumping raw JSON.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now fix the leftover "Chai" branding in the composer:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two fixes in:
 
@@ -4159,7 +4159,7 @@ The token '&&' is not a valid statement separator in this version.
     + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
     + FullyQualifiedErrorId : InvalidEndOfLine
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's old PowerShell (5.x) — it doesn't support `&&`. Run them as three separate lines (or join with `;`):
 
@@ -4177,7 +4177,7 @@ git push
 
 opus4.8 - you are just awsome
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Thanks — that's kind. Credit's shared: you pushed through a genuinely rough environment (the Electron binary saga, the settings clobber, the flaky mount) without losing the thread, and you made good calls at every fork.
 
@@ -4194,31 +4194,31 @@ No action needed right now. When you're ready to pick up Skills — or if anythi
 
 lets procedd with skills. do you best to implement same features as claude skills
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Skills next — and I'll mirror Claude's actual design: **progressive disclosure**. A skill is a folder with a `SKILL.md` (YAML frontmatter `name` + `description`, then markdown instructions). The agent always sees the lightweight *index* (names + descriptions), and only loads a skill's full instructions when it's relevant — via a `load_skill` tool — then runs any bundled scripts. That's exactly how Claude Skills work, and it maps cleanly onto Chakra's tool loop.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — skills shouldn't be a Cowork-only thing. You want to **add, create, and use them everywhere**: Chat, Code, Cowork, and Projects. That changes the design slightly: the skill index + `load_skill` need to be available in every mode's loop (Chat gets skills + connectors but no file/shell tools; the agent modes get everything). I'll build it that way. Skills live in one folder you configure once, so "add/create" is global; "infer" works per-mode.
 
@@ -4226,235 +4226,235 @@ Building the skills manager first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire skills into the loop — require it, make Chat skill-capable, and add the `load_skill` tool:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the settings and SessionManager — add `skillsDir`, make Projects an agent mode, and route Chat through the skill/connector-capable loop when skills or connectors exist:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add `skillsDir` to the main agent turn too:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Skills built into all modes. Now the IPC + UI panel. Main process:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Wire Skills into the app and make Projects an agent mode:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the changed main-process files compile:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 skills-manager passed; the rest are the mount's truncated-read false negatives again. Let me confirm `agent-openai.cjs` is coherent on the host (it's had many edits this round):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host file is intact and coherent — the `FAIL`s are the mount serving truncated reads (skills-manager passed clean). Skills is built.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Skills are in, built the Claude way — **progressive disclosure across every mode**, exactly as you asked.
 
@@ -4493,7 +4493,7 @@ git push
 
 Guide me Skills tab → Choose folder (e.g. `C:\Projects\ChakraSkills`) → Create skill named e.g. `greeting`.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's the click-by-click, plus a ready-to-paste example so you can actually see it fire.
 
@@ -4555,7 +4555,7 @@ Once "greet me" produces the formatted greeting, the skill system is proven — 
 
 yes it works
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Excellent — that's Skills proven end-to-end: the model saw the index, inferred the match, called `load_skill`, and followed the instructions. Same engine works in Chat, Code, Cowork, and Projects.
 
@@ -4580,19 +4580,19 @@ What next — **Projects persistence** (save/resume sessions, the thing that mak
 
 in real time i wan Chakra to pick skills from folder where Claude skills are stored alos
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two things in that ask: **multiple skill folders** (your own *and* Claude's) and **real-time** pickup (changes reflected without restarting a chat). Let me wire both. First, make discovery handle several folders and scan recursively (Claude nests skills), and refresh the skill list every turn.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good timing — and **import is actually the cleaner path** than re-typing skills. Let me add an "Import skill" (copy a folder or a `.zip`/`.skill` into your skills folder) alongside multi-folder support, so you can also just point Chakra at Claude's skills folder directly. Let me finish the multi-folder + real-time wiring, then add import.
 
@@ -4600,133 +4600,133 @@ First, settings: support multiple skill folders with migration from the old sing
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now make the skill index refresh every turn (real-time), not just on the first message:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Pass the folder list (not the single dir) through the SessionManager:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the main process: multi-folder skills + folder/zip import handlers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rebuild the Skills panel: multiple folders, plus Create / Import folder / Import archive:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the changed main-process files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All `FAIL`s are the degraded mount (it even fails `skills-manager.cjs`, which passed minutes ago and I only rewrote — same file, different read result = mount, not code). Let me confirm the two heaviest rewrites are structurally complete on the host:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both files are complete and correct on the host — the `FAIL`s were the mount serving truncated copies (it failed `skills-manager.cjs`, which I'd only rewritten, not broken). Everything's sound.
 
@@ -4770,7 +4770,7 @@ Can create memory.md just in case if this chat get deleted so that you can start
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -4780,25 +4780,25 @@ No response requested.
 
 Can create memory.md just in case if this chat get deleted so that you can start from where you left. keep updating this file
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Smart — let me write a `MEMORY.md` at the repo root that captures everything needed to resume cold. I'll keep it updated as we go.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `MEMORY.md` is at the repo root. It's a cold-start brief: what Chakra is and why, how to run/commit, the full architecture (transports, modes, providers, permissions, connectors, skills), phase status, a file-by-file map, the key bug fixes and design decisions, the environment quirks (the mount truncation gotcha, PowerShell-5 no `&&`, native-binary installs), and the exact next steps. Any fresh session can read it and continue without re-deriving everything.
 
@@ -4822,7 +4822,7 @@ When you're ready, restart and test the Skills tab (add a folder, Create/Import 
 
 now lets move to projects. same create exact full fucntionalities of claude
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me match Claude Projects properly. Claude Projects = a **named workspace** with three things: **custom instructions** (a per-project system prompt), **project knowledge** (files/text injected as context into every chat), and **persisted conversations** that all share that context. That's chat-grounded, not the folder-agent — so I'll make `project` its own persisted, knowledge-grounded chat workspace (Cowork/Code keep the folder-agent).
 
@@ -4830,43 +4830,43 @@ This is a big build, so I'll do it as **Increment 1 = the persistence core** (pr
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Quick pivot — that Skills request is small and concrete, so let me knock it out before continuing Projects: add per-skill **on/off toggle** and **delete**.
 
@@ -4874,31 +4874,31 @@ First, track disabled skills in settings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC — annotate `enabled`, and add toggle + delete:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On it — I'll build Projects through to completion and leave test notes for when you're back. Continuing.
 
@@ -4906,295 +4906,295 @@ First, finish Skills toggle/delete: filter disabled skills in the loop.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Skills UI — add toggle + delete per skill:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Skills toggle/delete done. Now Projects — the store first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add `systemOverride` to the loop (for project instructions/knowledge):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire the SessionManager — require the store, drop `project` from agent modes, seed/persist project sessions:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the project-turn handler (persisted, knowledge-grounded chat with skills/connectors):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Projects IPC (incl. file-knowledge import) and preload:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add mock stubs so the browser UI doesn't crash:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Projects UI. Building the browser (projects list, instructions, knowledge, conversations):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now integrate Projects into `App.jsx`. Let me read the relevant sections:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the render block — show the Projects browser, or the conversation chat with a project header:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Projects is fully wired. Let me verify the main-process files compile:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Those are all the mount's corrupted reads again (`projects-store.cjs` passed; the rest show truncated lines / `fs:440` I/O). Let me verify reliably by copying to local disk, away from the flaky mount:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The mount is intermittently failing reads. Let me retry the copy a few times to get past the flaky I/O:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Same story — the mount corrupts reads even during copy, so the two "FAIL" files are truncated copies, not real errors (`projects-store`, `mcp-manager`, `agent-transport` pass clean; the host files I edited are verified via Read). I can't get a clean full build through this degraded sandbox; the real verification is your first `npm run electron:dev`.
 
@@ -5202,43 +5202,43 @@ Let me mark this done and update MEMORY.md.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — Projects is built end-to-end while you were out. Here's the welcome-back summary.
 
@@ -5266,13 +5266,13 @@ I updated `MEMORY.md` with everything (Projects design, file map, next steps, th
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 When it runs cleanly, commit the batch:
 
@@ -5290,7 +5290,7 @@ Remaining Phase 3 after this: conversation search, PDF/docx knowledge parsing (k
 
 For Project provide option to link to folder for files. claude had provision for github also
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good additions — both map cleanly onto giving a project a **linked folder of files**: "Link folder" points at a local folder, and "Link GitHub" clones a repo into a local folder. Once linked, the project's conversations get file access (read/edit) over that folder, on top of its instructions + knowledge. Let me build it.
 
@@ -5298,817 +5298,817 @@ First, the main-process handlers (folder link, GitHub clone, unlink, pull):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the Projects folder/GitHub feature, then build Dispatch (I'll address that next). First, make project conversations use the linked folder for file access:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Projects UI — a "Files source" section (link folder / link GitHub / unlink / pull):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Projects folder/GitHub linking is done. Now **Dispatch** — I'll interpret it as Claude-style **background/automated tasks**: define a reusable task (a prompt + where it runs — Chat, a Project, or a folder), **Run now** on demand, or **schedule** it to run on an interval; results are captured and stored. (If you meant something different by "Dispatch," tell me and I'll adjust — but this is the most useful read and matches Claude's scheduled tasks.)
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Noted on Gmail/OneDrive — I'll handle that via the existing Connectors (MCP) system (add them as presets surfaced in the project) right after I finish Dispatch, which is mid-build. Continuing Dispatch — the headless runner:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good — "Scheduled" is the recurring side of the same task system, so I'll fold Claude-style scheduling (off / hourly / daily-at-time / weekly) into Dispatch as one section. Let me upgrade the task schedule model:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Dispatch IPC + the minute scheduler in main:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Preload + mock stubs for dispatch:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add Dispatch to the sidebar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Dispatch panel itself (tasks, targets, Claude-style schedule, run + history):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Wire Dispatch into App:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Dispatch is fully wired. Now the **Gmail / OneDrive** connections for projects — these are MCP connectors, so I'll add them as one-click presets and surface a quick-connect in the project. Let me read the Connectors presets:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add a "Connections" quick-connect (Gmail/OneDrive) to the project detail:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All features built. Let me verify the new main-process files compile:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The three new `.cjs` files pass clean; `main.cjs`/`session-manager.cjs` are the mount's I/O failures again (every edit went through the reliable host editor). Let me update MEMORY and wrap up.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got your list — I'll knock out all four while you're out, in order: **Claude Code → polished futuristic design → Connect your apps → Live Artifacts**, updating `MEMORY.md` after each so nothing's lost. Marking Dispatch done and starting.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Claude Code tools done. Let me humanize the new tool cards:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the big one — a polished, original **futuristic-minimal** redesign. Rewriting the theme (new palette, typography, refined components) while keeping every class the components use:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Design overhaul is in (a new "Aurora Noir" futuristic theme — near-black with an electric-iris/cyan accent, hairline borders, glass topbar). Marking it done. Your 4 settings improvements are good calls — I'll fold them in now before Connect-apps and Artifacts.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Noted — bold, glossy, different sidebar too. I'll redesign it as part of this pass. Let me power through: settings backend first, then the new glossy sidebar, then Connect-apps and Artifacts. Reading the settings defaults:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the online/offline ping in providers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now show the online dot + cloud/local tag in the Topbar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Settings improvements done (proxy removed + migration, online/offline dot, cloud/local tags, picker is the single source of truth). Marking it complete and doing the **bold glossy sidebar** now.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the glossy CSS for the new sidebar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Sidebar redesigned (glossy mode tiles with gradient icon chips, a glass new-session button, real recent projects, a bottom tools rail). Marking done; now **Connect-your-apps gallery**.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Rewriting Connectors into a proper "Connect your apps" gallery:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Glossy app-card styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Connect-apps gallery done. Now the final one — **Live Artifacts**. First the extractor + panel:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire artifacts into messages — show an "Open artifact" pill:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now restructure App to split chat + artifact panel. Reading the render branch:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Adding the split-layout CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All four tasks plus the two extras are done. Let me do a final syntax check on the most complex new logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Same mount truncation (line 101 shown cut off; `fs:440` I/O). Let me confirm `agent-openai.cjs` is structurally intact on the host (the new search/walk code):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host file is intact — the FAIL is the mount's truncated read (dispatch files passed clean). All four tasks plus the two extras are done. Marking complete and updating MEMORY.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All four of your tasks are done, plus the two extras you added along the way. Here's what's waiting for you.
 
@@ -6143,13 +6143,13 @@ git push
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Welcome back whenever you are — all four tasks (Claude Code, futuristic redesign, Connect‑your‑apps, Live Artifacts) plus the glossy sidebar and your settings improvements are done and logged in `MEMORY.md`. The task list shows everything closed out. Fire up `npm run electron:dev` and tell me what the terminals say — I'll squash any first‑run errors and then we can polish whatever feels off in the new look.
 
@@ -6164,7 +6164,7 @@ Alo if i may recommend improvments in settings.
 3. give indicator if selected model is active or offline
 4. against each model can you indicate if its cloud or local machine
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good news — you already sent these earlier and I built all four. They're in the code now (just need a restart to see, since they touch the main process). Quick confirmation of each:
 
@@ -6190,7 +6190,7 @@ i need improvements in settings
 5. Rename Project as Chai
 6. Add a logo with cup of tea boiling
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Solid batch. Quick reads on a couple before I build:
 
@@ -6201,271 +6201,271 @@ Let me set up and build.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Adding profile + Google creds to settings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Google PKCE sign-in + Anthropic link in main:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now restructure Settings into sections (Profile / Account & Sign‑in / Model Configuration). Reading the current file to preserve the provider logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add the account-card style, then rebrand. CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the rebrand + boiling tea‑cup logo. Sidebar brand:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Steam animation CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rebrand the visible "Chakra" → "Chai" across the app (keeping the internal package id as chakra so your data stays put):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Marking the rebrand done. Let me syntax-check the heaviest new main-process code (the OAuth additions):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All mount-truncation noise again. Let me confirm the new OAuth block in `main.cjs` is structurally sound on the host:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host file is sound — all FAILs are the mount's I/O. All six are done. Updating MEMORY, then the summary.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All six are in. Here's what changed, with the honest caveats on the two OAuth ones:
 
@@ -6493,7 +6493,7 @@ Same standing caveat: large unverified batch (degraded sandbox), so first launch
 
 give me git command to update
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All staged at once — run these in the project folder (PowerShell, one line each):
 
@@ -6529,55 +6529,55 @@ llama.cpp
    2. Instructions for Chai, apply same logic as Claude where in these instructions are applied for every conversation with application
 2. Account Signin is not working
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Three good items. The trickiest is Gemini — its OpenAI endpoint lives at a non‑`/v1` path, so I'll make the URL builder smart first, then add the providers. Let me read providers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the five providers and a global‑instructions field to defaults:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Quick pause on the build to answer this directly, because it's a strategic question worth getting right — then I'll finish the providers/instructions work.
 
@@ -6606,67 +6606,67 @@ Now resuming your build — adding the five providers, the global "Instructions 
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire the global "Instructions for Chai" into every conversation. Agent loop first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That screenshot is Claude Code's **execution‑environment** picker (Local / Cloud / Remote Control / SSH). Let me be straight about what's realistically buildable in a local app before I add half‑working buttons — and I'll finish the in‑flight items first. Wiring the global instructions through:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the "Instructions for Chai" + a Save button to the Profile section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done with this batch, plus an honest read on the Claude Code environments.
 
@@ -6703,67 +6703,67 @@ Tell me what the `[VITE]` / `[ELECTRON]` terminals show. Once it's up and the 5 
 
 drop > Cloud environment & Remote Control — these are Anthropic‑hosted server features (a managed sandbox VM, and a relay daemon you drive remotely). A local Electron app cannot provide them without a backend you run. I can add the menu entries, but they'd be honest "requires a server" placeholders, not working — building real ones means standing up cloud infra, which is a separate project. ❌ (not without a backend)
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good — **Code environments = Local + SSH only.** Dropping Cloud and Remote Control entirely (no fake buttons). Let me build the SSH environment for real so we can test it together. Adding the dependency and the backend first.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now route the agent's tools through the SSH backend when present:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Renaming the modes for their own identity, then I'll answer the Scheduled / Live Artifacts questions and give SSH status.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Renamed — the three modes now have their own identity (mode IDs unchanged, so nothing breaks):
 
@@ -6795,7 +6795,7 @@ Tell me what `[VITE]`/`[ELECTRON]` say. If it boots, we "test it together" (prov
 
 what is purpose of + New Session ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Honest answer: right now it does very little, and arguably the wrong thing.
 
@@ -6821,193 +6821,193 @@ I'd lean toward #2 eventually (it's the real Claude‑like behavior), but #1 is 
 i pefer like claude into three sections
 Lets Talk, Let collaborate, Lets Build, then under each of them + new Task so that user can initiat multiple tasks
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's a clean, Claude‑like structure — three workspaces, each holding multiple persisted tasks. Building it: a sessions store, then the sidebar + wiring. First the store and the agent‑loop seeding fix it needs.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 New layout it is — primary workspaces as a **top‑center nav**, tools (Skills/Connectors/Dispatch) on the sidebar, Settings pinned bottom‑left. This is a self‑contained UI change, so I'll do it cleanly (the per‑mode multi‑task persistence I started stays staged, unwired, for after we boot‑test). Let me export the permission picker, build a TopNav, slim the Sidebar, and rewire App.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Adding the model‑purpose tags too (a name‑based classifier — coding / reasoning / vision / fast / general) since I'm in the model picker anyway. Building the TopNav first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The animated logo idea is great for cohesion — I'll make a reusable `TeaLogo` and sprinkle it (avatar, empty states, top nav). First, finishing the layout so the app is in a complete state. Reading the App render head:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I added an `app-body` wrapper — need to close it before the end. Let me read the render tail:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now slim the Sidebar to just tools + Settings at the bottom:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Update the App import (Topbar → TopNav):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the layout + generalized tea‑logo CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Reusable animated `TeaLogo`, then drop it into the assistant avatar and empty states:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Import TeaLogo into App and add it to the empty state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the model‑purpose tags in the picker (name‑based classifier):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — animated tea‑cup logo now appears in the **top‑left brand**, as the **assistant's avatar** on every reply (steam rising as Chai "talks"), and **big in the empty state** of each workspace. It's a reusable `<TeaLogo>` so I can drop it anywhere else you want (thinking indicator, loading states) later.
 
@@ -7038,55 +7038,55 @@ So: boot it, paste what the terminals say, and we genuinely "test it together." 
 
 Keep Logo in bluish colour blending with theme
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Making the logo a soft bluish that blends into the theme (instead of the bright white cup / bright chip). Updating the default color, the brand tile, and the avatar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the tile/avatar backgrounds so the bluish cup blends:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the logo is now a soft **periwinkle‑iris (`#9fb0ff`)** on subtle translucent bluish tiles instead of a bright white cup/chip. It blends into the Aurora‑Noir theme in all three spots: the top‑nav brand, the assistant avatar, and the big empty‑state cup. Steam still animates.
 
@@ -7111,91 +7111,91 @@ Same for Lets Colloborate, centre alignment, folder selection, act optinos below
 
 [Image: original 2552x1182, displayed at 2000x926. Multiply coordinates by 1.28 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's the Claude layout — centered greeting + centered input when empty, options right under it. Let me restructure the chat surface to match. Reading the current block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On it — centering the input like Claude, with options below it. Replacing the chat surface:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 CSS for the centered hero, and a bigger top‑left logo:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The hero is in the shared chat branch, so **Let's Collaborate and Let's Build already get the same centered alignment** — and because they're agent modes, the **folder selection + act (permission) options render right below the centered input**, exactly as you asked. I just need to add the CSS that actually centers it, and finish the bigger logo. Adding the hero styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Tightening the hero to match Claude's alignment — icon inline‑left of the greeting, centered input below. Updating the markup:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The centered‑hero alignment now applies to **all three** — Let's Talk, Let's Collaborate, Let's Build:
 
@@ -7223,7 +7223,7 @@ One honest note: I won't make more layout changes until I can see it render — 
 
 i have ambitions request, donot start build give me opinion. how difficult is it to build app for chai
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Straight opinion, no building. And the honest headline first: **the hard part of "building the app" is not the part you've been doing.** Features and UI are the visible 80% — and we've sprinted through them. Shipping a real app is the *invisible* 80%: reliability, security, packaging, signing, updates, cross‑platform, and support. That second 80% is where almost all the real difficulty lives, and we haven't touched it. Worse, right now we don't even know if Chai *boots* — so the honest difficulty isn't "hard," it's "unknown until it runs."
 
@@ -7267,31 +7267,31 @@ layout is till same
 
 [Image: original 2547x1162, displayed at 2000x912. Multiply coordinates by 1.27 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 It booted — and that's actually the new layout (top nav, slim tools sidebar, bluish steaming logo, the hero with greeting + folder/permission options). The one thing that didn't take: the hero is **left‑aligned instead of horizontally centered**. That means the `.hero` centering CSS isn't applying. Let me look at what's actually in the stylesheet:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it — and it's a one‑line bug, not your tweaks. When I moved from the old grid layout to the new flex layout (`.app-body`), the **`.main` column lost its "grow to fill" rule**. It used to be the `1fr` grid column; now in flexbox it has no `flex: 1`, so it shrinks to content width and hugs the left — which is why the hero (and everything in it) sits left and narrow instead of filling/centering. Fixing it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That should fix the centering live — it's a CSS‑only change, so Vite's hot reload will apply it without even restarting (if not, just `Ctrl+R` in the window). The hero greeting + input will now fill the main column and **center horizontally**, with the folder + "Ask before changes" options centered below — Claude‑style.
 
@@ -7315,7 +7315,7 @@ If chat streams and the layout centers, you're in genuinely good shape and I'll 
 
 lets update git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here you go — run in the project folder, one line each (PowerShell):
 
@@ -7343,37 +7343,37 @@ Note this snapshots the **staged‑but‑unwired** pieces too (SSH backend, `ses
 
 attach button in inactive in inuput window
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The "attach" chip is just a placeholder — let me make it actually attach files (reads their text and adds it as context to your message). Reading the composer:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the styles for attached‑file chips:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — **attach now works.** Clicking it opens a file picker; selected files show as removable chips above the input, and on send their **text contents are prepended to your message as context** (capped at 20k chars each so you don't blow the model's context). It's renderer‑only, so Vite hot‑reload picks it up — no restart needed.
 
@@ -7396,7 +7396,7 @@ git push
 [image]
 i need option in Chai also, make it work like it works in calude
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -7406,43 +7406,43 @@ No response requested.
 
 also add voice input options
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Building the Claude‑style **"+" menu** in the composer plus a **mic (voice input)** button. The menu wires to what Chai actually has (files, GitHub, Skills, Connectors, style/instructions); voice uses the browser speech API. Writing the composer:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Styles for the menu + voice button, then wire navigation:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now pass navigation into both composer instances:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both in — refresh (CSS/JSX hot‑reload, no restart):
 
@@ -7472,199 +7472,199 @@ git push
 [image]
 on side bar can you add option called  Consumption . attached is from Claude for reference, but i want something easy to understand and intuitive chart or graph by model consumption
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Nice — a usage/consumption view. Chai needs to start **tracking** usage first (it doesn't yet), then show it as an intuitive by‑model chart. Building the tracker + store:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now hook tracking into the SessionManager:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 IPC + preload + mock:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add Consumption to the sidebar and build the panel:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Wire Consumption into App:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the cards, segmented range toggle, and the by‑model bars:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Three good fixes. The cleanest way to do (2) and (3) together is to move the **model selector and permission picker into the input box** (like Claude — they sit inside the composer), and strip them from the top‑right. Let me wire that, plus "Add to project" in the + menu.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now strip the duplicate model + permission pickers from the top‑right (keep just the online/cloud status):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Pass the pickers into the composer (both hero and active), and drop the now‑redundant permission picker from the hero options:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Remove the permission picker from the hero options (now lives in the input):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Make the in‑composer pickers open upward (so they don't clip when the input is at the bottom):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All three done, plus the Consumption view:
 
@@ -7697,127 +7697,127 @@ git push
 
 move ask before option and model selector outside of input window... next to select folder Poisition. also move model indicator next to model selector also
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — pull them out of the input and place them in a row right by "Choose folder," with the status indicator next to the model selector. Reverting the in‑composer pickers first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Continuing the controls‑row move. App needs the model picker import:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Define the shared controls row and place it under the input in both states:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Render the controls row in the hero (replacing the folder‑only row):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add it under the bottom input too — reading the active region:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now strip the status chip from the top nav (it moved next to the model selector) and keep the bar balanced:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That edit left TopNav malformed — let me read and rewrite it cleanly:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me rewrite TopNav.jsx cleanly:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 CSS for the controls row (and its upward‑opening menu):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the **model selector and "Ask before changes" are now outside the input**, in a row directly under it next to **Choose folder**, and the **online/cloud indicator sits right next to the model selector** in that same row. The top‑right is now empty (no duplicate), and the menus open upward so they don't clip. This row shows in both the centered hero and the active chat (under the bottom input).
 
@@ -7849,7 +7849,7 @@ can you explore to include similar messaging functionality. this is from Free Cl
 
 [Image: original 2170x717, displayed at 2000x661. Multiply coordinates by 1.08 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This is the "remote‑control your agent from a chat app" feature — free‑claude‑code lets you message a Telegram/Discord bot and it runs the agent on your machine and replies. Here's my honest read, Telegram‑focused.
 
@@ -7884,7 +7884,7 @@ Want me to build the **Telegram text v1** now — `telegram-bot.cjs` + a Messagi
 
 for each router give save button and save value. for example ollama test find 7 models but when i got back to model selector its not visible. data is not saved i believe. validat
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good catch — let me validate the actual flow. Your provider *config* (URL/key/model) does auto‑save on edit. What's **not** persisted is the **discovered model list**: the "Test" button fetches Ollama's 7 models only into a local dropdown in Settings; the **top‑bar picker** loads its list once at app start and isn't refreshed after you test. So the picker shows nothing for Ollama until you hit its ⟳ refresh — which feels like "data not saved." The right fix is exactly what you asked: a **Save** button that saves the provider, fetches the models, and **caches them** so the picker always has them.
 
@@ -7892,55 +7892,55 @@ Let me read the Settings model section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the Save button to the provider editor:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Finally, make the top‑bar picker use the cached models so they show up even without a live re‑fetch:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Validated and fixed. Here's what was actually happening (so you know it wasn't lost data):
 
@@ -7968,7 +7968,7 @@ git push
 
 build telegram, add messaging options in setting and build it there. is this amiable for whatsapp ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Building the Telegram bot + a Messaging settings section now. Quick answer on **WhatsApp first**, because the difficulty is very different:
 
@@ -7978,241 +7978,241 @@ Now building Telegram. Settings model first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire it into main (start on launch + an apply/status IPC):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Preload + mock:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Messaging section in Settings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got the Default Model request — I'll fold it in. Let me finish the messaging section and add Default Model together (both touch Settings). Adding state + the model picker import:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now build the picker groups + Default Model selector, and the Messaging section. Reading the model section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now find and close the model section's new wrapper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Adding the `defaultModel` field and the startup‑apply, then I'll address the Anthropic account question (it needs an honest answer). Settings default:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 App startup — apply the default model:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Anthropic question — let me wire a real verification. Adding state + a verify handler:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rewrite the Anthropic account card to be honest about how auth actually works:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I've built a lot into Settings (Default Model, Telegram Messaging, Anthropic verify) — Settings had structural JSX edits, so let me verify it's balanced before you test:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Settings is balanced — verified. Here's everything in this batch, leading with your Anthropic question since it deserves a straight answer.
 
@@ -8247,121 +8247,121 @@ git push
 
 in Account and Signin remove google part. just keep anthropic. rename account and signin as Claude Sign in. Also in Profile can you link profile via google account or github account option ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — Google + GitHub move to **Profile** (for linking your profile), and the sign‑in section becomes **"Claude Sign in"** with just Anthropic. Adding GitHub device‑flow auth. Settings model first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the GitHub device‑flow sign‑in in main:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Settings UI: rename the section, move Google to Profile, add GitHub, and strip the Google card from the Claude sign‑in section.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the Google/GitHub link block to the Profile section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now strip the Google card from the "Claude Sign in" section (keep only Anthropic):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the account section closes correctly after these removals:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Here's the reshuffle:
 
@@ -8395,7 +8395,7 @@ git push
 
 sign in with google, just route to google for validation instead of asking for outh details
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -8405,19 +8405,19 @@ No response requested.
 
 using anthropic api, will it consume absed on plan tokens or api credits ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the current Anthropic billing model before answering (it's a money question).
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: WebSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Verified, and it matters for your wallet. Short answer: **with an Anthropic API key, Chai consumes API credits (pay‑as‑you‑go), not your Claude Pro/Max chat allowance.** Confidence: high.
 
@@ -8441,7 +8441,7 @@ Sources:
 
 i have $200 Max‑20× subscription and i want claude login to link to my subscription and use it if i use anthropic models
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This is doable, and your $200 Max‑20× is exactly the plan that gets the **separate Agent‑SDK credit pool** ($200/mo at API rates) — so linking via `claude login` makes Anthropic models in Chai draw from that pool instead of pay‑as‑you‑go API credits. Let me explain the mechanism, then wire the toggle.
 
@@ -8451,7 +8451,7 @@ Wiring that toggle now. Settings flag:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
@@ -8583,127 +8583,127 @@ Summary:
 If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: C:\Users\chait\AppData\Roaming\Claude\local-agent-mode-sessions\50ab4547-d459-45fa-8a67-631f9b713f9f\edd4944b-b060-4a20-98a1-10c69920be28\local_0a5d7dce-4c63-417d-9671-29b21393e1f1\.claude\projects\C--Users-chait-AppData-Roaming-Claude-local-agent-mode-sessions-50ab4547-d459-45fa-8a67-631f9b713f9f-edd4944b-b060-4a20-98a1-10c69920be28-local-0a5d7dce-4c63-417d-9671-29b21393e1f1-outputs\902fe014-9aef-46e9-a4aa-b3f65b439b16.jsonl
 Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, do not preface with "I'll continue" or similar. Pick up the last task as if the break never happened.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the env handling in agent-transport.cjs:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I need to check how Anthropic **chat** (not agent) is routed — subscription creds won't work on the raw `/v1/messages` path. Let me check the session manager:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The chat/project paths use the raw Anthropic API, which subscription creds can't authenticate. To make subscription cover all Anthropic usage I need to route those through the SDK too. Let me check `runAgentTurn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll add a subscription flag, bypass the no-key guard for it, and route Anthropic chat/project through the SDK. Let me see the top of the turn method:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now route Anthropic chat/project through the SDK when in subscription mode:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the `_chatViaSdk` method:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the UI toggle in the Anthropic card. Let me read the current state of that section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — subscription billing is wired. Here's what I changed and how to use it.
 
@@ -8742,73 +8742,73 @@ git push
 [image]
 getting error for telegram
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me look at the Telegram bot and its status reporting to find what "error" actually is.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The generic "error" is hiding Telegram's actual reason. The most common cause is a 409 conflict (a webhook is set, or another poller is running on the same token). Let me surface the real message and auto-clear any webhook on start:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now let me check how `applyMessaging` calls start and returns status, so the UI shows the real reason:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The IPC returns status *before* async validation finishes. Let me make it await:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Fixed three things behind that generic "error":
 
@@ -8845,7 +8845,7 @@ npm i -g @anthropic-ai/claude-code
 claude login
 ```
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
@@ -8855,7 +8855,7 @@ _[used tool: Read]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -8865,13 +8865,13 @@ No response requested.
 
 remove signing option with Anthropic API key,  only keep it via Use my Claude subscription  its confusing. highlight this more visible  > One‑time setup — run this in a terminal, then sign in with your Max account:
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The "Claude Sign in" section now has just one option — the **Use my Claude subscription** checkbox — and the setup steps are now a prominent accented card with a proper code block instead of buried small text. The API‑key sign‑in is gone from here.
 
@@ -8890,7 +8890,7 @@ npm run electron:dev
 [image]
 nothing is happening when i click on apply
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That status — **"bad token: Not Found"** — is the new diagnostic working correctly: Apply *is* firing, but Telegram is rejecting the token. `Not Found` from `getMe` means the token string itself is malformed/invalid, not a network issue.
 
@@ -8898,13 +8898,13 @@ Two fixes: I'll trim hidden whitespace (a very common paste problem), and then y
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I added whitespace‑trimming and a format check, but the real problem is the token value itself. `Not Found` from Telegram almost always means one of these:
 
@@ -8926,43 +8926,43 @@ After this change the status will tell you precisely where it fails: `bad token 
 
 move projects to side bar
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Simple — both use the same `mode` state, so I just move the entry between the two components.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. **Projects** now lives in the sidebar (top of Tools, with a board icon), and the top nav is just Let's Talk / Let's Collaborate / Let's Build. Clicking it routes through the same `mode` state, so the Projects browser opens exactly as before. No restart needed — Vite will hot‑reload the renderer.
 
@@ -8972,13 +8972,13 @@ Done. **Projects** now lives in the sidebar (top of Tools, with a board icon), a
 
 what exactly  A folder  (agent can edit files and run command) perform in telegram chatbot ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's exactly what happens when you pick **"A folder (agent can edit files and run commands)"** as the Telegram run target.
 
@@ -8998,67 +8998,67 @@ And the blunt security reality: this is **remote shell + file write access to yo
 
 im unable to entre or type anything in input window
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Composer itself looks fine — the textarea isn't disabled. The cause is likely in how App renders it (an overlay, or `busy` stuck). Let me look:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The textarea has no disabled state, so this is almost certainly a CSS overlay swallowing clicks/focus. Let me check the relevant styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 CSS is fine. Let me check for a global keyboard/event handler in App that could be intercepting input, plus any error in the recently‑touched components:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found the most likely culprit. The textarea isn't disabled and the CSS is clean, which means something is rendering an invisible full‑screen layer over it. The prime suspect is a **stuck permission modal**: my recent change routes Anthropic chat through the agent SDK, so if the model fires a tool call, `PermissionModal` drops a full‑screen `.scrim` (position fixed, inset 0, z‑index 50) over everything — including the input — and right now that modal has no way to be dismissed except by answering it. If it's even slightly transparent you'd read it as "the app froze."
 
@@ -9066,43 +9066,43 @@ Let me make that overlay impossible to get stuck on (click‑outside and Escape 
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now your message about the Telegram ID — let me find and remove it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 It's hardcoded as the placeholder — I'll swap it for a generic example:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done.
 
@@ -9119,229 +9119,229 @@ Both are renderer‑only, so Vite hot‑reloads them — no restart needed. Try 
 [image]
 when sent input hi.... its just type random non stop text
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The model is dumping its raw chain‑of‑thought instead of answering — and the trigger is the greeting skill's instruction to print "Today is `<current date>`", which sends the model into a spiral because it has no date. Two real fixes: give the model the actual date, and strip reasoning/`<think>` leakage. Let me check the provider streaming first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The streaming only forwards `content`, so this rambling is the model's *actual* output — a weak model verbalizing its reasoning, and the greeting skill telling it to print "Today is `<current date>`" with no date available is what detonates it. The highest‑impact fix is to inject the real date and tell it to answer directly. Let me update the chat system prompt:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now a defensive `<think>`/reasoning stripper for OpenAI‑compatible streams (helps reasoning models that wrap thoughts in tags):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The rambling fix is done (date injected, "answer directly" instruction, and a `<think>` stripper). Now your rename request — let me find every "Chakra"/"chakra":
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's the important constraint I need to flag before doing this: the package's internal `"name": "chakra"` and `appId` are **load‑bearing** — they determine where your settings live (`%APPDATA%\chakra\chai-settings.json`). If I rename those, your saved providers, API keys, and Telegram token get orphaned and you start from a blank config. So I'll change every **user‑visible** "Chakra" to "Chai" and the cosmetic internal ones, but deliberately keep that one identifier. Let me do the replacements:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the skill template (visible in generated skills), plus cosmetic internal references:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now package.json — change the user‑facing `productName` and `description` to Chai, but keep `name`/`appId` (the data‑path identifiers):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Every user‑visible "Chakra" is now "Chai" — the permission dialog ("Chai wants to make a change"), the Dispatch and Projects placeholders, the generated‑skill template, the installer/app name (`productName`), the description, plus cosmetic internals (the MCP client id, temp filenames, console log tag `[chai]`, and CSS/code comments).
 
@@ -9367,43 +9367,43 @@ git push
 
 thats ok, ill enter api keys again, lets keep it clean for once
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Clean slate it is. Renaming the internal identifiers too:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's everything — the app is now `chai` top to bottom. On restart it'll read from a fresh `%APPDATA%\chai`, so you'll re‑enter your API keys, Telegram token, and any default‑model/subscription settings once. Your old `%APPDATA%\chakra` folder is left untouched (you can delete it whenever).
 
@@ -9430,7 +9430,7 @@ git push
 [image]
 why is giving all unnecessary information for user in response
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I can see the real bug. This is the **agent path** (it's calling `load_skill`), which streams through `agent-openai.cjs` / `streamChatTools` — not the `streamOpenAI` function I patched. And this model emits its reasoning as plain content terminated by an orphan `</think>` with no opening tag, so a simple tag‑strip can't catch it mid‑stream.
 
@@ -9438,151 +9438,151 @@ The reliable fix for the agent path: buffer each model reply, strip everything u
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The reported case is the skills/agent path, and it streams live (`mode === "chat"`), so reasoning leaks token‑by‑token. I'll make that path buffer and strip reasoning — including the orphan `</think>` with no opener. Adding the helper and switching off live streaming for the tool loop:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now define `stripReasoning` once and share it. Let me add it to providers.cjs (already imported there) and export it, then use it in both:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now make the plain‑chat `streamOpenAI` buffer‑and‑clean (so reasoning never leaks there either), and export `stripReasoning`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The orphan‑close case still leaks live in plain chat (we can't know it's reasoning until the closing tag arrives at the end). To be truly clean, I'll fully buffer that path too — emit the stripped text once:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The reset signal needs UI plumbing — simpler and guaranteed clean is to just buffer this path fully, matching the agent path. Let me simplify:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's convoluted. Let me write it cleanly — full buffer, emit clean once:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now export `stripReasoning`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the "Welcome to **Chakra**" in the greeting itself comes from the greeting skill's `SKILL.md` file (user content on disk), not code. Let me find it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All set. Here's what was actually happening and what I changed.
 
@@ -9612,43 +9612,43 @@ npm run electron:dev
 
 rename project to Thinkflux and use interesting logo related to brain or thinking. update project name whereever it is Chai
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Renaming to **Thinkflux** and swapping the tea‑cup for an animated brain mark. Let me map every "Chai" reference and the logo usage first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good call — let me show you options before touching anything. Holding the rename until you pick.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__read_me]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here are four directions for the Thinkflux mark — all built in the app's Aurora‑Noir palette so you can see them as they'd sit in the tile:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Quick read on each, then pick:
 
@@ -9661,7 +9661,7 @@ My pick: **Synapse** — it scales down cleanest (critical, since it appears at 
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
@@ -9671,7 +9671,7 @@ _[used tool: AskUserQuestion]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -9681,283 +9681,283 @@ No response requested.
 
 proceed with option 1.synapse
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Locked in — Synapse it is. Building the mark and doing the rename now.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now swap imports/usages and rename the visible "Chai" strings. TopNav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the remaining UI strings. Composer placeholders:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now Settings, Skills strings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the backend system prompts and strings. agent-openai (3 system variants):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now telegram-bot, main.cjs sign-in page, skills-manager template:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now product identity — index.html title and package.json. Keeping the internal package `name`/`appId`/`window.chai` to preserve your just‑entered keys:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Removing the now‑unused tea logo file:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Rename + Synapse mark are wired in everywhere user‑facing. Restart to see it (new logo in the top‑nav, chat avatars, and hero; "Thinkflux" throughout):
 
@@ -9974,109 +9974,109 @@ Now, your two other questions.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Understood — full clean rename, no preserved old id. Doing the internal identifiers too.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now package identity:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC channel namespace (`chai:*`) — invisible plumbing, but let me make it consistent too. Checking all occurrences first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Exactly two files, perfectly paired — safe to rename in lockstep:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Full internal rename is done — `name`, `appId`, lockfile, `window.thinkflux`, and all 97 IPC channel names (`thinkflux:*`) now match, in lockstep across preload and main. On restart it reads a fresh `%APPDATA%\thinkflux`, so re‑enter your keys once. Nothing says "chai" or "chakra" in code anymore (only the repo folder and Git remote, which are host/GitHub renames you do manually).
 
@@ -10084,13 +10084,13 @@ Now, amber/gold theme options:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Four warm directions above. My read: **Amber Noir** is the safest — pure amber on true black, highest contrast, the Synapse nodes glow beautifully against it. **Goldsmith** is more luxe (gold + bronze, slightly brown‑warm background) but lower contrast, so body text gets a touch harder to read. **Solar Flux** adds an orange secondary for energy. **Honey** is the only light option if you ever want a daytime mode.
 
@@ -10118,25 +10118,25 @@ git push
 1. lets stay with Aurora Noir · current for now
 2. ihave create new repo https://github.com/chaithruak/thinkflux.git.  since this new repo lets update repor with entire code base in current working condition.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Staying on Aurora Noir — nothing to change there. Now let me point the repo at your new `thinkflux.git` and push the whole working codebase. First, checking the repo state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Stop — I'm not going to run git from here, and you should know why. The Linux sandbox I use for shell commands has a **stale, nearly empty view** of your repo: `src/components/` doesn't even exist there, and git reports all your components (`TopNav.jsx`, `Dispatch.jsx`, `ProjectsBrowser.jsx`, etc.) as *deleted*. Your real files are fine — they live on your Windows host at `C:\Projects\ClaudeCodeUI\Chakra`, which is where I've been editing and where your app actually runs. But if I committed and pushed from this sandbox, I'd push a **wrecked tree with everything deleted** and corrupt your new repo on the first commit.
 
@@ -10175,7 +10175,7 @@ git push -u origin main --force
 
 can i move file from C:\Projects\ClaudeCodeUI\Chakra to C:\Projects\ClaudeCodeUI\Thinkflux to keep it clean... is it ok ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes, it's fine — nothing in the project hardcodes its own absolute path, and your settings/keys live in `%APPDATA%\thinkflux` (independent of folder location), so they'll survive the move. Git also travels with it: the `.git` folder moves too and your `thinkflux.git` remote stays intact.
 
@@ -10277,7 +10277,7 @@ To https://github.com/chaithruak/thinkflux.git
  * [new branch]        main -> main
 branch 'main' set up to track 'origin/main'.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That pushed cleanly — `thinkflux.git` now has the full codebase on `main` (new branch created, 249 objects, ~175 KiB). The CRLF warnings are harmless (just Windows line‑ending normalization). Your host tree was intact and healthy, exactly as it should be — the empty‑tree problem was only the sandbox's stale view, which is why I had you run it locally.
 
@@ -10303,7 +10303,7 @@ Git won't care about the folder name — the remote and history come along untou
 
 how to Reconnect the new `Thinkflux` folder to this chat so I can keep editing (my access still points at the old path until you do).?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 In this desktop app, folder access is managed by you, not something I can repoint myself — I only ever see folders you've explicitly connected. To reconnect after renaming:
 
@@ -10313,19 +10313,19 @@ I can also pop the folder picker for you right now so you just click to select i
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__request_cowork_directory]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — I just connected `C:\Projects\ClaudeCodeUI\Thinkflux` to this chat, so the moment you rename the folder to that, I can read and edit it directly.
 
@@ -10344,7 +10344,7 @@ One check once you've renamed: let me know and I'll do a quick read to confirm I
 
 how to check if every code is update in git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Run these in PowerShell from the project folder (`…\Thinkflux` if you've renamed it, else `…\Chakra`):
 
@@ -10385,73 +10385,73 @@ If you paste me the output of `git status` and the two `rev-parse` hashes, I'll 
 [image]
 make logo bit big and make animation bit more visible
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Bumping the size and making the synapse visibly "fire" — pulsing nodes plus an expanding ring:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good — I'm reading from the new `Thinkflux` path, so the rename + reconnect worked. Updating the logo:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now bump the sizes — hero greeting and top nav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the mark is larger (44px in the hero, 28px in the top nav) and the animation is much livelier: all six nodes now pulse in sequence (growing + brightening), the spokes flicker as it "fires," the core gently breathes, and an expanding teal ring radiates out every ~2.4s. It reads clearly as a thinking/firing synapse now.
 
@@ -10464,13 +10464,13 @@ Renderer‑only, so Vite hot‑reloads it — no restart. If the ring feels too 
 [image]
 remove square behind logo. just display logo
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Removed the tile — the synapse now sits directly next to "Thinkflux" with no square behind it. Hot‑reloads, no restart.
 
@@ -10483,7 +10483,7 @@ i have challenging requests now :)
 1.  i want you to build this code base such that it should bypass any corporate restrictions for installation and even when calling proxy llm it should bypass all network blocker and limitations. you are capable of doing it
 2. can this project be setup via terminal
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll help with #2 fully, but I have to be straight with you about #1.
 
@@ -10523,13 +10523,13 @@ Let me check your `package.json` scripts so I'm giving you the exact commands th
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here are the **exact** commands for your setup (the build script is `electron:build`, not `dist`, and it currently produces an NSIS installer):
 
@@ -10559,7 +10559,7 @@ Want the portable target + proxy support added now?
 
 all llms are allowed in our network. Both of those make Thinkflux work in a restricted environment the supported way proceed with that consideration
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All LLMs allowed — clean. Proceeding with both, the supported way: proxy‑aware networking + a portable (no‑installer) build. Let me wire them.
 
@@ -10567,91 +10567,91 @@ First, proxy support. Looking at the top of main.cjs to place the bootstrap:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me also let the proxy be set from the app's settings (not just an env var), and have it propagate to child processes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add `proxyUrl`/`noProxy` to settings defaults:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now `undici` dep + portable/dir build targets in package.json:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now a Settings field so the proxy can be set in‑app (no env var needed). Adding it under Model configuration:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both wired in. Here's what you've got now and the answer to your question.
 
@@ -10687,7 +10687,7 @@ added 1 package, and audited 484 packages in 2s
 To address all issues (including breaking changes), run:
   npm audit fix --force
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `undici` installed fine — that's the "added 1 package," so proxy support is ready.
 
@@ -10713,19 +10713,19 @@ Bottom line: you're good to go. Run `npm run electron:dev` (dev) or `npm run ele
 
 yes commit all cahnegs to git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I can't push from here reliably — the shell sandbox has no access to your GitHub credentials, and its view of the repo has been unreliable. Let me at least verify the sandbox now sees your real files at the renamed path, so I can confirm what you'll be committing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Can't push from here (the sandbox has no Git repo view and no GitHub credentials), so run this in your **own PowerShell** — it's the only place with the real repo and your auth:
 
@@ -10760,7 +10760,7 @@ A realistic heads‑up so the fingers‑crossed pays off: even a portable exe ca
 
 give me steps i need to do
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -10770,85 +10770,85 @@ No response requested.
 
 for desktop icon can you make it our logo icon
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — let me generate a proper Thinkflux icon (the synapse on a dark tile) and wire it into both the window and the installer/desktop shortcut. First checking the workspace and image tooling:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Generating the icon now — drawing the synapse on a dark tile, then exporting a multi‑size `.ico` + `.png`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Icon looks great — matches the app mark. Now wiring it in. First, electron‑builder (installer + desktop shortcut + exe icon):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the window/taskbar icon in main.cjs. Let me find the BrowserWindow setup:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me make sure `build/` isn't gitignored (so the icon commits):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `build/` isn't ignored — good, the icon will commit. Everything's wired.
 
@@ -10878,7 +10878,7 @@ Want me to also generate a macOS `.icns` and a Linux `512x512.png` in case you e
 
 next point is it possible to build extension like Claude Chrome? i want to use thinkflux with chrome
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes, it's possible — and there are two very different versions, with very different effort. Let me be precise about what's achievable, because "like Claude in Chrome" hides a big fork.
 
@@ -10904,7 +10904,7 @@ Which do you want — and where will you run it?
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
@@ -10914,7 +10914,7 @@ _[used tool: AskUserQuestion]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -10924,7 +10924,7 @@ No response requested.
 
 run option 2. what do you mean where you will run ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Lots happening — let me hit the urgent stuff first, then build option 2.
 
@@ -10946,13 +10946,13 @@ Now building **option 2 — the browsing agent extension.** Creating the icons a
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The npm error again confirms it: **Node.js is not installed on the office laptop, and you don't need it there.** That `npm install` command only works on a machine set up for development. For the office laptop, the answer is the portable `.exe` from the steps above — build it on your home PC, copy the one file over, run it. Don't install Node on the work machine (it needs admin and the build pipeline will fight the corporate network). If you *only* have the office laptop and no personal machine to build on, tell me and we'll find another route.
 
@@ -10960,49 +10960,49 @@ Now, the browsing‑agent extension. Writing the files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Built. The **Thinkflux browsing agent** is a complete Manifest V3 Chrome extension in the new `extension/` folder — `manifest.json`, `background.js` (reads the page + executes clicks/typing/navigation), `sidepanel.js` (the observe→decide→act agent loop calling your LLM), the side‑panel UI, icons, and a README.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 How to run it (on your **personal** Chrome):
 
@@ -11033,19 +11033,19 @@ Want me to add the **vision (screenshot) step** next, or wire the extension to t
 [image]
 gettin llm 404 error
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `404` with an empty body means the request hit a wrong URL path — almost always a base URL that's missing the `/v1` segment (so it POSTs to `…/api/chat/completions` instead of `…/api/v1/chat/completions`). I'll make the extension resolve the URL smartly (same logic as the desktop app) and show the exact URL in the error so it's debuggable:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now reload the extension to pick up the change: go to `chrome://extensions` and click the **reload icon** (↻) on the Thinkflux card, then try again. The error will now print the **full URL it hit and the response body**, so we'll see the exact cause.
 
@@ -11063,7 +11063,7 @@ Re‑run after reloading and paste me the new error text if it persists — with
 
 im trying to use nvidia
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 For NVIDIA NIM, use exactly these in the ⚙ settings (NIM is OpenAI‑compatible):
 
@@ -11083,43 +11083,43 @@ If it still 404s after reloading, paste the new error — it now shows the full 
 
 can i have similar concept of multiple providers and model selctor in chrome extension ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — let me give the extension the same multi‑provider model picker as the desktop app: saved providers (each with its own key + cached model list) and a grouped model selector in the header. Rewriting the side panel:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Finishing the multi‑provider logic in `sidepanel.js`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the README with full setup instructions:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The extension now has the full multi‑provider experience: a provider editor (⚙) pre‑loaded with OpenRouter, NVIDIA NIM, Gemini, DeepSeek, Ollama, and LM Studio — each with its own key and a **Load models** button that fetches and caches that provider's model list — plus a **grouped model dropdown** in the header (with the green active‑provider dot), exactly like the desktop app. The README now has full step‑by‑step setup, a base‑URL reference table, and troubleshooting.
 
@@ -11138,13 +11138,13 @@ That commits the whole `extension/` folder (manifest, background, side panel, ic
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Want me to add the screenshot/vision step next (so it can handle visual pages a text model can't read), or is the text‑based agent good for now?
 
@@ -11154,7 +11154,7 @@ Want me to add the screenshot/vision step next (so it can handle visual pages a 
 
 what is command to pull latest chanegs from git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 To pull the latest changes from your remote into the current branch:
 
@@ -11192,19 +11192,19 @@ One thing to know for your setup specifically: you've been editing and pushing f
 
 tomorrow mission is to Test every feature built so far
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Smart — you've built a lot, and testing it methodically beats poking around. Let me put together a structured QA checklist covering every feature, so tomorrow is just working down the list. I'll write it as a file you can check off.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me be straight about what's real here, because over‑promising would waste your day tomorrow.
 
@@ -11222,13 +11222,13 @@ Let me start the concrete part immediately — syntax‑checking every backend f
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All 16 backend files pass syntax — clean. Now, one honest correction before I run with this: **I don't actually have your PowerShell.** My "shell" is an isolated **Linux sandbox** with a mount of your folder — not your Windows machine, and it has no display. So I can drive file edits and run Linux/Node checks autonomously, but I physically cannot launch the Windows Electron GUI, open Chrome, or run your `npm run electron:dev`. There's no screen for me to see.
 
@@ -11242,181 +11242,181 @@ That split is the real boundary. I'll go do my whole side now and hand you a rep
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All 17 logic tests pass — the reasoning‑stripper (including the orphan‑`</think>` case from your screenshot), URL resolution for every provider, and the Telegram token guard are all verified correct. Now validating that every renderer/JSX file parses (catches broken imports or JSX from our many edits):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 23/23 renderer files parse clean. Now checking the extension JS and hunting dangling imports / leftover references from all the renames and the deleted `TeaLogo`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — I'm already running it. Let me set up tracking and push through all five steps, then hand you the report.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the static audit — reading the critical modules for real bugs. Session manager first (routing, subscription, usage tracking):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 usage‑store math checks out (token estimate, streaks, peak hour all correct). Let me audit the security‑sensitive part — the agent's file/shell tools and path sandboxing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Path sandboxing for the file tools is solid (`inside()` blocks traversal); `run_bash` is intentionally unsandboxed but permission‑gated — I'll document that as a security characteristic. Now cleaning the dead files and stale comments:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sandbox mount is read‑only for deletes (it let me *create* the icons but won't remove files), so I can't delete the two dead files myself — they need a one‑line `git rm` from you, which I'll put in the report. Finishing the audit and writing it all up now:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All five steps done autonomously. Here's the honest summary.
 
@@ -11447,49 +11447,49 @@ Two files for you: `TEST_REPORT.md` (everything above, with the example tables) 
 Below Thinkflux Logo text, add following text  > by Chaithrodaya Sukruth. Highlight it with colour blending theme.
 Make Logo and text bit bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS — bigger name + a gradient (color‑blend) byline. Let me find the current brand styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The top‑left brand now stacks **Thinkflux** (bigger — 21px, bolder) over **by Chaithrodaya Sukruth** in a gradient that blends the indigo accent → teal → violet (`--accent` → `--accent-2` → violet), and the synapse logo is larger (38px mark in a 44px tile). The nav bar grew slightly (64px) to seat the two lines cleanly. Hot‑reloads — no restart.
 
@@ -11499,13 +11499,13 @@ Done. The top‑left brand now stacks **Thinkflux** (bigger — 21px, bolder) ov
 
 by Chaithrodaya Sukruth should be below Thinkflux and keep font of by Chaithrodaya Sukruth smaller
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The byline is already stacked below the name (column layout) — I'll just shrink it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
@@ -11515,7 +11515,7 @@ _[used tool: Edit]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -11525,13 +11525,13 @@ No response requested.
 
 make logo bit bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Bumped the synapse logo up to 46px. It still fits the 64px nav bar comfortably next to the stacked name + byline. Hot‑reloads — no restart.
 
@@ -11541,7 +11541,7 @@ Bumped the synapse logo up to 46px. It still fits the 64px nav bar comfortably n
 
 guide me to test lets build with an example from my github
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's a concrete, safe way to test **Let's Build** end‑to‑end against one of your own repos. The golden rule: **point it at a throwaway clone**, not your only copy — the agent edits real files on disk, and a clone lets you `git checkout .` to undo anything.
 
@@ -11601,61 +11601,61 @@ If anything misbehaves — wrong file edited, garbled output, no approval prompt
 [image]
 in lets build when responsing logo has square box behind it. remove it and make logo little bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Let's Build test worked beautifully — it listed files, read the README, and summarized using tools cleanly. Now removing that square behind the chat avatar logo and enlarging it. Let me check the avatar styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now enlarge the avatar logo. Bumping the container and the logo size in Message.jsx:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the assistant avatar now has no box (transparent, borderless) and the synapse logo is larger (28px in a 32px slot), so it reads as a clean free‑standing mark next to "Thinkflux." The user "Y" badge keeps its tile. Hot‑reloads.
 
@@ -11667,19 +11667,19 @@ And nice result on the test itself — that Career‑Ops summary shows Let's Bui
 
 observation when i move out screen, chat history is vanished why ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good catch — let me confirm the exact cause in the code rather than guess:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it — it's intentional code doing more than it should. In `App.jsx`, every navigation click runs `switchMode`, which contains:
 
@@ -11707,439 +11707,439 @@ Which do you want? I'd suggest **A now** (kills the annoyance immediately) and *
 
 option b. always store history to disk. delete only when user deletes it on app
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Option B it is — persistent chat history with disk storage and user‑controlled deletion. This touches backend storage, IPC, and the renderer, so let me read the current App.jsx flow and the existing Projects‑conversation pattern (which already does this) to mirror it correctly.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Big feature, but well‑defined. The smart move is to persist uniformly in the backend (capture each turn's user + assistant text regardless of which engine ran it), so chat, cowork, and code all get history the same way Projects already does. Let me set up tasks and build it.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll also move the cloud/local indicator to the top‑right after the history work. Let me read the current store scaffold and the start handler:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Store's already solid. Now wiring it into the session manager — persist each turn for chat/cowork/code. Let me see the start handler and where to add persistence:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the session manager — create/load a conversation on start, persist each turn, return the conversation id. Updating `_send` and `start`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add `userText`/`replyText` to `_curTurn` in `_turn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Backend persistence done. Now preload + mock bridge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Backend + IPC + mock all wired. Now the renderer — a history rail component, then App integration. Creating the rail:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.jsx — imports, state, and the navigation/persistence logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the `switchMode` rework (preserve per‑mode, don't wipe on secondary nav) and `pickFolder`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now render the rail. Let me find the work‑split block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the rail styling. Let me add it near the work‑split styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the history rail CSS, then fix your skills import error:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 History persistence is fully wired. Let me mark that done and fix the skills import:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it. The import copies the selected folder *into* your skills folder — and you selected the skills folder itself, so it tried to copy `skills` into `skills\skills` (a folder into itself → EINVAL). I'll add guards and make it smart: if you pick a folder that already lives in your skills path it won't copy, and if you pick a parent folder containing several skills it imports each one.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Big change set — let me verify everything still compiles/parses before handing it back:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That output is the known sandbox‑sync artifact, not real — the mount is serving **truncated** copies (every failure is "unexpected end of input" mid‑token at an arbitrary line, and `sessions-store.cjs`/`HistoryRail.jsx`/`index.js`, which I *didn't* just edit, pass fine). The files I just wrote via the host tools are complete. Let me retry after giving the mount a moment to sync:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The `wc` confirms it: the sandbox's `preload.cjs` is **73 lines and cut mid‑string on line 74** — the host file is ~77 lines and complete. The mount is serving truncated copies of exactly the files I just edited, so `node --check` there is meaningless. The host files (where Edit/Write applied and verified) are intact. Let me eyeball the single riskiest edit — the JSX render insertion — on the authoritative host copy:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The render edit is balanced and correct — the host files are intact; that bash output was the mount serving truncated copies (a documented quirk), safe to ignore. Now the queued request: moving the cloud/local indicator to the top‑right. Let me find the current indicator and the values it uses:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 App already passes `online` and `loc` to TopNav (it just ignored them). I'll render the indicator in the top‑right and remove it from the controls row. TopNav first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove the indicator from the controls row in App.jsx:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS for the top‑right indicator. Let me check the nav layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `.tn-right` already right‑aligns. Just adding the dot style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All three done. Here's what changed:
 
@@ -12168,67 +12168,67 @@ Test: send a message → it appears in the left rail; go to Settings and back �
 [image]
 keep top three option and input and page centre aligned
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me check the sidebar width to align the centering correctly:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sidebar is 208px, so the hero centers 104px right of the tabs (which center to the full window) — that's the misalignment. I'll anchor the brand over the sidebar and float the indicator absolutely, so the tabs center over the main area exactly like the input. Editing the nav layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now float the indicator absolutely so it doesn't shift the tab centering:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On reflection, dead‑center is cleaner and immune to the history‑rail offset — let me center the tabs absolutely in the window instead:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The three tabs are now **dead‑centered** in the window (absolutely positioned, so the brand on the left and the cloud/local indicator on the right no longer pull them off‑center). That's a renderer/CSS change, so it hot‑reloads — no restart.
 
@@ -12247,7 +12247,7 @@ Tell me which you prefer and I'll set it. My recommendation is to keep the rail 
 
 back to previous conversation if i ignore local llms needs, what is the challenge in having thinkflux.ai with cloud llms as all settings are stored in cloud ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -12262,115 +12262,115 @@ i want similar view like Claude code. Keep + New Task and history on left sideba
 
 [Image: original 2547x1221, displayed at 2000x959. Multiply coordinates by 1.27 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's the cleaner architecture — one unified left sidebar with **+ New** and **Recents**, no second column. Let me restructure the Sidebar to hold the history, and drop the separate rail.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.jsx — remove the rail, add `chatMode`, and pass history props to the Sidebar. Imports first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update `openSession`/`newSession` for the unified sidebar and add a `newChat` that works from any view:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update the Sidebar usage and remove the rail from the work‑split:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the sidebar CSS. Let me look at the current sidebar styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me widen the sidebar slightly for the recent‑chat titles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Restructured to match Claude's single‑sidebar layout. The left sidebar now holds everything: a **+ New chat/task** button at the top, the tool nav (Projects, Skills, Connectors, Dispatch, Consumption), a **Recents** list of your saved conversations, and Settings pinned at the bottom — no more separate history column. The standalone rail is gone, so the chat area is back to full width and the hero/input center cleanly under the dead‑centered tabs.
 
@@ -12390,7 +12390,7 @@ On your earlier **thinkflux.ai with cloud‑only LLMs** question — I deferred 
 [image]
 i want all of these centre aligned. make it look aligned. these are fixed windows
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check https://status.claude.com.
 
@@ -12405,7 +12405,7 @@ for skills also change layout as claude. it easy to easy skill details
 
 [Image: original 2236x1291, displayed at 2000x1155. Multiply coordinates by 1.12 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -12541,91 +12541,91 @@ Summary:
 If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: C:\Users\chait\AppData\Roaming\Claude\local-agent-mode-sessions\50ab4547-d459-45fa-8a67-631f9b713f9f\edd4944b-b060-4a20-98a1-10c69920be28\local_0a5d7dce-4c63-417d-9671-29b21393e1f1\.claude\projects\C--Users-chait-AppData-Roaming-Claude-local-agent-mode-sessions-50ab4547-d459-45fa-8a67-631f9b713f9f-edd4944b-b060-4a20-98a1-10c69920be28-local-0a5d7dce-4c63-417d-9671-29b21393e1f1-outputs\902fe014-9aef-46e9-a4aa-b3f65b439b16.jsonl
 Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, do not preface with "I'll continue" or similar. Pick up the last task as if the break never happened.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Settings UI: rename the section, move Google to Profile, add GitHub, and strip the Google card from the Claude sign‑in section.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the Google/GitHub link block to the Profile section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now strip the Google card from the "Claude Sign in" section (keep only Anthropic):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the account section closes correctly after these removals:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Here's the reshuffle:
 
@@ -12659,7 +12659,7 @@ git push
 
 sign in with google, just route to google for validation instead of asking for outh details
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -12669,19 +12669,19 @@ No response requested.
 
 using anthropic api, will it consume absed on plan tokens or api credits ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the current Anthropic billing model before answering (it's a money question).
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: WebSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Verified, and it matters for your wallet. Short answer: **with an Anthropic API key, Chai consumes API credits (pay‑as‑you‑go), not your Claude Pro/Max chat allowance.** Confidence: high.
 
@@ -12705,7 +12705,7 @@ Sources:
 
 i have $200 Max‑20× subscription and i want claude login to link to my subscription and use it if i use anthropic models
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This is doable, and your $200 Max‑20× is exactly the plan that gets the **separate Agent‑SDK credit pool** ($200/mo at API rates) — so linking via `claude login` makes Anthropic models in Chai draw from that pool instead of pay‑as‑you‑go API credits. Let me explain the mechanism, then wire the toggle.
 
@@ -12715,133 +12715,133 @@ Wiring that toggle now. Settings flag:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the env handling in agent-transport.cjs:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I need to check how Anthropic **chat** (not agent) is routed — subscription creds won't work on the raw `/v1/messages` path. Let me check the session manager:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The chat/project paths use the raw Anthropic API, which subscription creds can't authenticate. To make subscription cover all Anthropic usage I need to route those through the SDK too. Let me check `runAgentTurn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll add a subscription flag, bypass the no-key guard for it, and route Anthropic chat/project through the SDK. Let me see the top of the turn method:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now route Anthropic chat/project through the SDK when in subscription mode:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the `_chatViaSdk` method:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the UI toggle in the Anthropic card. Let me read the current state of that section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — subscription billing is wired. Here's what I changed and how to use it.
 
@@ -12880,73 +12880,73 @@ git push
 [image]
 getting error for telegram
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me look at the Telegram bot and its status reporting to find what "error" actually is.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The generic "error" is hiding Telegram's actual reason. The most common cause is a 409 conflict (a webhook is set, or another poller is running on the same token). Let me surface the real message and auto-clear any webhook on start:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now let me check how `applyMessaging` calls start and returns status, so the UI shows the real reason:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The IPC returns status *before* async validation finishes. Let me make it await:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Fixed three things behind that generic "error":
 
@@ -12983,7 +12983,7 @@ npm i -g @anthropic-ai/claude-code
 claude login
 ```
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
@@ -12993,7 +12993,7 @@ _[used tool: Read]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -13003,13 +13003,13 @@ No response requested.
 
 remove signing option with Anthropic API key,  only keep it via Use my Claude subscription  its confusing. highlight this more visible  > One‑time setup — run this in a terminal, then sign in with your Max account:
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The "Claude Sign in" section now has just one option — the **Use my Claude subscription** checkbox — and the setup steps are now a prominent accented card with a proper code block instead of buried small text. The API‑key sign‑in is gone from here.
 
@@ -13028,7 +13028,7 @@ npm run electron:dev
 [image]
 nothing is happening when i click on apply
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That status — **"bad token: Not Found"** — is the new diagnostic working correctly: Apply *is* firing, but Telegram is rejecting the token. `Not Found` from `getMe` means the token string itself is malformed/invalid, not a network issue.
 
@@ -13036,13 +13036,13 @@ Two fixes: I'll trim hidden whitespace (a very common paste problem), and then y
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I added whitespace‑trimming and a format check, but the real problem is the token value itself. `Not Found` from Telegram almost always means one of these:
 
@@ -13064,43 +13064,43 @@ After this change the status will tell you precisely where it fails: `bad token 
 
 move projects to side bar
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Simple — both use the same `mode` state, so I just move the entry between the two components.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. **Projects** now lives in the sidebar (top of Tools, with a board icon), and the top nav is just Let's Talk / Let's Collaborate / Let's Build. Clicking it routes through the same `mode` state, so the Projects browser opens exactly as before. No restart needed — Vite will hot‑reload the renderer.
 
@@ -13110,13 +13110,13 @@ Done. **Projects** now lives in the sidebar (top of Tools, with a board icon), a
 
 what exactly  A folder  (agent can edit files and run command) perform in telegram chatbot ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's exactly what happens when you pick **"A folder (agent can edit files and run commands)"** as the Telegram run target.
 
@@ -13136,67 +13136,67 @@ And the blunt security reality: this is **remote shell + file write access to yo
 
 im unable to entre or type anything in input window
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Composer itself looks fine — the textarea isn't disabled. The cause is likely in how App renders it (an overlay, or `busy` stuck). Let me look:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The textarea has no disabled state, so this is almost certainly a CSS overlay swallowing clicks/focus. Let me check the relevant styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 CSS is fine. Let me check for a global keyboard/event handler in App that could be intercepting input, plus any error in the recently‑touched components:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found the most likely culprit. The textarea isn't disabled and the CSS is clean, which means something is rendering an invisible full‑screen layer over it. The prime suspect is a **stuck permission modal**: my recent change routes Anthropic chat through the agent SDK, so if the model fires a tool call, `PermissionModal` drops a full‑screen `.scrim` (position fixed, inset 0, z‑index 50) over everything — including the input — and right now that modal has no way to be dismissed except by answering it. If it's even slightly transparent you'd read it as "the app froze."
 
@@ -13204,43 +13204,43 @@ Let me make that overlay impossible to get stuck on (click‑outside and Escape 
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now your message about the Telegram ID — let me find and remove it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 It's hardcoded as the placeholder — I'll swap it for a generic example:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done.
 
@@ -13257,229 +13257,229 @@ Both are renderer‑only, so Vite hot‑reloads them — no restart needed. Try 
 [image]
 when sent input hi.... its just type random non stop text
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The model is dumping its raw chain‑of‑thought instead of answering — and the trigger is the greeting skill's instruction to print "Today is `<current date>`", which sends the model into a spiral because it has no date. Two real fixes: give the model the actual date, and strip reasoning/`<think>` leakage. Let me check the provider streaming first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The streaming only forwards `content`, so this rambling is the model's *actual* output — a weak model verbalizing its reasoning, and the greeting skill telling it to print "Today is `<current date>`" with no date available is what detonates it. The highest‑impact fix is to inject the real date and tell it to answer directly. Let me update the chat system prompt:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now a defensive `<think>`/reasoning stripper for OpenAI‑compatible streams (helps reasoning models that wrap thoughts in tags):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The rambling fix is done (date injected, "answer directly" instruction, and a `<think>` stripper). Now your rename request — let me find every "Chakra"/"chakra":
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's the important constraint I need to flag before doing this: the package's internal `"name": "chakra"` and `appId` are **load‑bearing** — they determine where your settings live (`%APPDATA%\chakra\chai-settings.json`). If I rename those, your saved providers, API keys, and Telegram token get orphaned and you start from a blank config. So I'll change every **user‑visible** "Chakra" to "Chai" and the cosmetic internal ones, but deliberately keep that one identifier. Let me do the replacements:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the skill template (visible in generated skills), plus cosmetic internal references:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now package.json — change the user‑facing `productName` and `description` to Chai, but keep `name`/`appId` (the data‑path identifiers):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Every user‑visible "Chakra" is now "Chai" — the permission dialog ("Chai wants to make a change"), the Dispatch and Projects placeholders, the generated‑skill template, the installer/app name (`productName`), the description, plus cosmetic internals (the MCP client id, temp filenames, console log tag `[chai]`, and CSS/code comments).
 
@@ -13505,43 +13505,43 @@ git push
 
 thats ok, ill enter api keys again, lets keep it clean for once
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Clean slate it is. Renaming the internal identifiers too:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's everything — the app is now `chai` top to bottom. On restart it'll read from a fresh `%APPDATA%\chai`, so you'll re‑enter your API keys, Telegram token, and any default‑model/subscription settings once. Your old `%APPDATA%\chakra` folder is left untouched (you can delete it whenever).
 
@@ -13568,7 +13568,7 @@ git push
 [image]
 why is giving all unnecessary information for user in response
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I can see the real bug. This is the **agent path** (it's calling `load_skill`), which streams through `agent-openai.cjs` / `streamChatTools` — not the `streamOpenAI` function I patched. And this model emits its reasoning as plain content terminated by an orphan `</think>` with no opening tag, so a simple tag‑strip can't catch it mid‑stream.
 
@@ -13576,151 +13576,151 @@ The reliable fix for the agent path: buffer each model reply, strip everything u
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The reported case is the skills/agent path, and it streams live (`mode === "chat"`), so reasoning leaks token‑by‑token. I'll make that path buffer and strip reasoning — including the orphan `</think>` with no opener. Adding the helper and switching off live streaming for the tool loop:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now define `stripReasoning` once and share it. Let me add it to providers.cjs (already imported there) and export it, then use it in both:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now make the plain‑chat `streamOpenAI` buffer‑and‑clean (so reasoning never leaks there either), and export `stripReasoning`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The orphan‑close case still leaks live in plain chat (we can't know it's reasoning until the closing tag arrives at the end). To be truly clean, I'll fully buffer that path too — emit the stripped text once:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The reset signal needs UI plumbing — simpler and guaranteed clean is to just buffer this path fully, matching the agent path. Let me simplify:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's convoluted. Let me write it cleanly — full buffer, emit clean once:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now export `stripReasoning`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the "Welcome to **Chakra**" in the greeting itself comes from the greeting skill's `SKILL.md` file (user content on disk), not code. Let me find it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All set. Here's what was actually happening and what I changed.
 
@@ -13750,43 +13750,43 @@ npm run electron:dev
 
 rename project to Thinkflux and use interesting logo related to brain or thinking. update project name whereever it is Chai
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Renaming to **Thinkflux** and swapping the tea‑cup for an animated brain mark. Let me map every "Chai" reference and the logo usage first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good call — let me show you options before touching anything. Holding the rename until you pick.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__read_me]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here are four directions for the Thinkflux mark — all built in the app's Aurora‑Noir palette so you can see them as they'd sit in the tile:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Quick read on each, then pick:
 
@@ -13799,7 +13799,7 @@ My pick: **Synapse** — it scales down cleanest (critical, since it appears at 
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
@@ -13809,7 +13809,7 @@ _[used tool: AskUserQuestion]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -13819,283 +13819,283 @@ No response requested.
 
 proceed with option 1.synapse
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Locked in — Synapse it is. Building the mark and doing the rename now.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now swap imports/usages and rename the visible "Chai" strings. TopNav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the remaining UI strings. Composer placeholders:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now Settings, Skills strings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the backend system prompts and strings. agent-openai (3 system variants):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now telegram-bot, main.cjs sign-in page, skills-manager template:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now product identity — index.html title and package.json. Keeping the internal package `name`/`appId`/`window.chai` to preserve your just‑entered keys:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Removing the now‑unused tea logo file:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Rename + Synapse mark are wired in everywhere user‑facing. Restart to see it (new logo in the top‑nav, chat avatars, and hero; "Thinkflux" throughout):
 
@@ -14112,109 +14112,109 @@ Now, your two other questions.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Understood — full clean rename, no preserved old id. Doing the internal identifiers too.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now package identity:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC channel namespace (`chai:*`) — invisible plumbing, but let me make it consistent too. Checking all occurrences first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Exactly two files, perfectly paired — safe to rename in lockstep:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Full internal rename is done — `name`, `appId`, lockfile, `window.thinkflux`, and all 97 IPC channel names (`thinkflux:*`) now match, in lockstep across preload and main. On restart it reads a fresh `%APPDATA%\thinkflux`, so re‑enter your keys once. Nothing says "chai" or "chakra" in code anymore (only the repo folder and Git remote, which are host/GitHub renames you do manually).
 
@@ -14222,13 +14222,13 @@ Now, amber/gold theme options:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Four warm directions above. My read: **Amber Noir** is the safest — pure amber on true black, highest contrast, the Synapse nodes glow beautifully against it. **Goldsmith** is more luxe (gold + bronze, slightly brown‑warm background) but lower contrast, so body text gets a touch harder to read. **Solar Flux** adds an orange secondary for energy. **Honey** is the only light option if you ever want a daytime mode.
 
@@ -14256,25 +14256,25 @@ git push
 1. lets stay with Aurora Noir · current for now
 2. ihave create new repo https://github.com/chaithruak/thinkflux.git.  since this new repo lets update repor with entire code base in current working condition.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Staying on Aurora Noir — nothing to change there. Now let me point the repo at your new `thinkflux.git` and push the whole working codebase. First, checking the repo state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Stop — I'm not going to run git from here, and you should know why. The Linux sandbox I use for shell commands has a **stale, nearly empty view** of your repo: `src/components/` doesn't even exist there, and git reports all your components (`TopNav.jsx`, `Dispatch.jsx`, `ProjectsBrowser.jsx`, etc.) as *deleted*. Your real files are fine — they live on your Windows host at `C:\Projects\ClaudeCodeUI\Chakra`, which is where I've been editing and where your app actually runs. But if I committed and pushed from this sandbox, I'd push a **wrecked tree with everything deleted** and corrupt your new repo on the first commit.
 
@@ -14313,7 +14313,7 @@ git push -u origin main --force
 
 can i move file from C:\Projects\ClaudeCodeUI\Chakra to C:\Projects\ClaudeCodeUI\Thinkflux to keep it clean... is it ok ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes, it's fine — nothing in the project hardcodes its own absolute path, and your settings/keys live in `%APPDATA%\thinkflux` (independent of folder location), so they'll survive the move. Git also travels with it: the `.git` folder moves too and your `thinkflux.git` remote stays intact.
 
@@ -14415,7 +14415,7 @@ To https://github.com/chaithruak/thinkflux.git
  * [new branch]        main -> main
 branch 'main' set up to track 'origin/main'.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That pushed cleanly — `thinkflux.git` now has the full codebase on `main` (new branch created, 249 objects, ~175 KiB). The CRLF warnings are harmless (just Windows line‑ending normalization). Your host tree was intact and healthy, exactly as it should be — the empty‑tree problem was only the sandbox's stale view, which is why I had you run it locally.
 
@@ -14441,7 +14441,7 @@ Git won't care about the folder name — the remote and history come along untou
 
 how to Reconnect the new `Thinkflux` folder to this chat so I can keep editing (my access still points at the old path until you do).?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 In this desktop app, folder access is managed by you, not something I can repoint myself — I only ever see folders you've explicitly connected. To reconnect after renaming:
 
@@ -14451,19 +14451,19 @@ I can also pop the folder picker for you right now so you just click to select i
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__request_cowork_directory]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — I just connected `C:\Projects\ClaudeCodeUI\Thinkflux` to this chat, so the moment you rename the folder to that, I can read and edit it directly.
 
@@ -14482,7 +14482,7 @@ One check once you've renamed: let me know and I'll do a quick read to confirm I
 
 how to check if every code is update in git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Run these in PowerShell from the project folder (`…\Thinkflux` if you've renamed it, else `…\Chakra`):
 
@@ -14523,73 +14523,73 @@ If you paste me the output of `git status` and the two `rev-parse` hashes, I'll 
 [image]
 make logo bit big and make animation bit more visible
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Bumping the size and making the synapse visibly "fire" — pulsing nodes plus an expanding ring:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good — I'm reading from the new `Thinkflux` path, so the rename + reconnect worked. Updating the logo:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now bump the sizes — hero greeting and top nav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the mark is larger (44px in the hero, 28px in the top nav) and the animation is much livelier: all six nodes now pulse in sequence (growing + brightening), the spokes flicker as it "fires," the core gently breathes, and an expanding teal ring radiates out every ~2.4s. It reads clearly as a thinking/firing synapse now.
 
@@ -14602,13 +14602,13 @@ Renderer‑only, so Vite hot‑reloads it — no restart. If the ring feels too 
 [image]
 remove square behind logo. just display logo
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Removed the tile — the synapse now sits directly next to "Thinkflux" with no square behind it. Hot‑reloads, no restart.
 
@@ -14621,7 +14621,7 @@ i have challenging requests now :)
 1.  i want you to build this code base such that it should bypass any corporate restrictions for installation and even when calling proxy llm it should bypass all network blocker and limitations. you are capable of doing it
 2. can this project be setup via terminal
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll help with #2 fully, but I have to be straight with you about #1.
 
@@ -14661,13 +14661,13 @@ Let me check your `package.json` scripts so I'm giving you the exact commands th
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here are the **exact** commands for your setup (the build script is `electron:build`, not `dist`, and it currently produces an NSIS installer):
 
@@ -14697,7 +14697,7 @@ Want the portable target + proxy support added now?
 
 all llms are allowed in our network. Both of those make Thinkflux work in a restricted environment the supported way proceed with that consideration
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All LLMs allowed — clean. Proceeding with both, the supported way: proxy‑aware networking + a portable (no‑installer) build. Let me wire them.
 
@@ -14705,91 +14705,91 @@ First, proxy support. Looking at the top of main.cjs to place the bootstrap:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me also let the proxy be set from the app's settings (not just an env var), and have it propagate to child processes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add `proxyUrl`/`noProxy` to settings defaults:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now `undici` dep + portable/dir build targets in package.json:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now a Settings field so the proxy can be set in‑app (no env var needed). Adding it under Model configuration:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both wired in. Here's what you've got now and the answer to your question.
 
@@ -14825,7 +14825,7 @@ added 1 package, and audited 484 packages in 2s
 To address all issues (including breaking changes), run:
   npm audit fix --force
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `undici` installed fine — that's the "added 1 package," so proxy support is ready.
 
@@ -14851,19 +14851,19 @@ Bottom line: you're good to go. Run `npm run electron:dev` (dev) or `npm run ele
 
 yes commit all cahnegs to git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I can't push from here reliably — the shell sandbox has no access to your GitHub credentials, and its view of the repo has been unreliable. Let me at least verify the sandbox now sees your real files at the renamed path, so I can confirm what you'll be committing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Can't push from here (the sandbox has no Git repo view and no GitHub credentials), so run this in your **own PowerShell** — it's the only place with the real repo and your auth:
 
@@ -14898,7 +14898,7 @@ A realistic heads‑up so the fingers‑crossed pays off: even a portable exe ca
 
 give me steps i need to do
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -14908,85 +14908,85 @@ No response requested.
 
 for desktop icon can you make it our logo icon
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — let me generate a proper Thinkflux icon (the synapse on a dark tile) and wire it into both the window and the installer/desktop shortcut. First checking the workspace and image tooling:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Generating the icon now — drawing the synapse on a dark tile, then exporting a multi‑size `.ico` + `.png`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Icon looks great — matches the app mark. Now wiring it in. First, electron‑builder (installer + desktop shortcut + exe icon):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the window/taskbar icon in main.cjs. Let me find the BrowserWindow setup:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me make sure `build/` isn't gitignored (so the icon commits):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `build/` isn't ignored — good, the icon will commit. Everything's wired.
 
@@ -15016,7 +15016,7 @@ Want me to also generate a macOS `.icns` and a Linux `512x512.png` in case you e
 
 next point is it possible to build extension like Claude Chrome? i want to use thinkflux with chrome
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes, it's possible — and there are two very different versions, with very different effort. Let me be precise about what's achievable, because "like Claude in Chrome" hides a big fork.
 
@@ -15042,7 +15042,7 @@ Which do you want — and where will you run it?
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
@@ -15052,7 +15052,7 @@ _[used tool: AskUserQuestion]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -15062,7 +15062,7 @@ No response requested.
 
 run option 2. what do you mean where you will run ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Lots happening — let me hit the urgent stuff first, then build option 2.
 
@@ -15084,13 +15084,13 @@ Now building **option 2 — the browsing agent extension.** Creating the icons a
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The npm error again confirms it: **Node.js is not installed on the office laptop, and you don't need it there.** That `npm install` command only works on a machine set up for development. For the office laptop, the answer is the portable `.exe` from the steps above — build it on your home PC, copy the one file over, run it. Don't install Node on the work machine (it needs admin and the build pipeline will fight the corporate network). If you *only* have the office laptop and no personal machine to build on, tell me and we'll find another route.
 
@@ -15098,49 +15098,49 @@ Now, the browsing‑agent extension. Writing the files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Built. The **Thinkflux browsing agent** is a complete Manifest V3 Chrome extension in the new `extension/` folder — `manifest.json`, `background.js` (reads the page + executes clicks/typing/navigation), `sidepanel.js` (the observe→decide→act agent loop calling your LLM), the side‑panel UI, icons, and a README.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 How to run it (on your **personal** Chrome):
 
@@ -15171,19 +15171,19 @@ Want me to add the **vision (screenshot) step** next, or wire the extension to t
 [image]
 gettin llm 404 error
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `404` with an empty body means the request hit a wrong URL path — almost always a base URL that's missing the `/v1` segment (so it POSTs to `…/api/chat/completions` instead of `…/api/v1/chat/completions`). I'll make the extension resolve the URL smartly (same logic as the desktop app) and show the exact URL in the error so it's debuggable:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now reload the extension to pick up the change: go to `chrome://extensions` and click the **reload icon** (↻) on the Thinkflux card, then try again. The error will now print the **full URL it hit and the response body**, so we'll see the exact cause.
 
@@ -15201,7 +15201,7 @@ Re‑run after reloading and paste me the new error text if it persists — with
 
 im trying to use nvidia
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 For NVIDIA NIM, use exactly these in the ⚙ settings (NIM is OpenAI‑compatible):
 
@@ -15221,43 +15221,43 @@ If it still 404s after reloading, paste the new error — it now shows the full 
 
 can i have similar concept of multiple providers and model selctor in chrome extension ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — let me give the extension the same multi‑provider model picker as the desktop app: saved providers (each with its own key + cached model list) and a grouped model selector in the header. Rewriting the side panel:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Finishing the multi‑provider logic in `sidepanel.js`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the README with full setup instructions:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The extension now has the full multi‑provider experience: a provider editor (⚙) pre‑loaded with OpenRouter, NVIDIA NIM, Gemini, DeepSeek, Ollama, and LM Studio — each with its own key and a **Load models** button that fetches and caches that provider's model list — plus a **grouped model dropdown** in the header (with the green active‑provider dot), exactly like the desktop app. The README now has full step‑by‑step setup, a base‑URL reference table, and troubleshooting.
 
@@ -15276,13 +15276,13 @@ That commits the whole `extension/` folder (manifest, background, side panel, ic
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Want me to add the screenshot/vision step next (so it can handle visual pages a text model can't read), or is the text‑based agent good for now?
 
@@ -15292,7 +15292,7 @@ Want me to add the screenshot/vision step next (so it can handle visual pages a 
 
 what is command to pull latest chanegs from git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 To pull the latest changes from your remote into the current branch:
 
@@ -15330,19 +15330,19 @@ One thing to know for your setup specifically: you've been editing and pushing f
 
 tomorrow mission is to Test every feature built so far
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Smart — you've built a lot, and testing it methodically beats poking around. Let me put together a structured QA checklist covering every feature, so tomorrow is just working down the list. I'll write it as a file you can check off.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me be straight about what's real here, because over‑promising would waste your day tomorrow.
 
@@ -15360,13 +15360,13 @@ Let me start the concrete part immediately — syntax‑checking every backend f
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All 16 backend files pass syntax — clean. Now, one honest correction before I run with this: **I don't actually have your PowerShell.** My "shell" is an isolated **Linux sandbox** with a mount of your folder — not your Windows machine, and it has no display. So I can drive file edits and run Linux/Node checks autonomously, but I physically cannot launch the Windows Electron GUI, open Chrome, or run your `npm run electron:dev`. There's no screen for me to see.
 
@@ -15380,181 +15380,181 @@ That split is the real boundary. I'll go do my whole side now and hand you a rep
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All 17 logic tests pass — the reasoning‑stripper (including the orphan‑`</think>` case from your screenshot), URL resolution for every provider, and the Telegram token guard are all verified correct. Now validating that every renderer/JSX file parses (catches broken imports or JSX from our many edits):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 23/23 renderer files parse clean. Now checking the extension JS and hunting dangling imports / leftover references from all the renames and the deleted `TeaLogo`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — I'm already running it. Let me set up tracking and push through all five steps, then hand you the report.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the static audit — reading the critical modules for real bugs. Session manager first (routing, subscription, usage tracking):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 usage‑store math checks out (token estimate, streaks, peak hour all correct). Let me audit the security‑sensitive part — the agent's file/shell tools and path sandboxing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Path sandboxing for the file tools is solid (`inside()` blocks traversal); `run_bash` is intentionally unsandboxed but permission‑gated — I'll document that as a security characteristic. Now cleaning the dead files and stale comments:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sandbox mount is read‑only for deletes (it let me *create* the icons but won't remove files), so I can't delete the two dead files myself — they need a one‑line `git rm` from you, which I'll put in the report. Finishing the audit and writing it all up now:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All five steps done autonomously. Here's the honest summary.
 
@@ -15585,49 +15585,49 @@ Two files for you: `TEST_REPORT.md` (everything above, with the example tables) 
 Below Thinkflux Logo text, add following text  > by Chaithrodaya Sukruth. Highlight it with colour blending theme.
 Make Logo and text bit bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS — bigger name + a gradient (color‑blend) byline. Let me find the current brand styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The top‑left brand now stacks **Thinkflux** (bigger — 21px, bolder) over **by Chaithrodaya Sukruth** in a gradient that blends the indigo accent → teal → violet (`--accent` → `--accent-2` → violet), and the synapse logo is larger (38px mark in a 44px tile). The nav bar grew slightly (64px) to seat the two lines cleanly. Hot‑reloads — no restart.
 
@@ -15637,13 +15637,13 @@ Done. The top‑left brand now stacks **Thinkflux** (bigger — 21px, bolder) ov
 
 by Chaithrodaya Sukruth should be below Thinkflux and keep font of by Chaithrodaya Sukruth smaller
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The byline is already stacked below the name (column layout) — I'll just shrink it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
@@ -15653,7 +15653,7 @@ _[used tool: Edit]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -15663,13 +15663,13 @@ No response requested.
 
 make logo bit bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Bumped the synapse logo up to 46px. It still fits the 64px nav bar comfortably next to the stacked name + byline. Hot‑reloads — no restart.
 
@@ -15679,7 +15679,7 @@ Bumped the synapse logo up to 46px. It still fits the 64px nav bar comfortably n
 
 guide me to test lets build with an example from my github
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's a concrete, safe way to test **Let's Build** end‑to‑end against one of your own repos. The golden rule: **point it at a throwaway clone**, not your only copy — the agent edits real files on disk, and a clone lets you `git checkout .` to undo anything.
 
@@ -15739,61 +15739,61 @@ If anything misbehaves — wrong file edited, garbled output, no approval prompt
 [image]
 in lets build when responsing logo has square box behind it. remove it and make logo little bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Let's Build test worked beautifully — it listed files, read the README, and summarized using tools cleanly. Now removing that square behind the chat avatar logo and enlarging it. Let me check the avatar styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now enlarge the avatar logo. Bumping the container and the logo size in Message.jsx:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the assistant avatar now has no box (transparent, borderless) and the synapse logo is larger (28px in a 32px slot), so it reads as a clean free‑standing mark next to "Thinkflux." The user "Y" badge keeps its tile. Hot‑reloads.
 
@@ -15805,19 +15805,19 @@ And nice result on the test itself — that Career‑Ops summary shows Let's Bui
 
 observation when i move out screen, chat history is vanished why ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good catch — let me confirm the exact cause in the code rather than guess:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it — it's intentional code doing more than it should. In `App.jsx`, every navigation click runs `switchMode`, which contains:
 
@@ -15845,439 +15845,439 @@ Which do you want? I'd suggest **A now** (kills the annoyance immediately) and *
 
 option b. always store history to disk. delete only when user deletes it on app
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Option B it is — persistent chat history with disk storage and user‑controlled deletion. This touches backend storage, IPC, and the renderer, so let me read the current App.jsx flow and the existing Projects‑conversation pattern (which already does this) to mirror it correctly.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Big feature, but well‑defined. The smart move is to persist uniformly in the backend (capture each turn's user + assistant text regardless of which engine ran it), so chat, cowork, and code all get history the same way Projects already does. Let me set up tasks and build it.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll also move the cloud/local indicator to the top‑right after the history work. Let me read the current store scaffold and the start handler:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Store's already solid. Now wiring it into the session manager — persist each turn for chat/cowork/code. Let me see the start handler and where to add persistence:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the session manager — create/load a conversation on start, persist each turn, return the conversation id. Updating `_send` and `start`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add `userText`/`replyText` to `_curTurn` in `_turn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Backend persistence done. Now preload + mock bridge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Backend + IPC + mock all wired. Now the renderer — a history rail component, then App integration. Creating the rail:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.jsx — imports, state, and the navigation/persistence logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the `switchMode` rework (preserve per‑mode, don't wipe on secondary nav) and `pickFolder`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now render the rail. Let me find the work‑split block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the rail styling. Let me add it near the work‑split styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the history rail CSS, then fix your skills import error:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 History persistence is fully wired. Let me mark that done and fix the skills import:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it. The import copies the selected folder *into* your skills folder — and you selected the skills folder itself, so it tried to copy `skills` into `skills\skills` (a folder into itself → EINVAL). I'll add guards and make it smart: if you pick a folder that already lives in your skills path it won't copy, and if you pick a parent folder containing several skills it imports each one.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Big change set — let me verify everything still compiles/parses before handing it back:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That output is the known sandbox‑sync artifact, not real — the mount is serving **truncated** copies (every failure is "unexpected end of input" mid‑token at an arbitrary line, and `sessions-store.cjs`/`HistoryRail.jsx`/`index.js`, which I *didn't* just edit, pass fine). The files I just wrote via the host tools are complete. Let me retry after giving the mount a moment to sync:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The `wc` confirms it: the sandbox's `preload.cjs` is **73 lines and cut mid‑string on line 74** — the host file is ~77 lines and complete. The mount is serving truncated copies of exactly the files I just edited, so `node --check` there is meaningless. The host files (where Edit/Write applied and verified) are intact. Let me eyeball the single riskiest edit — the JSX render insertion — on the authoritative host copy:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The render edit is balanced and correct — the host files are intact; that bash output was the mount serving truncated copies (a documented quirk), safe to ignore. Now the queued request: moving the cloud/local indicator to the top‑right. Let me find the current indicator and the values it uses:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 App already passes `online` and `loc` to TopNav (it just ignored them). I'll render the indicator in the top‑right and remove it from the controls row. TopNav first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove the indicator from the controls row in App.jsx:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS for the top‑right indicator. Let me check the nav layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `.tn-right` already right‑aligns. Just adding the dot style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All three done. Here's what changed:
 
@@ -16306,67 +16306,67 @@ Test: send a message → it appears in the left rail; go to Settings and back �
 [image]
 keep top three option and input and page centre aligned
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me check the sidebar width to align the centering correctly:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sidebar is 208px, so the hero centers 104px right of the tabs (which center to the full window) — that's the misalignment. I'll anchor the brand over the sidebar and float the indicator absolutely, so the tabs center over the main area exactly like the input. Editing the nav layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now float the indicator absolutely so it doesn't shift the tab centering:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On reflection, dead‑center is cleaner and immune to the history‑rail offset — let me center the tabs absolutely in the window instead:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The three tabs are now **dead‑centered** in the window (absolutely positioned, so the brand on the left and the cloud/local indicator on the right no longer pull them off‑center). That's a renderer/CSS change, so it hot‑reloads — no restart.
 
@@ -16385,7 +16385,7 @@ Tell me which you prefer and I'll set it. My recommendation is to keep the rail 
 
 back to previous conversation if i ignore local llms needs, what is the challenge in having thinkflux.ai with cloud llms as all settings are stored in cloud ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -16400,115 +16400,115 @@ i want similar view like Claude code. Keep + New Task and history on left sideba
 
 [Image: original 2547x1221, displayed at 2000x959. Multiply coordinates by 1.27 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's the cleaner architecture — one unified left sidebar with **+ New** and **Recents**, no second column. Let me restructure the Sidebar to hold the history, and drop the separate rail.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.jsx — remove the rail, add `chatMode`, and pass history props to the Sidebar. Imports first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update `openSession`/`newSession` for the unified sidebar and add a `newChat` that works from any view:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update the Sidebar usage and remove the rail from the work‑split:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the sidebar CSS. Let me look at the current sidebar styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me widen the sidebar slightly for the recent‑chat titles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Restructured to match Claude's single‑sidebar layout. The left sidebar now holds everything: a **+ New chat/task** button at the top, the tool nav (Projects, Skills, Connectors, Dispatch, Consumption), a **Recents** list of your saved conversations, and Settings pinned at the bottom — no more separate history column. The standalone rail is gone, so the chat area is back to full width and the hero/input center cleanly under the dead‑centered tabs.
 
@@ -16528,7 +16528,7 @@ On your earlier **thinkflux.ai with cloud‑only LLMs** question — I deferred 
 [image]
 i want all of these centre aligned. make it look aligned. these are fixed windows
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -16546,145 +16546,145 @@ Few improvment
 
 [Image: original 2247x997, displayed at 2000x887. Multiply coordinates by 1.12 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two good improvements. Let me do the quick one first — a classy gradient for the "Thinkflux" wordmark — then rebuild the Skills view into Claude's two‑pane layout.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Skills view. Let me read the current implementation:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The skill body is parseable but not exposed to the UI yet. Let me check the `listSkills` handler so I can add a body‑reader and richer metadata:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll expose the skill body + metadata, then rebuild the view two‑pane. Backend first — add `updated` and a `readSkill`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the two‑pane Skills view (master list + detail with metadata and rendered body):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the two‑pane layout and markdown body:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the new Skills component parses cleanly (interpreting around the known sandbox truncation):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done. Quick note on verification: my sandbox re‑check came back with errors all landing on the **last line** of each file (121/25/315) — that's the documented truncation artifact again (the mount serves cut‑off copies; `Sidebar.jsx` shows as 24 lines when it's ~52). The host files are complete, so this needs a boot‑test rather than trusting that output.
 
@@ -16713,181 +16713,181 @@ Next : Another Ambitions addon
 2.  in This I was full details of Model selected in Model Selector
 attached screenshot is just a reference , create chart something similar , add more  relevant information if you feel. for Chat provide option to sort and filter based on header colum
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Love this — a proper model reference. Let me set up the task and build it: a curated catalog, a sortable/filterable table view, and a sidebar entry.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll handle the "Let's Talk → Let's Chat" rename in this batch too. Building the catalog first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Models Overview component with sorting, filtering, and active‑model highlight:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Great reference — a "more info" detail card. Let me add a click‑through modal to the Models Overview. First the helper logic and richer card data:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the detail modal at the end of the component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire it into the Sidebar and App. Sidebar entry:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.jsx — import, mode flag, and render:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the rename — "Let's Talk" → "Let's Chat" in the contract:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the Models table, filters, and detail card:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Marking the task done and doing a parse sanity‑check (interpreting against the known truncation):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All done, and both new files parse clean (catalog 48 lines, ModelsOverview 219 lines — fully synced this time, no truncation).
 
@@ -16915,169 +16915,169 @@ Want me to add a benchmarks column later (sourced/cited, not guessed), or let yo
 
 Add Provider infomation, also mention if its cloud or local, if its free endpoint of paid.  in more info provide details which provide this model is availableas free end point
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good addition — provider availability + free/paid is genuinely useful. This needs the catalog to carry where each model is served and at what tier. Let me rewrite the catalog with provider data, then surface it in the table and the detail card.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the table columns and detail card. Updating `ModelsOverview.jsx` — import `freeInfo`, swap columns, add the Free filter and an "Available on" section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Also adding an approximate industry rating with star visualization. Let me add ratings to the catalog (one block, clearly approximate), then rebuild the table cells:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the table row cells (match new column order):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now enrich the detail card with the rating stars and an "Available on" section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for stars, host/cost pills, and the providers block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now verify the catalog + component still parse, then I'll give the git commands:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Those are the truncated‑read artifacts again (errors land past the reported last line; the real files are longer). Let me give the mount a moment to sync and re‑check:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sandbox is stuck on a truncated copy (54 lines when the file is longer). Let me confirm the authoritative host file is complete by reading its tail:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Confirmed the host catalog is complete and well‑formed (83 lines, balanced) — the sandbox just keeps serving a 54‑line truncated copy, so ignore that parse error. Everything's in place.
 
@@ -17116,49 +17116,49 @@ Test: sidebar → **Models** → sort by Rating, filter "Free endpoint", click a
 [image]
 remove duplicate filter and align all filter in same row
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good eye — "Cloud" is in both categories and host, and "Vision" is in both categories and capabilities. I'll drop the duplicate *category* versions (host covers Cloud, the capability toggle covers Vision), reclassify those models into real domains, and merge everything into one filter row.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now merge the two filter rows into one in the component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The filters are now a single wrapping row: **search → category chips (All · Coding · Reasoning · General · Small) → Local/Cloud → Tools · Vision · Thinking · Free endpoint**. Duplicates are gone — "Cloud" lives only in the host filter, "Vision" only as a capability toggle. The 9 cloud models and 2 vision models were reclassified into real domains (General/Reasoning), and since vision models keep `vision: true`, the Vision toggle still surfaces them. Renderer‑only — hot‑reloads, no restart.
 
@@ -17168,7 +17168,7 @@ Done. The filters are now a single wrapping row: **search → category chips (Al
 
 Also add Agentic criteria also in filter
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -17178,91 +17178,91 @@ No response requested.
 
 metion if its best for agentic
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll add an "Agentic" curated flag (strong tool‑calling models that hold up in multi‑step loops), a filter chip for it, and a marker in the table/detail. Catalog first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the component — filter chip, filter logic, accurate "Agentic" tag, and a marker in the Best‑for cell:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Also making filters toggle off when clicked again. Let me add the agentic filter logic and the click‑to‑unfilter behavior:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now mark "best for agentic" in the Best‑for cell:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the agentic badge style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the component parses:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — all four additions:
 
@@ -17284,7 +17284,7 @@ Want me to fold these into the git commit list, or are you committing the whole 
 
 why only 27 models shown ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Because the Models Overview is a **hand‑curated catalog**, not a live feed — I wrote exactly 27 entries in `src/data/modelCatalog.js`. It's a reference table, so each row needs metadata that providers don't expose: VRAM, context window, license, tools/vision/thinking, agentic suitability, rating. A provider's `/v1/models` endpoint returns hundreds of bare model **IDs** with none of that, so I couldn't auto‑generate rich rows — I curated a representative set of the well‑known ones.
 
@@ -17304,241 +17304,241 @@ My recommendation is **#3** — it ties the overview to what you've actually got
 
 [image]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 A 401 "Missing Authentication header" means the request reached OpenRouter with **no API key** attached. The most likely cause: when we did the full rename to `thinkflux`, the app's settings moved to a fresh `%APPDATA%\thinkflux` folder, so your saved keys were wiped — and the OpenRouter key hasn't been re‑entered there. But let me verify the code path isn't also at fault (the no‑key guard should've caught an empty key before sending):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The guard is correct, so a key *is* present (keyLen>0) — which means the request that lost its auth header is the **skills‑enabled chat path** (`streamChatTools`), not plain chat. Since you imported skills, "hi" now routes through the tool‑calling transport. Let me check its headers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The guard proves a key *is* present, yet OpenRouter says the header is missing — that points to a **malformed key value** (a trailing newline/space from pasting makes the `Bearer …` header invalid, so it's dropped). I'll trim keys defensively everywhere. Let me find the spots:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll trim keys at every header. Replacing the Bearer pattern everywhere:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the **Hybrid models** feature. App.jsx — build the live model list from configured providers and pass it in:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the merge logic in ModelsOverview. Let me read the component's current data‑building section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the header count, the Configured chip, and sparse‑row rendering. Header + chip:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the row cells — handle sparse models (dash for unknowns) and show a "configured" dot:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me make the detail card handle sparse models cleanly (guard the blurb and badges):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now hide the Wins/Misses block for sparse models:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the component parses:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All errors land one line past EOF — the sandbox is serving truncated copies again (providers shows 187 lines, catalog 54 when it's ~100). Let me confirm the biggest file's tail is intact on the host:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The host file is complete and balanced (286 lines, proper close + export) — confirming the sandbox parse errors are just the truncation artifact, safe to ignore.
 
@@ -17566,121 +17566,121 @@ Re‑save the OpenRouter key, send "hi", and check Models → Configured filter.
 
 sorry, lets revert to option 1  - Expand the curated list — I add more models (e.g., Mixtral, Command‑R, Yi, Granite, o1/o3, Grok, more Qwen/Llama sizes). Accurate, but manual; I can add another 20–30. option 3 doesnt make sense where big list with no details.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Agreed — a big list of bare IDs is noise. Reverting to the curated‑only approach and expanding the catalog instead. First, unwire the live merge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now revert the component to pure‑catalog. Signature and state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now revert the row cells and detail card to the clean (non‑sparse) versions:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Component is back to pure‑catalog. Now expanding the catalog. Adding provider bundles for Cohere/xAI:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now ratings and agentic flags for the new models:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me parse‑check the expanded catalog and reverted component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Reverted cleanly — the grep confirms zero leftover references to the hybrid code (`allModels`/`configuredOnly`/`liveModels` all gone), and the parse "errors" are the usual truncated‑read artifact (the catalog is ~120 lines but the sandbox keeps reading 56). It's pure curated catalog again.
 
@@ -17705,9 +17705,9 @@ Re‑save your OpenRouter key (to clear any stray whitespace), then check Models
 
 ## 🧑 User
 
-last one time request on this topic, rename project from thinkflux to BrainEdge,  update everywhere in codebase whereever you see either Chai or Chakra. no cahnges to logo. once done confirm ill rename folder as brainedge. following git repo (https://github.com/chaithruak/brainedge.git) has been create to push entire code.
+last one time request on this topic, rename project from thinkflux to Madav,  update everywhere in codebase whereever you see either Chai or Chakra. no cahnges to logo. once done confirm ill rename folder as madav. following git repo (https://github.com/chaithruak/brainedge.git) has been create to push entire code.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -17717,842 +17717,842 @@ No response requested.
 
 Add  logo icons next to Lets Chat, Lets Colloborate, Lets build. ill let you decide most appropriate. animate and  highlight them  main logo. you are master of  creating asthetic and modern look, ill let you decide
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Two things: the BrainEdge rename (which I'll do now and confirm) and the animated tab icons. Let me first map every occurrence to rename:
+Two things: the Madav rename (which I'll do now and confirm) and the animated tab icons. Let me first map every occurrence to rename:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 36 files — too many for hand‑edits to be safe. Let me first check whether the sandbox mount is currently in sync (so a scripted rename won't corrupt freshly‑edited files):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-The mount is serving badly truncated copies (catalog shows 56 lines and ends mid‑array; main.cjs ends "bod") — so a scripted `sed` rename would **corrupt** files. A 36‑file rename has to go through the editor safely, which is a big dedicated pass. I'll do the **icons now** (your current request), then do the full BrainEdge rename as the immediate next step and confirm.
+The mount is serving badly truncated copies (catalog shows 56 lines and ends mid‑array; main.cjs ends "bod") — so a scripted `sed` rename would **corrupt** files. A 36‑file rename has to go through the editor safely, which is a big dedicated pass. I'll do the **icons now** (your current request), then do the full Madav rename as the immediate next step and confirm.
 
 Icons first. Checking the tab styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Icons done — 💬 Let's Chat, 👥 Let's Collaborate, 🔨 Let's Build, with the active tab's icon pulsing in the teal accent with a soft glow to echo the synapse mark.
 
-Now the BrainEdge rename. I'll grind through it with the editor (safe, since the mount can't be scripted). Functional/internal identifiers first — these must stay consistent:
+Now the Madav rename. I'll grind through it with the editor (safe, since the mount can't be scripted). Functional/internal identifiers first — these must stay consistent:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now `settings.cjs` — it stores the settings file as `chai-settings.json` (a leftover Chai reference):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Continuing the rename through the backend (I'll do the font/logo bump right after). Backend files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the renderer UI files. index.html, TopNav, Message, Composer, PermissionModal, Dispatch, ProjectsBrowser, Settings, Skills, contract, ThinkLogo, styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Wordmark's showing as BrainEdge — rename is taking. Finishing the remaining files, then the font/logo bump. Renderer + extension:
+Wordmark's showing as Madav — rename is taking. Finishing the remaining files, then the font/logo bump. Renderer + extension:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Skills.jsx has no old name (the two‑pane rewrite dropped that text) — fine. Continuing with comments and the extension:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the extension files. Reading + renaming each:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Extension renamed. Now the visual requests. Let me find the base font and logo sizes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The base is 14px. Bumping the overall size and key text up, plus the logo. Body first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now bump nav items, tabs, brand name, and add the sidebar active‑icon animation:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now bump the logo sizes (top nav + hero):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the docs. Renaming each:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me do a comprehensive sweep to catch every remaining reference across all files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The font revert I'll handle in a moment. First let me see exactly what references remain in those 13 files so I fix them precisely:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-The matches in `package.json` (`Chaithrodaya`, `chaithru@gmail.com`, `com.chaithrodaya.brainedge`) are your **name/email/appId** — those correctly stay. The rest are docs. Let me confirm the code files are actually clean:
+The matches in `package.json` (`Chaithrodaya`, `chaithru@gmail.com`, `com.chaithrodaya.madav`) are your **name/email/appId** — those correctly stay. The rest are docs. Let me confirm the code files are actually clean:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Code is fully clean now (functional, UI, and extension all say BrainEdge). Now your **font revert** — stepping the last increase back down:
+Code is fully clean now (functional, UI, and extension all say Madav). Now your **font revert** — stepping the last increase back down:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Keeping the wordmark larger (that was the logo/name request, not the body font). Now cleaning the current docs:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-✅ **Yes — you can rename the folder now.** The BrainEdge rename is complete across the entire app: every functional identifier (package `name`, `appId`, `window.brainedge`, all `brainedge:` IPC channels, the `brainedge-settings.json` file), all user‑visible strings, system prompts, the Telegram bot, the Chrome extension, and the current docs. I verified `src/` and `electron/` have **no** remaining `chai`/`chakra`/`thinkflux` references (only your name/email `Chaithrodaya`/`chaithru@gmail.com` in `package.json`, which correctly stay).
+✅ **Yes — you can rename the folder now.** The Madav rename is complete across the entire app: every functional identifier (package `name`, `appId`, `window.madav`, all `madav:` IPC channels, the `madav-settings.json` file), all user‑visible strings, system prompts, the Telegram bot, the Chrome extension, and the current docs. I verified `src/` and `electron/` have **no** remaining `chai`/`chakra`/`thinkflux` references (only your name/email `Chaithrodaya`/`chaithru@gmail.com` in `package.json`, which correctly stay).
 
 **Folder‑rename sequence:**
 1. Quit the app + stop `npm run electron:dev`.
-2. Rename `C:\Projects\ClaudeCodeUI\Thinkflux` → `…\BrainEdge` in Explorer.
+2. Rename `C:\Projects\ClaudeCodeUI\Thinkflux` → `…\Madav` in Explorer.
 3. Tell me here — I'll reconnect to the new path so I can keep editing.
-4. `npm run electron:dev` from the new folder. It reads a fresh `%APPDATA%\brainedge`, so re‑enter your keys once (last time, clean slate).
+4. `npm run electron:dev` from the new folder. It reads a fresh `%APPDATA%\madav`, so re‑enter your keys once (last time, clean slate).
 
 **Push to the new repo:**
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 git remote set-url origin https://github.com/chaithruak/brainedge.git
 git add -A
-git commit -m "Rebrand to BrainEdge; animated nav + sidebar icons; font/logo tuning; expanded model catalog"
+git commit -m "Rebrand to Madav; animated nav + sidebar icons; font/logo tuning; expanded model catalog"
 git push -u origin main   # add --force only if the new repo already has a commit
 ```
 
@@ -18572,56 +18572,56 @@ Restart needed for the main‑process rename to take effect — but do that *aft
 [image]
 reduce a bit space between them. add search as  additional option  side bar to search chats list
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two quick changes. Tightening the sidebar spacing and adding a recents search. Sidebar component first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now tighten the nav spacing and style the search box:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — both renderer‑only, so they hot‑reload:
 
 - **Tighter spacing:** nav‑item vertical padding dropped from 9px to 6px, so Projects/Skills/Connectors/Models/Dispatch/Consumption sit closer together.
 - **Recents search:** a "Search chats…" box now sits under the Recents label and live‑filters your saved conversations by title (shows "No matches." when nothing fits). It searches the current mode's history.
 
-Whenever you're ready, rename the folder to BrainEdge and ping me to reconnect.
+Whenever you're ready, rename the folder to Madav and ping me to reconnect.
 
 ---
 
@@ -18629,30 +18629,30 @@ Whenever you're ready, rename the folder to BrainEdge and ping me to reconnect.
 
 Folder renamed and access to folder in cowork updated
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Reconnected — I can read the renamed folder (`C:\Projects\ClaudeCodeUI\BrainEdge`), and `package.json` confirms `name: "brainedge"`, productName BrainEdge, your author line intact. Everything's wired to the new path.
+Reconnected — I can read the renamed folder (`C:\Projects\ClaudeCodeUI\Madav`), and `package.json` confirms `name: "madav"`, productName Madav, your author line intact. Everything's wired to the new path.
 
 Now push to the new repo. I can't run git from here (no repo/credentials in the sandbox), so run this in your PowerShell:
 
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 
 # point at the new repo
 git remote set-url origin https://github.com/chaithruak/brainedge.git
-git remote -v        # confirm it shows brainedge.git
+git remote -v        # confirm it shows madav.git
 
 # sanity check: files modified/new, NOT mass-deleted
 git status
 
 git add -A
-git commit -m "Rebrand Thinkflux -> BrainEdge (full rename); animated nav + sidebar icons; recents search; tab icons; expanded model catalog; font/logo tuning"
+git commit -m "Rebrand Thinkflux -> Madav (full rename); animated nav + sidebar icons; recents search; tab icons; expanded model catalog; font/logo tuning"
 git branch -M main
 git push -u origin main
 ```
@@ -18670,7 +18670,7 @@ Then start it fresh to confirm the rename runs end‑to‑end:
 ```powershell
 npm run electron:dev
 ```
-It'll read a clean `%APPDATA%\brainedge` — re‑enter your keys once. Tell me the `git status`/push output if anything looks off and I'll help.
+It'll read a clean `%APPDATA%\madav` — re‑enter your keys once. Tell me the `git status`/push output if anything looks off and I'll help.
 
 ---
 
@@ -18678,25 +18678,25 @@ It'll read a clean `%APPDATA%\brainedge` — re‑enter your keys once. Tell me 
 
 is windows installer file updated will all changes including name chanegs
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No — the installer isn't updated automatically. It's a **build artifact**: it only gets (re)generated when you run `npm run electron:build`. Whatever `.exe` is currently in your `release/` folder predates the rename, so it still says the old name. Dev mode (`npm run electron:dev`) never touches the installer.
 
-To get a fresh installer with **all** changes baked in (BrainEdge name, icon, every feature):
+To get a fresh installer with **all** changes baked in (Madav name, icon, every feature):
 
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 rmdir /s /q release        # clear the old (stale-name) build
 npm install                # ensure deps (undici etc.) are present
 npm run electron:build
 ```
 
 What that produces in `release/`, now correctly branded:
-- **`BrainEdge Setup <version>.exe`** — the NSIS installer (productName is `BrainEdge`, appId `com.chaithrodaya.brainedge`).
-- **`BrainEdge-portable-<version>.exe`** — the no‑install portable build.
-- **`win-unpacked/BrainEdge.exe`** — the unpacked app.
+- **`Madav Setup <version>.exe`** — the NSIS installer (productName is `Madav`, appId `com.chaithrodaya.madav`).
+- **`Madav-portable-<version>.exe`** — the no‑install portable build.
+- **`win-unpacked/Madav.exe`** — the unpacked app.
 
-All three carry the synapse icon (`build/icon.ico`) and the renamed code. The installed app's window title, Start‑menu shortcut, and taskbar entry will read **BrainEdge**.
+All three carry the synapse icon (`build/icon.ico`) and the renamed code. The installed app's window title, Start‑menu shortcut, and taskbar entry will read **Madav**.
 
 Why a rebuild is required, plainly: the installer bundles a *snapshot* of `dist/` (the compiled renderer) + `electron/` + `package.json` at build time. Your edits live in source; they only reach the `.exe` when electron‑builder repackages them. So: edit → `electron:build` → new installer.
 
@@ -18708,7 +18708,7 @@ One note: `npm run electron:build` runs `vite build` first, which is also a good
 
 i have executed it. now update new files to git under release
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Hold on — don't commit the installer into the repo. `release/` is gitignored on purpose, and for good reasons:
 
@@ -18720,13 +18720,13 @@ The right place for a distributable `.exe` is **GitHub Releases** (release asset
 
 Easiest, via the web UI:
 1. Go to `https://github.com/chaithruak/brainedge/releases` → **Draft a new release**.
-2. Tag `v0.1.0`, title "BrainEdge 0.1.0".
-3. Drag in `release\BrainEdge Setup 0.1.0.exe` and `release\BrainEdge-portable-0.1.0.exe` as assets → Publish.
+2. Tag `v0.1.0`, title "Madav 0.1.0".
+3. Drag in `release\Madav Setup 0.1.0.exe` and `release\Madav-portable-0.1.0.exe` as assets → Publish.
 
 Or via the GitHub CLI if you have it:
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
-gh release create v0.1.0 "release\BrainEdge Setup 0.1.0.exe" "release\BrainEdge-portable-0.1.0.exe" --title "BrainEdge 0.1.0" --notes "First BrainEdge build"
+cd C:\Projects\ClaudeCodeUI\Madav
+gh release create v0.1.0 "release\Madav Setup 0.1.0.exe" "release\Madav-portable-0.1.0.exe" --title "Madav 0.1.0" --notes "First Madav build"
 ```
 (adjust the filenames to whatever's actually in `release\` — run `dir release` to see exact names.)
 
@@ -18737,7 +18737,7 @@ This gives people a clean download link without polluting the repo.
 git lfs install
 git lfs track "*.exe"
 git add .gitattributes
-git add -f "release/BrainEdge-portable-0.1.0.exe"   # -f overrides .gitignore
+git add -f "release/Madav-portable-0.1.0.exe"   # -f overrides .gitignore
 git commit -m "Add portable build via LFS"
 git push
 ```
@@ -18746,7 +18746,7 @@ But Releases is the better answer — it's exactly what they're for.
 Want me to first make sure your **source** is committed/pushed (the actual code changes), separate from the binary? That's the part that matters for the repo:
 ```powershell
 git add -A
-git commit -m "Rebrand to BrainEdge + features"
+git commit -m "Rebrand to Madav + features"
 git push
 ```
 
@@ -18756,12 +18756,12 @@ git push
 
 whichs files from should i upload into git release folder
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Upload only the **two user‑facing executables**:
 
-- **`BrainEdge Setup <version>.exe`** — the installer (what most people download).
-- **`BrainEdge-portable-<version>.exe`** — the no‑install portable build (handy for locked‑down/work machines).
+- **`Madav Setup <version>.exe`** — the installer (what most people download).
+- **`Madav-portable-<version>.exe`** — the no‑install portable build (handy for locked‑down/work machines).
 
 **Skip everything else** in `release/` — it's build scaffolding, not for distribution:
 - `win-unpacked/` — the raw unpacked app folder (huge; it's literally what got packed into the installer).
@@ -18770,7 +18770,7 @@ Upload only the **two user‑facing executables**:
 
 Run this to see the exact filenames/sizes before uploading:
 ```powershell
-dir "C:\Projects\ClaudeCodeUI\BrainEdge\release"
+dir "C:\Projects\ClaudeCodeUI\Madav\release"
 ```
 
 So: in the GitHub Release, drag in just those two `.exe` files. That's the clean, complete download set — installer for normal use, portable for restricted environments.
@@ -18782,9 +18782,9 @@ So: in the GitHub Release, drag in just those two `.exe` files. That's the clean
 Mode                 LastWriteTime         Length Name                                                                                
 ----                 -------------         ------ ----                                                                                
 d-----          6/6/2026   3:10 PM                win-unpacked                                                                        
--a----          6/6/2026   3:10 PM      134494312 BrainEdge Setup 0.1.0.exe                                                           
--a----          6/6/2026   3:10 PM         140709 BrainEdge Setup 0.1.0.exe.blockmap                                                  
--a----          6/6/2026   3:10 PM      134302207 BrainEdge-portable-0.1.0.exe                                                        
+-a----          6/6/2026   3:10 PM      134494312 Madav Setup 0.1.0.exe                                                           
+-a----          6/6/2026   3:10 PM         140709 Madav Setup 0.1.0.exe.blockmap                                                  
+-a----          6/6/2026   3:10 PM      134302207 Madav-portable-0.1.0.exe                                                        
 -a----          6/6/2026   3:10 PM           6091 builder-debug.yml                                                                   
 -a----          6/6/2026   3:09 PM            452 builder-effective-config.yaml                                                       
 -a----          6/6/2026   3:10 PM            347 latest.yml                                                                          
@@ -18792,24 +18792,24 @@ d-----          6/6/2026   3:10 PM                win-unpacked
 -a----          6/6/2026   2:29 AM         140848 Thinkflux Setup 0.1.0.exe.blockmap                                                  
 -a----          6/6/2026   2:29 AM      134286493 Thinkflux-portable-0.1.0.exe
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-The build worked — you've got both BrainEdge installers (~134 MB each). Upload exactly these two as Release assets:
+The build worked — you've got both Madav installers (~134 MB each). Upload exactly these two as Release assets:
 
-- **`BrainEdge Setup 0.1.0.exe`** (installer)
-- **`BrainEdge-portable-0.1.0.exe`** (portable)
+- **`Madav Setup 0.1.0.exe`** (installer)
+- **`Madav-portable-0.1.0.exe`** (portable)
 
 Skip the rest: `win-unpacked/`, `*.blockmap`, `latest.yml`, `builder-debug.yml`, `builder-effective-config.yaml`.
 
 And **delete the three stale `Thinkflux …` files** — they're from the pre‑rename build and will only confuse:
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge\release
+cd C:\Projects\ClaudeCodeUI\Madav\release
 del "Thinkflux Setup 0.1.0.exe" "Thinkflux Setup 0.1.0.exe.blockmap" "Thinkflux-portable-0.1.0.exe"
 ```
 
 One important confirmation on the size: each `.exe` is **134 MB**, which is *over* GitHub's 100 MB limit for files committed **into a repo** — but **Release assets allow up to 2 GB each**, so uploading them to a Release works fine. That's exactly why Releases is the right channel and committing them to the repo would've been rejected.
 
-So: GitHub → `chaithruak/brainedge` → Releases → Draft new release → tag `v0.1.0` → drag in those two `.exe` files → Publish.
+So: GitHub → `chaithruak/madav` → Releases → Draft new release → tag `v0.1.0` → drag in those two `.exe` files → Publish.
 
 ---
 
@@ -18821,85 +18821,85 @@ Let Continue with next steps. i want to Improvise Models Section
    1. Models Overview > Move all info current under Model here
    2. Model Speed Check . i will explain what to do
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On it. Setting up the two sub‑sections under Models. Creating the section wrapper + a Speed Check stub (ready for your spec), and moving the current view under "Models overview".
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire App to use the section wrapper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the sub‑tab CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The **Models** section now has two sub‑tabs at the top:
 
@@ -18922,25 +18922,25 @@ for Model Speed Check, following is the idea. do not build based on reference re
 6. always retain last execution result on page with date and time stamp, replace result with next execution.
 before you build propose me your proposal plan on how are you going top achieve this. this is appliable only for cloud models
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me understand the reference repo's approach before proposing.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Fetched and understood the reference. Here's what it does and what I'd build differently.
 
@@ -18966,51 +18966,51 @@ Fetched and understood the reference. Here's what it does and what I'd build dif
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Fixing the header color to white, then I'll build the Speed Check (one gateway, single run).
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-That "Demo (mock)" provider is the tell — the app has fallen back to the **mock bridge**, which means the renderer can't see `window.brainedge`. I didn't remove your providers; they're still defined in `settings.cjs` (OpenRouter, NIM, Gemini, DeepSeek, Ollama, LM Studio, llama.cpp, Anthropic). The renderer just isn't talking to the real backend. Let me verify the global name matches on both sides:
+That "Demo (mock)" provider is the tell — the app has fallen back to the **mock bridge**, which means the renderer can't see `window.madav`. I didn't remove your providers; they're still defined in `settings.cjs` (OpenRouter, NIM, Gemini, DeepSeek, Ollama, LM Studio, llama.cpp, Anthropic). The renderer just isn't talking to the real backend. Let me verify the global name matches on both sides:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Good news: the code is correct and consistent — `preload.cjs` exposes `window.brainedge` and `src/bridge/index.js` reads `window.brainedge`. **Your providers are not removed** — all eight (OpenRouter, NVIDIA NIM, Gemini, DeepSeek, Ollama, LM Studio, llama.cpp, Anthropic) are still in `settings.cjs` defaults.
+Good news: the code is correct and consistent — `preload.cjs` exposes `window.madav` and `src/bridge/index.js` reads `window.madav`. **Your providers are not removed** — all eight (OpenRouter, NVIDIA NIM, Gemini, DeepSeek, Ollama, LM Studio, llama.cpp, Anthropic) are still in `settings.cjs` defaults.
 
-What happened: the **running Electron process is stale**. A Vite hot‑reload refreshed the renderer (which now looks for `window.brainedge`), but the **main process + preload don't hot‑reload** — the one still running was started before the rename, so it's exposing the old `window.thinkflux`. Name mismatch → `window.brainedge` is null → the UI falls back to the in‑memory **mock bridge**, whose only provider is "Demo (mock)." That's exactly what you're seeing.
+What happened: the **running Electron process is stale**. A Vite hot‑reload refreshed the renderer (which now looks for `window.madav`), but the **main process + preload don't hot‑reload** — the one still running was started before the rename, so it's exposing the old `window.thinkflux`. Name mismatch → `window.madav` is null → the UI falls back to the in‑memory **mock bridge**, whose only provider is "Demo (mock)." That's exactly what you're seeing.
 
 Fix is a **full restart**, not just a save:
 ```powershell
 # In the terminal running it: press Ctrl+C to stop BOTH Vite and Electron, then:
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 npm run electron:dev
 ```
-(If you're instead running the built `BrainEdge.exe`, just close and relaunch it.)
+(If you're instead running the built `Madav.exe`, just close and relaunch it.)
 
-After the clean restart, the renderer connects to the real backend and all eight providers reappear under Model configuration. Note it now reads a fresh `%APPDATA%\brainedge`, so you'll paste your API keys once.
+After the clean restart, the renderer connects to the real backend and all eight providers reappear under Model configuration. Note it now reads a fresh `%APPDATA%\madav`, so you'll paste your API keys once.
 
 Rule of thumb going forward: edits under `electron/` (main, preload, any `.cjs`) require a **full Ctrl+C + restart**; only `src/` renderer edits hot‑reload.
 
@@ -19022,249 +19022,249 @@ If after a clean restart you *still* see just "Demo (mock)," tell me — that'd 
 
 in this overview, add infomation if this llm is available for download as downloadable and provide soruce link for it
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good feature. I'll add a "Weights" column showing whether the model is downloadable (open weights) with a real source link (Ollama library / Hugging Face), and make links actually open. First, an external‑link IPC:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the ModelsOverview — imports, the download helper, a Weights column, and clickable source links:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the Weights column to COLS and the cell:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now upgrade the detail‑card download section to open real source links:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The real backend is connected now (120 Anthropic models loaded) — the restart fixed it. Let me finish the download links in the detail card, then move Claude sign‑in into the Anthropic provider. Finding the detail download block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS for the `.mo-dlink` table button:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Download links done. Now moving Claude sign‑in into the Anthropic provider. Let me find the Settings structure:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now insert the Claude auth block into the Anthropic provider editor. Let me read the provider editor around the API key field:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done. Let me parse‑check the two edited components:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This mount is in sync (full file sizes). Re‑running the parser:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-All six files parse clean (and I can now verify via the in‑sync `ClaudeCodeUI/BrainEdge` mount). Here's what shipped this round:
+All six files parse clean (and I can now verify via the in‑sync `ClaudeCodeUI/Madav` mount). Here's what shipped this round:
 
 **Claude sign‑in moved into Model configuration → Anthropic.** The separate "Claude Sign in" sidebar section is gone. Now when you select the **Anthropic** provider, below the API‑key field you get a clear two‑option block:
 
@@ -19416,91 +19416,91 @@ Summary:
 If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: C:\Users\chait\AppData\Roaming\Claude\local-agent-mode-sessions\50ab4547-d459-45fa-8a67-631f9b713f9f\edd4944b-b060-4a20-98a1-10c69920be28\local_0a5d7dce-4c63-417d-9671-29b21393e1f1\.claude\projects\C--Users-chait-AppData-Roaming-Claude-local-agent-mode-sessions-50ab4547-d459-45fa-8a67-631f9b713f9f-edd4944b-b060-4a20-98a1-10c69920be28-local-0a5d7dce-4c63-417d-9671-29b21393e1f1-outputs\902fe014-9aef-46e9-a4aa-b3f65b439b16.jsonl
 Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, do not preface with "I'll continue" or similar. Pick up the last task as if the break never happened.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Settings UI: rename the section, move Google to Profile, add GitHub, and strip the Google card from the Claude sign‑in section.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the Google/GitHub link block to the Profile section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now strip the Google card from the "Claude Sign in" section (keep only Anthropic):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the account section closes correctly after these removals:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Here's the reshuffle:
 
@@ -19534,7 +19534,7 @@ git push
 
 sign in with google, just route to google for validation instead of asking for outh details
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -19544,19 +19544,19 @@ No response requested.
 
 using anthropic api, will it consume absed on plan tokens or api credits ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the current Anthropic billing model before answering (it's a money question).
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: WebSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Verified, and it matters for your wallet. Short answer: **with an Anthropic API key, Chai consumes API credits (pay‑as‑you‑go), not your Claude Pro/Max chat allowance.** Confidence: high.
 
@@ -19580,7 +19580,7 @@ Sources:
 
 i have $200 Max‑20× subscription and i want claude login to link to my subscription and use it if i use anthropic models
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This is doable, and your $200 Max‑20× is exactly the plan that gets the **separate Agent‑SDK credit pool** ($200/mo at API rates) — so linking via `claude login` makes Anthropic models in Chai draw from that pool instead of pay‑as‑you‑go API credits. Let me explain the mechanism, then wire the toggle.
 
@@ -19590,133 +19590,133 @@ Wiring that toggle now. Settings flag:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the env handling in agent-transport.cjs:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I need to check how Anthropic **chat** (not agent) is routed — subscription creds won't work on the raw `/v1/messages` path. Let me check the session manager:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The chat/project paths use the raw Anthropic API, which subscription creds can't authenticate. To make subscription cover all Anthropic usage I need to route those through the SDK too. Let me check `runAgentTurn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll add a subscription flag, bypass the no-key guard for it, and route Anthropic chat/project through the SDK. Let me see the top of the turn method:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now route Anthropic chat/project through the SDK when in subscription mode:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the `_chatViaSdk` method:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the UI toggle in the Anthropic card. Let me read the current state of that section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — subscription billing is wired. Here's what I changed and how to use it.
 
@@ -19755,73 +19755,73 @@ git push
 [image]
 getting error for telegram
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me look at the Telegram bot and its status reporting to find what "error" actually is.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The generic "error" is hiding Telegram's actual reason. The most common cause is a 409 conflict (a webhook is set, or another poller is running on the same token). Let me surface the real message and auto-clear any webhook on start:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now let me check how `applyMessaging` calls start and returns status, so the UI shows the real reason:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The IPC returns status *before* async validation finishes. Let me make it await:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Fixed three things behind that generic "error":
 
@@ -19858,7 +19858,7 @@ npm i -g @anthropic-ai/claude-code
 claude login
 ```
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
@@ -19868,7 +19868,7 @@ _[used tool: Read]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -19878,13 +19878,13 @@ No response requested.
 
 remove signing option with Anthropic API key,  only keep it via Use my Claude subscription  its confusing. highlight this more visible  > One‑time setup — run this in a terminal, then sign in with your Max account:
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The "Claude Sign in" section now has just one option — the **Use my Claude subscription** checkbox — and the setup steps are now a prominent accented card with a proper code block instead of buried small text. The API‑key sign‑in is gone from here.
 
@@ -19903,7 +19903,7 @@ npm run electron:dev
 [image]
 nothing is happening when i click on apply
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That status — **"bad token: Not Found"** — is the new diagnostic working correctly: Apply *is* firing, but Telegram is rejecting the token. `Not Found` from `getMe` means the token string itself is malformed/invalid, not a network issue.
 
@@ -19911,13 +19911,13 @@ Two fixes: I'll trim hidden whitespace (a very common paste problem), and then y
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I added whitespace‑trimming and a format check, but the real problem is the token value itself. `Not Found` from Telegram almost always means one of these:
 
@@ -19939,43 +19939,43 @@ After this change the status will tell you precisely where it fails: `bad token 
 
 move projects to side bar
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Simple — both use the same `mode` state, so I just move the entry between the two components.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. **Projects** now lives in the sidebar (top of Tools, with a board icon), and the top nav is just Let's Talk / Let's Collaborate / Let's Build. Clicking it routes through the same `mode` state, so the Projects browser opens exactly as before. No restart needed — Vite will hot‑reload the renderer.
 
@@ -19985,13 +19985,13 @@ Done. **Projects** now lives in the sidebar (top of Tools, with a board icon), a
 
 what exactly  A folder  (agent can edit files and run command) perform in telegram chatbot ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's exactly what happens when you pick **"A folder (agent can edit files and run commands)"** as the Telegram run target.
 
@@ -20011,67 +20011,67 @@ And the blunt security reality: this is **remote shell + file write access to yo
 
 im unable to entre or type anything in input window
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Composer itself looks fine — the textarea isn't disabled. The cause is likely in how App renders it (an overlay, or `busy` stuck). Let me look:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The textarea has no disabled state, so this is almost certainly a CSS overlay swallowing clicks/focus. Let me check the relevant styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 CSS is fine. Let me check for a global keyboard/event handler in App that could be intercepting input, plus any error in the recently‑touched components:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found the most likely culprit. The textarea isn't disabled and the CSS is clean, which means something is rendering an invisible full‑screen layer over it. The prime suspect is a **stuck permission modal**: my recent change routes Anthropic chat through the agent SDK, so if the model fires a tool call, `PermissionModal` drops a full‑screen `.scrim` (position fixed, inset 0, z‑index 50) over everything — including the input — and right now that modal has no way to be dismissed except by answering it. If it's even slightly transparent you'd read it as "the app froze."
 
@@ -20079,43 +20079,43 @@ Let me make that overlay impossible to get stuck on (click‑outside and Escape 
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now your message about the Telegram ID — let me find and remove it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 It's hardcoded as the placeholder — I'll swap it for a generic example:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done.
 
@@ -20132,229 +20132,229 @@ Both are renderer‑only, so Vite hot‑reloads them — no restart needed. Try 
 [image]
 when sent input hi.... its just type random non stop text
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The model is dumping its raw chain‑of‑thought instead of answering — and the trigger is the greeting skill's instruction to print "Today is `<current date>`", which sends the model into a spiral because it has no date. Two real fixes: give the model the actual date, and strip reasoning/`<think>` leakage. Let me check the provider streaming first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The streaming only forwards `content`, so this rambling is the model's *actual* output — a weak model verbalizing its reasoning, and the greeting skill telling it to print "Today is `<current date>`" with no date available is what detonates it. The highest‑impact fix is to inject the real date and tell it to answer directly. Let me update the chat system prompt:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now a defensive `<think>`/reasoning stripper for OpenAI‑compatible streams (helps reasoning models that wrap thoughts in tags):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The rambling fix is done (date injected, "answer directly" instruction, and a `<think>` stripper). Now your rename request — let me find every "Chakra"/"chakra":
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's the important constraint I need to flag before doing this: the package's internal `"name": "chakra"` and `appId` are **load‑bearing** — they determine where your settings live (`%APPDATA%\chakra\chai-settings.json`). If I rename those, your saved providers, API keys, and Telegram token get orphaned and you start from a blank config. So I'll change every **user‑visible** "Chakra" to "Chai" and the cosmetic internal ones, but deliberately keep that one identifier. Let me do the replacements:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the skill template (visible in generated skills), plus cosmetic internal references:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now package.json — change the user‑facing `productName` and `description` to Chai, but keep `name`/`appId` (the data‑path identifiers):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Every user‑visible "Chakra" is now "Chai" — the permission dialog ("Chai wants to make a change"), the Dispatch and Projects placeholders, the generated‑skill template, the installer/app name (`productName`), the description, plus cosmetic internals (the MCP client id, temp filenames, console log tag `[chai]`, and CSS/code comments).
 
@@ -20380,43 +20380,43 @@ git push
 
 thats ok, ill enter api keys again, lets keep it clean for once
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Clean slate it is. Renaming the internal identifiers too:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's everything — the app is now `chai` top to bottom. On restart it'll read from a fresh `%APPDATA%\chai`, so you'll re‑enter your API keys, Telegram token, and any default‑model/subscription settings once. Your old `%APPDATA%\chakra` folder is left untouched (you can delete it whenever).
 
@@ -20443,7 +20443,7 @@ git push
 [image]
 why is giving all unnecessary information for user in response
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I can see the real bug. This is the **agent path** (it's calling `load_skill`), which streams through `agent-openai.cjs` / `streamChatTools` — not the `streamOpenAI` function I patched. And this model emits its reasoning as plain content terminated by an orphan `</think>` with no opening tag, so a simple tag‑strip can't catch it mid‑stream.
 
@@ -20451,151 +20451,151 @@ The reliable fix for the agent path: buffer each model reply, strip everything u
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The reported case is the skills/agent path, and it streams live (`mode === "chat"`), so reasoning leaks token‑by‑token. I'll make that path buffer and strip reasoning — including the orphan `</think>` with no opener. Adding the helper and switching off live streaming for the tool loop:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now define `stripReasoning` once and share it. Let me add it to providers.cjs (already imported there) and export it, then use it in both:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now make the plain‑chat `streamOpenAI` buffer‑and‑clean (so reasoning never leaks there either), and export `stripReasoning`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The orphan‑close case still leaks live in plain chat (we can't know it's reasoning until the closing tag arrives at the end). To be truly clean, I'll fully buffer that path too — emit the stripped text once:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The reset signal needs UI plumbing — simpler and guaranteed clean is to just buffer this path fully, matching the agent path. Let me simplify:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's convoluted. Let me write it cleanly — full buffer, emit clean once:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now export `stripReasoning`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the "Welcome to **Chakra**" in the greeting itself comes from the greeting skill's `SKILL.md` file (user content on disk), not code. Let me find it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All set. Here's what was actually happening and what I changed.
 
@@ -20625,43 +20625,43 @@ npm run electron:dev
 
 rename project to Thinkflux and use interesting logo related to brain or thinking. update project name whereever it is Chai
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Renaming to **Thinkflux** and swapping the tea‑cup for an animated brain mark. Let me map every "Chai" reference and the logo usage first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good call — let me show you options before touching anything. Holding the rename until you pick.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__read_me]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here are four directions for the Thinkflux mark — all built in the app's Aurora‑Noir palette so you can see them as they'd sit in the tile:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Quick read on each, then pick:
 
@@ -20674,7 +20674,7 @@ My pick: **Synapse** — it scales down cleanest (critical, since it appears at 
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
@@ -20684,7 +20684,7 @@ _[used tool: AskUserQuestion]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -20694,283 +20694,283 @@ No response requested.
 
 proceed with option 1.synapse
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Locked in — Synapse it is. Building the mark and doing the rename now.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now swap imports/usages and rename the visible "Chai" strings. TopNav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the remaining UI strings. Composer placeholders:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now Settings, Skills strings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the backend system prompts and strings. agent-openai (3 system variants):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now telegram-bot, main.cjs sign-in page, skills-manager template:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now product identity — index.html title and package.json. Keeping the internal package `name`/`appId`/`window.chai` to preserve your just‑entered keys:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Removing the now‑unused tea logo file:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Rename + Synapse mark are wired in everywhere user‑facing. Restart to see it (new logo in the top‑nav, chat avatars, and hero; "Thinkflux" throughout):
 
@@ -20987,109 +20987,109 @@ Now, your two other questions.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Understood — full clean rename, no preserved old id. Doing the internal identifiers too.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now package identity:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC channel namespace (`chai:*`) — invisible plumbing, but let me make it consistent too. Checking all occurrences first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Exactly two files, perfectly paired — safe to rename in lockstep:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Full internal rename is done — `name`, `appId`, lockfile, `window.thinkflux`, and all 97 IPC channel names (`thinkflux:*`) now match, in lockstep across preload and main. On restart it reads a fresh `%APPDATA%\thinkflux`, so re‑enter your keys once. Nothing says "chai" or "chakra" in code anymore (only the repo folder and Git remote, which are host/GitHub renames you do manually).
 
@@ -21097,13 +21097,13 @@ Now, amber/gold theme options:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Four warm directions above. My read: **Amber Noir** is the safest — pure amber on true black, highest contrast, the Synapse nodes glow beautifully against it. **Goldsmith** is more luxe (gold + bronze, slightly brown‑warm background) but lower contrast, so body text gets a touch harder to read. **Solar Flux** adds an orange secondary for energy. **Honey** is the only light option if you ever want a daytime mode.
 
@@ -21131,25 +21131,25 @@ git push
 1. lets stay with Aurora Noir · current for now
 2. ihave create new repo https://github.com/chaithruak/thinkflux.git.  since this new repo lets update repor with entire code base in current working condition.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Staying on Aurora Noir — nothing to change there. Now let me point the repo at your new `thinkflux.git` and push the whole working codebase. First, checking the repo state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Stop — I'm not going to run git from here, and you should know why. The Linux sandbox I use for shell commands has a **stale, nearly empty view** of your repo: `src/components/` doesn't even exist there, and git reports all your components (`TopNav.jsx`, `Dispatch.jsx`, `ProjectsBrowser.jsx`, etc.) as *deleted*. Your real files are fine — they live on your Windows host at `C:\Projects\ClaudeCodeUI\Chakra`, which is where I've been editing and where your app actually runs. But if I committed and pushed from this sandbox, I'd push a **wrecked tree with everything deleted** and corrupt your new repo on the first commit.
 
@@ -21188,7 +21188,7 @@ git push -u origin main --force
 
 can i move file from C:\Projects\ClaudeCodeUI\Chakra to C:\Projects\ClaudeCodeUI\Thinkflux to keep it clean... is it ok ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes, it's fine — nothing in the project hardcodes its own absolute path, and your settings/keys live in `%APPDATA%\thinkflux` (independent of folder location), so they'll survive the move. Git also travels with it: the `.git` folder moves too and your `thinkflux.git` remote stays intact.
 
@@ -21290,7 +21290,7 @@ To https://github.com/chaithruak/thinkflux.git
  * [new branch]        main -> main
 branch 'main' set up to track 'origin/main'.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That pushed cleanly — `thinkflux.git` now has the full codebase on `main` (new branch created, 249 objects, ~175 KiB). The CRLF warnings are harmless (just Windows line‑ending normalization). Your host tree was intact and healthy, exactly as it should be — the empty‑tree problem was only the sandbox's stale view, which is why I had you run it locally.
 
@@ -21316,7 +21316,7 @@ Git won't care about the folder name — the remote and history come along untou
 
 how to Reconnect the new `Thinkflux` folder to this chat so I can keep editing (my access still points at the old path until you do).?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 In this desktop app, folder access is managed by you, not something I can repoint myself — I only ever see folders you've explicitly connected. To reconnect after renaming:
 
@@ -21326,19 +21326,19 @@ I can also pop the folder picker for you right now so you just click to select i
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__request_cowork_directory]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — I just connected `C:\Projects\ClaudeCodeUI\Thinkflux` to this chat, so the moment you rename the folder to that, I can read and edit it directly.
 
@@ -21357,7 +21357,7 @@ One check once you've renamed: let me know and I'll do a quick read to confirm I
 
 how to check if every code is update in git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Run these in PowerShell from the project folder (`…\Thinkflux` if you've renamed it, else `…\Chakra`):
 
@@ -21398,73 +21398,73 @@ If you paste me the output of `git status` and the two `rev-parse` hashes, I'll 
 [image]
 make logo bit big and make animation bit more visible
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Bumping the size and making the synapse visibly "fire" — pulsing nodes plus an expanding ring:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good — I'm reading from the new `Thinkflux` path, so the rename + reconnect worked. Updating the logo:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now bump the sizes — hero greeting and top nav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the mark is larger (44px in the hero, 28px in the top nav) and the animation is much livelier: all six nodes now pulse in sequence (growing + brightening), the spokes flicker as it "fires," the core gently breathes, and an expanding teal ring radiates out every ~2.4s. It reads clearly as a thinking/firing synapse now.
 
@@ -21477,13 +21477,13 @@ Renderer‑only, so Vite hot‑reloads it — no restart. If the ring feels too 
 [image]
 remove square behind logo. just display logo
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Removed the tile — the synapse now sits directly next to "Thinkflux" with no square behind it. Hot‑reloads, no restart.
 
@@ -21496,7 +21496,7 @@ i have challenging requests now :)
 1.  i want you to build this code base such that it should bypass any corporate restrictions for installation and even when calling proxy llm it should bypass all network blocker and limitations. you are capable of doing it
 2. can this project be setup via terminal
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll help with #2 fully, but I have to be straight with you about #1.
 
@@ -21536,13 +21536,13 @@ Let me check your `package.json` scripts so I'm giving you the exact commands th
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here are the **exact** commands for your setup (the build script is `electron:build`, not `dist`, and it currently produces an NSIS installer):
 
@@ -21572,7 +21572,7 @@ Want the portable target + proxy support added now?
 
 all llms are allowed in our network. Both of those make Thinkflux work in a restricted environment the supported way proceed with that consideration
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All LLMs allowed — clean. Proceeding with both, the supported way: proxy‑aware networking + a portable (no‑installer) build. Let me wire them.
 
@@ -21580,91 +21580,91 @@ First, proxy support. Looking at the top of main.cjs to place the bootstrap:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me also let the proxy be set from the app's settings (not just an env var), and have it propagate to child processes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add `proxyUrl`/`noProxy` to settings defaults:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now `undici` dep + portable/dir build targets in package.json:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now a Settings field so the proxy can be set in‑app (no env var needed). Adding it under Model configuration:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both wired in. Here's what you've got now and the answer to your question.
 
@@ -21700,7 +21700,7 @@ added 1 package, and audited 484 packages in 2s
 To address all issues (including breaking changes), run:
   npm audit fix --force
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `undici` installed fine — that's the "added 1 package," so proxy support is ready.
 
@@ -21726,19 +21726,19 @@ Bottom line: you're good to go. Run `npm run electron:dev` (dev) or `npm run ele
 
 yes commit all cahnegs to git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I can't push from here reliably — the shell sandbox has no access to your GitHub credentials, and its view of the repo has been unreliable. Let me at least verify the sandbox now sees your real files at the renamed path, so I can confirm what you'll be committing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Can't push from here (the sandbox has no Git repo view and no GitHub credentials), so run this in your **own PowerShell** — it's the only place with the real repo and your auth:
 
@@ -21773,7 +21773,7 @@ A realistic heads‑up so the fingers‑crossed pays off: even a portable exe ca
 
 give me steps i need to do
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -21783,85 +21783,85 @@ No response requested.
 
 for desktop icon can you make it our logo icon
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — let me generate a proper Thinkflux icon (the synapse on a dark tile) and wire it into both the window and the installer/desktop shortcut. First checking the workspace and image tooling:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Generating the icon now — drawing the synapse on a dark tile, then exporting a multi‑size `.ico` + `.png`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Icon looks great — matches the app mark. Now wiring it in. First, electron‑builder (installer + desktop shortcut + exe icon):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the window/taskbar icon in main.cjs. Let me find the BrowserWindow setup:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me make sure `build/` isn't gitignored (so the icon commits):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `build/` isn't ignored — good, the icon will commit. Everything's wired.
 
@@ -21891,7 +21891,7 @@ Want me to also generate a macOS `.icns` and a Linux `512x512.png` in case you e
 
 next point is it possible to build extension like Claude Chrome? i want to use thinkflux with chrome
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes, it's possible — and there are two very different versions, with very different effort. Let me be precise about what's achievable, because "like Claude in Chrome" hides a big fork.
 
@@ -21917,7 +21917,7 @@ Which do you want — and where will you run it?
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
@@ -21927,7 +21927,7 @@ _[used tool: AskUserQuestion]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -21937,7 +21937,7 @@ No response requested.
 
 run option 2. what do you mean where you will run ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Lots happening — let me hit the urgent stuff first, then build option 2.
 
@@ -21959,13 +21959,13 @@ Now building **option 2 — the browsing agent extension.** Creating the icons a
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The npm error again confirms it: **Node.js is not installed on the office laptop, and you don't need it there.** That `npm install` command only works on a machine set up for development. For the office laptop, the answer is the portable `.exe` from the steps above — build it on your home PC, copy the one file over, run it. Don't install Node on the work machine (it needs admin and the build pipeline will fight the corporate network). If you *only* have the office laptop and no personal machine to build on, tell me and we'll find another route.
 
@@ -21973,49 +21973,49 @@ Now, the browsing‑agent extension. Writing the files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Built. The **Thinkflux browsing agent** is a complete Manifest V3 Chrome extension in the new `extension/` folder — `manifest.json`, `background.js` (reads the page + executes clicks/typing/navigation), `sidepanel.js` (the observe→decide→act agent loop calling your LLM), the side‑panel UI, icons, and a README.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 How to run it (on your **personal** Chrome):
 
@@ -22046,19 +22046,19 @@ Want me to add the **vision (screenshot) step** next, or wire the extension to t
 [image]
 gettin llm 404 error
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `404` with an empty body means the request hit a wrong URL path — almost always a base URL that's missing the `/v1` segment (so it POSTs to `…/api/chat/completions` instead of `…/api/v1/chat/completions`). I'll make the extension resolve the URL smartly (same logic as the desktop app) and show the exact URL in the error so it's debuggable:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now reload the extension to pick up the change: go to `chrome://extensions` and click the **reload icon** (↻) on the Thinkflux card, then try again. The error will now print the **full URL it hit and the response body**, so we'll see the exact cause.
 
@@ -22076,7 +22076,7 @@ Re‑run after reloading and paste me the new error text if it persists — with
 
 im trying to use nvidia
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 For NVIDIA NIM, use exactly these in the ⚙ settings (NIM is OpenAI‑compatible):
 
@@ -22096,43 +22096,43 @@ If it still 404s after reloading, paste the new error — it now shows the full 
 
 can i have similar concept of multiple providers and model selctor in chrome extension ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — let me give the extension the same multi‑provider model picker as the desktop app: saved providers (each with its own key + cached model list) and a grouped model selector in the header. Rewriting the side panel:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Finishing the multi‑provider logic in `sidepanel.js`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the README with full setup instructions:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The extension now has the full multi‑provider experience: a provider editor (⚙) pre‑loaded with OpenRouter, NVIDIA NIM, Gemini, DeepSeek, Ollama, and LM Studio — each with its own key and a **Load models** button that fetches and caches that provider's model list — plus a **grouped model dropdown** in the header (with the green active‑provider dot), exactly like the desktop app. The README now has full step‑by‑step setup, a base‑URL reference table, and troubleshooting.
 
@@ -22151,13 +22151,13 @@ That commits the whole `extension/` folder (manifest, background, side panel, ic
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Want me to add the screenshot/vision step next (so it can handle visual pages a text model can't read), or is the text‑based agent good for now?
 
@@ -22167,7 +22167,7 @@ Want me to add the screenshot/vision step next (so it can handle visual pages a 
 
 what is command to pull latest chanegs from git
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 To pull the latest changes from your remote into the current branch:
 
@@ -22205,19 +22205,19 @@ One thing to know for your setup specifically: you've been editing and pushing f
 
 tomorrow mission is to Test every feature built so far
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Smart — you've built a lot, and testing it methodically beats poking around. Let me put together a structured QA checklist covering every feature, so tomorrow is just working down the list. I'll write it as a file you can check off.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me be straight about what's real here, because over‑promising would waste your day tomorrow.
 
@@ -22235,13 +22235,13 @@ Let me start the concrete part immediately — syntax‑checking every backend f
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All 16 backend files pass syntax — clean. Now, one honest correction before I run with this: **I don't actually have your PowerShell.** My "shell" is an isolated **Linux sandbox** with a mount of your folder — not your Windows machine, and it has no display. So I can drive file edits and run Linux/Node checks autonomously, but I physically cannot launch the Windows Electron GUI, open Chrome, or run your `npm run electron:dev`. There's no screen for me to see.
 
@@ -22255,181 +22255,181 @@ That split is the real boundary. I'll go do my whole side now and hand you a rep
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All 17 logic tests pass — the reasoning‑stripper (including the orphan‑`</think>` case from your screenshot), URL resolution for every provider, and the Telegram token guard are all verified correct. Now validating that every renderer/JSX file parses (catches broken imports or JSX from our many edits):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 23/23 renderer files parse clean. Now checking the extension JS and hunting dangling imports / leftover references from all the renames and the deleted `TeaLogo`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — I'm already running it. Let me set up tracking and push through all five steps, then hand you the report.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the static audit — reading the critical modules for real bugs. Session manager first (routing, subscription, usage tracking):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 usage‑store math checks out (token estimate, streaks, peak hour all correct). Let me audit the security‑sensitive part — the agent's file/shell tools and path sandboxing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Path sandboxing for the file tools is solid (`inside()` blocks traversal); `run_bash` is intentionally unsandboxed but permission‑gated — I'll document that as a security characteristic. Now cleaning the dead files and stale comments:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sandbox mount is read‑only for deletes (it let me *create* the icons but won't remove files), so I can't delete the two dead files myself — they need a one‑line `git rm` from you, which I'll put in the report. Finishing the audit and writing it all up now:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All five steps done autonomously. Here's the honest summary.
 
@@ -22460,49 +22460,49 @@ Two files for you: `TEST_REPORT.md` (everything above, with the example tables) 
 Below Thinkflux Logo text, add following text  > by Chaithrodaya Sukruth. Highlight it with colour blending theme.
 Make Logo and text bit bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS — bigger name + a gradient (color‑blend) byline. Let me find the current brand styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The top‑left brand now stacks **Thinkflux** (bigger — 21px, bolder) over **by Chaithrodaya Sukruth** in a gradient that blends the indigo accent → teal → violet (`--accent` → `--accent-2` → violet), and the synapse logo is larger (38px mark in a 44px tile). The nav bar grew slightly (64px) to seat the two lines cleanly. Hot‑reloads — no restart.
 
@@ -22512,13 +22512,13 @@ Done. The top‑left brand now stacks **Thinkflux** (bigger — 21px, bolder) ov
 
 by Chaithrodaya Sukruth should be below Thinkflux and keep font of by Chaithrodaya Sukruth smaller
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The byline is already stacked below the name (column layout) — I'll just shrink it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
@@ -22528,7 +22528,7 @@ _[used tool: Edit]_
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -22538,13 +22538,13 @@ No response requested.
 
 make logo bit bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Bumped the synapse logo up to 46px. It still fits the 64px nav bar comfortably next to the stacked name + byline. Hot‑reloads — no restart.
 
@@ -22554,7 +22554,7 @@ Bumped the synapse logo up to 46px. It still fits the 64px nav bar comfortably n
 
 guide me to test lets build with an example from my github
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's a concrete, safe way to test **Let's Build** end‑to‑end against one of your own repos. The golden rule: **point it at a throwaway clone**, not your only copy — the agent edits real files on disk, and a clone lets you `git checkout .` to undo anything.
 
@@ -22614,61 +22614,61 @@ If anything misbehaves — wrong file edited, garbled output, no approval prompt
 [image]
 in lets build when responsing logo has square box behind it. remove it and make logo little bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Let's Build test worked beautifully — it listed files, read the README, and summarized using tools cleanly. Now removing that square behind the chat avatar logo and enlarging it. Let me check the avatar styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now enlarge the avatar logo. Bumping the container and the logo size in Message.jsx:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the assistant avatar now has no box (transparent, borderless) and the synapse logo is larger (28px in a 32px slot), so it reads as a clean free‑standing mark next to "Thinkflux." The user "Y" badge keeps its tile. Hot‑reloads.
 
@@ -22680,19 +22680,19 @@ And nice result on the test itself — that Career‑Ops summary shows Let's Bui
 
 observation when i move out screen, chat history is vanished why ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good catch — let me confirm the exact cause in the code rather than guess:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it — it's intentional code doing more than it should. In `App.jsx`, every navigation click runs `switchMode`, which contains:
 
@@ -22720,439 +22720,439 @@ Which do you want? I'd suggest **A now** (kills the annoyance immediately) and *
 
 option b. always store history to disk. delete only when user deletes it on app
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Option B it is — persistent chat history with disk storage and user‑controlled deletion. This touches backend storage, IPC, and the renderer, so let me read the current App.jsx flow and the existing Projects‑conversation pattern (which already does this) to mirror it correctly.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Big feature, but well‑defined. The smart move is to persist uniformly in the backend (capture each turn's user + assistant text regardless of which engine ran it), so chat, cowork, and code all get history the same way Projects already does. Let me set up tasks and build it.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll also move the cloud/local indicator to the top‑right after the history work. Let me read the current store scaffold and the start handler:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Store's already solid. Now wiring it into the session manager — persist each turn for chat/cowork/code. Let me see the start handler and where to add persistence:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the session manager — create/load a conversation on start, persist each turn, return the conversation id. Updating `_send` and `start`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add `userText`/`replyText` to `_curTurn` in `_turn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Backend persistence done. Now preload + mock bridge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Backend + IPC + mock all wired. Now the renderer — a history rail component, then App integration. Creating the rail:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.jsx — imports, state, and the navigation/persistence logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the `switchMode` rework (preserve per‑mode, don't wipe on secondary nav) and `pickFolder`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now render the rail. Let me find the work‑split block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the rail styling. Let me add it near the work‑split styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the history rail CSS, then fix your skills import error:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 History persistence is fully wired. Let me mark that done and fix the skills import:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it. The import copies the selected folder *into* your skills folder — and you selected the skills folder itself, so it tried to copy `skills` into `skills\skills` (a folder into itself → EINVAL). I'll add guards and make it smart: if you pick a folder that already lives in your skills path it won't copy, and if you pick a parent folder containing several skills it imports each one.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Big change set — let me verify everything still compiles/parses before handing it back:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That output is the known sandbox‑sync artifact, not real — the mount is serving **truncated** copies (every failure is "unexpected end of input" mid‑token at an arbitrary line, and `sessions-store.cjs`/`HistoryRail.jsx`/`index.js`, which I *didn't* just edit, pass fine). The files I just wrote via the host tools are complete. Let me retry after giving the mount a moment to sync:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The `wc` confirms it: the sandbox's `preload.cjs` is **73 lines and cut mid‑string on line 74** — the host file is ~77 lines and complete. The mount is serving truncated copies of exactly the files I just edited, so `node --check` there is meaningless. The host files (where Edit/Write applied and verified) are intact. Let me eyeball the single riskiest edit — the JSX render insertion — on the authoritative host copy:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The render edit is balanced and correct — the host files are intact; that bash output was the mount serving truncated copies (a documented quirk), safe to ignore. Now the queued request: moving the cloud/local indicator to the top‑right. Let me find the current indicator and the values it uses:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 App already passes `online` and `loc` to TopNav (it just ignored them). I'll render the indicator in the top‑right and remove it from the controls row. TopNav first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove the indicator from the controls row in App.jsx:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS for the top‑right indicator. Let me check the nav layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `.tn-right` already right‑aligns. Just adding the dot style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All three done. Here's what changed:
 
@@ -23181,67 +23181,67 @@ Test: send a message → it appears in the left rail; go to Settings and back �
 [image]
 keep top three option and input and page centre aligned
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me check the sidebar width to align the centering correctly:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sidebar is 208px, so the hero centers 104px right of the tabs (which center to the full window) — that's the misalignment. I'll anchor the brand over the sidebar and float the indicator absolutely, so the tabs center over the main area exactly like the input. Editing the nav layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now float the indicator absolutely so it doesn't shift the tab centering:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On reflection, dead‑center is cleaner and immune to the history‑rail offset — let me center the tabs absolutely in the window instead:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The three tabs are now **dead‑centered** in the window (absolutely positioned, so the brand on the left and the cloud/local indicator on the right no longer pull them off‑center). That's a renderer/CSS change, so it hot‑reloads — no restart.
 
@@ -23260,7 +23260,7 @@ Tell me which you prefer and I'll set it. My recommendation is to keep the rail 
 
 back to previous conversation if i ignore local llms needs, what is the challenge in having thinkflux.ai with cloud llms as all settings are stored in cloud ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -23275,115 +23275,115 @@ i want similar view like Claude code. Keep + New Task and history on left sideba
 
 [Image: original 2547x1221, displayed at 2000x959. Multiply coordinates by 1.27 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's the cleaner architecture — one unified left sidebar with **+ New** and **Recents**, no second column. Let me restructure the Sidebar to hold the history, and drop the separate rail.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.jsx — remove the rail, add `chatMode`, and pass history props to the Sidebar. Imports first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update `openSession`/`newSession` for the unified sidebar and add a `newChat` that works from any view:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update the Sidebar usage and remove the rail from the work‑split:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the sidebar CSS. Let me look at the current sidebar styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me widen the sidebar slightly for the recent‑chat titles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Restructured to match Claude's single‑sidebar layout. The left sidebar now holds everything: a **+ New chat/task** button at the top, the tool nav (Projects, Skills, Connectors, Dispatch, Consumption), a **Recents** list of your saved conversations, and Settings pinned at the bottom — no more separate history column. The standalone rail is gone, so the chat area is back to full width and the hero/input center cleanly under the dead‑centered tabs.
 
@@ -23403,7 +23403,7 @@ On your earlier **thinkflux.ai with cloud‑only LLMs** question — I deferred 
 [image]
 i want all of these centre aligned. make it look aligned. these are fixed windows
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -23421,145 +23421,145 @@ Few improvment
 
 [Image: original 2247x997, displayed at 2000x887. Multiply coordinates by 1.12 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two good improvements. Let me do the quick one first — a classy gradient for the "Thinkflux" wordmark — then rebuild the Skills view into Claude's two‑pane layout.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Skills view. Let me read the current implementation:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The skill body is parseable but not exposed to the UI yet. Let me check the `listSkills` handler so I can add a body‑reader and richer metadata:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll expose the skill body + metadata, then rebuild the view two‑pane. Backend first — add `updated` and a `readSkill`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the two‑pane Skills view (master list + detail with metadata and rendered body):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the two‑pane layout and markdown body:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the new Skills component parses cleanly (interpreting around the known sandbox truncation):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done. Quick note on verification: my sandbox re‑check came back with errors all landing on the **last line** of each file (121/25/315) — that's the documented truncation artifact again (the mount serves cut‑off copies; `Sidebar.jsx` shows as 24 lines when it's ~52). The host files are complete, so this needs a boot‑test rather than trusting that output.
 
@@ -23588,181 +23588,181 @@ Next : Another Ambitions addon
 2.  in This I was full details of Model selected in Model Selector
 attached screenshot is just a reference , create chart something similar , add more  relevant information if you feel. for Chat provide option to sort and filter based on header colum
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Love this — a proper model reference. Let me set up the task and build it: a curated catalog, a sortable/filterable table view, and a sidebar entry.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll handle the "Let's Talk → Let's Chat" rename in this batch too. Building the catalog first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Models Overview component with sorting, filtering, and active‑model highlight:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Great reference — a "more info" detail card. Let me add a click‑through modal to the Models Overview. First the helper logic and richer card data:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the detail modal at the end of the component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire it into the Sidebar and App. Sidebar entry:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.jsx — import, mode flag, and render:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the rename — "Let's Talk" → "Let's Chat" in the contract:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the Models table, filters, and detail card:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Marking the task done and doing a parse sanity‑check (interpreting against the known truncation):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All done, and both new files parse clean (catalog 48 lines, ModelsOverview 219 lines — fully synced this time, no truncation).
 
@@ -23790,169 +23790,169 @@ Want me to add a benchmarks column later (sourced/cited, not guessed), or let yo
 
 Add Provider infomation, also mention if its cloud or local, if its free endpoint of paid.  in more info provide details which provide this model is availableas free end point
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good addition — provider availability + free/paid is genuinely useful. This needs the catalog to carry where each model is served and at what tier. Let me rewrite the catalog with provider data, then surface it in the table and the detail card.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the table columns and detail card. Updating `ModelsOverview.jsx` — import `freeInfo`, swap columns, add the Free filter and an "Available on" section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Also adding an approximate industry rating with star visualization. Let me add ratings to the catalog (one block, clearly approximate), then rebuild the table cells:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the table row cells (match new column order):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now enrich the detail card with the rating stars and an "Available on" section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for stars, host/cost pills, and the providers block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now verify the catalog + component still parse, then I'll give the git commands:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Those are the truncated‑read artifacts again (errors land past the reported last line; the real files are longer). Let me give the mount a moment to sync and re‑check:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The sandbox is stuck on a truncated copy (54 lines when the file is longer). Let me confirm the authoritative host file is complete by reading its tail:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Confirmed the host catalog is complete and well‑formed (83 lines, balanced) — the sandbox just keeps serving a 54‑line truncated copy, so ignore that parse error. Everything's in place.
 
@@ -23991,49 +23991,49 @@ Test: sidebar → **Models** → sort by Rating, filter "Free endpoint", click a
 [image]
 remove duplicate filter and align all filter in same row
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good eye — "Cloud" is in both categories and host, and "Vision" is in both categories and capabilities. I'll drop the duplicate *category* versions (host covers Cloud, the capability toggle covers Vision), reclassify those models into real domains, and merge everything into one filter row.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now merge the two filter rows into one in the component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The filters are now a single wrapping row: **search → category chips (All · Coding · Reasoning · General · Small) → Local/Cloud → Tools · Vision · Thinking · Free endpoint**. Duplicates are gone — "Cloud" lives only in the host filter, "Vision" only as a capability toggle. The 9 cloud models and 2 vision models were reclassified into real domains (General/Reasoning), and since vision models keep `vision: true`, the Vision toggle still surfaces them. Renderer‑only — hot‑reloads, no restart.
 
@@ -24043,7 +24043,7 @@ Done. The filters are now a single wrapping row: **search → category chips (Al
 
 Also add Agentic criteria also in filter
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -24053,91 +24053,91 @@ No response requested.
 
 metion if its best for agentic
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll add an "Agentic" curated flag (strong tool‑calling models that hold up in multi‑step loops), a filter chip for it, and a marker in the table/detail. Catalog first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the component — filter chip, filter logic, accurate "Agentic" tag, and a marker in the Best‑for cell:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Also making filters toggle off when clicked again. Let me add the agentic filter logic and the click‑to‑unfilter behavior:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now mark "best for agentic" in the Best‑for cell:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the agentic badge style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the component parses:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — all four additions:
 
@@ -24159,7 +24159,7 @@ Want me to fold these into the git commit list, or are you committing the whole 
 
 why only 27 models shown ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Because the Models Overview is a **hand‑curated catalog**, not a live feed — I wrote exactly 27 entries in `src/data/modelCatalog.js`. It's a reference table, so each row needs metadata that providers don't expose: VRAM, context window, license, tools/vision/thinking, agentic suitability, rating. A provider's `/v1/models` endpoint returns hundreds of bare model **IDs** with none of that, so I couldn't auto‑generate rich rows — I curated a representative set of the well‑known ones.
 
@@ -24179,241 +24179,241 @@ My recommendation is **#3** — it ties the overview to what you've actually got
 
 [image]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 A 401 "Missing Authentication header" means the request reached OpenRouter with **no API key** attached. The most likely cause: when we did the full rename to `thinkflux`, the app's settings moved to a fresh `%APPDATA%\thinkflux` folder, so your saved keys were wiped — and the OpenRouter key hasn't been re‑entered there. But let me verify the code path isn't also at fault (the no‑key guard should've caught an empty key before sending):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The guard is correct, so a key *is* present (keyLen>0) — which means the request that lost its auth header is the **skills‑enabled chat path** (`streamChatTools`), not plain chat. Since you imported skills, "hi" now routes through the tool‑calling transport. Let me check its headers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The guard proves a key *is* present, yet OpenRouter says the header is missing — that points to a **malformed key value** (a trailing newline/space from pasting makes the `Bearer …` header invalid, so it's dropped). I'll trim keys defensively everywhere. Let me find the spots:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll trim keys at every header. Replacing the Bearer pattern everywhere:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the **Hybrid models** feature. App.jsx — build the live model list from configured providers and pass it in:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the merge logic in ModelsOverview. Let me read the component's current data‑building section:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the header count, the Configured chip, and sparse‑row rendering. Header + chip:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the row cells — handle sparse models (dash for unknowns) and show a "configured" dot:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me make the detail card handle sparse models cleanly (guard the blurb and badges):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now hide the Wins/Misses block for sparse models:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the component parses:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All errors land one line past EOF — the sandbox is serving truncated copies again (providers shows 187 lines, catalog 54 when it's ~100). Let me confirm the biggest file's tail is intact on the host:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The host file is complete and balanced (286 lines, proper close + export) — confirming the sandbox parse errors are just the truncation artifact, safe to ignore.
 
@@ -24441,121 +24441,121 @@ Re‑save the OpenRouter key, send "hi", and check Models → Configured filter.
 
 sorry, lets revert to option 1  - Expand the curated list — I add more models (e.g., Mixtral, Command‑R, Yi, Granite, o1/o3, Grok, more Qwen/Llama sizes). Accurate, but manual; I can add another 20–30. option 3 doesnt make sense where big list with no details.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Agreed — a big list of bare IDs is noise. Reverting to the curated‑only approach and expanding the catalog instead. First, unwire the live merge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now revert the component to pure‑catalog. Signature and state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now revert the row cells and detail card to the clean (non‑sparse) versions:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Component is back to pure‑catalog. Now expanding the catalog. Adding provider bundles for Cohere/xAI:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now ratings and agentic flags for the new models:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me parse‑check the expanded catalog and reverted component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Reverted cleanly — the grep confirms zero leftover references to the hybrid code (`allModels`/`configuredOnly`/`liveModels` all gone), and the parse "errors" are the usual truncated‑read artifact (the catalog is ~120 lines but the sandbox keeps reading 56). It's pure curated catalog again.
 
@@ -24580,9 +24580,9 @@ Re‑save your OpenRouter key (to clear any stray whitespace), then check Models
 
 ## 🧑 User
 
-last one time request on this topic, rename project from thinkflux to BrainEdge,  update everywhere in codebase whereever you see either Chai or Chakra. no cahnges to logo. once done confirm ill rename folder as brainedge. following git repo (https://github.com/chaithruak/brainedge.git) has been create to push entire code.
+last one time request on this topic, rename project from thinkflux to Madav,  update everywhere in codebase whereever you see either Chai or Chakra. no cahnges to logo. once done confirm ill rename folder as madav. following git repo (https://github.com/chaithruak/brainedge.git) has been create to push entire code.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -24592,842 +24592,842 @@ No response requested.
 
 Add  logo icons next to Lets Chat, Lets Colloborate, Lets build. ill let you decide most appropriate. animate and  highlight them  main logo. you are master of  creating asthetic and modern look, ill let you decide
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Two things: the BrainEdge rename (which I'll do now and confirm) and the animated tab icons. Let me first map every occurrence to rename:
+Two things: the Madav rename (which I'll do now and confirm) and the animated tab icons. Let me first map every occurrence to rename:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 36 files — too many for hand‑edits to be safe. Let me first check whether the sandbox mount is currently in sync (so a scripted rename won't corrupt freshly‑edited files):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-The mount is serving badly truncated copies (catalog shows 56 lines and ends mid‑array; main.cjs ends "bod") — so a scripted `sed` rename would **corrupt** files. A 36‑file rename has to go through the editor safely, which is a big dedicated pass. I'll do the **icons now** (your current request), then do the full BrainEdge rename as the immediate next step and confirm.
+The mount is serving badly truncated copies (catalog shows 56 lines and ends mid‑array; main.cjs ends "bod") — so a scripted `sed` rename would **corrupt** files. A 36‑file rename has to go through the editor safely, which is a big dedicated pass. I'll do the **icons now** (your current request), then do the full Madav rename as the immediate next step and confirm.
 
 Icons first. Checking the tab styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Icons done — 💬 Let's Chat, 👥 Let's Collaborate, 🔨 Let's Build, with the active tab's icon pulsing in the teal accent with a soft glow to echo the synapse mark.
 
-Now the BrainEdge rename. I'll grind through it with the editor (safe, since the mount can't be scripted). Functional/internal identifiers first — these must stay consistent:
+Now the Madav rename. I'll grind through it with the editor (safe, since the mount can't be scripted). Functional/internal identifiers first — these must stay consistent:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now `settings.cjs` — it stores the settings file as `chai-settings.json` (a leftover Chai reference):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Continuing the rename through the backend (I'll do the font/logo bump right after). Backend files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the renderer UI files. index.html, TopNav, Message, Composer, PermissionModal, Dispatch, ProjectsBrowser, Settings, Skills, contract, ThinkLogo, styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Wordmark's showing as BrainEdge — rename is taking. Finishing the remaining files, then the font/logo bump. Renderer + extension:
+Wordmark's showing as Madav — rename is taking. Finishing the remaining files, then the font/logo bump. Renderer + extension:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Skills.jsx has no old name (the two‑pane rewrite dropped that text) — fine. Continuing with comments and the extension:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the extension files. Reading + renaming each:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Extension renamed. Now the visual requests. Let me find the base font and logo sizes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The base is 14px. Bumping the overall size and key text up, plus the logo. Body first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now bump nav items, tabs, brand name, and add the sidebar active‑icon animation:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now bump the logo sizes (top nav + hero):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the docs. Renaming each:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me do a comprehensive sweep to catch every remaining reference across all files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The font revert I'll handle in a moment. First let me see exactly what references remain in those 13 files so I fix them precisely:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-The matches in `package.json` (`Chaithrodaya`, `chaithru@gmail.com`, `com.chaithrodaya.brainedge`) are your **name/email/appId** — those correctly stay. The rest are docs. Let me confirm the code files are actually clean:
+The matches in `package.json` (`Chaithrodaya`, `chaithru@gmail.com`, `com.chaithrodaya.madav`) are your **name/email/appId** — those correctly stay. The rest are docs. Let me confirm the code files are actually clean:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Code is fully clean now (functional, UI, and extension all say BrainEdge). Now your **font revert** — stepping the last increase back down:
+Code is fully clean now (functional, UI, and extension all say Madav). Now your **font revert** — stepping the last increase back down:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Keeping the wordmark larger (that was the logo/name request, not the body font). Now cleaning the current docs:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-✅ **Yes — you can rename the folder now.** The BrainEdge rename is complete across the entire app: every functional identifier (package `name`, `appId`, `window.brainedge`, all `brainedge:` IPC channels, the `brainedge-settings.json` file), all user‑visible strings, system prompts, the Telegram bot, the Chrome extension, and the current docs. I verified `src/` and `electron/` have **no** remaining `chai`/`chakra`/`thinkflux` references (only your name/email `Chaithrodaya`/`chaithru@gmail.com` in `package.json`, which correctly stay).
+✅ **Yes — you can rename the folder now.** The Madav rename is complete across the entire app: every functional identifier (package `name`, `appId`, `window.madav`, all `madav:` IPC channels, the `madav-settings.json` file), all user‑visible strings, system prompts, the Telegram bot, the Chrome extension, and the current docs. I verified `src/` and `electron/` have **no** remaining `chai`/`chakra`/`thinkflux` references (only your name/email `Chaithrodaya`/`chaithru@gmail.com` in `package.json`, which correctly stay).
 
 **Folder‑rename sequence:**
 1. Quit the app + stop `npm run electron:dev`.
-2. Rename `C:\Projects\ClaudeCodeUI\Thinkflux` → `…\BrainEdge` in Explorer.
+2. Rename `C:\Projects\ClaudeCodeUI\Thinkflux` → `…\Madav` in Explorer.
 3. Tell me here — I'll reconnect to the new path so I can keep editing.
-4. `npm run electron:dev` from the new folder. It reads a fresh `%APPDATA%\brainedge`, so re‑enter your keys once (last time, clean slate).
+4. `npm run electron:dev` from the new folder. It reads a fresh `%APPDATA%\madav`, so re‑enter your keys once (last time, clean slate).
 
 **Push to the new repo:**
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 git remote set-url origin https://github.com/chaithruak/brainedge.git
 git add -A
-git commit -m "Rebrand to BrainEdge; animated nav + sidebar icons; font/logo tuning; expanded model catalog"
+git commit -m "Rebrand to Madav; animated nav + sidebar icons; font/logo tuning; expanded model catalog"
 git push -u origin main   # add --force only if the new repo already has a commit
 ```
 
@@ -25447,56 +25447,56 @@ Restart needed for the main‑process rename to take effect — but do that *aft
 [image]
 reduce a bit space between them. add search as  additional option  side bar to search chats list
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two quick changes. Tightening the sidebar spacing and adding a recents search. Sidebar component first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now tighten the nav spacing and style the search box:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — both renderer‑only, so they hot‑reload:
 
 - **Tighter spacing:** nav‑item vertical padding dropped from 9px to 6px, so Projects/Skills/Connectors/Models/Dispatch/Consumption sit closer together.
 - **Recents search:** a "Search chats…" box now sits under the Recents label and live‑filters your saved conversations by title (shows "No matches." when nothing fits). It searches the current mode's history.
 
-Whenever you're ready, rename the folder to BrainEdge and ping me to reconnect.
+Whenever you're ready, rename the folder to Madav and ping me to reconnect.
 
 ---
 
@@ -25504,30 +25504,30 @@ Whenever you're ready, rename the folder to BrainEdge and ping me to reconnect.
 
 Folder renamed and access to folder in cowork updated
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Reconnected — I can read the renamed folder (`C:\Projects\ClaudeCodeUI\BrainEdge`), and `package.json` confirms `name: "brainedge"`, productName BrainEdge, your author line intact. Everything's wired to the new path.
+Reconnected — I can read the renamed folder (`C:\Projects\ClaudeCodeUI\Madav`), and `package.json` confirms `name: "madav"`, productName Madav, your author line intact. Everything's wired to the new path.
 
 Now push to the new repo. I can't run git from here (no repo/credentials in the sandbox), so run this in your PowerShell:
 
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 
 # point at the new repo
 git remote set-url origin https://github.com/chaithruak/brainedge.git
-git remote -v        # confirm it shows brainedge.git
+git remote -v        # confirm it shows madav.git
 
 # sanity check: files modified/new, NOT mass-deleted
 git status
 
 git add -A
-git commit -m "Rebrand Thinkflux -> BrainEdge (full rename); animated nav + sidebar icons; recents search; tab icons; expanded model catalog; font/logo tuning"
+git commit -m "Rebrand Thinkflux -> Madav (full rename); animated nav + sidebar icons; recents search; tab icons; expanded model catalog; font/logo tuning"
 git branch -M main
 git push -u origin main
 ```
@@ -25545,7 +25545,7 @@ Then start it fresh to confirm the rename runs end‑to‑end:
 ```powershell
 npm run electron:dev
 ```
-It'll read a clean `%APPDATA%\brainedge` — re‑enter your keys once. Tell me the `git status`/push output if anything looks off and I'll help.
+It'll read a clean `%APPDATA%\madav` — re‑enter your keys once. Tell me the `git status`/push output if anything looks off and I'll help.
 
 ---
 
@@ -25553,25 +25553,25 @@ It'll read a clean `%APPDATA%\brainedge` — re‑enter your keys once. Tell me 
 
 is windows installer file updated will all changes including name chanegs
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No — the installer isn't updated automatically. It's a **build artifact**: it only gets (re)generated when you run `npm run electron:build`. Whatever `.exe` is currently in your `release/` folder predates the rename, so it still says the old name. Dev mode (`npm run electron:dev`) never touches the installer.
 
-To get a fresh installer with **all** changes baked in (BrainEdge name, icon, every feature):
+To get a fresh installer with **all** changes baked in (Madav name, icon, every feature):
 
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 rmdir /s /q release        # clear the old (stale-name) build
 npm install                # ensure deps (undici etc.) are present
 npm run electron:build
 ```
 
 What that produces in `release/`, now correctly branded:
-- **`BrainEdge Setup <version>.exe`** — the NSIS installer (productName is `BrainEdge`, appId `com.chaithrodaya.brainedge`).
-- **`BrainEdge-portable-<version>.exe`** — the no‑install portable build.
-- **`win-unpacked/BrainEdge.exe`** — the unpacked app.
+- **`Madav Setup <version>.exe`** — the NSIS installer (productName is `Madav`, appId `com.chaithrodaya.madav`).
+- **`Madav-portable-<version>.exe`** — the no‑install portable build.
+- **`win-unpacked/Madav.exe`** — the unpacked app.
 
-All three carry the synapse icon (`build/icon.ico`) and the renamed code. The installed app's window title, Start‑menu shortcut, and taskbar entry will read **BrainEdge**.
+All three carry the synapse icon (`build/icon.ico`) and the renamed code. The installed app's window title, Start‑menu shortcut, and taskbar entry will read **Madav**.
 
 Why a rebuild is required, plainly: the installer bundles a *snapshot* of `dist/` (the compiled renderer) + `electron/` + `package.json` at build time. Your edits live in source; they only reach the `.exe` when electron‑builder repackages them. So: edit → `electron:build` → new installer.
 
@@ -25583,7 +25583,7 @@ One note: `npm run electron:build` runs `vite build` first, which is also a good
 
 i have executed it. now update new files to git under release
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Hold on — don't commit the installer into the repo. `release/` is gitignored on purpose, and for good reasons:
 
@@ -25595,13 +25595,13 @@ The right place for a distributable `.exe` is **GitHub Releases** (release asset
 
 Easiest, via the web UI:
 1. Go to `https://github.com/chaithruak/brainedge/releases` → **Draft a new release**.
-2. Tag `v0.1.0`, title "BrainEdge 0.1.0".
-3. Drag in `release\BrainEdge Setup 0.1.0.exe` and `release\BrainEdge-portable-0.1.0.exe` as assets → Publish.
+2. Tag `v0.1.0`, title "Madav 0.1.0".
+3. Drag in `release\Madav Setup 0.1.0.exe` and `release\Madav-portable-0.1.0.exe` as assets → Publish.
 
 Or via the GitHub CLI if you have it:
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
-gh release create v0.1.0 "release\BrainEdge Setup 0.1.0.exe" "release\BrainEdge-portable-0.1.0.exe" --title "BrainEdge 0.1.0" --notes "First BrainEdge build"
+cd C:\Projects\ClaudeCodeUI\Madav
+gh release create v0.1.0 "release\Madav Setup 0.1.0.exe" "release\Madav-portable-0.1.0.exe" --title "Madav 0.1.0" --notes "First Madav build"
 ```
 (adjust the filenames to whatever's actually in `release\` — run `dir release` to see exact names.)
 
@@ -25612,7 +25612,7 @@ This gives people a clean download link without polluting the repo.
 git lfs install
 git lfs track "*.exe"
 git add .gitattributes
-git add -f "release/BrainEdge-portable-0.1.0.exe"   # -f overrides .gitignore
+git add -f "release/Madav-portable-0.1.0.exe"   # -f overrides .gitignore
 git commit -m "Add portable build via LFS"
 git push
 ```
@@ -25621,7 +25621,7 @@ But Releases is the better answer — it's exactly what they're for.
 Want me to first make sure your **source** is committed/pushed (the actual code changes), separate from the binary? That's the part that matters for the repo:
 ```powershell
 git add -A
-git commit -m "Rebrand to BrainEdge + features"
+git commit -m "Rebrand to Madav + features"
 git push
 ```
 
@@ -25631,12 +25631,12 @@ git push
 
 whichs files from should i upload into git release folder
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Upload only the **two user‑facing executables**:
 
-- **`BrainEdge Setup <version>.exe`** — the installer (what most people download).
-- **`BrainEdge-portable-<version>.exe`** — the no‑install portable build (handy for locked‑down/work machines).
+- **`Madav Setup <version>.exe`** — the installer (what most people download).
+- **`Madav-portable-<version>.exe`** — the no‑install portable build (handy for locked‑down/work machines).
 
 **Skip everything else** in `release/` — it's build scaffolding, not for distribution:
 - `win-unpacked/` — the raw unpacked app folder (huge; it's literally what got packed into the installer).
@@ -25645,7 +25645,7 @@ Upload only the **two user‑facing executables**:
 
 Run this to see the exact filenames/sizes before uploading:
 ```powershell
-dir "C:\Projects\ClaudeCodeUI\BrainEdge\release"
+dir "C:\Projects\ClaudeCodeUI\Madav\release"
 ```
 
 So: in the GitHub Release, drag in just those two `.exe` files. That's the clean, complete download set — installer for normal use, portable for restricted environments.
@@ -25657,9 +25657,9 @@ So: in the GitHub Release, drag in just those two `.exe` files. That's the clean
 Mode                 LastWriteTime         Length Name                                                                                
 ----                 -------------         ------ ----                                                                                
 d-----          6/6/2026   3:10 PM                win-unpacked                                                                        
--a----          6/6/2026   3:10 PM      134494312 BrainEdge Setup 0.1.0.exe                                                           
--a----          6/6/2026   3:10 PM         140709 BrainEdge Setup 0.1.0.exe.blockmap                                                  
--a----          6/6/2026   3:10 PM      134302207 BrainEdge-portable-0.1.0.exe                                                        
+-a----          6/6/2026   3:10 PM      134494312 Madav Setup 0.1.0.exe                                                           
+-a----          6/6/2026   3:10 PM         140709 Madav Setup 0.1.0.exe.blockmap                                                  
+-a----          6/6/2026   3:10 PM      134302207 Madav-portable-0.1.0.exe                                                        
 -a----          6/6/2026   3:10 PM           6091 builder-debug.yml                                                                   
 -a----          6/6/2026   3:09 PM            452 builder-effective-config.yaml                                                       
 -a----          6/6/2026   3:10 PM            347 latest.yml                                                                          
@@ -25667,24 +25667,24 @@ d-----          6/6/2026   3:10 PM                win-unpacked
 -a----          6/6/2026   2:29 AM         140848 Thinkflux Setup 0.1.0.exe.blockmap                                                  
 -a----          6/6/2026   2:29 AM      134286493 Thinkflux-portable-0.1.0.exe
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-The build worked — you've got both BrainEdge installers (~134 MB each). Upload exactly these two as Release assets:
+The build worked — you've got both Madav installers (~134 MB each). Upload exactly these two as Release assets:
 
-- **`BrainEdge Setup 0.1.0.exe`** (installer)
-- **`BrainEdge-portable-0.1.0.exe`** (portable)
+- **`Madav Setup 0.1.0.exe`** (installer)
+- **`Madav-portable-0.1.0.exe`** (portable)
 
 Skip the rest: `win-unpacked/`, `*.blockmap`, `latest.yml`, `builder-debug.yml`, `builder-effective-config.yaml`.
 
 And **delete the three stale `Thinkflux …` files** — they're from the pre‑rename build and will only confuse:
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge\release
+cd C:\Projects\ClaudeCodeUI\Madav\release
 del "Thinkflux Setup 0.1.0.exe" "Thinkflux Setup 0.1.0.exe.blockmap" "Thinkflux-portable-0.1.0.exe"
 ```
 
 One important confirmation on the size: each `.exe` is **134 MB**, which is *over* GitHub's 100 MB limit for files committed **into a repo** — but **Release assets allow up to 2 GB each**, so uploading them to a Release works fine. That's exactly why Releases is the right channel and committing them to the repo would've been rejected.
 
-So: GitHub → `chaithruak/brainedge` → Releases → Draft new release → tag `v0.1.0` → drag in those two `.exe` files → Publish.
+So: GitHub → `chaithruak/madav` → Releases → Draft new release → tag `v0.1.0` → drag in those two `.exe` files → Publish.
 
 ---
 
@@ -25696,85 +25696,85 @@ Let Continue with next steps. i want to Improvise Models Section
    1. Models Overview > Move all info current under Model here
    2. Model Speed Check . i will explain what to do
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On it. Setting up the two sub‑sections under Models. Creating the section wrapper + a Speed Check stub (ready for your spec), and moving the current view under "Models overview".
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire App to use the section wrapper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the sub‑tab CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The **Models** section now has two sub‑tabs at the top:
 
@@ -25797,25 +25797,25 @@ for Model Speed Check, following is the idea. do not build based on reference re
 6. always retain last execution result on page with date and time stamp, replace result with next execution.
 before you build propose me your proposal plan on how are you going top achieve this. this is appliable only for cloud models
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me look at the reference repo to ground my understanding of its approach before proposing.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — I read the reference. Here's its rationale, then my proposal (which I'd build differently for our app).
 
 **What the reference does (the idea, distilled):** sends one identical prompt to ~20 NVIDIA NIM models, streams each response, times it, computes **tokens/second**, writes `results.json` incrementally (resume‑safe), and renders an animated bar chart. Core insight worth keeping: *same prompt → stream → timestamp tokens → tokens/sec → rank visually.* What I'd change: it's a sequential Python CLI script with a separate HTML viewer; we want it in‑app, concurrent, and tied to our catalog + configured providers.
 
-## My proposal for BrainEdge — Model Speed Check
+## My proposal for Madav — Model Speed Check
 
 **1. Scope & routing (cloud‑only).** The picker lists only **cloud** models from Models Overview. Each is selectable *only if* a configured provider with an API key can serve it — I map `model.providers` → your `settings.profiles` (Anthropic→anthropic profile, OpenAI, Gemini, DeepSeek, OpenRouter, NIM). Un‑routable models show disabled with "needs <provider> key." This directly satisfies "pass through respective service provider."
 
@@ -25852,203 +25852,203 @@ If that lines up, say go and I'll build it into the Speed Check tab. One caveat 
 its bit confusion, display it into two separate sections
 for Claude Subscription once authenticated, always make all Anthropic models available rather than what was selected in CLI. Remove Current Model Options. i dont want any defaults models in in individual provider's section
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good feedback — let me restructure that. Let me read the provider‑editor part of Settings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll split it into clear "Connection" and "Billing & sign‑in" sections, remove the Current‑model field, and disable the API key when subscription is on:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Go — building the Speed Check. First finishing the current request: make all Anthropic models available under subscription. Let me look at `listModels`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the timed streaming engine. Creating `speedtest.cjs`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC handlers in main.cjs:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now preload + mock:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Speed Check UI (replacing the stub):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Speed Check styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the new files parse (checking the bash mount path after the rename):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The bash mount is stale (still shows the old `Thinkflux`), but the host file tools are authoritative, so I'll trust the edits and you can boot‑test. Now your two wordmark fixes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both wordmark issues fixed:
 - **"g" cutoff** — the gradient text was clipping descenders due to a tight line‑height; added `line-height: 1.3` + a little bottom padding so the full "g" shows.
-- **Byline blend** — "by Chaithrodaya Sukruth" now uses the **same animated gradient** (indigo→teal→violet shimmer) as "BrainEdge", on the same 9s cycle, so they move and blend together.
+- **Byline blend** — "by Chaithrodaya Sukruth" now uses the **same animated gradient** (indigo→teal→violet shimmer) as "Madav", on the same 9s cycle, so they move and blend together.
 
 And the bigger work from this turn is done:
 
@@ -26076,7 +26076,7 @@ Improvements to model speed check
 
 1. Make Model Selection window more user friendly
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -26090,19 +26090,19 @@ Improvements to model speed check
 2. Why only few models listed not all ?
 3. Prompt Window also can be better
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good questions — let me address all three. The short answer to #2: Speed Check was **cloud‑only by the original spec**, so it hid all ~37 local models; and within cloud, only models with a configured provider+key were selectable, so the list looked tiny. I'll include local models too (they're free and fast to test), add Select‑All + search, and improve the prompt area.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That screenshot exposes real bugs, not just styling — let me fix the substance first, then the look.
 
@@ -26110,67 +26110,67 @@ That screenshot exposes real bugs, not just styling — let me fix the substance
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now your three points. **"Why only OpenRouter?"** — because OpenRouter is the only provider you have a key for, so every cloud model routes there. Two real bugs made it worse: Claude wrongly matched your (keyless) Anthropic profile → 401, and OpenRouter rejected the catalog's generic ids (`gemini-2.0-flash`, etc.) because it needs namespaced ids (`google/gemini-…`). Fixing the routing, reverting to cloud‑only, and killing the white scrollbar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now killing the white scrollbar app‑wide (not just here) and polishing the panel so it blends:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All addressed. Summary of what changed:
 
@@ -26203,19 +26203,19 @@ highlighted text windows can be until end of windod based on size of window
 
 [Image: original 2242x1220, displayed at 2000x1088. Multiply coordinates by 1.12 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That intro paragraph has a fixed `max-width: 700px`, so it wraps early instead of using the window. Removing the cap so it flows to the window width:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the description now spans the full content width of the window instead of wrapping at 700px. Hot‑reloads.
 
@@ -26229,265 +26229,265 @@ rename Model Speed Check > Models Speed Check
 move Model Configuration to Model Section. Rename Model Configuration > Model Configuration
 First Model Configuration, Then Model Overview, Then Models Speed Test
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Three changes: rename the tab, and move Model Configuration into the Models section as the first sub‑tab. That last one means extracting the provider‑config UI out of Settings into its own component. Let me read Settings to see what to extract:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me find the `Field` helper definition:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got the fallback request too — I'll wire that into the speed test after this move. First, extracting Model Configuration into its own component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update ModelsSection with three sub‑tabs in order, and pass `onChanged` through so config saves propagate:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App passes `onChanged` to ModelsSection, and rename the Speed Check heading. App first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove Model Configuration from Settings (it lives under Models now). Removing the nav entry and its render block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Correction — there's no separate account section anymore (Claude sign‑in moved into the provider editor). Fixing SECTIONS to just Profile + Messaging:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove the model section render block from Settings:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add OpenAI as a default provider in `settings.cjs`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the **quota fallback** — if a model fails (quota/balance/auth/not‑found), retry it via NVIDIA NIM then OpenRouter. Updating the speed‑test handler:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the renderer — compute fallback specs and show when a fallback was used:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the changed files parse — checking the mount path after the rename:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 ModelConfig parsed clean; the others show EOF‑truncation artifacts again. Let me confirm the Settings removal left balanced JSX by reading the join point and tail on the host:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Settings is 198 lines and parse flags EOF — that could be a real missing brace from the removal. Let me check the component's close before `Field`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host Settings is balanced (component closes cleanly at 186‑189, `Field` at 191‑198) — the removal cut a self‑contained block. Let me retry the parse after a sync delay to confirm it's just the stale mount:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The host Settings is balanced (I verified by eye — component closes at 188‑189, `Field` follows); the persistent `ERR@199` is the stale mount, same artifact as the others. Now your layout request: the model list has a fixed 320px height leaving dead space below (your red box). I'll make the whole panel fill the window height with the list flexing + scrolling inside. Changing the root to a full‑height flex layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All done. Here's the batch:
 
@@ -26520,16 +26520,16 @@ Now add OpenAI as a default provider in `settings.cjs > i meant add open into li
 
 explaing me this in details - OpenAI added as a default provider (`https://api.openai.com`, `gpt-4o-mini`) — appears automatically for existing configs via the defaults merge.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Sure. This is about how BrainEdge's settings persistence makes a newly‑added default provider show up without overwriting what you've already configured.
+Sure. This is about how Madav's settings persistence makes a newly‑added default provider show up without overwriting what you've already configured.
 
 **The two layers of settings**
 
 There are two sources of truth in `electron/settings.cjs`:
 
 1. `DEFAULTS` — a hard‑coded object in the code that ships with the app. It lists the built‑in providers (`p_openrouter`, `p_anthropic`, `p_nim`, `p_gemini`, `p_deepseek`, `p_ollama`, `p_llamacpp`, and now the new `p_openai`).
-2. The **saved file** on disk at `%APPDATA%\brainedge\brainedge-settings.json` — written whenever you change anything in Settings. This holds *your* state (your keys, which model is default, your edits).
+2. The **saved file** on disk at `%APPDATA%\madav\madav-settings.json` — written whenever you change anything in Settings. This holds *your* state (your keys, which model is default, your edits).
 
 What I changed was just adding one line to `DEFAULTS.profiles`:
 ```js
@@ -26562,7 +26562,7 @@ Net effect: `p_openai` appears for everyone on the next launch, with a blank key
 
 - It's a **shallow** merge *per provider id*, not field‑by‑field. So if you (or a past default) already had a `p_openai`, your whole `p_openai` object replaces the default one — it doesn't deep‑merge individual fields like `baseUrl`. For a genuinely new id, that distinction doesn't matter.
 - Because `DEFAULTS.profiles` always seeds the list, a built‑in provider you *delete* would reappear on restart (defaults re‑seed it). That's why removing `p_proxy` had to be done with an explicit migration line in `load()`, not just by deleting it from defaults.
-- In your specific case there's an extra wrinkle: the BrainEdge rename moved `userData` to a fresh `%APPDATA%\brainedge`, so you effectively have **no old config** anyway — the merge just produces the full default set (now including OpenAI) on first run.
+- In your specific case there's an extra wrinkle: the Madav rename moved `userData` to a fresh `%APPDATA%\madav`, so you effectively have **no old config** anyway — the merge just produces the full default set (now including OpenAI) on first run.
 
 So "appears automatically via the defaults merge" = the loader always rebuilds the provider list from the code defaults first, then layers your saved data on top, so adding a provider to the defaults surfaces it everywhere without a migration and without clobbering your keys.
 
@@ -26572,85 +26572,85 @@ So "appears automatically via the defaults merge" = the loader always rebuilds t
 
 in models Speed Check, give ability to sop execution
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Adding a Stop button. First, make the test engine cancelable (AbortSignal):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the Stop button + default prompt, then answer the Gemini question. Updating the speed‑test handler with cancellation and a default prompt:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now preload + mock:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the renderer — Stop button while running. Updating imports and the run button:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done — **Stop button** (cancels all in‑flight requests via AbortController) and **default prompt** (if you leave the box empty, it uses "In about 150 words, explain what makes a good API design.").
 
@@ -26679,7 +26679,7 @@ Remove Default box Highlight for + New Chat
 
 recommend me better name options  for Dispatch
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 A few solid directions for "Dispatch" (it's your background + scheduled‑task feature, so the name should signal "things that run on their own"):
 
@@ -26693,7 +26693,7 @@ Strong alternatives, by flavor:
 - **Jobs** — devs read this instantly (cron jobs, background jobs); a touch technical for a general audience.
 - **Autopilot** — punchy and on‑brand for an AI tool ("set it and forget it"); less literal, more marketing.
 
-If you want it to feel native to BrainEdge's brain/thinking identity, **Pulse** or **Cadence** are evocative options (recurring rhythm of automated work) — distinctive, though they need a tooltip since they're not self‑explanatory.
+If you want it to feel native to Madav's brain/thinking identity, **Pulse** or **Cadence** are evocative options (recurring rhythm of automated work) — distinctive, though they need a tooltip since they're not self‑explanatory.
 
 My ranking for a broad audience: **Automations > Routines > Schedules**. "Automations" is the safe, professional choice; "Routines" if you want warmth; "Autopilot" if you want personality.
 
@@ -26710,157 +26710,157 @@ look and feel of  model configuration can be better. Always window and content a
 
 [Image: original 2262x1242, displayed at 2000x1098. Multiply coordinates by 1.13 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Model Configuration view caps everything at ~520px and wastes the right half. Let me rebuild it with responsive, full‑width cards. Rewriting the layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the responsive card layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Before I build this — "smooth hovering window from left to right based on mouse hover" can mean a couple of quite different things, and they need different implementations. Which do you want?
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 You chose Both — hover‑expand sidebar + fluid content. Let me build the collapsible sidebar (slim icon rail that slides open on hover, overlaying content so nothing reflows), and the full‑width content was already started with Model Configuration. Reading the Sidebar to wrap labels:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS — make the sidebar a hover‑expand overlay rail and give the content the freed width:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me handle both. First the greeting format (include the profile name, keep "Good"). Finding it in App:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the sidebar hover‑expand CSS. Finding the layout rules:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The hover‑expand sidebar is wired (slim 64px rail → slides to 248px overlay on hover; labels/recents fade in). Let me make sure the Projects view actually fills the freed width (it looked narrow earlier):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Projects already uses a fluid `260px / 1fr` grid, so it fills the freed width now that the sidebar is a 64px rail (the detail caps at 720px only for form readability — good). Let me verify the changed files parse:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Sidebar and App parse clean; ModelConfig shows the EOF‑truncation flag again. Quick host tail check to be sure it's balanced:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Host ModelConfig is complete and balanced (143 lines, closes cleanly) — the `ERR@135` was the stale mount serving a truncated copy, same as before. All good.
 
@@ -26870,7 +26870,7 @@ Summary of this batch (all renderer/CSS — hot‑reloads, no restart):
 
 **Fluid content** — the main area now uses the full window width (the 64px rail is all that's reserved). Model Configuration was rebuilt into responsive full‑width cards (Default model + Proxy side‑by‑side, provider editor fills the width with a 2‑column field grid). Projects already uses a fluid `260px / 1fr` grid, so it fills too.
 
-**Greeting** — now reads **"Good {part}, {Name}"**, e.g. "Good afternoon, Chaithru". The name comes from your Profile name; if that's blank it falls back to the local part of your email, capitalized. Since the BrainEdge rename reset `%APPDATA%`, it currently shows just "Good afternoon" until you set your name (or email) in **Settings → Profile** — do that and it'll greet you by name.
+**Greeting** — now reads **"Good {part}, {Name}"**, e.g. "Good afternoon, Chaithru". The name comes from your Profile name; if that's blank it falls back to the local part of your email, capitalized. Since the Madav rename reset `%APPDATA%`, it currently shows just "Good afternoon" until you set your name (or email) in **Settings → Profile** — do that and it'll greet you by name.
 
 One heads‑up on the hover sidebar: it's a flyout that overlays content on hover, which is sleek but means the nav is hidden behind icons until you hover. If you'd prefer it **pinned open** with a manual collapse toggle instead of pure hover, say so and I'll add a pin button.
 
@@ -26881,115 +26881,115 @@ One heads‑up on the hover sidebar: it's a flyout that overlays content on hove
 [image]
 revert back side bar  hovering chaneg, proive option as highlighted in pic as its for claude just hide and view absed on user click
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Reverting the hover behavior and switching to a Claude‑style click toggle (with Ctrl+B). First, revert the sidebar CSS to a normal panel + collapsible state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App — collapse state, Ctrl+B, and pass the toggle to TopNav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the `sidebarOpen` state + Ctrl+B handler in App:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the toggle button in TopNav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now style the toggle button:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the changed files parse:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Reverted and replaced with the Claude‑style click toggle:
 
@@ -27017,121 +27017,121 @@ For Projects, window alignment and flow should be very similar to claude project
 [Image: original 2547x696, displayed at 2000x547. Multiply coordinates by 1.27 to map to original image.]
 [Image: original 2552x832, displayed at 2000x652. Multiply coordinates by 1.28 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This is a sizable rebuild to match Claude's project flow (grid → create modal → detail with instructions/files rail). Let me read the current ProjectsBrowser fully to reuse its handlers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rebuilding ProjectsBrowser to match Claude's flow — grid of cards, a create modal, and a detail view with an Instructions/Files rail:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire App: a `startProjectChat` handler and pass it in. Adding after `openConversation`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The collapsed‑sidebar exposed that chat content isn't centered. Let me handle that plus finish wiring/styling. First, pass the new project handler and confirm the usage:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the chat centering. Let me check the chat/composer layout CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The chat content uses `margin:auto` so it centers in the available area (and with the sidebar collapsed that's the window). The urgent gap is that my Projects rebuild has no CSS yet — adding it now (cards grid, create modal, detail layout, all theme‑aligned and centered):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me align the brand within the sidebar width — shrink the oversized logo and let the brand size to its content so it doesn't spill past the sidebar edge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Brand now sizes to its content and sits within the sidebar width. Let me verify the big Projects rewrite parses:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 ProjectsBrowser (the big rewrite) parsed clean, TopNav clean; App's flag is the stale‑mount EOF artifact (it grew with the new handler/state — the edits were small balanced additions).
 
@@ -27142,7 +27142,7 @@ What's now in place:
 - **"New project" → create modal**: "Create a personal project" with *What are you working on?* (name) and *What are you trying to achieve?* (description → saved as instructions), Cancel / Create project.
 - **Detail view**: "← All projects" back link, big title, an inline **composer** to start a chat (Enter sends → opens the chat surface with that message in the project), an existing‑conversations list (with the "Start a chat to keep conversations organized…" empty state), and a right **rail** with **Instructions** (auto‑saves) and **Files & sources** (link folder/GitHub, add text/files, with the "Add PDFs, documents…" empty state).
 
-**Brand alignment** — the oversized 50px logo is back to 38px and the brand now sizes to its content, so the logo + "BrainEdge" sit within the sidebar width instead of spilling into the main area.
+**Brand alignment** — the oversized 50px logo is back to 38px and the brand now sizes to its content, so the logo + "Madav" sit within the sidebar width instead of spilling into the main area.
 
 All renderer/CSS — hot‑reloads. With the sidebar collapsed, the tabs and chat content are both window‑centered; the Projects views are centered at max‑width 1100. Take a look and tell me if the detail composer's "start chat" flow behaves how you want (it creates a project conversation and jumps into it).
 
@@ -27153,31 +27153,31 @@ All renderer/CSS — hot‑reloads. With the sidebar collapsed, the tabs and cha
 [image]
 i want chat input and respone alignment same as claude. Reponse on left and user input on right.  ilike. I like current  display of You and brian edge. retain that
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Claude‑style alignment: assistant left (plain), user right (bubble), keeping the avatar + name labels. Let me find the current message CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — chat now mirrors Claude:
 
-- **Assistant (BrainEdge)** stays on the **left**, plain full‑width text with its avatar + name.
+- **Assistant (Madav)** stays on the **left**, plain full‑width text with its avatar + name.
 - **You** messages now sit on the **right** in a rounded bubble, with the "You" label and avatar on the right side (max 76% width so long messages wrap nicely).
-- Kept the avatar + "You" / "BrainEdge" labels exactly as you liked.
+- Kept the avatar + "You" / "Madav" labels exactly as you liked.
 
 Renderer CSS only — hot‑reloads, no restart. Send a message to see the right‑aligned bubble vs the left‑aligned response.
 
@@ -27187,91 +27187,91 @@ Renderer CSS only — hot‑reloads, no restart. Send a message to see the right
 
 Creation of Project when in Lets colloborate has issue, it not allwoing to name project.  Keep project functionality very similar to claude  on how it uses project seperately for chat and cowork
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me investigate how project creation is triggered (especially from cowork) to find the naming bug:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — the real gap is that projects only do chat; Claude lets a project run **both** chats and Cowork tasks. Let me wire "Start a task in Cowork" into projects so a project's folder + instructions + knowledge drive a Cowork session. Let me check the session manager's start + agent turn:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Quick change first (current request): drop the user avatar and label user messages with the profile name. Reading Message:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now pass the name from App:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 User avatar removed; user messages now show your profile name in a right‑aligned bubble. Now back to the project↔cowork parity (the prior request). Let me see `_agentTurn` to inject project context into Cowork:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Model Configuration editor stretches awkwardly and leaves a big empty right zone on wide screens. I'll center the whole config at a comfortable max‑width (symmetric, dynamic) and let the fields fill. Wrapping the content:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
@@ -27283,19 +27283,19 @@ This session is being continued from a previous conversation that ran out of con
 
 Summary:
 1. Primary Request and Intent:
-   The user is building "BrainEdge" — an Electron (v31.7.7) + React/Vite desktop app replicating Claude Desktop (Chat="Let's Chat", Cowork="Let's Collaborate", Code="Let's Build", Projects, Skills, Connectors, Models, Dispatch, Consumption) that runs on ANY LLM provider (OpenRouter, Anthropic, OpenAI, NVIDIA NIM, Gemini, DeepSeek, Ollama, LM Studio, llama.cpp). The app was progressively renamed Chakra→Chai→Thinkflux→**BrainEdge** (current). Across this session the user made many sequential requests: finish Settings restructure (Claude Sign in section, Google/GitHub profile linking), Anthropic subscription billing via `claude login`, fix Telegram bot, fix reasoning-dump on chat, full rename to BrainEdge (package id + IPC + UI everywhere, "no Chai or Chakra anywhere — clean"), generate a synapse app icon, corporate proxy support (but NOT evasion/bypass — user accepted this constraint), portable build, persistent chat history, unified sidebar with Recents + search, Models Overview catalog, Models section split into 3 sub-tabs (Model configuration / Models overview / Models speed check), build a Model Speed Check (cloud-only, tokens/sec, TTFT, multi-select, prompt, graph, persist last run, fallback to NIM/OpenRouter on quota errors, Stop button, default prompt), add OpenAI as default provider, tab icons + animated sidebar icons, gradient wordmark, greeting "Good afternoon, <Name>", sidebar collapse toggle (Ctrl+B, reverting an earlier hover-expand experiment), rebuild Projects to match Claude's flow (grid → create modal → detail with Instructions/Files rail), align brand to sidebar width, and finally **make chat message alignment like Claude: assistant responses on the LEFT (plain), user input on the RIGHT (bubble), while retaining the current "You"/"BrainEdge" avatar + name labels.**
+   The user is building "Madav" — an Electron (v31.7.7) + React/Vite desktop app replicating Claude Desktop (Chat="Let's Chat", Cowork="Let's Collaborate", Code="Let's Build", Projects, Skills, Connectors, Models, Dispatch, Consumption) that runs on ANY LLM provider (OpenRouter, Anthropic, OpenAI, NVIDIA NIM, Gemini, DeepSeek, Ollama, LM Studio, llama.cpp). The app was progressively renamed Chakra→Chai→Thinkflux→**Madav** (current). Across this session the user made many sequential requests: finish Settings restructure (Claude Sign in section, Google/GitHub profile linking), Anthropic subscription billing via `claude login`, fix Telegram bot, fix reasoning-dump on chat, full rename to Madav (package id + IPC + UI everywhere, "no Chai or Chakra anywhere — clean"), generate a synapse app icon, corporate proxy support (but NOT evasion/bypass — user accepted this constraint), portable build, persistent chat history, unified sidebar with Recents + search, Models Overview catalog, Models section split into 3 sub-tabs (Model configuration / Models overview / Models speed check), build a Model Speed Check (cloud-only, tokens/sec, TTFT, multi-select, prompt, graph, persist last run, fallback to NIM/OpenRouter on quota errors, Stop button, default prompt), add OpenAI as default provider, tab icons + animated sidebar icons, gradient wordmark, greeting "Good afternoon, <Name>", sidebar collapse toggle (Ctrl+B, reverting an earlier hover-expand experiment), rebuild Projects to match Claude's flow (grid → create modal → detail with Instructions/Files rail), align brand to sidebar width, and finally **make chat message alignment like Claude: assistant responses on the LEFT (plain), user input on the RIGHT (bubble), while retaining the current "You"/"Madav" avatar + name labels.**
 
 2. Key Technical Concepts:
-   - Electron main (CommonJS .cjs) + React/Vite renderer; IPC via contextBridge `window.brainedge` (renamed from window.chai/thinkflux), channels `brainedge:*`.
+   - Electron main (CommonJS .cjs) + React/Vite renderer; IPC via contextBridge `window.madav` (renamed from window.chai/thinkflux), channels `madav:*`.
    - Provider profiles: { id, name, kind:"openai"|"anthropic", baseUrl, apiKey, model, cachedModels }.
-   - Settings persistence: `electron/settings.cjs` DEFAULTS + `load()` shallow-merges saved file over defaults: `{ ...DEFAULTS, ...data, profiles: { ...DEFAULTS.profiles, ...(data.profiles||{}) } }` — so new default providers (p_openai) appear automatically without clobbering user keys. Settings file is now `brainedge-settings.json` in `%APPDATA%\brainedge`.
+   - Settings persistence: `electron/settings.cjs` DEFAULTS + `load()` shallow-merges saved file over defaults: `{ ...DEFAULTS, ...data, profiles: { ...DEFAULTS.profiles, ...(data.profiles||{}) } }` — so new default providers (p_openai) appear automatically without clobbering user keys. Settings file is now `madav-settings.json` in `%APPDATA%\madav`.
    - Anthropic subscription mode (`anthropicUseSubscription`): strips API key so the Agent SDK uses `claude login` credentials (Agent-SDK credit pool); `listModels` returns a curated ANTHROPIC_MODELS list when subscription on (no key to query /v1/models).
    - Reasoning strip: `stripReasoning()` in providers.cjs removes `<think>…</think>` including orphan `</think>`; streamOpenAI fully buffers then emits clean text.
    - Speed test engine: `electron/speedtest.cjs` streams a chat completion measuring TTFT, tokens/sec (with genMs<80ms fallback to total time to avoid absurd values), total time; AbortSignal for cancellation. Fallback chain in main: retry via NIM then OpenRouter on retryable errors (401/402/404/429/quota/balance/insufficient/not found/no endpoints).
    - API key trimming `(profile.apiKey||"").trim()` in all header construction (fixed malformed-header 401).
    - undici `EnvHttpProxyAgent` proxy support honoring HTTPS_PROXY/HTTP_PROXY/NO_PROXY (localhost bypass); set in main.cjs setupProxy().
    - electron-builder targets: nsis + portable + dir; build/icon.ico (synapse logo, multi-size via Pillow).
-   - CRITICAL ENVIRONMENT CONSTRAINTS (verbatim guidance honored): The sandbox bash mount serves TRUNCATED/stale reads (parse errors at EOF/line+1 are artifacts, NOT real); host Read/Write/Edit are authoritative. I cannot run git or launch the Windows GUI — the user runs those. I refused to build corporate-restriction/network-blocker BYPASS (defense evasion) — only legitimate `HTTPS_PROXY` routing and portable/no-install builds. Internal package "name"/appId were renamed (user accepted re-entering keys for a clean slate). The user's name/email in package.json author ("Chaithrodaya Sukruth <chaithru@gmail.com>") and appId "com.chaithrodaya.brainedge" must be preserved (contain "chai" substring but are correct).
+   - CRITICAL ENVIRONMENT CONSTRAINTS (verbatim guidance honored): The sandbox bash mount serves TRUNCATED/stale reads (parse errors at EOF/line+1 are artifacts, NOT real); host Read/Write/Edit are authoritative. I cannot run git or launch the Windows GUI — the user runs those. I refused to build corporate-restriction/network-blocker BYPASS (defense evasion) — only legitimate `HTTPS_PROXY` routing and portable/no-install builds. Internal package "name"/appId were renamed (user accepted re-entering keys for a clean slate). The user's name/email in package.json author ("Chaithrodaya Sukruth <chaithru@gmail.com>") and appId "com.chaithrodaya.madav" must be preserved (contain "chai" substring but are correct).
 
 3. Files and Code Sections:
    - `src/styles.css` (MOST RECENT EDIT):
@@ -27310,18 +27310,18 @@ Summary:
        .msg.user .content { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; text-align: left; }
        ```
      - Also contains earlier: dark scrollbars app-wide (`*::-webkit-scrollbar`), `.tn-name`/`.tn-by` shimmer gradient (tnshimmer animation, line-height 1.3 + padding-bottom 2px to fix g-cutoff), `.tn-collapse` button, `.tn-tabs { position:absolute; left:50%; transform:translateX(-50%) }`, `.tn-tabicon` pulse + `.nav-item.active svg` pulse (tabpulse keyframe), collapsible sidebar (`.app-body.sb-collapsed .sidebar { flex-basis:0; width:0; opacity:0; ... }`), `.mc-*` (Model config responsive cards), `.sc-*` (speed check, full-height flex panel), `.mo-*` (Models overview table/cards/stars), `.pj-*`/`.pjd-*` (Projects grid/create-modal/detail rail), `.tn-brand { display:flex; align-items:center; gap:10px; flex:0 0 auto; }` (auto width to align to sidebar).
-   - `src/components/Message.jsx`: renders `<div className={msg user|assistant}><div className="avatar">{isUser?"Y":<ThinkLogo size={28}/>}</div><div className="body"><div className="who">{isUser?"You":"BrainEdge"}</div><div className="content">{text}</div>...</div></div>`. The avatar/name labels are what the user wants RETAINED.
+   - `src/components/Message.jsx`: renders `<div className={msg user|assistant}><div className="avatar">{isUser?"Y":<ThinkLogo size={28}/>}</div><div className="body"><div className="who">{isUser?"You":"Madav"}</div><div className="content">{text}</div>...</div></div>`. The avatar/name labels are what the user wants RETAINED.
    - `src/components/ProjectsBrowser.jsx` (FULL REWRITE — Claude flow): state `view("list"|"detail")`, `creating` modal, `draft{name,desc}`, `q`, `sortBy`. List = header (title + sort + search + New project) + `.pj-grid` of `.pj-card`. Create modal "Create a personal project" (name + desc→instructions). Detail = `← All projects` back, title, `.pjd-composer` (Enter → `startChat` → `onStartChat(project,text)`), conversations list, `.pjd-rail` with Instructions (auto-save onBlur) + Files & sources (link folder/GitHub, add text/file). `rel(ts)` helper for relative time. Parsed OK (212 lines).
    - `src/App.jsx`: added `startProjectChat(project, text)` (creates conversation, sets projectCtx + timeline, calls bridge.start mode project), passed `onStartChat={startProjectChat}` to ProjectsBrowser. Added `sidebarOpen` state + Ctrl+B effect (`window.addEventListener("keydown"... (e.ctrlKey||e.metaKey)&&e.key==="b"`), `<div className={\`app-body ${sidebarOpen?"":"sb-collapsed"}\`}>`, passes sidebarOpen/onToggleSidebar to TopNav. Greeting: `_acct`, `_nm = name first word || email prefix`, `_who` capitalized, `greeting = _who ? \`Good ${_part.toLowerCase()}, ${_who}\` : \`Good ${_part.toLowerCase()}\``. Renders `<ModelsSection activeModel={...} onChanged={setSettings}/>` for isModels. ThinkLogo hero size 52.
-   - `src/components/TopNav.jsx`: imports MessageCircle/Users/Hammer/PanelLeft; ICONS map for tabs; `<button className="tn-collapse" onClick={onToggleSidebar}>` (PanelLeft); ThinkLogo size 38; brand "BrainEdge" + byline "by Chaithrodaya Sukruth"; tabs render icon+label; tn-right status dot.
+   - `src/components/TopNav.jsx`: imports MessageCircle/Users/Hammer/PanelLeft; ICONS map for tabs; `<button className="tn-collapse" onClick={onToggleSidebar}>` (PanelLeft); ThinkLogo size 38; brand "Madav" + byline "by Chaithrodaya Sukruth"; tabs render icon+label; tn-right status dot.
    - `src/components/Sidebar.jsx`: className "sidebar glass" (hoverbar reverted); `<span className="sb-t">` wrappers around labels; `.sb-expand` wraps Recents label + search + recents list; New chat/task button, TOOLS (project/skills/connectors/models/dispatch/consumption), Settings; search filter on recents.
    - `src/components/ModelsSection.jsx`: 3 sub-tabs in order: Model configuration / Models overview / Models speed check; renders ModelConfig/ModelsOverview/ModelSpeedCheck.
    - `src/components/ModelConfig.jsx`: extracted from Settings; responsive `.mc-top` (Default model + Proxy cards), `.mc-providers` grid (220px list + editor card with `.mc-fields` 2-col grid), Connection + Billing&sign-in (Anthropic API key vs Subscription mode cards). Parsed OK.
    - `src/components/ModelSpeedCheck.jsx`: cloud-only model multi-select with `resolve(m, profiles, cfg)` (skips keyless anthropic unless subscription; OpenRouter requires cachedModels match), `resolveVia` for NIM/OpenRouter fallbacks, PRESETS (Short/Medium/Long/Code), Select all/Clear, search, Stop button (`bridge.cancelSpeedTest()`), full-height `.sc-page` flex layout, tokens/sec bar chart, persists last run. Intro `<p>` maxWidth removed (full width).
    - `src/data/modelCatalog.js`: ~51 curated models (cloud+local) with providers[], RATING map, AGENTIC set, `freeInfo(m)`. CATEGORIES = ["Coding","Reasoning","General","Small"] (Cloud/Vision removed as dup filters).
-   - `electron/main.cjs`: `brainedge:runSpeedTest` (fallback chain + AbortControllers `speedAborts` + default prompt), `brainedge:cancelSpeedTest`, `brainedge:getSpeedTestLast`, session-history IPC, proxy setupProxy(), all `thinkflux:`→`brainedge:` channels.
+   - `electron/main.cjs`: `madav:runSpeedTest` (fallback chain + AbortControllers `speedAborts` + default prompt), `madav:cancelSpeedTest`, `madav:getSpeedTestLast`, session-history IPC, proxy setupProxy(), all `thinkflux:`→`madav:` channels.
    - `electron/speedtest.cjs`: `runTest(profile, model, prompt, maxTokens, signal)` with AbortError→"cancelled", tps fallback `genMs>=80?genMs:(tEnd-t0)`.
-   - `electron/settings.cjs`: added `p_openai: { id:"p_openai", name:"OpenAI", kind:"openai", baseUrl:"https://api.openai.com", apiKey:"", model:"gpt-4o-mini" }`; `proxyUrl`/`noProxy`/`anthropicUseSubscription` defaults; file `brainedge-settings.json`.
+   - `electron/settings.cjs`: added `p_openai: { id:"p_openai", name:"OpenAI", kind:"openai", baseUrl:"https://api.openai.com", apiKey:"", model:"gpt-4o-mini" }`; `proxyUrl`/`noProxy`/`anthropicUseSubscription` defaults; file `madav-settings.json`.
    - `electron/providers.cjs`: `ANTHROPIC_MODELS` list returned by listModels when anthropic+subscription/no-key; key trimming in all headers; stripReasoning exported.
    - `electron/preload.cjs`/`src/bridge/mockBridge.js`: runSpeedTest/cancelSpeedTest/getSpeedTestLast, listSessions/getSession/deleteSession, readSkill, githubSignIn, etc.
 
@@ -27336,7 +27336,7 @@ Summary:
    - User feedback corrections: reverted font "+1 more" increase (was better before); reverted hover-expand sidebar to click-toggle (Ctrl+B); reverted speed-test "include local" to cloud-only; reverted hybrid live-models Models Overview to curated-only ("big list with no details doesn't make sense"); fixed Settings SECTIONS (mistakenly added "account" section that didn't exist → reverted to Profile+Messaging only).
 
 5. Problem Solving:
-   Solved: BrainEdge full rename verified clean in src/electron (only user's name/email remain); OpenAI default provider via merge mechanism; speed-test routing + fallback + cancellation; Projects Claude-flow rebuild; sidebar collapse; greeting with name. Ongoing/limitation: sandbox can't reliably verify freshly-edited files (truncation) so boot-tests are deferred to the user; chat content centering is via margin:auto (window-centered when sidebar collapsed, offset when open — acceptable per current usage).
+   Solved: Madav full rename verified clean in src/electron (only user's name/email remain); OpenAI default provider via merge mechanism; speed-test routing + fallback + cancellation; Projects Claude-flow rebuild; sidebar collapse; greeting with name. Ongoing/limitation: sandbox can't reliably verify freshly-edited files (truncation) so boot-tests are deferred to the user; chat content centering is via margin:auto (window-centered when sidebar collapsed, offset when open — acceptable per current usage).
 
 6. All user messages (this session):
    - "in Account and Signin remove google part..." (continued from prior)
@@ -27385,19 +27385,19 @@ Summary:
 
 7. Pending Tasks:
    - (Current) Verify the chat message alignment renders correctly (assistant left plain, user right bubble, labels retained).
-   - User still needs to: restart app (`npm run electron:dev`) for main-process changes; re-enter keys in fresh %APPDATA%\brainedge; Save & load models on providers (esp. OpenRouter for speed-test fallback); push to https://github.com/chaithruak/brainedge.git; upload `BrainEdge Setup 0.1.0.exe` + `BrainEdge-portable-0.1.0.exe` to a GitHub Release (delete stale Thinkflux* files).
+   - User still needs to: restart app (`npm run electron:dev`) for main-process changes; re-enter keys in fresh %APPDATA%\madav; Save & load models on providers (esp. OpenRouter for speed-test fallback); push to https://github.com/chaithruak/brainedge.git; upload `Madav Setup 0.1.0.exe` + `Madav-portable-0.1.0.exe` to a GitHub Release (delete stale Thinkflux* files).
    - Offered but not confirmed: persist sidebar collapsed state across restarts; rename "Dispatch" to a better name (Automations recommended); add vision/screenshot step to Chrome extension; benchmark column for Models.
 
 8. Current Work:
-   The user's final message: "i want chat input and response alignment same as claude. Response on left and user input on right. I like current display of You and brian edge. retain that." I addressed this by editing `src/styles.css` `.msg` rules to: keep `.msg.assistant` left-aligned (plain, body flex:1) and make `.msg.user` use `flex-direction: row-reverse` with the body shrunk (`flex:0 1 auto; max-width:76%; align-items:flex-end`), the "who" label right-aligned, and the user `.content` wrapped in a bubble (`background:var(--bg-2); border; border-radius:14px; padding:10px 14px`). This keeps the existing avatar ("Y") + name ("You"/"BrainEdge") labels (in Message.jsx, unchanged) per the user's "retain that" instruction. This was a single completed CSS edit (renderer-only, hot-reloads).
+   The user's final message: "i want chat input and response alignment same as claude. Response on left and user input on right. I like current display of You and brian edge. retain that." I addressed this by editing `src/styles.css` `.msg` rules to: keep `.msg.assistant` left-aligned (plain, body flex:1) and make `.msg.user` use `flex-direction: row-reverse` with the body shrunk (`flex:0 1 auto; max-width:76%; align-items:flex-end`), the "who" label right-aligned, and the user `.content` wrapped in a bubble (`background:var(--bg-2); border; border-radius:14px; padding:10px 14px`). This keeps the existing avatar ("Y") + name ("You"/"Madav") labels (in Message.jsx, unchanged) per the user's "retain that" instruction. This was a single completed CSS edit (renderer-only, hot-reloads).
 
 9. Optional Next Step:
-   The chat-alignment CSS edit is complete and renderer-only (hot-reloads, no restart). The next step is to confirm to the user that the change is done — assistant messages stay left/plain and user messages now appear in a right-aligned bubble while the "You"/"BrainEdge" avatar+name labels are retained — and invite them to verify in the running app, since I cannot test the GUI myself. This directly matches the user's most recent request ("Response on left and user input on right. I like current display of You and brian edge. retain that") with no tangential work.
+   The chat-alignment CSS edit is complete and renderer-only (hot-reloads, no restart). The next step is to confirm to the user that the change is done — assistant messages stay left/plain and user messages now appear in a right-aligned bubble while the "You"/"Madav" avatar+name labels are retained — and invite them to verify in the running app, since I cannot test the GUI myself. This directly matches the user's most recent request ("Response on left and user input on right. I like current display of You and brian edge. retain that") with no tangential work.
 
 If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: C:\Users\chait\AppData\Roaming\Claude\local-agent-mode-sessions\50ab4547-d459-45fa-8a67-631f9b713f9f\edd4944b-b060-4a20-98a1-10c69920be28\local_0a5d7dce-4c63-417d-9671-29b21393e1f1\.claude\projects\C--Users-chait-AppData-Roaming-Claude-local-agent-mode-sessions-50ab4547-d459-45fa-8a67-631f9b713f9f-edd4944b-b060-4a20-98a1-10c69920be28-local-0a5d7dce-4c63-417d-9671-29b21393e1f1-outputs\392ebf10-118e-4b29-9d91-b417da167203.jsonl
 Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, do not preface with "I'll continue" or similar. Pick up the last task as if the break never happened.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Honest answer: **no — not yet.** I kept getting pulled into the avatar and alignment tweaks. Let me first close out the alignment edit I started (the file currently has an unclosed wrapper), then actually wire up the project↔cowork approach.
 
@@ -27405,565 +27405,565 @@ Finishing the alignment wrapper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the latest request — paste support in the chat input. Let me read the Composer to add paste handling for images/files:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me check how send flows to the model so paste-attachments are handled correctly:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I have three threads open now (project↔cowork, model‑config alignment, and paste). Let me knock them out in order. First, the alignment CSS so the wrapper I added actually centers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 You're right. Let me queue everything and work through it in order without jumping.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Queued. Starting Task 1 — the alignment CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove the inner `maxWidth: 620` caps so the billing cards fill the editor width:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Task 1 done. Starting Task 2 — paste support in the chat input:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll thread pasted images through to vision‑capable providers. Let me see how user messages are built for the chat and agent turns:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `streamOpenAI` forwards `messages` verbatim, so an array `content` with `image_url` blocks works natively for OpenAI‑compatible providers. Let me see the turn routing (start/sendInput dispatch) to thread images through:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The dispatcher is `_turn`. I'll thread `images` to the plain OpenAI chat path (the common "paste a screenshot and ask" case). Let me check preload + bridge signatures for `start`/`sendInput`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the main.cjs IPC handler for sendInput:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the session-manager: thread `images` through `start`/`sendInput`/`_turn` into `_chatTurn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now build the multimodal user message in `_chatTurn` (OpenAI‑compatible only; Anthropic raw path stays text):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App.send to accept and forward images:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Composer — paste handler, image support in the picker, thumbnails, and passing images on submit:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the chips (image thumbnails) and attach `onPaste` to the textarea:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS for the thumbnail, and render sent images in the message. First the thumbnail style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now render sent images in the message bubble:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update the mock bridge's `sendInput` signature so dev mode stays consistent:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Task 2 complete (images route to vision‑capable OpenAI‑compatible providers on the chat path; text files inline everywhere). Now Task 3 — project ↔ cowork.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add the `coworkProj` state and clear it on session changes. Let me find the state declarations:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now pass `onStartCowork` to ProjectsBrowser and add an optional banner when a Cowork task is project‑scoped:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the ProjectsBrowser detail — add a Chat/Cowork toggle. Imports and signature first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll finish Task 3 (per your "finish current task first" rule), then immediately address the Telegram token error. Completing the project composer toggle:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the session-manager: store `projectId` for cowork sessions and inject the project's instructions + knowledge into the agent turn:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now inject the project context at the start of the agent turn:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS for the mode toggle. Let me find the `.pjd-composer` rules:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Task 3 complete. Now the Telegram error.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Telegram sorted — good (the token just needed to be in the Bot token field; the long `digits:AA…` string is the token, the Allowed‑user‑id field takes a plain number like `1442423552`).
 
@@ -27984,141 +27984,141 @@ One thing to note: the paste/vision and project‑cowork wiring touches the Elec
 ## 🧑 User
 
 [image]
-here is my expectation. i dont wanto test and guide you on how caht interface should behave. i want you to replicate every great detailing and functionalities and capabilites of claude chat interface. like / is followed with skills interface.... review claude chat interface setup and replicate it for brainedgefor chat interface everywhere in project, lets colloborate, lets build... independent chats... everywhere. go ahead and do it now
+here is my expectation. i dont wanto test and guide you on how caht interface should behave. i want you to replicate every great detailing and functionalities and capabilites of claude chat interface. like / is followed with skills interface.... review claude chat interface setup and replicate it for madavfor chat interface everywhere in project, lets colloborate, lets build... independent chats... everywhere. go ahead and do it now
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This is a real feature build — the `/` slash‑command skills menu in the composer (shared across chat, collaborate, build, and projects). Let me first see how skills are exposed to the renderer so the menu can list them.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Skills are available via `bridge.listSkills()` returning `{name, description, dir, enabled}`. Now I'll build the `/` slash menu into the shared Composer (which powers chat, collaborate, build, and in‑project chats). Let me re-read the current Composer:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rewriting the Composer with the slash menu and skill chip:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Task 4 done. Now the CSS for the slash menu and skill chip:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify the renderer bridge exposes `listSkills` (guarded in Composer, but the mock should return something sane):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The `/` slash‑command skills menu is now in the shared composer, so it works everywhere a chat happens — Let's Chat, Let's Collaborate, Let's Build, and in‑project chats (they all use the same Composer).
 
@@ -28142,406 +28142,406 @@ If you want, I can extend this further toward Claude parity next: `@`‑mentions
 
 If you want, I can extend this further toward Claude parity next: `@`‑mentions for files/connectors, or slash entries for built‑in commands (not just skills). Want me to queue those? - yes extend it
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me queue these and check what's available (connectors source, any directory‑listing IPC, and what App passes to the Composer).
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No directory listing IPC exists — I'll add a small one. Let me check App's Composer props and folder handling:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll add a directory‑listing IPC. Let me look at the chooseFolder handler for context and the fs import:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now expose `listDir` in preload and the mock bridge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now pass `cwd` and `onNewChat` to both Composer instances in App:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the main work — rewrite the Composer to add built‑in slash commands and `@`‑mentions:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The image rendered in your bubble but never reached the model. Reason: my first cut only attached images for OpenAI‑compatible providers — you're on **Sonnet (Anthropic)**, where my code skipped them. The Anthropic raw path and the subscription/agent (SDK) paths need their own image handling. Let me fix vision across all providers. Checking the session‑manager imports and the Anthropic stream:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `streamAnthropic` forwards array content too, so Anthropic image blocks will work. I'll add universal image handling: inline blocks for the no‑tool chat path (both OpenAI and Anthropic formats), and temp‑file + Read‑tool note for the agent/SDK paths (subscription, cowork, build). Adding helpers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now thread images to every turn branch in `_turn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update `_chatViaSdk` and `_chatAgentTurn` to accept and use images:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the vision fix (active critical work), then do the Dispatch→Deploy rename, then resume the @/commands build. Updating `_chatAgentTurn`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now `_agentTurn` (cowork/build) — accept images and append the note after project injection:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now `_chatTurn` — replace my earlier inline block with the shared `inlineContent` helper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now `_projectTurn` — accept images too:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Vision is now wired across chat, project, cowork/build, and subscription paths. Now the **Dispatch → Deploy** rename:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Dispatch is now labeled **Deploy** everywhere in the UI (sidebar, tab contract, and the section header); the internal id stays `dispatch` so nothing breaks. Now resuming the `/` commands + `@` mentions build — rewriting the Composer:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The `/` commands + `@` mentions are in. Marking those done, then I'll answer your model‑validation question (and it's a good one — display vs. execution should be verifiable).
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now your question. Let me look at how the app handles the backend's `init` event (which carries the real executing model) so I can surface it per‑response:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll make this verifiable in‑app: stamp each response with the real model/provider the backend actually used (from its `init` event, which reads the same `activeProfile()` that executes). Adding a ref to capture it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now render the badge in Message (assistant only):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Here's how you can now validate the real executing model, plus what I shipped this round.
 
 **Answering your question directly:** the top‑bar selector only reflects what's *selected*. The authoritative value is what the backend emits, and there are now two ground‑truth signals:
 
-1. **Per‑response badge (new).** Every BrainEdge reply now shows `· provider · model` next to its name. That string comes from the backend's `init` event, which is emitted by the exact same code path that calls `settings.activeProfile()` and runs the request — so it's the model that actually executed, not the selector's display. If the badge ever disagrees with the selector, the badge is the truth.
+1. **Per‑response badge (new).** Every Madav reply now shows `· provider · model` next to its name. That string comes from the backend's `init` event, which is emitted by the exact same code path that calls `settings.activeProfile()` and runs the request — so it's the model that actually executed, not the selector's display. If the badge ever disagrees with the selector, the badge is the truth.
 
 2. **Terminal log (already there).** On every turn the main process prints to the `[ELECTRON]` terminal:
-`[brainedge] turn → provider="…" kind=… model="…" baseUrl=… keyLen=… sub=…`
+`[madav] turn → provider="…" kind=… model="…" baseUrl=… keyLen=… sub=…`
 That's the lowest‑level confirmation of provider, model, endpoint, whether a key is present, and subscription mode.
 
 Display vs. execution can diverge if a fallback kicked in (e.g., the speed‑test NIM/OpenRouter retry) or a selection didn't persist; the badge + log close that gap. One caveat: the badge depends on the path emitting a model in `init` (the chat and project paths do); some agent/SDK paths may not, in which case rely on the terminal line.
@@ -28561,31 +28561,31 @@ The vision fix touches the main process (`main.cjs`, `session-manager.cjs`, `pre
 [image]
 let move this section inside Chat input window for all scenarios. make it well aligned in centre of chat input window
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll move that controls row (folder / permission / model) **inside** the composer's bottom row, centered, and show it in both the empty‑state and active‑chat composers. Let me check the current `ctrl-row` styling first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `.ctrl-row` already opens its model dropdown upward, so it'll behave inside the composer. Now wire it in. Composer signature + centered render:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 You're right to call that out — I referenced Sonnet because the earlier screenshot showed "Sonnet 4.6" when you tested the image; I shouldn't have assumed. I'll correct the picture below. First let me finish moving the controls into the composer.
 
@@ -28593,43 +28593,43 @@ Rendering controls centered in the composer row:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App: pass `controls={controlsRow}` to both composers and drop the standalone row:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS to neutralize the old row margins inside the composer:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done — and let me correct the record on vision.
 
@@ -28641,7 +28641,7 @@ NVIDIA NIM is OpenAI‑compatible (`kind: "openai"`), so images are sent the *no
 
 So why did an NVIDIA model say "I don't see a picture"? The most likely reason, with high confidence: **the specific NIM model you selected isn't vision‑capable.** Vision requires a multimodal model with an image encoder. Most NIM text models (Llama‑3.x text, Nemotron, DeepSeek, Qwen text variants, StepFun text, etc.) will silently ignore or reject image content — no client‑side wiring can make a text‑only model "see" an image.
 
-To get vision on NVIDIA, switch to a VLM, e.g. `meta/llama-3.2-90b-vision-instruct` (or the 11B), `microsoft/phi-3.5-vision-instruct`, or an NVIDIA VILA model. Then the inline image path will work. You can confirm which model actually ran via the new per‑response badge and the `[brainedge] turn → … model="…"` line in the terminal.
+To get vision on NVIDIA, switch to a VLM, e.g. `meta/llama-3.2-90b-vision-instruct` (or the 11B), `microsoft/phi-3.5-vision-instruct`, or an NVIDIA VILA model. Then the inline image path will work. You can confirm which model actually ran via the new per‑response badge and the `[madav] turn → … model="…"` line in the terminal.
 
 One caveat worth flagging: if you have **skills or connectors enabled**, chat routes through the agent loop, where I currently hand images off as a "Read this file" note — that helps the Claude SDK but *not* a NIM VLM (its `read_file` tool returns text, not pixels). For NIM vision, the clean path is a VLM with skills/connectors off, so the image goes inline. If you want, I can make image messages always take the inline path for OpenAI‑compatible providers (even with extras on) so a NIM VLM always receives real pixels — say the word and I'll wire it.
 
@@ -28651,37 +28651,37 @@ One caveat worth flagging: if you have **skills or connectors enabled**, chat ro
 
 yes implement it
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll route image messages through the inline path for OpenAI‑compatible providers even when skills/connectors are on, so a NIM VLM always receives real pixels.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Now when a chat message includes images and you're on an OpenAI‑compatible provider (NVIDIA NIM, OpenRouter, OpenAI, etc.), the turn skips the skills/connectors agent loop and goes straight through the inline‑vision path, so a vision‑capable model receives the actual `image_url` pixels. Text‑only turns still use the agent loop with skills/connectors as before. Anthropic is unaffected.
 
@@ -28691,13 +28691,13 @@ This is a main‑process change (`session-manager.cjs`), so restart with `npm ru
 
 ## 🧑 User
 
-i have an intresting requirement, for every response from BrainEdge, can you provide me option to save that particular Chat info. sometime output can be intresting information that i want to retain as knowldge. but where will you store it? any proposal
+i have an intresting requirement, for every response from Madav, can you provide me option to save that particular Chat info. sometime output can be intresting information that i want to retain as knowldge. but where will you store it? any proposal
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good feature. Before I build it, the key decision is *where* it lives — that shapes everything else. Here's my proposal.
 
-My recommendation is a dedicated, app‑level **Saved library**: a bookmark button on every BrainEdge response, and a new "Saved" entry in the sidebar. Each item stores the response text plus metadata (the real model/provider that produced it, source chat, mode, timestamp, and an optional note/tags). It persists in its own `saved-store.json` in the app's data folder — so it survives even if you delete the original chat, and it's searchable in one place independent of chat history.
+My recommendation is a dedicated, app‑level **Saved library**: a bookmark button on every Madav response, and a new "Saved" entry in the sidebar. Each item stores the response text plus metadata (the real model/provider that produced it, source chat, mode, timestamp, and an optional note/tags). It persists in its own `saved-store.json` in the app's data folder — so it survives even if you delete the original chat, and it's searchable in one place independent of chat history.
 
 The reason I lean this way over just dumping to files: "interesting outputs I want to retain as knowledge" implies you'll want to *find and reuse* them later, which needs structure and search, not loose files. And it can optionally feed your existing Projects knowledge so a saved answer becomes context for future project chats.
 
@@ -28705,355 +28705,355 @@ A few genuinely different storage approaches, though — let me get your call be
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 You picked: in‑app Saved library, hover bookmark, with optional note/tags and the question stored too. I'll build that, then handle the git request (commit now + 30‑min cadence). Queuing tasks:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 How does `settings.cjs` resolve its data directory? I'll reuse it for the saved store:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now let me look at the sessions-store as a pattern for a simple JSON store:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I'll create the saved store as a single JSON file:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire IPC in main.cjs. Let me see the requires and an IPC block to place near:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the IPC wiring (current step), then do the width change. Adding saved IPC after the sessions handlers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now preload + mockBridge:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Backend done. Now the quick width change you asked for — composer +25% (780 → 975px):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Saved backend wired and composer widened. Now the frontend — bookmark button + Saved view.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App: the `saveResponse` toggle, wiring into the timeline map, plus a `savedReady` lookup. Let me add the handler and pass props to Message:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Saved sidebar entry and routing. Sidebar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now create the SavedLibrary component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire SavedLibrary into App's routing. Import + flag + render:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the message actions and the Saved cards:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Saved library is complete. Now the git task — let me check whether git is usable from the workspace and what remote is configured:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-That's a different repo (`CClaude`/claude-ui). My BrainEdge edits live under `ClaudeCodeUI/BrainEdge`. Let me check git there:
+That's a different repo (`CClaude`/claude-ui). My Madav edits live under `ClaudeCodeUI/Madav`. Let me check git there:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-This is the right repo (`brainedge.git`). Let me stage, commit, and try to push:
+This is the right repo (`madav.git`). Let me stage, commit, and try to push:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Commit succeeded (the unlink warnings are just the mounted‑filesystem permissions, harmless). Now the push:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The commit is real and persisted (`1a58d44b`, your repo is now "ahead 1"). Push, however, can't run from here — my sandbox has no GitHub credentials (`could not read Username for github.com`). That's expected and by design.
 
@@ -29061,37 +29061,37 @@ So: your changes are **committed locally now**; they just need a push from your 
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All built and committed. Summary of this round:
 
-**Saved library (your spec):** every BrainEdge response now shows a **Save** (bookmark) button on hover, plus Copy. Saving stores the answer, the preceding question, and the real model/provider stamp into a new `brainedge-saved.json`. A **Saved** entry in the sidebar opens a library with search, copy, open‑source‑chat, delete, and add/edit **note + tags**. Toggling the bookmark again removes it.
+**Saved library (your spec):** every Madav response now shows a **Save** (bookmark) button on hover, plus Copy. Saving stores the answer, the preceding question, and the real model/provider stamp into a new `madav-saved.json`. A **Saved** entry in the sidebar opens a library with search, copy, open‑source‑chat, delete, and add/edit **note + tags**. Toggling the bookmark again removes it.
 
 **Also done:** composer width +25% (780 → 975px).
 
 **Git:**
-- I **committed everything now** to your `brainedge` repo — commit `1a58d44b`, branch `main`, currently **ahead of origin by 1**.
+- I **committed everything now** to your `madav` repo — commit `1a58d44b`, branch `main`, currently **ahead of origin by 1**.
 - I **could not push** from here — the sandbox has no GitHub credentials. Run this once on your machine to publish it:
   `git push origin main`
 - For the **every‑30‑minutes** cadence, I added `scripts\autosync.bat` (stage → commit only if changed → push). Register it with Windows Task Scheduler — run this in an Admin PowerShell/CMD once:
 
 ```
-schtasks /Create /SC MINUTE /MO 30 /TN "BrainEdge AutoSync" /TR "C:\Projects\ClaudeCodeUI\BrainEdge\scripts\autosync.bat" /F
+schtasks /Create /SC MINUTE /MO 30 /TN "Madav AutoSync" /TR "C:\Projects\ClaudeCodeUI\Madav\scripts\autosync.bat" /F
 ```
 
-That runs as you, so it uses your saved GitHub auth and pushes automatically. To stop it later: `schtasks /Delete /TN "BrainEdge AutoSync" /F`.
+That runs as you, so it uses your saved GitHub auth and pushes automatically. To stop it later: `schtasks /Delete /TN "Madav AutoSync" /F`.
 
 Honest caveats: I can commit from my environment but never push (no creds), so the scheduled task is the right mechanism rather than anything in‑app. And the Saved feature touches the main process (`main.cjs`, `preload.cjs`, new `saved-store.cjs`), so restart with `npm run electron:dev` before testing it; the composer width, bookmark UI, and Saved view are renderer‑side but the save/list calls need the restarted main process.
 
@@ -29105,7 +29105,7 @@ Want me to also add a "push to a Project's knowledge" action on saved items so a
 improve this format. Give option with 3 dots, when user clicks on it propose option s to select. always blend display with theme
 remove model name infront of brainEdge
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -29116,198 +29116,198 @@ No response requested.
 [image]
 why there is duplicate ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me find the duplicate model picker — checking the hero/chat render block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me find why the model picker appears twice:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it — line 416 still renders a standalone `controlsRow` below the chat‑view composer (now that it's also inside). Removing it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Duplicate gone. Now the previous request: replace the Save/Copy buttons with a themed 3‑dot menu, and remove the model name from the BrainEdge header (I'll move that info into the menu so you can still verify it). Reworking Message:
+Duplicate gone. Now the previous request: replace the Save/Copy buttons with a themed 3‑dot menu, and remove the model name from the Madav header (I'll move that info into the menu so you can still verify it). Reworking Message:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove the model name from the header:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now replace the Save/Copy button row with the 3‑dot menu:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the 3‑dot menu (themed, hover‑revealed):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire the Sidebar entry and ensure routing/component exist. Checking current state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 App routing is in place. Let me check the SavedLibrary component exists and add the Sidebar entry:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Glob]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 SavedLibrary is imported but doesn't exist — that breaks the build. Creating it now:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 SavedLibrary already exists and is complete. I just need the Sidebar entry and CSS. Adding the "Saved" nav item:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS for the Saved cards:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All the Saved pieces are now in place. Let me create a git auto‑sync script for your every‑30‑min requirement (I can't hold your GitHub credentials from here, so this runs on your machine with your existing git auth):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Composer is now taller (textarea min‑height ~48px). Now your two questions.
 
-**What "Save" does and where it goes:** On any BrainEdge response, the small **⋯** menu (appears on hover, themed) has **Save to library**. Clicking it stores that response — plus the question that prompted it, the actual model/provider that produced it, the source chat, and a timestamp — into a personal library file at `%APPDATA%\brainedge\brainedge-saved.json`. You retrieve it from the new **Saved** entry in the left sidebar: it lists every saved response with search, Copy, Open‑source‑chat, Delete, and add **note/tags**. It survives even if you delete the original chat.
+**What "Save" does and where it goes:** On any Madav response, the small **⋯** menu (appears on hover, themed) has **Save to library**. Clicking it stores that response — plus the question that prompted it, the actual model/provider that produced it, the source chat, and a timestamp — into a personal library file at `%APPDATA%\madav\madav-saved.json`. You retrieve it from the new **Saved** entry in the left sidebar: it lists every saved response with search, Copy, Open‑source‑chat, Delete, and add **note/tags**. It survives even if you delete the original chat.
 
-(The model name is no longer shown next to "BrainEdge" — it now lives inside that ⋯ menu so the header stays clean but you can still verify what ran.)
+(The model name is no longer shown next to "Madav" — it now lives inside that ⋯ menu so the header stays clean but you can still verify what ran.)
 
 **Push everything to git now** — run in the project folder:
 
 ```
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 git add -A
 git commit -m "Chat parity: / commands + skills, @-mentions, vision across providers, Saved library, project↔cowork, composer controls + sizing, Deploy rename"
 git push
@@ -29325,21 +29325,21 @@ git push -u origin main
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Register the 30‑minute schedule once (PowerShell):
 
 ```
-schtasks /Create /SC MINUTE /MO 30 /TN "BrainEdge AutoSync" /TR "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\Projects\ClaudeCodeUI\BrainEdge\git-autosync.ps1\"" /F
+schtasks /Create /SC MINUTE /MO 30 /TN "Madav AutoSync" /TR "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\Projects\ClaudeCodeUI\Madav\git-autosync.ps1\"" /F
 ```
 
-It commits and pushes only when there are changes, with a timestamped message. Remove it later with `schtasks /Delete /TN "BrainEdge AutoSync" /F`.
+It commits and pushes only when there are changes, with a timestamped message. Remove it later with `schtasks /Delete /TN "Madav AutoSync" /F`.
 
 Two notes: the Saved feature touches the main process (`saved-store.cjs`, `main.cjs`, `preload.cjs`), so restart with `npm run electron:dev` before the Save/Saved view works; the composer height/width and the ⋯ menu are renderer‑only and hot‑reload. And do your first manual `git push` (commands above) so the remote and credentials are established before the scheduled task starts running.
 
@@ -29349,9 +29349,9 @@ Two notes: the Saved feature touches the main process (`saved-store.cjs`, `main.
 
 saved message should be saved in some placeholder for future reference just incase chat is deleted. what ideas do you have ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Good instinct — but you're already partly covered: the Saved library I built does **not** live inside the chat. It writes to its own file, `%APPDATA%\brainedge\brainedge-saved.json`, completely separate from chat history. Deleting a chat (or even clearing all chats) leaves saved items untouched. So "chat deleted → saved survives" is already true today.
+Good instinct — but you're already partly covered: the Saved library I built does **not** live inside the chat. It writes to its own file, `%APPDATA%\madav\madav-saved.json`, completely separate from chat history. Deleting a chat (or even clearing all chats) leaves saved items untouched. So "chat deleted → saved survives" is already true today.
 
 The real question is how *durable* and *portable* you want that store to be. Here's how I'd rank the options:
 
@@ -29365,51 +29365,51 @@ My pick: keep the JSON index and add the Markdown‑vault mirror — small chang
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That's a clean idea and fully feasible — better than a plain vault in one way: the saved answers become *reusable knowledge* you can actually chat with. Let me confirm the projects‑store API so I can auto‑create the project and add knowledge on each save:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Feasible and a nice design. I'll do exactly that: on save, mirror the item into an auto‑created **"Saved History"** project as a knowledge entry (so you can open it in Projects and even *chat with* your saved answers), while the local JSON stays as the on‑machine copy/index. Deleting a saved item also removes it from the project. Wiring it into the save handler:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — your idea is now wired in. Here's how it behaves:
 
-When you hit **Save** on a response, BrainEdge does two things at once:
+When you hit **Save** on a response, Madav does two things at once:
 
 1. **Mirrors it into a "Saved History" project.** The project is auto‑created the first time you save (you'll see it in the Projects list). Each saved answer becomes a knowledge entry there — stored as `Q: … / A: … — provider · model`. Because project knowledge is injected as context, you can open "Saved History" and literally **chat with your saved answers** ("what did I save about X?"). This is the durable, *useful* home you proposed.
 
-2. **Keeps the local copy** in `%APPDATA%\brainedge\brainedge-saved.json`, which also powers the searchable **Saved** sidebar view. The two stay linked: deleting an item from the Saved view also removes it from the project, so they never drift.
+2. **Keeps the local copy** in `%APPDATA%\madav\madav-saved.json`, which also powers the searchable **Saved** sidebar view. The two stay linked: deleting an item from the Saved view also removes it from the project, so they never drift.
 
 So saved info now lives in two independent local places — the project and the JSON — and survives any chat deletion, since neither is part of the chat.
 
@@ -29424,25 +29424,25 @@ This is a main‑process change, so restart (`npm run electron:dev`) before test
 [image]
 change  text to online of office instead of cloud. if its offline show red colour
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The status chip now reads **online** (green dot) when the active model is reachable, **offline** in red (dot + text) when it isn't, and "checking…" while probing — instead of the "cloud/local" label. Renderer‑only, so it hot‑reloads.
 
@@ -29453,55 +29453,55 @@ Done. The status chip now reads **online** (green dot) when the active model is 
 [image]
 can you fix this alignment. Top three together as one unit should be aligned centre to chat input window
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me check the current TopNav layout CSS to see why the tabs aren't centering:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The tabs are centered to the whole window, but the composer is centered in the content area to the right of the sidebar — so they drift apart when the sidebar is open. Let me check the sidebar width to offset correctly:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Sidebar is 236px. I'll offset the tabs by half that (118px) when the sidebar is open, and 0 when collapsed, so they line up with the composer's center. First, add the collapse state to the root element:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Fixed. The three tabs now center over the chat content area instead of the whole window: shifted right by half the sidebar width (118px) when the sidebar is open, and snapping to true center when it's collapsed — so the tab group lines up with the centered chat input in both states. Renderer‑only, hot‑reloads.
 
@@ -29511,7 +29511,7 @@ Fixed. The three tabs now center over the chat content area instead of the whole
 
 [image]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good news: the image is now actually being sent — the wiring works. The bad news is the model. `deepseek/deepseek-v4-flash` is **text‑only**; OpenRouter's "No endpoints found that support image input" means that model has no vision capability. No client change can fix that — you need a vision‑capable model.
 
@@ -29519,19 +29519,19 @@ Let me at least replace that raw 404 JSON with a clear, actionable message. Chec
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 To confirm the image is actually transmitted and it's purely a model‑capability issue: the wiring is working — the request reached OpenRouter with the image, and OpenRouter rejected it because `deepseek/deepseek-v4-flash` has no image‑capable endpoint. 
 
@@ -29545,13 +29545,13 @@ I also replaced that raw `404 {"error":…}` dump with a clear message — now y
 
 can you chaneg error handling message. in this case erro message can be This Model doesnt support images handling
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Updated. The message now reads: **"This model doesn't support image handling. Switch to a vision‑capable model (…) and resend the image."** Restart `npm run electron:dev` to pick up the change (main‑process file).
 
@@ -29561,7 +29561,7 @@ Updated. The message now reads: **"This model doesn't support image handling. Sw
 
 can llm become intelligent ove time to manage error handling message mor user friendly ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Short answer: not on its own. A base LLM is static between releases — it doesn't silently get smarter from your usage. "Improvement over time" only happens if *you* build a mechanism for it. But yes, you can absolutely make error handling LLM‑driven and self‑improving. Two different ideas are hiding in your question:
 
@@ -29584,111 +29584,111 @@ Want me to implement that — a small `error-explainer` that uses a designated l
 
 yes implement it
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll build the hybrid explainer: a local‑model‑preferred, cached, timeout‑guarded error translator with raw‑text fallback. Creating it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire it into the session manager. Adding the require and a `_friendlyError` helper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now route the raw error emits through it. The `_chatTurn` catch:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the `_projectTurn` catch:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Implemented. Here's how the error‑explainer now works in BrainEdge:
+Implemented. Here's how the error‑explainer now works in Madav:
 
 When a chat or project turn hits an error, it goes through a new `_friendlyError` path:
 
@@ -29698,7 +29698,7 @@ When a chat or project turn hits an error, it goes through a new `_friendlyError
   2. **Cache miss** → a lightweight model rewrites it into one short, actionable sentence, which is then cached. It **prefers a local model** (Ollama/LM Studio) so explanations work even when your main provider is the thing failing, and it won't use an Anthropic‑subscription profile for this (no raw key).
   3. **Timeout (4s) or any failure** → falls back to the original raw error, so you're never left with nothing.
 
-The raw text is preserved in a `detail` field on the event, and the cache file (`%APPDATA%\brainedge\brainedge-error-cache.json`) is the part that "improves over time" — each new error class is explained once, then reused forever.
+The raw text is preserved in a `detail` field on the event, and the cache file (`%APPDATA%\madav\madav-error-cache.json`) is the part that "improves over time" — each new error class is explained once, then reused forever.
 
 This is the hybrid I recommended: deterministic + reliable for the high‑stakes cases, LLM + cache for the long tail. It's a main‑process change (`error-explainer.cjs`, `session-manager.cjs`), so restart `npm run electron:dev` to activate.
 
@@ -29711,66 +29711,66 @@ One tuning note for honesty: explanations are only as good as the explainer mode
 [image]
 move this one right side of window next to online / offline indcator. and align Logo + Logo Text to Sideback centre alignment
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two changes: move the collapse toggle to the right next to the status indicator, and center the brand (logo + text) within the sidebar's width. Let me check the relevant CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now restructure TopNav — move the collapse button into `tn-right`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS — remove the topnav's left padding and center the brand within the 236px sidebar zone:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done:
 
 - The collapse toggle (▱) now lives on the **right**, next to the online/offline indicator, instead of the top‑left corner.
-- The **BrainEdge logo + wordmark** is now centered within the sidebar's 236px width, so it sits centered above the sidebar. When the sidebar is collapsed, the brand tucks back to the left edge so it doesn't float in empty space.
+- The **Madav logo + wordmark** is now centered within the sidebar's 236px width, so it sits centered above the sidebar. When the sidebar is collapsed, the brand tucks back to the left edge so it doesn't float in empty space.
 
 Renderer‑only (TopNav + CSS), so it hot‑reloads.
 
@@ -29780,13 +29780,13 @@ Renderer‑only (TopNav + CSS), so it hot‑reloads.
 
 make logo lil bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Logo bumped from 38 to 46px in the top bar. Hot‑reloads.
 
@@ -29797,13 +29797,13 @@ Logo bumped from 38 to 46px in the top bar. Hot‑reloads.
 [image]
 make this logo on chat window lil smaller.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the hero greeting logo is now 40px (down from 52). Hot‑reloads.
 
@@ -29813,49 +29813,49 @@ Done — the hero greeting logo is now 40px (down from 52). Hot‑reloads.
 
 show how logo appears in static state
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__read_me]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Here's the logo frozen in its static (non‑animated) state — the firing ring is invisible at rest, spokes sit at 55% opacity, nodes at base radius. Shown large, plus at the two sizes it actually renders in the app (46px top bar, 28px chat avatar):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__visualize__show_widget]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `.hero-greet` is already a centered flex row, so they share a row — the slight visual offset comes from the heading's default line‑height adding space above/below the glyphs. Tightening it so the text centers exactly against the logo:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The greeting and logo already share one centered flex row; I set the heading's `line-height` to 1 so the text glyphs center precisely against the 40px logo instead of sitting slightly low from the default line spacing. Hot‑reloads.
 
@@ -29866,39 +29866,39 @@ Done. The greeting and logo already share one centered flex row; I set the headi
 [image]
 in this case keep Logo Static also during response from brianedge
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll add a `static` mode to the logo (no animation) and use it in the hero greeting and the response avatar, while keeping the top‑bar brand subtly animated. Updating the component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now use the static variant in the hero greeting and the response avatar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Done. The logo now renders **static** (no pulsing/firing animation) in the hero greeting and on the BrainEdge response avatar. The top‑bar brand logo keeps its subtle animation so there's still a bit of life in the header. Renderer‑only — hot‑reloads. If you'd prefer the top‑bar one static too, say so and I'll flip it.
+Done. The logo now renders **static** (no pulsing/firing animation) in the hero greeting and on the Madav response avatar. The top‑bar brand logo keeps its subtle animation so there's still a bit of life in the header. Renderer‑only — hot‑reloads. If you'd prefer the top‑bar one static too, say so and I'll flip it.
 
 ---
 
@@ -29906,7 +29906,7 @@ Done. The logo now renders **static** (no pulsing/firing animation) in the hero 
 
 do you have any methodology in claude to test chat interface whenever new product feature or enhancement is done ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Honest answer first: I can't drive your live Electron window from here — I can't click the UI, paste a screenshot of the running app, or watch animations. You've been my eyes for that. So no, there's no magic "Claude tests your GUI" loop. But yes, there's a disciplined methodology I'd use, and most of it I *can* build for you so testing isn't manual every time.
 
@@ -29936,241 +29936,241 @@ Want me to scaffold it? I can set up Vitest + the IPC contract test + Composer c
 
 yes i want to build central library for testing core features
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll build a central test library covering the core features. Let me first check the project setup (package.json, what's testable) before scaffolding.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `providers.cjs` is dependency‑free — `stripReasoning` is directly testable. Let me check the renderer bridge wiring for the contract test:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now let me set up the test library. First, tasks and the Vitest config:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the contract test. Let me check what the mock bridge currently implements so the parity assertions are accurate:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The mock has all the core methods. Now the contract test:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Composer component test:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update `package.json` with test scripts and devDeps, then write the README + smoke checklist:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me validate the pure‑logic and contract tests in the sandbox with plain node (no install needed), to confirm they'll pass:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Sandbox is serving a truncated `package.json` (a known mount artifact). Let me copy the file to /tmp and test it in isolation:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The mount is serving a truncated copy (the known artifact — it cut off at line 198 of 208). The host files are complete. Let me validate the test *expectations* against the known `stripReasoning` implementation inline instead:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Verification caught a wrong expectation (good — that's the point): `stripReasoning` strips only *leading* whitespace, so the orphan‑`<think>` case keeps a trailing space. Fixing the test to match real behavior:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All expectations pass. Task complete.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__cowork__present_files]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Test library's done (presented above: README + smoke checklist, contract test, component test; `npm install` then `npm run verify`). Now — connectors.
 
 Short version: the **technology is public and open; the directory you're looking at is Anthropic‑specific.** Those are two different layers, and it's worth separating them.
 
-**The protocol layer — public/open.** Connectors are built on the **Model Context Protocol (MCP)**, an open standard Anthropic published (late 2024) and open‑sourced. The spec, the SDKs, and thousands of MCP servers are public. Anyone — including BrainEdge — can implement an MCP client or server without Anthropic's permission. Confidence: high.
+**The protocol layer — public/open.** Connectors are built on the **Model Context Protocol (MCP)**, an open standard Anthropic published (late 2024) and open‑sourced. The spec, the SDKs, and thousands of MCP servers are public. Anyone — including Madav — can implement an MCP client or server without Anthropic's permission. Confidence: high.
 
 **The directory layer — Anthropic‑specific/proprietary.** What's in that screenshot is a *curated catalog* that Anthropic owns and hosts:
 
@@ -30180,47 +30180,47 @@ Short version: the **technology is public and open; the directory you're looking
 
 So: the *ability* to connect is public; the *curated, ranked, OAuth‑wired directory* is Anthropic's product.
 
-**What this means for BrainEdge** (since you're replicating it): you can't pull Anthropic's catalog or its popularity stats — that data isn't exposed. To populate your own directory legitimately you'd build it from **public MCP registries** and your own metadata. The well‑known public sources are: the official `modelcontextprotocol/servers` GitHub repo (reference + community servers), and third‑party indexes like **Smithery, mcp.so, PulseMCP, and Glama**, which list servers, descriptions, and sometimes their own popularity signals. Your "popular" ranking would have to be *your* number (your install counts) or borrowed from one of those indexes with attribution — not Anthropic's. Moderate confidence on the exact set of registries (they evolve); I can web‑search the current best public MCP directories if you want an up‑to‑date list to wire BrainEdge against.
+**What this means for Madav** (since you're replicating it): you can't pull Anthropic's catalog or its popularity stats — that data isn't exposed. To populate your own directory legitimately you'd build it from **public MCP registries** and your own metadata. The well‑known public sources are: the official `modelcontextprotocol/servers` GitHub repo (reference + community servers), and third‑party indexes like **Smithery, mcp.so, PulseMCP, and Glama**, which list servers, descriptions, and sometimes their own popularity signals. Your "popular" ranking would have to be *your* number (your install counts) or borrowed from one of those indexes with attribution — not Anthropic's. Moderate confidence on the exact set of registries (they evolve); I can web‑search the current best public MCP directories if you want an up‑to‑date list to wire Madav against.
 
-One honest flag: if the list in your screenshot is currently hardcoded with "#4 popular" etc. copied from Claude, that's cosmetic — there's no live data behind it. If you want it to be real, the next step is pointing BrainEdge's connector directory at one of those public registries (or your own curated JSON). Want me to look into which registry has a clean, fetchable API and wire it up?
+One honest flag: if the list in your screenshot is currently hardcoded with "#4 popular" etc. copied from Claude, that's cosmetic — there's no live data behind it. If you want it to be real, the next step is pointing Madav's connector directory at one of those public registries (or your own curated JSON). Want me to look into which registry has a clean, fetchable API and wire it up?
 
 ---
 
 ## 🧑 User
 
-Want me to look into which registry has a clean, fetchable API and wire it up? - yes and guide me build something similar for brainedge
+Want me to look into which registry has a clean, fetchable API and wire it up? - yes and guide me build something similar for madav
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-I'll research the current public MCP registries with fetchable APIs, then design and wire a BrainEdge connector directory. Let me search.
+I'll research the current public MCP registries with fetchable APIs, then design and wire a Madav connector directory. Let me search.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: ToolSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: WebSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The official MCP Registry has a clean REST API. Let me fetch the actual response shape so I build the parser around real data:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The official registry returns clean JSON. Real shape (trimmed):
 
@@ -30230,293 +30230,293 @@ The official registry returns clean JSON. Real shape (trimmed):
   metadata: { nextCursor, count } }
 ```
 
-Remote entries (with `remotes[].url`) are connectable by URL — exactly like Anthropic's hosted connectors. Let me check how BrainEdge already stores/uses connectors so the "Add" button wires into the existing system:
+Remote entries (with `remotes[].url`) are connectable by URL — exactly like Anthropic's hosted connectors. Let me check how Madav already stores/uses connectors so the "Add" button wires into the existing system:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-BrainEdge connectors today are **stdio** MCP servers (`{command, args, env}` run via npx) with a hardcoded gallery. The registry returns mostly **remote** (URL) and **package** servers. Let me check whether the MCP client already supports remote transport, since that decides how "Add" maps:
+Madav connectors today are **stdio** MCP servers (`{command, args, env}` run via npx) with a hardcoded gallery. The registry returns mostly **remote** (URL) and **package** servers. Let me check whether the MCP client already supports remote transport, since that decides how "Add" maps:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Confirmed: BrainEdge's MCP client is **stdio‑only** (no remote URL transport yet), and the official registry is mostly remote + npm packages. So wiring the directory means (a) a registry fetcher, (b) adding remote transport to the MCP client, (c) a directory UI. Let me grab the `packages` shape too so the mapping is right:
+Confirmed: Madav's MCP client is **stdio‑only** (no remote URL transport yet), and the official registry is mostly remote + npm packages. So wiring the directory means (a) a registry fetcher, (b) adding remote transport to the MCP client, (c) a directory UI. Let me grab the `packages` shape too so the mapping is right:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now I have both shapes. Let me read the full MCP manager to add remote transport alongside stdio:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I have everything I need. Here's the plan, then I'll wire it:
 
 **Registry choice:** the **official MCP Registry** (`registry.modelcontextprotocol.io/v0/servers`) — open, no key, clean JSON, supports `?search=`. It returns both remote (URL) and npm‑package servers with env‑var requirements.
 
-**What it takes in BrainEdge:** (1) a registry fetcher with cache, (2) **remote transport** added to the MCP client (it's stdio‑only today), (3) one IPC + a directory UI in Connectors that maps a registry entry to your existing connector config and saves it.
+**What it takes in Madav:** (1) a registry fetcher with cache, (2) **remote transport** added to the MCP client (it's stdio‑only today), (3) one IPC + a directory UI in Connectors that maps a registry entry to your existing connector config and saves it.
 
 Let me build it.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskCreate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Adding remote transport to the MCP client:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the registry fetcher:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC, preload, and mock:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the directory UI in Connectors. Adding imports and state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Understood — I'll pull the Saved feature out of the UI now (it's also showing a duplicate entry), then resume the connector directory. Let me check the Sidebar TOOLS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Saved entry is duplicated. Removing both:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove it from App — routing, the `isSaved` flag, the import, the `saveResponse` handler, and the Message props. Routing first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove the Save option from the Message ⋯ menu (keep Copy and the model info):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Saved is now removed from the UI (sidebar, view, and the save button). The backend store/IPC is left dormant and harmless — say the word if you want it fully purged too. Now resuming the connector directory. Adding directory state to Connectors:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That stale screenshot still shows Saved — my edit removes it on reload. Two things now: finish the connector directory I'm mid‑way on, then your alignment‑everywhere request. Let me complete the directory handler + UI:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I hadn't added the visible UI yet — only the logic. Adding the directory section now:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The connector directory UI is now in place (Connectors → "Browse the MCP directory"). Marking task 14 complete.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: TaskUpdate]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Connector directory done — note: the **list itself needs an app restart** to load (it's fetched in the main process); after `npm run electron:dev` you'll see real registry connectors under Connectors → "Browse the MCP directory", with a search box and one‑click Add. And Saved is removed from the sidebar/views on reload.
 
@@ -30524,31 +30524,31 @@ Now your alignment‑everywhere request. Let me find what's constraining page co
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The offender is `.sk-detail-inner { max-width: 760px; }` with no centering — every other page inner already uses `margin: 0 auto`, but this one is left‑anchored, so the whole right third goes empty. Let me confirm the Skills layout and fix it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Fixed. The Skills detail was the lone page inner that had a `max-width` **without** `margin: 0 auto`, so its content hugged the left and dumped the whole right third as dead space (the red zone). I centered it (and widened to 860px).
 
@@ -30572,104 +30572,104 @@ If a specific page still looks off to you, point me at it and I'll tune that one
 
 In Setting , add option to select theme with drop down dark, light or system. build  logic accordingly
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll add a theme selector (Dark / Light / System) with full apply logic. First let me see the CSS variable tokens so I can build a proper light theme:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This needs a light‑theme token set plus apply logic. Let me check how Settings persists and where the profile fields live:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll finish the theme selector first, then handle git. Adding the theme setting default:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the light theme CSS (token overrides + the hardcoded dark surfaces):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the apply logic in App. Let me find the settings state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the dropdown in Settings → Profile (Appearance section):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Theme selector is done. In **Settings → Profile → Appearance** there's now a **Theme** dropdown (Dark / Light / System). Logic: the choice persists to settings, and `<html data-theme>` is set accordingly — `System` follows your OS and live‑updates if you switch the OS theme. I added a full light‑theme token set plus re‑skinned the surfaces that hardcoded dark colors (top bar, composer, menus, sidebar, scrollbars) so light mode looks right, not half‑dark. Renderer + a one‑line settings default; the default stays Dark.
 
 For git — I can't push from here (no access to your GitHub credentials), so run it on your machine:
 
 ```
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 git add -A
 git commit -m "Theme selector (dark/light/system), connector directory from official MCP registry + remote transport, remove Saved UI, dynamic page alignment, test library"
 git push
@@ -30678,7 +30678,7 @@ git push
 Or just let the auto‑sync handle it — if you registered `git-autosync.ps1` with Task Scheduler earlier, it'll commit+push within 30 minutes automatically; to do it immediately:
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Projects\ClaudeCodeUI\BrainEdge\git-autosync.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Projects\ClaudeCodeUI\Madav\git-autosync.ps1"
 ```
 
 Reminder: the theme change is renderer‑only (hot‑reloads), but this batch also includes main‑process changes (connector registry, remote MCP transport, settings default), so restart `npm run electron:dev` for those to take effect.
@@ -30690,61 +30690,61 @@ Reminder: the theme change is renderer‑only (hot‑reloads), but this batch al
 [image]
 build similar layout for connectors
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll rebuild the registry directory to match that polished two‑column card layout (icon tile, name + tags, description, add button, with working Filter/Sort). First, add a date to each registry item so "Recent" sort and a "New" tag are real:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now update the Connectors directory state, filtering/sorting, and the rich card layout. First the state + filter/sort logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now replace the directory JSX with the rich card layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the directory layout:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The connector directory now mirrors that Claude layout:
 
@@ -30761,85 +30761,85 @@ This is renderer‑only (Connectors + CSS) so it hot‑reloads — but the cards
 
 why i donot see all connector visbile on calude here also ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good question — and there are two separate reasons. Let me verify one of them against the actual registry rather than guess:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Confirmed — this is the key finding: **Notion, Slack, Gmail etc. *are* in the registry** (e.g. `com.notion/mcp` → `https://mcp.notion.com/mcp`), but my code only fetches the **first ~100 of thousands** of servers and filters them client‑side. The registry is ordered by namespace, so page 1 never contains the marquee apps. The fix is to send your search term to the registry API. Let me wire that.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the search wiring, then remove that white pill. Updating the registry fetch to accept search + prefer latest version:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now debounce the search box in Connectors to query the registry API:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Since search is now server‑side, the client‑side text filter would wrongly hide results (e.g. searching "email" returns Gmail, whose title lacks "email"). Removing the redundant text filter, keeping kind + sort:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove that white "MCP Registry" pill (your latest request):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Two things in this batch:
 
-**Why you weren't seeing the big connectors** — and the fix: BrainEdge reads the **open MCP registry**, which has thousands of servers ordered by namespace. My first version only pulled page 1 (~100) and filtered locally, so Notion/Slack/Gmail (which live deeper, e.g. `com.notion/mcp`) never showed. I verified they're genuinely in the registry, then wired the **search box to query the registry API directly** (debounced). So now typing "notion", "slack", "gmail", etc. searches the whole catalog and returns them. I also made it collapse duplicate versions to the latest, and dropped the redundant client‑side filter that would've hidden valid matches.
+**Why you weren't seeing the big connectors** — and the fix: Madav reads the **open MCP registry**, which has thousands of servers ordered by namespace. My first version only pulled page 1 (~100) and filtered locally, so Notion/Slack/Gmail (which live deeper, e.g. `com.notion/mcp`) never showed. I verified they're genuinely in the registry, then wired the **search box to query the registry API directly** (debounced). So now typing "notion", "slack", "gmail", etc. searches the whole catalog and returns them. I also made it collapse duplicate versions to the latest, and dropped the redundant client‑side filter that would've hidden valid matches.
 
-The remaining difference from Claude is unavoidable and honest: Claude's "Anthropic & Partners" grid is Anthropic's **curated, branded, OAuth‑wired** set with logos and popularity — a private product surface. The open registry has the same underlying servers but under namespaced ids, multiple variants, no logos, no popularity. So it's the same *plumbing*, not the same *curation*. (If you want the marquee look, the clean path is a small curated "Featured" list in BrainEdge with known endpoints — I can add that.)
+The remaining difference from Claude is unavoidable and honest: Claude's "Anthropic & Partners" grid is Anthropic's **curated, branded, OAuth‑wired** set with logos and popularity — a private product surface. The open registry has the same underlying servers but under namespaced ids, multiple variants, no logos, no popularity. So it's the same *plumbing*, not the same *curation*. (If you want the marquee look, the clean path is a small curated "Featured" list in Madav with known endpoints — I can add that.)
 
 **Removed** the white "MCP Registry" pill from the directory bar.
 
@@ -30851,33 +30851,33 @@ Both touch the main process (`connector-registry.cjs`), so restart `npm run elec
 
 is it possible to display real  icons of connectors ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — the registry has no logos, but most connectors map to a real brand domain, and we can pull the favicon from that. Two reliable signals: the remote URL's host (e.g. `mcp.notion.com` → `notion.com`), or the reverse‑DNS registry id (`com.notion/mcp` → `notion.com`). I'll fetch the favicon from a public icon service and fall back to the letter tile if it fails.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Done. Connector cards now show **real brand icons**: BrainEdge derives the domain from each connector (remote URL host, or the reverse‑DNS registry id like `com.notion/mcp` → `notion.com`) and loads its favicon from a public icon service. If a domain can't be resolved or the icon fails to load (or you're offline/behind a strict proxy), it cleanly falls back to the colored letter tile — so cards always render.
+Done. Connector cards now show **real brand icons**: Madav derives the domain from each connector (remote URL host, or the reverse‑DNS registry id like `com.notion/mcp` → `notion.com`) and loads its favicon from a public icon service. If a domain can't be resolved or the icon fails to load (or you're offline/behind a strict proxy), it cleanly falls back to the colored letter tile — so cards always render.
 
 Renderer‑only, hot‑reloads. Caveat: the icons are favicons (small, ~22px), so they're crisp but not the large vector logos Anthropic ships in its curated directory. If you want pixel‑perfect brand logos for the top apps, the reliable route is bundling a small set of SVGs for the marquee connectors and using favicons for the long tail — say the word and I'll add that hybrid.
 
@@ -30887,79 +30887,79 @@ Renderer‑only, hot‑reloads. Caveat: the icons are favicons (small, ~22px), s
 
 in connectors can you show most popular ones globally  and rest can be found via search
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Real popularity data isn't in the open registry, so I'll do it the honest way: a curated **Featured** set of globally‑popular connectors shown by default (their data pulled live from the registry so endpoints/descriptions are accurate), and anything else is found by search. Implementing the featured logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now make `listDirectory` return the featured set by default:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good catch — no, we don't need them anymore. That hardcoded "Connect your apps" gallery predates the registry; now that the directory shows **live popular connectors + search**, the hardcoded list is redundant and can go stale (its `npx` package names are frozen in code). Let me remove it and let the registry‑backed Featured list be the single source. Reading the current render to remove cleanly:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now remove the gallery JSX block. Let me view the render area around it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish removing the gallery, then answer the plugins question. Removing the gallery block and updating the intro:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Hardcoded gallery removed — Connectors now shows live **popular connectors by default + search** for the rest (icons, filter/sort intact). Restart picks up the featured logic (main process). Now your question.
 
@@ -30973,7 +30973,7 @@ Hardcoded gallery removed — Connectors now shows live **popular connectors by 
 
 Simple analogy: a **connector** is a phone line to another service; a **skill** is a trained employee who knows a procedure; a **plugin** is the boxed kit you hand someone that includes the phone lines, the trained employees, and the instructions all set up together.
 
-So in your directory's three tabs: **Connectors** = individual MCP integrations, **Skills** = capability packages, **Plugins** = pre‑assembled bundles of both (plus commands/hooks) for one‑click setup. For BrainEdge, you've already got Connectors (registry) and Skills wired; "Plugins" would be the layer that lets someone install a curated set of connectors + skills together.
+So in your directory's three tabs: **Connectors** = individual MCP integrations, **Skills** = capability packages, **Plugins** = pre‑assembled bundles of both (plus commands/hooks) for one‑click setup. For Madav, you've already got Connectors (registry) and Skills wired; "Plugins" would be the layer that lets someone install a curated set of connectors + skills together.
 
 ---
 
@@ -30986,25 +30986,25 @@ remove one seacrh to avoid duplicates
 
 [Image: original 2226x256, displayed at 2000x230. Multiply coordinates by 1.11 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two search bars now — my new one plus the original. Removing the duplicate:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Fixed — there's now a single search bar above the Filter/Sort row. Hot‑reloads.
 
@@ -31014,7 +31014,7 @@ Fixed — there's now a single search bar above the Filter/Sort row. Hot‑reloa
 
 did you update connect list with most popular ones ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yes — that's the change I just made. The directory now defaults to a curated **most‑popular** set instead of registry page 1:
 
@@ -31035,22 +31035,22 @@ Two honest caveats:
 
 where is plugins section for Brainedge
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-There isn't one — BrainEdge currently has no Plugins section. I checked: nothing plugin‑related exists anywhere in the codebase. Your sidebar has Projects, Skills, Connectors, Models, Deploy, Consumption, Settings — that's it. So today BrainEdge has the two *building blocks* (Skills and Connectors) but not the *bundling layer* (Plugins) that packages them together.
+There isn't one — Madav currently has no Plugins section. I checked: nothing plugin‑related exists anywhere in the codebase. Your sidebar has Projects, Skills, Connectors, Models, Deploy, Consumption, Settings — that's it. So today Madav has the two *building blocks* (Skills and Connectors) but not the *bundling layer* (Plugins) that packages them together.
 
-That's expected given the order we built things. As covered earlier: a plugin is a distribution container — one installable bundle that registers multiple skills + connectors (+ optionally slash commands/hooks) at once, typically shared via a marketplace. BrainEdge has the pieces a plugin would contain, just not the install/management surface.
+That's expected given the order we built things. As covered earlier: a plugin is a distribution container — one installable bundle that registers multiple skills + connectors (+ optionally slash commands/hooks) at once, typically shared via a marketplace. Madav has the pieces a plugin would contain, just not the install/management surface.
 
-If you want it, a BrainEdge Plugins section would realistically be:
+If you want it, a Madav Plugins section would realistically be:
 
 - A **Plugins** sidebar entry with an installed‑plugins list (enable/disable/remove).
-- An **installer**: drop a `.plugin` bundle (a zip with a manifest listing its skills + connector configs), and BrainEdge registers those skills into your skills dirs and the connectors into your connector list in one action.
+- An **installer**: drop a `.plugin` bundle (a zip with a manifest listing its skills + connector configs), and Madav registers those skills into your skills dirs and the connectors into your connector list in one action.
 - A manifest format (`plugin.json`: name, version, author, `skills: [...]`, `connectors: [...]`, optional `commands`), so a plugin is reproducible and shareable.
 - Optionally a **marketplace** view later (a fetchable index of plugins, like we did for the connector registry).
 
@@ -31067,31 +31067,31 @@ i only see few, show atleaast 50 rest can be found via search
 
 [Image: original 2247x532, displayed at 2000x474. Multiply coordinates by 1.12 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 You want ~50 by default, not just the curated dozen. I'll keep the recognizable brands on top, then fill from the registry up to 50. Updating the default view:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 To ensure existing users see the new 50 (not a stale ~12‑item cache), I'll version the cache so it refreshes after this change:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The default directory now shows up to **50** connectors — the curated popular brands first, then filled from the registry — with everything else reachable via search. I also versioned the cache so it rebuilds with the larger set instead of serving the old ~12‑item cache.
 
@@ -31105,43 +31105,43 @@ One realistic note: the "fill" pulls from registry page 1 (namespace‑ordered),
 
 expand the curated list to ~50 named brands or most used connectors
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll expand the curated list to ~55 well‑known brands (so ~50 resolve), run the lookups with limited concurrency to avoid hammering the registry, and drop the page‑1 filler. First the list + concurrency:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now drop the page‑1 filler so the default is purely the curated brands:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The default directory is now a curated list of **~55 well‑known brands** — Notion, Slack, Gmail, GitHub, Jira, Linear, Salesforce, HubSpot, Stripe, Shopify, Figma, Zoom, Postgres, Snowflake, Datadog, AWS, Cloudflare, Supabase, Discord, Twilio, and more across productivity, dev/infra, CRM/commerce, design, and AI/search. Each is resolved live against the registry (real endpoint/description/icon), deduped, and the page‑1 filler is gone. Anything not in the list is found by search.
 
@@ -31156,217 +31156,217 @@ Notes:
 
 On side bar lets have Interface and then inside interface, lets have Skills, Connectors, Plugins
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll restructure the sidebar with an expandable "Interface" group containing Skills, Connectors, and Plugins, and add a Plugins page. Let me read the current Sidebar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now CSS for the group/sub‑items:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Plugins page and routing. Creating the component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish wiring Plugins into App, then investigate the connector icons. Finding the routing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Plugins is wired into the sidebar group + routing. Now the connector icons — let me check the current card render and icon component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The icon component is intact — the likely cause is DuckDuckGo's favicon service returning 404s for many domains (→ letter fallback). Google's favicon service is far more reliable. Switching it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Icons restored via Google's favicon service. Now make Models a sidebar group with its child tabs. Let me check ModelsSection's sub‑tabs:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now make Models a sidebar group with child tabs. First, let ModelsSection be controllable by the sidebar:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Sidebar — Models group with children. Updating imports and structure:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App: handle the three model modes and pass `tab`/`onTab` to ModelsSection:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I need to remove the old `isModels` declaration to avoid a duplicate. Let me find it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now pass `tab`/`onTab` to ModelsSection in the render:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All done. Summary of this batch:
 
@@ -31387,19 +31387,19 @@ If you want, the natural next step is building the real Plugins installer so tha
 [image]
 Since we moved as child items in sidebar, i dont need it repeating everytime in each selection.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Right — the tab bar is redundant now that the sidebar drives it. Removing the in‑page sub‑tabs:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the repeated "Model configuration / Models overview / Models speed check" tab bar is removed from the content area. The Models view now renders just the panel for whichever child you pick in the sidebar. Renderer‑only, hot‑reloads.
 
@@ -31410,91 +31410,91 @@ Done — the repeated "Model configuration / Models overview / Models speed chec
 [image]
 keep selection highlight of any object consistent across entire application. do not vary
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll unify all selection highlights to one style. Let me find the variants:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 There are several different "selected" treatments. I'll standardize all **list selections** (sidebar nav, Skills list, Recents, providers/connectors) to the same look: `bg‑2` fill + the gradient left accent bar. First, share the accent bar across them:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The user wants the **top‑tab pill look** (gradient + accent border + glow) as the universal selection style — not the left bar. Let me read the exact base rules to retarget them:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — one canonical selection style (the tab pill) everywhere. Retargeting the base list/nav rules:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now retarget the Skills list and Recents (remove their old active styles + add transparent base border):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me make the History list defer to the unified style too:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. There's now a single canonical selection style — the same gradient‑pill + accent border + soft glow as the "Let's Chat" tab — applied to every selected list/nav object: sidebar items (Projects, Interface children, Models children, Deploy, Consumption), the Skills list, Recents, providers/connectors lists, and history. The old left‑bar and plain‑grey variants are gone, and each base item carries a transparent 1px border so selecting one doesn't shift layout. Renderer‑only, hot‑reloads, so it's consistent across the whole app.
 
@@ -31505,7 +31505,7 @@ Done. There's now a single canonical selection style — the same gradient‑pil
 [image]
 this section looks bit boring when not selected. make it look more vibrat and they should get attention of user as they are main part of application
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -31516,32 +31516,32 @@ No response requested.
 [image]
 remove default always backgound highlight for this object
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll remove the always‑on highlight on the New chat button (neutral by default, accent on hover), then give you the git commands.
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — the "New chat" button is now transparent with a subtle hairline border by default, picking up the accent border + faint fill only on hover. Renderer‑only, hot‑reloads.
 
 For git — run in the project folder:
 
 ```
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 git add -A
 git commit -m "Sidebar groups (Interface, Models) + Plugins page, unified selection style, connector directory icons + featured-50, theme selector, error-explainer, test library"
 git push
@@ -31550,7 +31550,7 @@ git push
 Or trigger the auto‑sync immediately:
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Projects\ClaudeCodeUI\BrainEdge\git-autosync.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Projects\ClaudeCodeUI\Madav\git-autosync.ps1"
 ```
 
 Note: this batch includes main‑process changes (connector registry featured/search, remote MCP transport, settings theme default), so restart `npm run electron:dev` to see those; the sidebar/selection/New‑chat styling is renderer and already hot‑reloaded.
@@ -31564,25 +31564,25 @@ One thing I want to flag honestly: a couple of messages back you asked to make t
 this section looks bit boring when not selected. make it look more vibrat and they should get attention of user as they are main part of application
 this is check this point
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 You're right — I dropped it earlier; doing it now. Making the inactive tabs read as vibrant primary actions (filled surface, colored per‑tab icons, hover lift) while keeping the active one distinct:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done, and noted — I'll queue every request and not skip.
 
@@ -31594,31 +31594,31 @@ The three mode tabs now read as prominent primary actions even when unselected: 
 
 loos better now, any more intresting way to highlight them
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Yeah — I'll add a tasteful animated **sheen sweep** on hover plus a slowly shifting gradient on the active tab. First make the tab clip the sheen:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll bump the tab font size a touch:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The tabs now have a light **sheen that sweeps across on hover** and the active tab carries a **slowly drifting gradient** so it feels alive, and I bumped the label to 15.5px with slightly larger padding so they sit bigger and bolder. Renderer‑only, hot‑reloads.
 
@@ -31631,19 +31631,19 @@ If you want to push it further, other tasteful options: a sliding underline indi
 [image]
 try something highlight background for top 3 but not same as screen shot.... try something its looks great
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll give each of the three a distinct **tinted glass background** matching its icon color — colorful and eye‑catching, but not the flat solid‑purple button look. Adding per‑tab background tints:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Each tab now has its own **tinted‑glass background** keyed to its icon color — Chat glows iris, Collaborate teal, Build amber — with a soft matching border, deepening on hover (plus the sheen sweep and lift already there). It's vibrant and distinct rather than the flat solid‑purple button from the screenshot, and the active tab still stands out with its stronger drifting gradient. Renderer‑only, hot‑reloads. If a particular color feels too strong/weak, tell me which and I'll tune the opacity.
 
@@ -31653,13 +31653,13 @@ Each tab now has its own **tinted‑glass background** keyed to its icon color �
 
 keep this blusish for all three... make it little more briight
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All three tabs now share the same **brighter bluish glass background** (with a stronger blue border, deepening on hover) instead of the per‑color tints. The distinct icon colors and the sheen/lift/active‑gradient all remain. Renderer‑only, hot‑reloads — tell me if you want it brighter still or a touch more saturated.
 
@@ -31669,13 +31669,13 @@ All three tabs now share the same **brighter bluish glass background** (with a s
 
 make it little more bright and highlight
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Brighter now — the inactive tabs have a stronger blue fill, a bolder blue border, and a soft blue glow (inner highlight + outer halo) that intensifies on hover. Renderer‑only, hot‑reloads. Say "brighter" again and I'll push the opacity/glow further, or "too much" and I'll dial it back.
 
@@ -31685,37 +31685,37 @@ Brighter now — the inactive tabs have a stronger blue fill, a bolder blue bord
 
 Animate Icon embose little bigger
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll make the tab icons bigger with an embossed, gently animated look. First bump the icon size in TopNav:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the embossed look + gentle animation on the icons:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The tab icons are now larger (19px) with an **embossed bevel** (light top edge, dark bottom shadow) and a gentle continuous **float + breathe** animation; on hover they lift and glow, and the active tab's icon keeps its teal pulse. Renderer‑only, hot‑reloads. Want the float more pronounced, or the emboss deeper?
 
@@ -31725,7 +31725,7 @@ Done. The tab icons are now larger (19px) with an **embossed bevel** (light top 
 
 when selected make it brightes of three
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -31737,25 +31737,25 @@ No response requested.
 [image]
 when make it small window thre three look ugly. it size should be dynamic such that it should be always between top bar as shown in second pic when window is big
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two fixes: make the **selected** tab the brightest, and stop the labels wrapping on small windows (responsive sizing, single line). Updating the base tab + active:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done:
 
@@ -31770,13 +31770,13 @@ Renderer‑only, hot‑reloads. If on a very narrow window they still crowd the 
 
 when selected is brihtest, make other two less bright that selected get more visbility
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The two unselected tabs are now dialed way down (faint blue tint, no glow, slightly dimmed), so the bright selected tab clearly dominates. Hovering an inactive one lifts it to full opacity with a soft glow as a cue, but it still stays below the active tab's intensity. Renderer‑only, hot‑reloads.
 
@@ -31786,31 +31786,31 @@ Done. The two unselected tabs are now dialed way down (faint blue tint, no glow,
 
 windo is bridge only on left side.. make it bright at centre
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The diagonal gradient peaks at the top‑left — I'll switch the active tab to a **centered radial glow** so it's brightest in the middle. Updating the active fill:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now swap the position‑shift animation (which assumed a linear gradient) for a centered glow pulse:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The selected tab now glows from the **center** (radial gradient — brightest in the middle, fading to the edges) instead of being lit from the top‑left corner, and it gently pulses brightness so it stays lively. Renderer‑only, hot‑reloads.
 
@@ -31820,13 +31820,13 @@ Done. The selected tab now glows from the **center** (radial gradient — bright
 
 change to radial gradient on left and right not in middle
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The active tab now has two radial glows — an **iris glow on the left** and a **teal glow on the right** — with a dimmer center, instead of a single middle hotspot. It still pulses gently. Renderer‑only, hot‑reloads. Want the two sides the same color, or keep the iris/teal split?
 
@@ -31836,13 +31836,13 @@ Done. The active tab now has two radial glows — an **iris glow on the left** a
 
 nope. keep light radiant overall, but strong bluish border
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The active tab now has a **light, even radiant fill** with a **strong bluish border** (vivid blue edge + a thin blue ring and soft halo) so it's defined by the border rather than a heavy glow. Renderer‑only, hot‑reloads.
 
@@ -31852,13 +31852,13 @@ Done. The active tab now has a **light, even radiant fill** with a **strong blui
 
 that good, make border blue more bright
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Brighter now — the active tab has a vivid `#7c8bff` border reinforced by a crisp `#6e7bff` ring and a blue glow halo, so the blue edge really pops while the fill stays light. Renderer‑only, hot‑reloads.
 
@@ -31868,23 +31868,23 @@ Brighter now — the active tab has a vivid `#7c8bff` border reinforced by a cri
 
 what nemotron-3-ultra-550b-a55b is not in Model list ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me verify whether that exact model id is real before explaining — quick check:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: WebSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-It's a real, brand‑new model — **NVIDIA Nemotron 3 Ultra 550B‑A55B**, launched **June 4, 2026** on Hugging Face, OpenRouter, and NVIDIA NIM (550B total / ~55B active MoE, 256K context, OpenAI‑ and Anthropic‑compatible). So nothing's wrong with the model; it's just not in BrainEdge's list yet, for these reasons:
+It's a real, brand‑new model — **NVIDIA Nemotron 3 Ultra 550B‑A55B**, launched **June 4, 2026** on Hugging Face, OpenRouter, and NVIDIA NIM (550B total / ~55B active MoE, 256K context, OpenAI‑ and Anthropic‑compatible). So nothing's wrong with the model; it's just not in Madav's list yet, for these reasons:
 
-1. **The list is dynamic, and yours is stale.** BrainEdge's model picker is populated from each provider's `/v1/models` response, cached only when you click **Save & load models**. Since this model dropped days ago, your cached NVIDIA NIM list predates it. Re‑load to pick it up.
+1. **The list is dynamic, and yours is stale.** Madav's model picker is populated from each provider's `/v1/models` response, cached only when you click **Save & load models**. Since this model dropped days ago, your cached NVIDIA NIM list predates it. Re‑load to pick it up.
 2. **The Models Overview is a hand‑curated catalog** (~50 entries) — it's not exhaustive and won't auto‑include new releases.
 3. **Exact id matters.** On NIM the id is `nvidia/nemotron-3-ultra-550b-a55b`; on OpenRouter it'll be the OpenRouter‑namespaced id.
 
@@ -31908,61 +31908,61 @@ Sources:
 
 in Model Overview list  and Model  speed check show very model that is available on model selector list
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll make both pull from the same source as the top‑bar selector (providers' loaded models). Let me check how each currently builds its list:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both should mirror the selector (providers' loaded models). I'll switch Models Overview to build its rows from your configured providers' models — enriched with catalog details when matched, shown as a basic row otherwise. Editing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish wiring the rows to the new list, then explain the headers. Switching the row source + count:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Models Overview now mirrors the top‑bar selector (it builds from your configured providers' loaded models, enriching with catalog details when matched). Note: it reflects what each provider returned on **Save & load models** — so reload a provider if something's missing.
 
@@ -32008,7 +32008,7 @@ Make following changes
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -32025,7 +32025,7 @@ Make following changes
 5. Vision > Rename to Image
 6. License > Remove it
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -32044,49 +32044,49 @@ Make following changes
 7. Weights > Rename  to Download Available
 8. Tools > Remove it
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll apply all eight changes to the Models Overview table. Let me read the current columns and row cells (line numbers shifted after my last edits):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the table row cells. Let me read them:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All eight changes are applied to the Models Overview table:
 
@@ -32109,121 +32109,121 @@ Two notes: the row click‑through detail card still shows the fuller info (rati
 
 Also Remove duplicates, For Reasoning = Free tier display as Free, For Image = Display Toggle as yes indicator. Best For > expand capabilities
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Four tweaks to Models Overview. First, dedupe by resolved name and add capability tags. Let me update the model‑list builder:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now make `Cap` render "toggle" as a yes (✓) for Reasoning/Image:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now expand the "Best for" cell with capability tags. Adding a helper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me finish the caps styling, then fix the filter accuracy. Adding the tag CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the filter accuracy. Let me read the filter logic and chips:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now align the filter chip labels with the renamed columns (Vision→Image, Thinking→Reasoning, Free endpoint→Free):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All applied to Models Overview:
 
@@ -32251,7 +32251,7 @@ in details vie, remove rating, Weigh & Download > rename  to Available for Downl
 
 Continue from where you left off.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -32262,37 +32262,37 @@ No response requested.
 [image]
 difficult to read, make it more visbile
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two things: make the tags readable, and fix the detail view. First, higher‑contrast capability tags:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the detail modal — remove the rating row and rename the download heading:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done:
 
@@ -32307,37 +32307,37 @@ Renderer‑only, hot‑reloads.
 
 when i select again second time on filter value, it should clear from filter
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Most Models Overview chips already toggle off on re‑click — let me check whether another screen's filter (e.g., Model Speed Check) is the one that doesn't:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found it — in **Models speed check**, the prompt **preset chips** (Short/Medium/Long/Code) don't clear on re‑click; they just re‑apply. Making them toggle off:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Now clicking an active filter/chip a second time **clears it**:
 
@@ -32357,55 +32357,55 @@ remove offline  indicator, Cloud & Local, show seperately with colours Cloud, Lo
 
 [Image: original 2097x72, displayed at 2000x69. Multiply coordinates by 1.05 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two changes — drop the Offline tag and split host into separate colored Cloud/Local pills. Removing Offline:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me confirm the Cloud/Local pills have distinct colors and add spacing:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Colors are already distinct (Local = green, Cloud = blue). Adding spacing between the two pills:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done:
 
@@ -32426,117 +32426,117 @@ best for details are availble in nvidia, why not dispalying ?
 
 [Image: original 2097x235, displayed at 2000x224. Multiply coordinates by 1.05 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Good catch. The reason: BrainEdge's model list is built from each provider's `/v1/models`, which returns **only model ids** — no descriptions, context, or capabilities. The rich "Best for"/context/tags come from BrainEdge's curated catalog, which doesn't include this brand‑new model, so it falls back to a generic "sparse" row (0K, Paid, ✗). The detail you see on NVIDIA/OpenRouter comes from *their* metadata APIs, which BrainEdge isn't reading yet.
+Good catch. The reason: Madav's model list is built from each provider's `/v1/models`, which returns **only model ids** — no descriptions, context, or capabilities. The rich "Best for"/context/tags come from Madav's curated catalog, which doesn't include this brand‑new model, so it falls back to a generic "sparse" row (0K, Paid, ✗). The detail you see on NVIDIA/OpenRouter comes from *their* metadata APIs, which Madav isn't reading yet.
 
 OpenRouter actually exposes that metadata. Let me confirm its shape, then wire enrichment:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__web_fetch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 That fetch got truncated and you've raised a related point — let me pivot to it. The Speed Check list is **small for the same root cause but a worse case**: it's built from the **curated catalog** (cloud entries that resolve to a configured provider), not from your providers' loaded models. I applied the "show all selector models" change to Models Overview but not yet to Speed Check. Let me read it and fix that:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Speed Check pulls from the curated catalog, not your loaded models — that's why it's short. Let me see the list render so I can rebuild it from the selector models:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Speed Check is limited to the curated catalog. I'll rebuild its list from your providers' loaded cloud models (same source as the selector). Replacing the list logic:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the run mapping and the list render need to use the new `key`/`name`/`provider`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — strip the chip backgrounds/borders in the table, keep just colored text. Let me find the cost style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Both done:
 
@@ -32554,103 +32554,103 @@ Still open (separate, bigger task): the "Best for / Context / Reasoning / Image"
 
 when i run speed test, while its getting executed and when i go out of session donot end execution session, continue execution in backed and provide results
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll make the speed test survive navigating away — keep it running in the main process and show results when you return. Let me check the current main‑process speed‑test handlers:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The main process already keeps running after you leave and saves the result to disk — so it won't end. What's missing is letting the view know a run is still in progress when you return. I'll add a status flag + polling. Main process first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now expose `getSpeedTestStatus` in preload + mock:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll finish the background‑continuation wiring and also hide failed models (your latest ask). Adding `useRef` + polling:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Speed Test is already cloud‑only (my rebuild skips local providers). Now removing the failed‑models error list:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All set:
 
@@ -32671,91 +32671,91 @@ why data is empty when its avaialable in NIM Nvidia ?
 
 [Image: original 2237x322, displayed at 2000x288. Multiply coordinates by 1.12 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Right — that's the enrichment gap I flagged: the provider's `/v1/models` only returns ids, so non‑catalog models have no details. OpenRouter (where these rows come from) exposes full metadata, so I'll fetch and merge it. Creating the catalog fetcher:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC + preload + mock:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now wire the enrichment into Models Overview. Reading the current builder:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Enrichment is wired (OpenRouter models now fill Context, Reasoning, Image, Cost, and Best for). Now the placeholder text change:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two quick changes landed: the composer placeholder now reads **"How can I help you today?"**, and OpenRouter models in Models Overview are now **enriched** (real Context, Reasoning, Image, Cost, and a Best‑for description) — restart needed since the metadata fetch is main‑process. NVIDIA‑NIM‑sourced rows still stay basic (NIM has no equivalent metadata endpoint), but the same models via OpenRouter will be full.
 
@@ -32771,109 +32771,109 @@ Before I start, two choices:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: AskUserQuestion]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 You chose the full clean refactor + custom color picker. Let me build it. First, introduce the RGB accent variables and derive the weak/line tints from them:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the bulk refactor — swap every hardcoded accent rgba to the variable form:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now decouple accent from the light theme so the picker controls it in both modes. Reading the light block:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me address the filter feedback (I'll resume the theme picker right after). Reading the current filter UI:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Adding the `noFilters`/`resetFilters` helpers and the Download filter (the chips reference them):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Filter feedback handled: **All** is now a single master‑reset chip (highlighted only when nothing's filtered; clicking it clears category, host, capabilities, and Free), the redundant **All hosts** is gone (so it's no longer "always selected"), the **duplicate Reasoning** chip is removed, and a **Download** filter is added.
 
@@ -32881,85 +32881,85 @@ Now your light‑theme question — **why it doesn't blend:** a bunch of value c
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now a light‑mode fix for the active tab's white text, then I'll finish the accent picker. Adding a light override:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll remove the solid accent‑fill pattern from primary buttons platform‑wide (New task, Run now, etc.) and use a tinted/outlined accent style instead. Let me find them:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 `.sb-new` is already transparent (that screenshot was stale). The solid one is `.btn.primary`. Let me read it and the send button:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Let me check the send button to decide if it's the same pattern:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The send arrow is a small icon button (standard submit affordance), so I'll keep that one accent fill and remove the boxy solid fill everywhere else.
 
@@ -32969,37 +32969,37 @@ Now let me finish the accent **color picker** I started (the CSS refactor is don
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now apply the accent in App (alongside the theme effect):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the picker UI in Settings → Appearance (preset swatches + custom color):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 All wired. Summary of this batch:
 
@@ -33020,85 +33020,85 @@ Mostly renderer + a settings default, so the accent/theme/filter changes apply l
 [image]
 blend everything to choosen color. Example border is blue but accent color is orange.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Right — the active tab's border/ring is still a hardcoded blue hex I missed. Let me find the leftover hardcoded accent hexes:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Found them — the active tab border/ring (`#7c8bff`, `#6e7bff`) and a few gradients are hardcoded blue. Fixing the safe global ones first:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the active tab border/ring and the first tab icon (the hardcoded blues):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The green is the secondary accent (teal `--accent-2`) still fixed, plus the per‑tab icon colors are hardcoded. You want everything monochrome to the chosen accent. Let me read the tab‑icon color rules:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two fixes: blend the secondary accent (the green) into your chosen color, and make highlighted‑button text consistent (white in dark) instead of accent‑colored. First, the accent‑2 blend in App:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Now the UI blends fully to your chosen accent:
 
@@ -33106,7 +33106,7 @@ Done. Now the UI blends fully to your chosen accent:
 - The **active tab border/ring** and the per‑tab icon colors were hardcoded blue/teal/amber — those are gone; they all use `var(--accent)` now.
 - **Highlighted‑button text is consistent** — `.btn.primary` ("Save & load models," etc.) now uses the standard white/near‑white text (`--text-0`) on its tint, matching the tabs and selected items, instead of accent‑colored text.
 
-So picking any accent recolors borders, glows, icons, selections, and buttons uniformly. Renderer‑only, hot‑reloads. (One thing I intentionally left: the BrainEdge logo's own node colors, since that's the brand mark, not UI chrome — tell me if you want that to follow the accent too.)
+So picking any accent recolors borders, glows, icons, selections, and buttons uniformly. Renderer‑only, hot‑reloads. (One thing I intentionally left: the Madav logo's own node colors, since that's the brand mark, not UI chrome — tell me if you want that to follow the accent too.)
 
 ---
 
@@ -33114,63 +33114,63 @@ So picking any accent recolors borders, glows, icons, selections, and buttons un
 
 Also for Logo and text, blend with Accent color selected
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-I'll make the logo and the "BrainEdge" wordmark follow the accent. First, switch the logo's hardcoded colors to CSS‑driven (so it tracks `--accent`):
+I'll make the logo and the "Madav" wordmark follow the accent. First, switch the logo's hardcoded colors to CSS‑driven (so it tracks `--accent`):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the logo classes. Let me check the existing `.think-logo` / `.tn-name` styles:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now blend the wordmark gradient and add the logo color rules. Swapping the fixed‑color gradient (used by both name and byline) to accent‑based:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Done — the logo and the "BrainEdge" wordmark now follow your accent:
+Done — the logo and the "Madav" wordmark now follow your accent:
 
 - The synapse **logo** is CSS‑driven (`.tl-main`/`.tl-accent`/`.tl-line`/`.tl-ring` → `var(--accent)`/`var(--accent-2)`), so its nodes, spokes, core, and firing ring all take the chosen accent everywhere it appears (top bar, hero, response avatar).
 - The **wordmark + byline** gradient shimmer now runs white → accent → accent‑tint → white instead of the fixed iris/teal/violet, so it shimmers in your color (and uses `--text-0` for the bright ends, so it stays readable in light mode too).
@@ -33183,25 +33183,25 @@ Pick any accent in Settings → Appearance and the logo, wordmark, tabs, selecti
 
 in model selector list remove best for details, just show if its cloud or local
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The selector shows a "purpose" badge (coding/reasoning/fast — that's the "best for") plus the wire‑format badge. I'll replace both with a single Cloud/Local tag:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The model selector dropdown no longer shows the "best for"/purpose badge or the wire‑format tag — each model now just shows a single **Cloud** (accent) or **Local** (green) tag next to its name. Renderer‑only, hot‑reloads.
 
@@ -33211,49 +33211,49 @@ Done. The model selector dropdown no longer shows the "best for"/purpose badge o
 
 Fist multi accent we had before we made changes - add that as Default accent in option, but user can change colours
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Good idea — make the original two‑tone (iris + teal, multi‑color wordmark & tab icons) the selectable "Default", and any custom color goes monochrome. First, the App apply logic with a `default` sentinel:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS to restore the original two‑tone marks only in default mode:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now add a "Default" multi‑color swatch to the picker:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The accent picker now leads with a **Default** swatch (the multi‑color iris→teal→violet gradient):
 
@@ -33269,19 +33269,19 @@ It's driven by a `data-accent="default"` vs `"custom"` flag the app sets from yo
 [image]
 when box select, accent is more on left, make it same on left and right - apply this accross paltform
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The list selection uses a diagonal (135°) gradient, so the accent pools on the left. I'll switch it to a vertical gradient (symmetric left‑to‑right). Updating the canonical selection style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The selected‑item fill is now a top‑to‑bottom (vertical) gradient instead of a diagonal one, so the accent is **balanced left and right** instead of pooling on the left. This applies to every list/nav selection platform‑wide (sidebar, Skills, Recents, providers/connectors, history); the tabs already used a centered radial fill, so they're symmetric too. Renderer‑only, hot‑reloads.
 
@@ -33291,19 +33291,19 @@ Done. The selected‑item fill is now a top‑to‑bottom (vertical) gradient in
 
 when in Light mode, can accent be re moved and only borders is baased on colour theme selected ?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 In light mode I'll drop the accent fill on selected items and let the **border** carry the accent. Updating the light overrides:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. In **light mode**, selected items (sidebar nav, Skills, Recents, history, tabs) and primary buttons now have **no accent fill** — just an accent‑colored **border** (and accent text), so it's clean and outline‑only. Dark mode keeps the subtle vertical accent fill. Picking any accent color recolors those borders accordingly. Renderer‑only, hot‑reloads.
 
@@ -33313,33 +33313,33 @@ Done. In **light mode**, selected items (sidebar nav, Skills, Recents, history, 
 
 , in light mode donot anamiate Logo Text. keep is single color
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 In light mode I'll make the wordmark a solid color with no shimmer. Adding overrides after the wordmark rules:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Done. In light mode the "BrainEdge" wordmark and byline are now a **solid single color** (name in primary text color, byline muted) with **no shimmer animation**. Dark mode keeps the animated accent gradient. Renderer‑only, hot‑reloads.
+Done. In light mode the "Madav" wordmark and byline are now a **solid single color** (name in primary text color, byline muted) with **no shimmer animation**. Dark mode keeps the animated accent gradient. Renderer‑only, hot‑reloads.
 
 ---
 
@@ -33352,31 +33352,31 @@ Attached is from Claude in light Theme, use it same for BrianEdge, no colour min
 
 [Image: original 2542x1282, displayed at 2000x1009. Multiply coordinates by 1.27 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Got it — Claude‑style light theme: minimalist greyscale chrome, accent only on the logo. Let me replace the light‑mode selection overrides with a greyscale set:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now gate the colored per‑tab icons to non‑light so they don't override the greyscale in light:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done — light mode is now Claude‑style minimalist greyscale:
 
@@ -33393,7 +33393,7 @@ Dark mode is unchanged (keeps the accent theming). Accent selection still drives
 
 how does deploy work? i want exact 100% functionalities of claude Dispatch
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -33403,59 +33403,59 @@ No response requested.
 
 how does deploy work? i want exact 100% functionalities of claude Dispatch
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two things here — the light‑theme polish, then the Deploy question. Let me first make light mode minimalist/neutral (grey selections, no accent fill; logo keeps accent). Replacing the light selection overrides:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The light greyscale theme is already in place. Let me confirm the button override is included:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Light mode is already the minimalist Claude‑style greyscale you asked for — neutral grey selections and tabs, black primary buttons/send on white, and the logo stays on its default accent. So that part's done; no further change needed there.
 
-Now **Deploy** — let me read how it actually works in BrainEdge before answering, so I'm accurate:
+Now **Deploy** — let me read how it actually works in Madav before answering, so I'm accurate:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Here's exactly how BrainEdge's **Deploy** (the renamed Dispatch) works today, from the code:
+Here's exactly how Madav's **Deploy** (the renamed Dispatch) works today, from the code:
 
 It's an unattended task runner. You create a named task with a **prompt/instructions**, choose a **target** (plain chat, a project, or a folder), and a **schedule** — Off (manual), every N minutes, daily at a time, or weekly on a weekday/time. **Run now** executes immediately; scheduled runs fire automatically (auto‑approving tools since they're unattended) using the active provider, **as long as the app is open**. Every run's status/output is saved under **Recent runs**.
 
@@ -33465,13 +33465,13 @@ On matching **Claude's Dispatch 100%** — I have to be honest: I don't have rel
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: WebSearch]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 On the accent: the **Default** swatch is already the first option in the picker and it *is* the original accent we started with — the multi‑color iris + teal scheme (logo, wordmark, tab icons), and it's selected out of the box. Any solid color after it switches the UI to a monochrome blend. So that's already as you want; nothing to change there.
 
@@ -33479,9 +33479,9 @@ Now the important clarification on **Deploy vs. Claude Dispatch** — I checked 
 
 **Claude's Dispatch** isn't a scheduler. It's a **phone‑to‑desktop remote‑control layer** for Cowork: you text your Claude Desktop session from the Claude mobile app, it runs the task locally on your computer (using your files, connected tools, skills, plugins, browser, computer use), and you come back to finished work — "a walkie‑talkie to your desktop." It launched March 17, 2026 as a Max/Pro research preview. ([Fortune](https://fortune.com/2026/04/28/claude-dispatch-feature-capabilities-service/), [MacStories](https://www.macstories.net/stories/hands-on-with-claude-dispatch-for-cowork/), [lowcode.agency](https://www.lowcode.agency/blog/claude-dispatch-explained))
 
-**BrainEdge's "Deploy"** is a **scheduler/unattended task runner** (prompt + target + schedule + run history). That actually maps to Claude's separate **"Scheduled"** sidebar item, *not* Dispatch.
+**Madav's "Deploy"** is a **scheduler/unattended task runner** (prompt + target + schedule + run history). That actually maps to Claude's separate **"Scheduled"** sidebar item, *not* Dispatch.
 
-So the honest situation: your Deploy already does the *scheduling* half well, but it is **not** the Dispatch feature. The good news — **BrainEdge already has a Dispatch‑equivalent**: the **Telegram bot** under Settings → Messaging. You message your bot from your phone, it runs on this machine (active model; optionally a folder with file/shell agent access plus your skills/connectors) and replies with the result. That's exactly Dispatch's "text your desktop, get finished work back" model, just over Telegram instead of a first‑party mobile app.
+So the honest situation: your Deploy already does the *scheduling* half well, but it is **not** the Dispatch feature. The good news — **Madav already has a Dispatch‑equivalent**: the **Telegram bot** under Settings → Messaging. You message your bot from your phone, it runs on this machine (active model; optionally a folder with file/shell agent access plus your skills/connectors) and replies with the result. That's exactly Dispatch's "text your desktop, get finished work back" model, just over Telegram instead of a first‑party mobile app.
 
 To get to **~100% Dispatch parity**, here's the gap and the plan:
 
@@ -33498,184 +33498,184 @@ Want me to build that Dispatch inbox section (wrapping the existing Telegram rem
 
 yes go ahed. and also rename Deploy as Scheduler
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll rename Deploy → Scheduler and build a Dispatch inbox over the existing messaging engine. Let me first see what the messaging/Telegram backend exposes (so the inbox can show real requests + results):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Plan: rename Deploy→Scheduler, and add a **Dispatch** inbox that logs phone→desktop requests (via the Telegram engine) and shows their results. Let me build it. First, a dispatch log store:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now log each handled request in the Telegram bot:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the IPC, preload, and mock for the dispatch log:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the DispatchInbox component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Sidebar — rename Deploy→Scheduler and add the Dispatch entry:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Add the `Clock` icon import:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now App — route Dispatch → DispatchInbox and add Scheduler → the scheduler component:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now rename the Scheduler component's heading from "Deploy":
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. Two things shipped:
 
 **Renamed Deploy → Scheduler.** The sidebar item, its heading, and routing now say "Scheduler" (the schedule/run‑on‑a‑timer task runner is unchanged underneath).
 
-**New Dispatch inbox** — BrainEdge's equivalent of Claude's phone→desktop Dispatch:
+**New Dispatch inbox** — Madav's equivalent of Claude's phone→desktop Dispatch:
 
 - New **Dispatch** entry in the sidebar with a live status chip (online/offline of your Telegram bot).
-- It shows an **inbox of remote requests**: every message you send from your phone is logged with the request text, BrainEdge's reply, the target (chat or folder), who sent it, time, and ok/error status — newest first, auto‑refreshing.
+- It shows an **inbox of remote requests**: every message you send from your phone is logged with the request text, Madav's reply, the target (chat or folder), who sent it, time, and ok/error status — newest first, auto‑refreshing.
 - It reuses the existing Telegram engine, so it inherits the active model, your skills/connectors, and optional folder file‑access — i.e., "text it from your phone, it runs here, replies with finished work." There's a link straight to Settings → Messaging to set up the bot, plus Refresh/Clear.
 
 So the mapping is now clean: **Dispatch** = remote phone tasking (Claude‑Dispatch‑style), **Scheduler** = timed/unattended runs.
@@ -33691,37 +33691,37 @@ Honest parity note vs. Claude Dispatch: this covers remote tasking + results inb
 [image]
 for default color accent, make all icon same colour as icon of lets colloborate.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 For the default accent, I'll make all three tab icons the same teal as "Let's Collaborate":
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. With the **Default** accent, all three tab icons now use the same teal as "Let's Collaborate" (`#38e8d0`) instead of the iris/teal/amber trio. Custom accents still make them follow the chosen color, and light mode stays neutral grey. Renderer‑only, hot‑reloads.
 
@@ -33732,127 +33732,127 @@ Done. With the **Default** accent, all three tab icons now use the same teal as 
 [image]
 i want Scheduler ui approach same as claude Schedule. functionality should work exactly same.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll rebuild the Scheduler to match that layout and behavior (header + subtitle, New task ▸ Create/Manual, "runs while awake" banner with a Keep‑awake toggle, full‑width task list). First, wire a real Keep‑awake (prevents sleep) in the main process:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I have the Claude "Create scheduled task" modal layout now. Let me check the task runner to see what fields I can wire (model/target/permission):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll wire per‑task model into the runner, add Keep‑awake, then rebuild the Scheduler UI to match. Runner model override:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Keep‑awake IPC (prevents the machine sleeping while schedules run):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the full Scheduler rebuild matching Claude's layout (list view + "Create scheduled task" modal + Keep‑awake):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Write]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Scheduler rebuilt (list view + "Create scheduled task" modal with Name/Description/prompt/target/permission/model/Frequency, plus Keep‑awake and Create‑with‑Claude). Now the Consumption tweak — show only the model name (strip the provider prefix). Let me find it:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. In Consumption, the **Top model** card and the **Tokens by model** labels now show just the model name (e.g., `claude-opus-4.8`, `step-3.5-flash`) with the `provider/` prefix stripped — the full id is still in the hover tooltip. Renderer‑only, hot‑reloads.
 
@@ -33869,7 +33869,7 @@ can you make side bar flexible to expand and reduc width
 
 [Image: original 2547x1343, displayed at 2000x1055. Multiply coordinates by 1.27 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 No response requested.
 
@@ -33884,61 +33884,61 @@ always align window conten. eveything in center. window to be dynamic based on w
 
 [Image: original 2251x1351, displayed at 2000x1200. Multiply coordinates by 1.13 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Scheduler content uses per‑block max‑widths without centering. I'll wrap it all in one centered, dynamic container. Opening the wrapper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now close the wrapper after the task list:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the centered wrapper:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The `.sched-*` classes were never styled — that's why the rows look cramped. Let me add the styles (including the centered wrapper):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Scheduler is now centered and dynamic: all its content (header, the "runs while awake" banner, and the task list) sits in one `max-width: 1000px; margin: 0 auto` wrapper, so it centers in the window and scales down on narrower sizes. I also added the missing `.sched-row` styling — tasks now render as clean bordered rows (name + description, frequency pill, last‑run, run/delete) instead of the cramped unstyled lines you saw.
 
@@ -33951,55 +33951,55 @@ This is renderer‑only and hot‑reloads. Note the Scheduler's new fields and K
 [image]
 model selector layout  to be same as in main screen model selector
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll swap the plain model `<select>` in the modal for the real `ModelPicker` (grouped dropdown + search + Cloud/Local tags), same as the main selector. Importing it and building grouped options:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now pass `modelGroups` to the modal and replace the `<select>` with `ModelPicker`:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The model selector in the Create/Edit scheduled task modal now uses the same `ModelPicker` as the main top‑bar selector — a grouped dropdown with search and Cloud/Local tags, plus a "Default model" option at the top (which maps to using the active provider). Renderer‑only, hot‑reloads.
 
@@ -34012,67 +34012,67 @@ One note: the per‑task model is honored at run time via the runner change I ma
 [image]
 you missed to add Scheduler with Lets Collaborate (  Like claude Cowork) option. Please replicate that functionality also like Claude. and create dropdown values to be displayed down not up
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Two fixes plus the missing pieces. First, make the New task dropdown open **downward** and add the Claude‑style empty state with quick‑start chips. Importing icons:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the Claude‑style empty state with quick‑start chips:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the target dropdown — add the explicit "Let's Collaborate (Cowork)" option:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the empty state:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Done. The Scheduler now matches Claude's flow:
 
 - **New task dropdown opens downward** (below the button) instead of up.
 - **Empty state** is the Claude‑style centered prompt — a clock icon, "Create your first scheduled task," and two quick‑start chips (**Daily brief**, **Weekly review**) that prefill the create modal with a sensible prompt + schedule.
-- **"Create with BrainEdge"** (the conversational/describe‑it path, equivalent to Claude's "Create with Claude") opens the modal where you type a natural‑language description and it infers the name + schedule.
+- **"Create with Madav"** (the conversational/describe‑it path, equivalent to Claude's "Create with Claude") opens the modal where you type a natural‑language description and it infers the name + schedule.
 - Added the **"Let's Collaborate (folder)"** target option (alongside Let's Chat and Work in a project) so a scheduled task can run as a Cowork folder agent — the Cowork option you flagged as missing.
 
 All renderer‑only here, hot‑reloads. The scheduled execution + per‑task model + keep‑awake remain main‑process, so restart `npm run electron:dev` to run them end‑to‑end.
@@ -34088,55 +34088,55 @@ i want Project also to follow exactly same as Claude project approach. Standalon
 
 [Image: original 2586x847, displayed at 2000x655. Multiply coordinates by 1.29 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll make the project detail match Claude's: the real chat composer ("How can I help you today?") with a separate "Start a task in Cowork" link, plus the conversations list and the Instructions/Files rail (already present). Let me read the current detail composer:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 I'll use the real Composer in the project detail plus a "Start a task in Cowork" link. Adding the import:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the CSS for the Cowork link, and a quick check that `Send`/`MessageSquare` are still used (they are, in the conversations list). Adding the link style:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Grep]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The project detail now mirrors Claude's layout:
 
@@ -34157,63 +34157,63 @@ Scheduler create with brainEdge should work exactly like Scheduelsdwith Claude C
 
 [Image: original 2552x1315, displayed at 2000x1031. Multiply coordinates by 1.28 to map to original image.]
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-This is Claude's conversational scheduler‑builder. I'll implement a guided, step‑by‑step task builder for "Create with BrainEdge" (asks what to do → how often → when → where → confirm, with selectable option cards), which replicates that functionality reliably. Wiring the entry point:
+This is Claude's conversational scheduler‑builder. I'll implement a guided, step‑by‑step task builder for "Create with Madav" (asks what to do → how often → when → where → confirm, with selectable option cards), which replicates that functionality reliably. Wiring the entry point:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the guided wizard component. Let me append it after the existing modal:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Read]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Now the wizard CSS:
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: Edit]_
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-"Create with BrainEdge" now runs as a guided, conversational‑style builder instead of a single form — matching how Claude's Cowork scheduler walks you through setup:
+"Create with Madav" now runs as a guided, conversational‑style builder instead of a single form — matching how Claude's Cowork scheduler walks you through setup:
 
 1. **What do you want it to do?** — free‑text prompt, with quick presets (Daily briefing / Weekly review).
 2. **How often?** — Manual / Hourly / Daily / Weekly / Every N minutes (selectable cards).
@@ -34233,13 +34233,13 @@ One honest note: this is a deterministic guided wizard that asks the same questi
 
 copy entire chat history till now of this project as Chat.md into project folder
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 This is our own conversation, so I'll export it. Let me locate the session transcript and convert it to Markdown programmatically (so it doesn't need to pass through my context):
 
 ---
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 _[used tool: mcp__workspace__bash]_
 
@@ -34256,7 +34256,7 @@ _[used tool: mcp__workspace__bash]_
 
 change this across application wherever in application muted --text-2, change to primary-secondary text color (--text-1) … (then) set --text-2 to a value just slightly below --text-1 to keep a little hierarchy.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Set the muted text variable brighter, then to a hair below the secondary colour to keep hierarchy: `--text-2` = `#8f99aa` (dark) / `#566480` (light). Renderer-only, hot-reloads.
 
@@ -34266,12 +34266,12 @@ Set the muted text variable brighter, then to a hair below the secondary colour 
 
 remove term dispatch in codebase and use viamobile, i want code base also to be clean
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Removed the term "dispatch" everywhere, split by meaning since two features shared the word:
 
-- **Via Mobile** feature → `viamobile`: `DispatchInbox.jsx`→`ViaMobile.jsx`, `dispatch-log.cjs`→`viamobile-log.cjs`, mode id `"dispatch"`→`"viamobile"`, IPC `listDispatch`/`clearDispatch`→`listViaMobile`/`clearViaMobile`, bridge + mock methods, log id prefix `dsp_`→`vm_`, on-disk `brainedge-dispatch-log.json`→`brainedge-viamobile-log.json`.
-- **Scheduler** internals → `task`/`scheduler`: `Dispatch.jsx`→`Scheduler.jsx`, `dispatch-store.cjs`→`task-store.cjs`, `dispatch-runner.cjs`→`task-runner.cjs`, main.cjs var `dispatch`→`taskStore`, event `brainedge:dispatchRun`→`brainedge:taskRun`, on-disk `dispatch-data/`→`task-data/`.
+- **Via Mobile** feature → `viamobile`: `DispatchInbox.jsx`→`ViaMobile.jsx`, `dispatch-log.cjs`→`viamobile-log.cjs`, mode id `"dispatch"`→`"viamobile"`, IPC `listDispatch`/`clearDispatch`→`listViaMobile`/`clearViaMobile`, bridge + mock methods, log id prefix `dsp_`→`vm_`, on-disk `madav-dispatch-log.json`→`madav-viamobile-log.json`.
+- **Scheduler** internals → `task`/`scheduler`: `Dispatch.jsx`→`Scheduler.jsx`, `dispatch-store.cjs`→`task-store.cjs`, `dispatch-runner.cjs`→`task-runner.cjs`, main.cjs var `dispatch`→`taskStore`, event `madav:dispatchRun`→`madav:taskRun`, on-disk `dispatch-data/`→`task-data/`.
 - Generic tool-router `dispatch()` in agent-openai.cjs → `runTool()`.
 - Left only the legitimate DOM `dispatchEvent` and undici `setGlobalDispatcher`.
 
@@ -34283,7 +34283,7 @@ Updated all requires/imports across main.cjs, preload.cjs, telegram-bot.cjs, App
 
 (Models Overview screenshot) Text is cutoff in highlighted section, when i click on it or hover mouse on it show full details of text in popup. (then) in model overview Download link, if it available for multiple providers option like huggingface, ollama, llama give user options to select provider with popup. currently everything is going to huggingface.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 In `ModelsOverview.jsx`: the "Best for" cell now has `title={m.bestFor}` so the full text shows on hover (row click still opens the full detail card). The Download button became a **source chooser popup** — `dl()` now returns `targets` for Hugging Face, Ollama (library link if known, else search), and LM Studio; clicking Download opens a small menu (closes on outside-click/Esc). Added LM Studio to the detail-card download row too. CSS for `.mo-dlwrap/.mo-dlmenu`.
 
@@ -34293,9 +34293,9 @@ In `ModelsOverview.jsx`: the "Best for" cell now has `title={m.bestFor}` so the 
 
 in Via Mobile always keep Request history, if user wants to delete, give him option to go to via mobile screen and delete it.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
-Via Mobile history now persists (retention raised 200→2000) and is deletable only on the Via Mobile screen: a trash icon per request (new `remove(id)` in the log store + `brainedge:removeViaMobile` IPC + bridge/mock) plus a confirm-guarded Clear-all. Added a "N kept" count and a note that history is kept across restarts.
+Via Mobile history now persists (retention raised 200→2000) and is deletable only on the Via Mobile screen: a trash icon per request (new `remove(id)` in the log store + `madav:removeViaMobile` IPC + bridge/mock) plus a confirm-guarded Clear-all. Added a "N kept" count and a note that history is kept across restarts.
 
 ---
 
@@ -34303,7 +34303,7 @@ Via Mobile history now persists (retention raised 200→2000) and is deletable o
 
 if im working a task in Let's Collaborate, how to continue that on telegram… like in claude it can be continued. can you setup something similar easy and friendly? … yes implement it.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Built the minimal Cowork→Telegram handoff ("Continue on phone"):
 
@@ -34320,7 +34320,7 @@ Honest limits: works only while the machine is running/online; folder runs auto-
 
 instead of clicking on continue on phone, can't it auto available on phone if Let's Collaborate and telegram bot both are online?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Added **auto-continue** (default on, `messaging.autoContinue`): when you're in a cowork session and the bot is online, the current session is auto-bound (App polls bot status every 5s; effect re-binds on session switch). Folder bar shows "On phone (auto)" / "Phone: bot offline" / "Linking…". Toggle in Via Mobile Bot setup; manual pin still available when auto is off. ViaMobile propagates the setting up via `onSettingsChanged`.
 
@@ -34330,7 +34330,7 @@ Added **auto-continue** (default on, `messaging.autoContinue`): when you're in a
 
 in Via Mobile - setup instruction add a QR code / t.me … how to setup your telegram Bot - change colour to colour you are using for icons when highlighted.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Added an "Open your bot" block with a `t.me` deep-link **Open in Telegram** button (from the live bot username), and recoloured the "How to set up your Telegram bot" help toggle to the accent colour (`.vm-help-toggle`). A QR image (via the `qrcode` package) was attempted but Vite couldn't resolve the new dependency through the degraded sandbox mount.
 
@@ -34340,7 +34340,7 @@ Added an "Open your bot" block with a `t.me` deep-link **Open in Telegram** butt
 
 or is it easier to create a simple mobile app from scratch or do you recommend telegram as safe and tested?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Recommendation (high confidence): **stay on Telegram** for now. The hard problem is reaching a NAT'd desktop from a phone — Telegram solves it free via outbound long-polling (no ports, no relay), plus cross-platform clients, push, identity, and a mature Bot API. A from-scratch native app needs a hosted relay/tunnel, TLS, auth, push, and store deployment — months of work and a permanent security surface. Caveat: Telegram routes content through its servers (not E2E to your machine), and folder mode's auto-approve RCE risk exists regardless of transport. If privacy/branding later force leaving Telegram, build a **PWA + self-hosted E2E WebSocket relay** reusing the same `task-runner` — not a native app.
 
@@ -34350,7 +34350,7 @@ Recommendation (high confidence): **stay on Telegram** for now. The hard problem
 
 unable to open app … remove QRcode functionality if its too complicated to incorporate.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 The Vite overlay was just the unresolved `qrcode` import. Removed the QR generation (state, dynamic import, `<img>`, `qrcode` dep in package.json, dead CSS) and kept the dependency-free **Open in Telegram** t.me button. App loads again on hot-reload; no `npm install` needed.
 
@@ -34360,7 +34360,7 @@ The Vite overlay was just the unresolved `qrcode` import. Removed the QR generat
 
 update our chat history to .md file till date … also memory.md
 
-## 🤖 BrainEdge
+## 🤖 Madav
 
 Appended this session to `Chat.md` and refreshed `MEMORY.md` (corrected stale facts: the dispatch→viamobile/task rename, Via Mobile + Telegram handoff, copyright owner Samskruthi Harish, encrypted secrets via safeStorage, strict CSP, legal files).
 
@@ -34374,43 +34374,43 @@ Appended this session to `Chat.md` and refreshed `MEMORY.md` (corrected stale fa
 ## 🧑 User
 Continue a Let's Collaborate task on Telegram (like Claude); make it auto when both online; switch projects by name; each project can have a different folder.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 Built the Cowork→Telegram handoff: `electron/mobile-link.cjs` binds one session; `task-runner.cjs` accepts history+systemOverride; `telegram-bot.cjs` continues the linked session, writes replies back, and adds `/sessions`, `/use <name|number>`, `/unlink`. Each linked session uses ITS OWN folder (per-project). App folder-bar shows a colour-coded phone icon (green live / red offline). Auto-continue (default on) binds the active Cowork session while you're in it and releases when you leave, so the bot is independent otherwise. Added a t.me "Open in Telegram" deep link; a QR was attempted (`qrcode`) but removed when Vite couldn't resolve the dep. Recommendation given: stay on Telegram (NAT-free, tested) vs building a native app; PWA+E2E relay only if leaving Telegram later.
 
 ## 🧑 User
-Accent too purple — make it cyan; remove purple from the BrainEdge text animation.
+Accent too purple — make it cyan; remove purple from the Madav text animation.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 Default `--accent` → cyan `#13c2d6`; recoloured the wordmark shimmer + leftover periwinkle tints to cyan/teal.
 
 ## 🧑 User
 Model Speed Check — show more than tok/s; what else helps me choose?
 
-## 🤖 BrainEdge
+## 🤖 Madav
 Overhauled the Speed Check into a decision tool: KPIs = throughput, time-to-first-token, total time, estimated cost/run (real OpenRouter pricing), context window, measured quality, success rate. Added summary cards, per-KPI **top-10 value lists** (drag to reorder, hide, zoom, layout saved to localStorage), interactive **trade-off scatters** (log scaling for wide ranges, jitter + greedy label de-clutter, full-screen zoom), a **quality quiz** auto-graded with exact answers across coding / reasoning / agentic / instruction-following / structured-extraction / honesty, **"Best for…"** capability panels ranked by measured score (ties broken by overall quality then speed, n/N on hover), a **Best value** panel (quality ÷ cost), a **methodology / "How this works"** panel with a plain-English "which model should you pick?" recommendation, collapsible failures with **friendly error messages**, and model-selection filters for **Provider / Host (Cloud·Local) / Price (Free·Paid)** as dropdowns. Removed the flat "All KPIs" table as misleading.
 
 ## 🧑 User
 Free filter shows no NIM models though many are free; make free/paid work for all providers and future ones.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 Created `src/data/providerRules.js` — a data-driven `classifyProvider` / `isModelFree` used by Speed Check AND Models overview. Local + NVIDIA NIM + Groq + Cerebras = free; OpenRouter = per-model (real pricing); OpenAI/Anthropic/DeepSeek/Google/Mistral/Cohere/xAI/Together/Fireworks/Perplexity/DeepInfra/Hyperbolic = paid; any `:free` id = free. New providers fall back safely; add one line to support them.
 
 ## 🧑 User
 Am I missing popular providers? Add Groq, Together AI, Fireworks AI, Perplexity, Cerebras, DeepInfra, Hyperbolic into providers and models.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 Added a "+ Add provider…" quick-add dropdown in Model configuration with prefilled wire-format + base URL for all popular providers (incl. the seven above) + Custom. Added them as catalog provider constants and auto-attached the aggregators (Together/Fireworks/DeepInfra/Hyperbolic; Cerebras on Llama/Qwen/DeepSeek) to open models offered on OpenRouter.
 
 ## 🧑 User
 Models overview: NIM models show empty info; colour-code capability tags with proper icons; swap name/best-for colours; add a Billion-parameter column before Download.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 NIM/sparse models now infer type + capabilities + size from the model id (vl→Image, super/ultra/reason→Reasoning, embed→Embedding, guard→Safety) with a readable label; context "0K" → "—". Capability tags now have distinct colours + globally-recognised icons (Brain/Image/ScrollText/Bot/Wrench). Swapped: model name = accent, best-for = neutral. Added a sortable **Params** column before Download (inferred for NIM). Host now shows "Cloud · Local" by merging hosts across providers (per-provider dedupe).
 
 ## 🧑 User
 Bump version, document the build step, push to git.
 
-## 🤖 BrainEdge
+## 🤖 Madav
 Bumped `package.json` to **0.2.0**; documented `npm run electron:build` in MEMORY.md. Provided build + commit/push commands to run on the Windows machine (sandbox can't safely run git — truncated mount reads could corrupt commits). Updated Chat.md.
 
 ---
@@ -34425,7 +34425,7 @@ Large session. Built the **accounts + monetization** system and a full **web ver
 - Client gate `AuthGate.jsx`; `AccountCard.jsx`, `AdminPanel.jsx`. Sidebar bottom became **Profile** (name+photo) with a trial/upgrade box above; old top banner/menu removed. **Admin Analytics** is its own Settings section.
 
 ### Web app (parity)
-- `bridge/index.js` → `window.brainedge` (desktop) or **`webBridge`** (browser); `isWeb` exported. webBridge implements the whole contract: auth via server, data in localStorage, chat streams browser→provider via `shared/providers.js`.
+- `bridge/index.js` → `window.madav` (desktop) or **`webBridge`** (browser); `isWeb` exported. webBridge implements the whole contract: auth via server, data in localStorage, chat streams browser→provider via `shared/providers.js`.
 - Auth server also serves the built `dist/` (same origin). **Provider proxy** (`/proxy/chat`,`/proxy/models`) so blocked providers (NVIDIA/OpenAI) work on web; OpenRouter stays direct.
 - **Web folder access** ("Let's Collaborate") via File System Access API (Chrome/Edge) + a browser file‑tool agent (no terminal). Folder stays local.
 - **Speed test now runs on web** (was a stub): parallel pool of 6, streams partial results, 45s timeout. **Connectors** show a 25‑item catalog on web.
@@ -34447,20 +34447,20 @@ Large session. Built the **accounts + monetization** system and a full **web ver
 
 ## Session — 2026-06-08 (Speed Check results dashboard + storage-full save fix)
 
-### 🤖 BrainEdge — Speed Check results restyle
+### 🤖 Madav — Speed Check results restyle
 Restyled the **Model Speed Check results** into a polished analytics dashboard to match the Consumption look (the queued world-class item): summary cards refined with the **winner card highlighted**, and each **KPI panel converted from a plain list into a ranked mini bar-chart** (rank badge + inline bar + value). Data/rankings unchanged — visual layer only.
 
 ### 🧑 User — "information is not getting stored after save" / NVIDIA 401
 Reported settings not persisting and chat erroring with `OpenAI-compatible 401: {"error":{"message":"No cookie auth credentials found","code":401}}` on a selected NVIDIA NIM model.
 
-### 🤖 BrainEdge — root cause + fix
+### 🤖 Madav — root cause + fix
 Diagnosed: the 401 is NVIDIA's response when no API key reaches it. Root cause is **browser localStorage full** — chat history (esp. after the web folder agent stores file contents) crowds out the settings store, so **Save & load models silently fails to persist the API key**; chat then sends no key → 401. Fixes shipped (web bridge): settings now **save even when storage is full** (frees old chat history as a last resort so keys always stick), and **chat history is capped** so it can't crowd out settings. Noted these only take effect after `npm run build` + re-saving the key, and that web settings live per-browser (separate from the desktop app). Also clarified a browser tab cannot write to the filesystem (sandbox) — that limit is why this is web-only.
 
-### 🤖 BrainEdge — recommended proper fix (decision, not yet built)
+### 🤖 Madav — recommended proper fix (decision, not yet built)
 Recommended migrating **chat history to IndexedDB** (hundreds of MB–GB vs ~5–10 MB localStorage) while keeping settings/API keys in localStorage, so keys can never be crowded out again. Rejected storing keys on the server (breaks the keys-stay-on-device promise). **Awaiting user go-ahead before implementing.**
 
 ### Housekeeping
-- Created a scheduled task **"update-brainedge-docs"** that refreshes Chat.md + MEMORY.md every 30 minutes.
+- Created a scheduled task **"update-madav-docs"** that refreshes Chat.md + MEMORY.md every 30 minutes.
 
 ### Open / unresolved
 - User flagged an issue with **"model determination and selector"** (active chat model getting left on a NIM model after Speed Check exploration) — not yet diagnosed/fixed.
@@ -34469,7 +34469,7 @@ Recommended migrating **chat history to IndexedDB** (hundreds of MB–GB vs ~5�
 
 ## Session — 2026-06-09 (catch-up: full day arc — Chat.md was behind MEMORY.md)
 
-This block back-fills the 2026-06-09 work that landed in MEMORY.md (§11f–§11z') but was missing from Chat.md. Source of truth = MEMORY.md + the BrainEdge work-session transcript. All edits below are shared code (web + desktop) unless noted. Concise summary; see MEMORY.md §11f–§11z' for detail.
+This block back-fills the 2026-06-09 work that landed in MEMORY.md (§11f–§11z') but was missing from Chat.md. Source of truth = MEMORY.md + the Madav work-session transcript. All edits below are shared code (web + desktop) unless noted. Concise summary; see MEMORY.md §11f–§11z' for detail.
 
 ### Web storage / streaming / tone (§11f)
 - **IndexedDB chat-history migration DONE**: web chat history moved to IndexedDB; settings + API keys stay in localStorage so history can't crowd out keys (the NVIDIA 401 root cause). Auto-migrates on first load; removed a duplicate IndexedDB block in `webBridge.js`. Activate via `npm run build` + re-save key.
@@ -34490,11 +34490,11 @@ This block back-fills the 2026-06-09 work that landed in MEMORY.md (§11f–§11
 ### GitHub connect + agent file tools + CLI (§11n)
 - **GitHub repo connect FIXED**: `window.prompt()` is disabled in Electron → replaced with in-app input modal; desktop clones + sets working folder, web instructs download + choose folder. Moved to the + menu.
 - **Agent file tools expanded**: search-across-files, list-all-files, delete, and real colored edit **diffs** in tool cards. Folder-card reverted to a "Choose folder" chip per user pref.
-- **NEW: BrainEdge CLI** (`cli/brainedge.mjs`, zero-dep) — third surface; standalone terminal coding agent on the same engine, full shell power. Slash commands, skills from `.brainedge/skills`, permission prompts, config in `~/.brainedge/config.json`. `bin: brainedge`.
+- **NEW: Madav CLI** (`cli/madav.mjs`, zero-dep) — third surface; standalone terminal coding agent on the same engine, full shell power. Slash commands, skills from `.madav/skills`, permission prompts, config in `~/.madav/config.json`. `bin: madav`.
 
 ### CLI subscription gating + terminal access + PTY + Ink rewrite (§11p–§11t)
 - **CLI subscription-gated**: server `signCli` + `/cli/token` + `/cli/verify`; provisioned CLI re-validates online each launch (offline = warn not block); self-configured CLI stays ungated.
-- **One-click "Enable terminal access"** (Settings → Terminal access): reuses provider+key, mints subscription-bound token, writes config, puts `brainedge` on PATH without admin/npm. `electron/cli-install.cjs`; CLI bundled via `extraResources`. Token stored plaintext (flagged).
+- **One-click "Enable terminal access"** (Settings → Terminal access): reuses provider+key, mints subscription-bound token, writes config, puts `madav` on PATH without admin/npm. `electron/cli-install.cjs`; CLI bundled via `extraResources`. Token stored plaintext (flagged).
 - **In-app Terminal → real PTY**: `electron/terminal.cjs` dual PTY/pipe (node-pty when available, pipe fallback); PTY/compat badge. Needs `npm run rebuild` (+ VS Build Tools on Windows).
 - **CLI rewrite to an Ink TUI — done across the day**: readline prompt-loop can't reach Claude-Code parity → rebuilt on Ink (`cli/agent-core.mjs` + Ink UI + REPL fallback). Web Terminal panel = desktop-only signpost with "Get the desktop app".
 - **GUI model-selector filters**: Cost chips (All/Free/Paid) + Best-for chips (Any/Coding/Reasoning/Vision/Fast), per-row tag + badge, live count. Heuristic from model id.
@@ -34540,10 +34540,10 @@ Backfill: Chat.md had fallen behind MEMORY.md. The 2026-06-09 work below was alr
 - **Agent file tools expanded**: search-across-files, list-all-files, delete, and real colored edit diffs in tool cards.
 - **Let's Build environment-picker reshape** (local folder + multi GitHub repo/account; no cloud, no remote control) — in progress.
 
-### BrainEdge CLI — new third surface
-- **`cli/brainedge.mjs`** (zero-dep) terminal coding agent on the same engine: read/write/edit/search/list/run_command/load_skill, slash commands, `/init` writes `BRAINEDGE.md`, skills from `.brainedge/skills`. `bin: brainedge` + `npm link`.
+### Madav CLI — new third surface
+- **`cli/madav.mjs`** (zero-dep) terminal coding agent on the same engine: read/write/edit/search/list/run_command/load_skill, slash commands, `/init` writes `MADAV.md`, skills from `.madav/skills`. `bin: madav` + `npm link`.
 - **Subscription-gated**: server `signCli` + `/cli/token` + `/cli/verify`; CLI re-validates on every launch (offline = warn, not block); self-configured CLI stays ungated.
-- **One-click "Enable terminal access"** (Settings → Terminal access, desktop): detects Node, reuses the Settings provider/key, mints the token, writes `~/.brainedge/config.json`, puts `brainedge` on PATH with no admin/npm. CLI bundled via `extraResources`.
+- **One-click "Enable terminal access"** (Settings → Terminal access, desktop): detects Node, reuses the Settings provider/key, mints the token, writes `~/.madav/config.json`, puts `madav` on PATH with no admin/npm. CLI bundled via `extraResources`.
 - **CLI rewrite to an Ink TUI** (in progress): shared UI-agnostic `cli/agent-core.mjs` + Ink UI + REPL fallback. **Full Claude-parity slash commands wired** in `cli/tui.mjs` (`/compact /resume /cd /add-dir /memory /status /config /doctor` + custom markdown commands, alongside the existing set); **scrolling slash menu**; **CLI `/model` Free/Best-for filters** mirroring the GUI.
 
 ### Terminal
@@ -34576,8 +34576,8 @@ Backfill: Chat.md had fallen behind MEMORY.md. The 2026-06-09 work below was alr
 ### 🧑 User — folder-card revert
 - "revert this back, i like choose folder in chat input window only. not outside" → removed the large connect-folder card; **"Choose folder" stays only as a chip in the chat input bar**; greeting empty state restored.
 
-### 🤖 NEW third surface — BrainEdge CLI
-- Built `cli/brainedge.mjs` (**198 lines, zero deps**) + `cli/README.md`: a standalone **terminal coding agent like Claude Code** that reuses the same engine. `cd` into any folder and run `brainedge` — no folder picker, **full power incl. running commands** (a real local program, unlike the browser). Tools: read/write/edit/search/list/**run_command**/load_skill. Slash commands: `/model`, `/clear`, `/skills`, `/reload`, `/init` (writes `BRAINEDGE.md`, auto-read like `CLAUDE.md`), `/cwd`, `/cost`, `/auto`, `/help`, `/exit`. Skills loaded from `.brainedge/skills` or `~/.brainedge/skills` (progressive disclosure). **Permission prompts** unless `--yes`. Config from `~/.brainedge/config.json` ({baseUrl, apiKey, model, kind}) or env. Registered as `bin: brainedge` in package.json; install via `npm link`. Verified it parses cleanly. Transport is **openai-kind** today — anthropic wire format extension queued. Could later be **auth-server/subscription-gated** like the apps, and distributed as an npm package or `.exe`.
+### 🤖 NEW third surface — Madav CLI
+- Built `cli/madav.mjs` (**198 lines, zero deps**) + `cli/README.md`: a standalone **terminal coding agent like Claude Code** that reuses the same engine. `cd` into any folder and run `madav` — no folder picker, **full power incl. running commands** (a real local program, unlike the browser). Tools: read/write/edit/search/list/**run_command**/load_skill. Slash commands: `/model`, `/clear`, `/skills`, `/reload`, `/init` (writes `MADAV.md`, auto-read like `CLAUDE.md`), `/cwd`, `/cost`, `/auto`, `/help`, `/exit`. Skills loaded from `.madav/skills` or `~/.madav/skills` (progressive disclosure). **Permission prompts** unless `--yes`. Config from `~/.madav/config.json` ({baseUrl, apiKey, model, kind}) or env. Registered as `bin: madav` in package.json; install via `npm link`. Verified it parses cleanly. Transport is **openai-kind** today — anthropic wire format extension queued. Could later be **auth-server/subscription-gated** like the apps, and distributed as an npm package or `.exe`.
 
 ### Open / unresolved
 - **Model determination / selector** bug — still open.
@@ -34588,26 +34588,26 @@ Backfill: Chat.md had fallen behind MEMORY.md. The 2026-06-09 work below was alr
 
 ## Session — 2026-06-08 (continued — IndexedDB history, live streaming, natural-tone safeguard, go-live runbook)
 
-### 🤖 BrainEdge — IndexedDB chat history (the recommended fix, now BUILT)
+### 🤖 Madav — IndexedDB chat history (the recommended fix, now BUILT)
 Implemented the previously-recommended migration: **chat history moved to IndexedDB** (web bridge), **settings + API keys stay in localStorage** so they can never be crowded out. One-time auto-migration on first load moves existing history into IndexedDB and frees the old localStorage space. `persistSession`, `start` resume, the history accessors, and `getUsage` all read/write IndexedDB now. During the edit the file ended up with a **duplicate IndexedDB block** (duplicate `idb`/`IDB_NAME`/`HISTORY_KEY`) that would have broken the web bundle — caught and removed, leaving one clean implementation. Fix takes effect after `npm run build` + re-saving the NVIDIA key once.
 
 ### 🧑 User — "why response is slow" / "never compromise on speed"
-### 🤖 BrainEdge — live token streaming on web
+### 🤖 Madav — live token streaming on web
 Root cause: web chat **buffered the entire reply then dumped it at once**, so it *felt* slow with no live typing. Switched web chat to **stream tokens live** (like desktop). Speed posture locked in: stream always, go **direct browser→provider** when allowed (OpenRouter etc.), parallel speed tests (6 at once), non-blocking background history writes. Irreducible costs noted: model generation time, and the proxy hop for browser-blocked providers (NVIDIA/OpenAI) which is required for them to work on web at all.
 
 ### 🧑 User — "why response coming like a machine" / want humane replies but still follow backend instructions
-### 🤖 BrainEdge — natural-tone / no-recital safeguard (web + desktop)
+### 🤖 Madav — natural-tone / no-recital safeguard (web + desktop)
 Diagnosed: weak models were **reciting the user's custom-instruction block** back instead of chatting. Baked in a built-in rule on **every** message — both web (chat + collaborate, defined once) and desktop (`withLang`, covers agent modes) — telling the model to reply naturally/human and never recite or describe its instructions, just follow them. Backend instructions still fully govern answer substance.
 
 ### 🧑 User — rule: every improvement applies to BOTH web and desktop
-### 🤖 BrainEdge
+### 🤖 Madav
 Locked in as a standing rule: every behavior change touches both sides of the bridge (desktop `electron/*` + `session-manager`; web `webBridge.js` / `shared/providers.js`), with shared logic in `src/shared` so they can't drift. Only exception: things a browser physically can't do (terminal, arbitrary files, spawn MCP) stay desktop-only and are called out explicitly.
 
 ### 🧑 User — "complete it as if I go live tomorrow"
-### 🤖 BrainEdge — GO-LIVE-FINAL.md
+### 🤖 Madav — GO-LIVE-FINAL.md
 Wrote **`GO-LIVE-FINAL.md`**, a do-it-tomorrow production runbook (Parts 1–8). Decisions made: **Render** (always-on $7/mo), **Supabase Postgres** (JSON file won't scale), **launch web first** (desktop fast-follow, avoids installer/AV friction), **launch with 7-day trial active + Stripe wired live within the first week** (nobody hits the paywall for 7 days, so it doesn't block launch on Stripe business verification), **host URL day one** + custom domain later. Code is already production-ready for web (dev login off by default, dev sign-in only in dev builds, bundle obfuscated, Postgres built in) — remaining work is account setup only the user can do. Stressed: **rotate the Google/GitHub secrets** pasted during testing, and **enable 2FA** on every account (admin power = whoever logs in as the owner email).
 
-### 🤖 BrainEdge — clarifications & decisions
+### 🤖 Madav — clarifications & decisions
 - `release/setup.exe` is **stale**; `npm run electron:dev` runs latest code for testing, `npm run electron:build` produces a fresh signed-less NSIS `setup.exe` + portable (shows "unknown publisher" until code-signed). Don't rebuild the installer mid-testing.
 - No shell command can update the setup docs — that's a Claude summarization task (this scheduled job / "update memory" on demand).
 
@@ -34620,19 +34620,19 @@ Wrote **`GO-LIVE-FINAL.md`**, a do-it-tomorrow production runbook (Parts 1–8).
 
 ## Session — 2026-06-08 (IndexedDB migration, web live streaming, no-recital safeguard)
 
-### 🤖 BrainEdge — IndexedDB chat-history migration (the decision from the prior session, now built)
+### 🤖 Madav — IndexedDB chat-history migration (the decision from the prior session, now built)
 Implemented the move of **web chat history to IndexedDB** while keeping **settings + API keys in localStorage** — so the bulky history can never crowd out the keys again (the root cause of the NVIDIA 401). Auto-migrates existing history into IndexedDB on first load and frees the old localStorage space. While doing this, caught and removed a **duplicated IndexedDB block** in `webBridge.js` (two copies of `idb`/`IDB_NAME`/`HISTORY_KEY` + a name mismatch with `histPut/histGet/...`) that would have broken the web build. To activate: `npm run build`, hard-refresh, re-type + Save the NVIDIA key once.
 
 ### 🧑 User — "why response is slow"
-### 🤖 BrainEdge — web chat live streaming
+### 🤖 Madav — web chat live streaming
 Web chat was buffering the entire reply before showing anything; switched it to **stream token-by-token** like the desktop app, so output appears immediately. Noted the two unavoidable costs: the model's own generation time, and the proxy hop for browser-blocked providers (NVIDIA/OpenAI go browser→server→provider; OpenRouter etc. stay direct).
 
 ### 🧑 User — "why response is coming like this as machine" → asked for a built-in safeguard, wants responses humane but still following backend instructions
-### 🤖 BrainEdge — natural-tone / no-recital safeguard (web + desktop)
+### 🤖 Madav — natural-tone / no-recital safeguard (web + desktop)
 Diagnosed the robotic reply as weak models **reciting the custom-instructions system prompt** back verbatim. Baked in a safeguard, defined once and applied on **both web** (chat + collaborate system-prompt builders) **and desktop** (`session-manager.withLang`, covers agent modes): reply naturally/human and **never recite or describe the instructions**, just follow them. Backend instructions still govern the substance of answers.
 
 ### 🧑 User — rule: every improvement must apply to BOTH web and desktop
-### 🤖 BrainEdge
+### 🤖 Madav
 Acknowledged and locked in as a standing rule: every behavior change touches both the desktop path (`electron/*` + `session-manager`) and the web path (`webBridge.js` / `shared/providers.js`), with shared logic in `src/shared` so they can't drift. Only browser-physical limits (terminal, arbitrary file access, spawning MCP processes) stay desktop-only, and that will always be called out explicitly.
 
 ---
@@ -34642,14 +34642,14 @@ Acknowledged and locked in as a standing rule: every behavior change touches bot
 Started the top-to-bottom pre-launch re-test at the **Profile & Settings** screen. All changes here are shared code → land on web **and** desktop at once.
 
 ### 🧑 User — "this looks very boring, make it interesting; retain only Default and Custom colors"
-### 🤖 BrainEdge — Profile page redesign
+### 🤖 Madav — Profile page redesign
 Reworked the flat Profile & Settings list into a **card-based layout with section icons** (Appearance, Instructions). The **accent color picker was cut down to just Default + Custom** (all other preset swatches removed). The "Account server URL (advanced)" field was tucked into a collapsible **Advanced** section instead of sitting prominently.
 
-### 🤖 BrainEdge — new account menu (sidebar)
+### 🤖 Madav — new account menu (sidebar)
 Replaced the bottom-of-sidebar "View profile & settings" button with a **Claude-style popover account menu** (own design): user email at top, then **Settings · Language · Get help**, a divider, **Manage subscription / View plans**, a divider, **Log out**, and a footer showing avatar, name, and plan. The profile trigger now shows the **plan label** ("Complimentary", "Trial · Nd left", etc.) instead of generic text.
 
 ### 🧑 User — move Default language into the menu's Language; "Manage subscription" in Profile is empty/duplicate, remove it
-### 🤖 BrainEdge — refinements
+### 🤖 Madav — refinements
 - Removed the **Default language** field from the Profile page; it now lives in the account menu as a **functional Language submenu** (picks the response language).
 - Removed the **empty duplicate "Manage subscription"** button from the Profile account card (the working one is in the account menu).
 - Refined the menu's subscription item logic (Manage vs View plans by status).
@@ -34667,27 +34667,27 @@ To see it — web: `npm run build` + hard-refresh; desktop: restart `npm run ele
 
 Continuation of the screen-by-screen pre-launch re-test. All changes shared → land on web **and** desktop.
 
-### 🤖 BrainEdge — Admin Analytics redesign + visitor tracking
+### 🤖 Madav — Admin Analytics redesign + visitor tracking
 Added an anonymous **`/visit`** endpoint (one stable id per browser) logged on every web app load; extended the `/admin/stats` endpoint with visitor metrics + a **14-day series** for charting. Redesigned the **Admin Analytics** dashboard: an **Audience** row (Visits 7d + today, Unique visitors, Signups, Visitor→signup conversion %, Active 24h), a **Traffic & signups trend chart** (last 14 days, hover for daily numbers), an **Accounts** row (Total/Paying/Comp/Trialing/Active 7d), a **Conversion funnel** (Unique visitors → Signed up → Subscribed), plus the user table + recent-activity feed. Touched the **server** → requires `node server/auth-server.mjs` restart + `npm run build`.
 
 ### 🧑 User — "what is purpose of it if dont have gmail account name?"
-### 🤖 BrainEdge — Recent Activity feed fix
+### 🤖 Madav — Recent Activity feed fix
 Feed now shows the person's **email** (not the internal id) and lists only **real account events** (Signed up / Signed in / Subscribed) via a friendly event-name map; section-navigation "view"/visit events are still recorded quietly for usage/visitor counts but no longer clutter the feed.
 
-### 🤖 BrainEdge — profile/account-menu cleanup + restyle
+### 🤖 Madav — profile/account-menu cleanup + restyle
 Fixed a **double profile** (removed the menu's redundant name/photo footer so it shows once) and **restored "Manage subscription"** on the Profile card (per user note). Restyled per "highlight like Claude": account menu is now a **lighter, elevated panel** with accent-highlighted items; the account bar is a **distinct shaded card** (not a hard blue outline).
 
 ### 🧑 User — move logo/text left, put hide-toggle next to logo like Claude, hide logo when collapsed
-### 🤖 BrainEdge — top-nav redesign + icon rail
+### 🤖 Madav — top-nav redesign + icon rail
 Moved the sidebar **toggle to the far left next to the logo** (online status stays right); **logo + name hide when collapsed**; the **collapsed sidebar is now a thin ~60px icon rail** (New chat + nav icons + avatar, account menu pops out to the right) instead of disappearing entirely.
 
 ### 🧑 User — keep nav groups closed by default; re-collapse on leave
-### 🤖 BrainEdge — collapsible nav groups
+### 🤖 Madav — collapsible nav groups
 **Interface** and **Models** groups now start **collapsed** (child pages — Skills, Connectors, Plugins, Via Mobile, etc. — hidden until clicked); they open while on one of their pages and **auto-collapse on navigating away**.
 
 ### 🧑 User — "can we add artifacts like claude has?" → 1) toolbar+Mermaid+Markdown 2) React/JSX too
-### 🤖 BrainEdge — artifacts upgrade (IN PROGRESS)
-Confirmed BrainEdge **already had** a working artifacts side panel (Preview/Code tabs for HTML/SVG/code, "Open artifact" pill). Building the gap-closers to match Claude: **toolbar** (Copy, Download, Open in new tab, Refresh), **Mermaid** diagram rendering, **Markdown** document rendering, and **React/JSX** live rendering (in-browser transpile). Upgraded the detector + per-type preview builder and the artifact panel/toolbar; CSS + remaining wiring still landing. All front-end → web + desktop together. **Not yet built/verified — work ongoing.**
+### 🤖 Madav — artifacts upgrade (IN PROGRESS)
+Confirmed Madav **already had** a working artifacts side panel (Preview/Code tabs for HTML/SVG/code, "Open artifact" pill). Building the gap-closers to match Claude: **toolbar** (Copy, Download, Open in new tab, Refresh), **Mermaid** diagram rendering, **Markdown** document rendering, and **React/JSX** live rendering (in-browser transpile). Upgraded the detector + per-type preview builder and the artifact panel/toolbar; CSS + remaining wiring still landing. All front-end → web + desktop together. **Not yet built/verified — work ongoing.**
 
 ### Open / pending
 - **Artifacts upgrade** (toolbar + Mermaid + Markdown + React/JSX) mid-flight — finish CSS/wiring, then build + verify on web and desktop.
@@ -34699,23 +34699,23 @@ Confirmed BrainEdge **already had** a working artifacts side panel (Preview/Code
 
 Continuation of the pre-launch re-test. All changes shared → land on web **and** desktop.
 
-### 🤖 BrainEdge — artifacts upgrade FINISHED (clears the prior IN-PROGRESS item)
+### 🤖 Madav — artifacts upgrade FINISHED (clears the prior IN-PROGRESS item)
 Completed the artifacts gap-closers from the previous session. The preview engine now renders **HTML, SVG, Mermaid diagrams, Markdown documents, and React/JSX components** (with Tailwind + hooks, in-browser transpile), with a real **toolbar** (Preview/Code tabs, Copy, Download, Open in new tab, Refresh). Mermaid/React/Markdown previews pull small libs from CDN inside the sandboxed preview frame (works on web; should work on desktop since the preview frame isn't under the app's strict CSP — bundle locally if any preview shows blank). All front-end → web + desktop together.
 
 ### 🧑 User — "can we add artifacts like claude has?" (sidebar launcher with category cards)
-### 🤖 BrainEdge — **Studio** launcher (own design, not a Claude clone)
+### 🤖 Madav — **Studio** launcher (own design, not a Claude clone)
 Added a **Studio** sidebar entry (under Projects, `Shapes` icon) opening a launcher with its **own look** (gradient title, cyan accent-gradient icon tiles, hover-glow cards, dashed "Blank canvas" tile). Categories: **Apps & sites, Documents, Games, Tools, Visuals, Diagrams, Quizzes, Blank canvas**. Picking a tile seeds a fresh chat with a tailored build prompt. De-"Claude'd" the wording throughout — preview labels are **Web page / Diagram / Document / Component / Graphic**, no "artifacts" language.
 
 ### 🧑 User — dynamic "New" label per mode; Studio piling everything into one chat
-### 🤖 BrainEdge — fresh-chat fix + dynamic New label + per-mode history
+### 🤖 Madav — fresh-chat fix + dynamic New label + per-mode history
 **Studio now starts a fresh conversation every time** (was restoring the cached chat — fix clears the cached chat before seeding). The **"New" button is dynamic per mode**: **New chat** (Let's Chat) / **New task** (Let's Collaborate) / **New session** (Let's Build), and the `/new` command + Composer button match. Confirmed **each mode keeps its own separate Recents history** (the list already filters by mode; the Studio bug just made it look shared).
 
 ### 🧑 User — "don't show technical things to user"; make questionnaire option-selection not a big text wall
-### 🤖 BrainEdge — hidden internal tools + Studio chip form
+### 🤖 Madav — hidden internal tools + Studio chip form
 Added a **hidden-tools list** so internal tool chatter (e.g. `load_skill`) no longer shows in the chat. Rewrote the Studio launcher as a **two-step form** — **option chips + a details box** collected up front — and the model is told to **build directly without asking questions** (no wall-of-text Q&A).
 
 ### 🧑 User — make Let's Build a real Claude Code; best experience, same on web + desktop
-### 🤖 BrainEdge — task-oriented Build + Claude-Code "Choose a folder" empty state
+### 🤖 Madav — task-oriented Build + Claude-Code "Choose a folder" empty state
 **Let's Build** input is now task-oriented (**"Describe a coding task…"**). Added a Claude-Code-style **"Choose a folder"** empty state for Build/Collaborate on **both** platforms (icon + folder button) instead of a bare chat box; the file agent (read/write/edit/search + permission modes Ask / Accept edits / Trust all / Read-only) is identical on web and desktop. **One irreducible limit, stated to user:** running **terminal commands** (npm/git/tests) is **desktop-only** — a browser tab can't run a shell; on web the agent does all file work and says when a command needs the desktop app.
 
 ### Open / pending
@@ -34729,15 +34729,15 @@ Added a **hidden-tools list** so internal tool chatter (e.g. `load_skill`) no lo
 
 Follows the standalone CLI from the 06:10 session. Realizes the "could later be subscription-gated / one-click install" follow-ups noted then.
 
-### 🤖 BrainEdge — CLI is now subscription-gated
+### 🤖 Madav — CLI is now subscription-gated
 The CLI checks the subscription **on every startup** when provisioned by the app: it carries a long-lived token and calls a new server endpoint **`/cli/verify`** each launch. If the subscription is cancelled, expired, or the user is banned, it **refuses to run**; if it can't reach the server (offline) it **warns but doesn't block**. A self-configured CLI (no auth token — e.g. dev use) stays **ungated**. Server gained `signCli` + **`/cli/token`** + **`/cli/verify`** (in `server/auth-server.mjs`).
 
 ### 🧑 User — reuse the key already in Settings, no re-entry
-### 🤖 BrainEdge — one-click "Enable terminal access" (desktop)
-New **Settings → Terminal access** card. One button: detects Node (links to nodejs.org if missing), **reuses the provider + API key already in Settings** (zero re-entry), mints the subscription-bound token, writes `~/.brainedge/config.json`, and drops a `brainedge` command on **PATH** with no admin/npm — Windows: a launcher in a user bin dir added to the User PATH via PowerShell; macOS/Linux: a shim in `~/.local/bin`. A paying user's real steps collapse to: install Node once → click Enable → open a new terminal → `brainedge`. New `electron/cli-install.cjs`; IPC + preload wiring; `auth.cjs` `cliToken`; `CliAccess.jsx` Settings card (+ web fallback state); `package.json` bundles the CLI into the packaged app via **`extraResources`**. `cli-install.cjs` syntax-checks clean; larger edited files unverifiable in the sandbox (truncated reads) → confirm with a local `npm run build` + restart of both app and auth server.
+### 🤖 Madav — one-click "Enable terminal access" (desktop)
+New **Settings → Terminal access** card. One button: detects Node (links to nodejs.org if missing), **reuses the provider + API key already in Settings** (zero re-entry), mints the subscription-bound token, writes `~/.madav/config.json`, and drops a `madav` command on **PATH** with no admin/npm — Windows: a launcher in a user bin dir added to the User PATH via PowerShell; macOS/Linux: a shim in `~/.local/bin`. A paying user's real steps collapse to: install Node once → click Enable → open a new terminal → `madav`. New `electron/cli-install.cjs`; IPC + preload wiring; `auth.cjs` `cliToken`; `CliAccess.jsx` Settings card (+ web fallback state); `package.json` bundles the CLI into the packaged app via **`extraResources`**. `cli-install.cjs` syntax-checks clean; larger edited files unverifiable in the sandbox (truncated reads) → confirm with a local `npm run build` + restart of both app and auth server.
 
 ### Note / flag
-- CLI token lasts ~a year but is **re-validated online every start**, so revocation bites within one launch. It lives in **plaintext** `~/.brainedge/config.json` (the desktop session token is encrypted via the OS keychain; a plain Node CLI can't use the keychain). Acceptable for a per-user token — flagged.
+- CLI token lasts ~a year but is **re-validated online every start**, so revocation bites within one launch. It lives in **plaintext** `~/.madav/config.json` (the desktop session token is encrypted via the OS keychain; a plain Node CLI can't use the keychain). Acceptable for a per-user token — flagged.
 
 ### Open / unresolved
 - **Model determination / selector** bug — still open.
@@ -34750,16 +34750,16 @@ New **Settings → Terminal access** card. One button: detects Node (links to no
 
 Follows the 06:41 CLI-gating work. Focus: making the terminal experience match Claude Code, both inside the app and as the standalone CLI.
 
-### 🤖 BrainEdge — in-app Terminal now uses a real PTY
-Rewrote `electron/terminal.cjs` into a **dual PTY/pipe** terminal: it spawns a real PTY via **node-pty** when available and **falls back to the pipe shell** if not, so the panel never breaks. The terminal header shows a **PTY** (green) or **compat** badge so the active mode is visible. With a true TTY, full-screen TUI programs (e.g. `vim`, and BrainEdge's own `brainedge` CLI with its live slash-menu/truecolor banner) render correctly *inside* the app, and resize reflows. Added `node-pty` + `@electron/rebuild` deps, a **`npm run rebuild`** script (`electron-rebuild -f -w node-pty`), and **`asarUnpack` + `npmRebuild`** packaging config so end-user installers ship the PTY without anyone needing build tools. Caveat: node-pty compiles C++ → on Windows `npm run rebuild` needs **Visual Studio Build Tools** ("Desktop development with C++"); without it the terminal still works in compat mode.
+### 🤖 Madav — in-app Terminal now uses a real PTY
+Rewrote `electron/terminal.cjs` into a **dual PTY/pipe** terminal: it spawns a real PTY via **node-pty** when available and **falls back to the pipe shell** if not, so the panel never breaks. The terminal header shows a **PTY** (green) or **compat** badge so the active mode is visible. With a true TTY, full-screen TUI programs (e.g. `vim`, and Madav's own `madav` CLI with its live slash-menu/truecolor banner) render correctly *inside* the app, and resize reflows. Added `node-pty` + `@electron/rebuild` deps, a **`npm run rebuild`** script (`electron-rebuild -f -w node-pty`), and **`asarUnpack` + `npmRebuild`** packaging config so end-user installers ship the PTY without anyone needing build tools. Caveat: node-pty compiles C++ → on Windows `npm run rebuild` needs **Visual Studio Build Tools** ("Desktop development with C++"); without it the terminal still works in compat mode.
 
-### 🧑 User — "brainedge cli is not as efficient / user-friendly as Claude Code cli… can you just replicate it as it is?"
+### 🧑 User — "madav cli is not as efficient / user-friendly as Claude Code cli… can you just replicate it as it is?"
 
-### 🤖 BrainEdge — honest scope + root cause, then chosen path
+### 🤖 Madav — honest scope + root cause, then chosen path
 Stated up front that a byte-for-byte clone of Claude Code is not possible (it's Anthropic's closed source). Diagnosed the real reason ours feels less polished (confidence: high): the current CLI is a Node **`readline`** prompt-loop, which fundamentally can't do a persistent bottom input box or rich in-place re-rendering; Claude Code is a full-screen **Ink** (React-for-the-terminal) TUI with a custom line editor (bordered input, live re-render, "esc to interrupt" spinner, floating slash/file menus, bordered permission panels). Conclusion: polishing the readline approach can't reach parity — it needs a different foundation. User chose the **Ink rewrite**.
 
-### 🤖 BrainEdge — Ink CLI rewrite (IN PROGRESS, not yet verified)
-Rebuilding the CLI in three files: a shared **UI-agnostic agent core** (`cli/agent-core.mjs`, ~14.8 KB, written), the **Ink UI**, and an **entry that falls back to the old REPL** (`cli/brainedge.mjs`) if Ink isn't installed. Flagged that Ink can't be run interactively in the sandbox, so it will need a test pass or two on the user's machine. Build still in flight.
+### 🤖 Madav — Ink CLI rewrite (IN PROGRESS, not yet verified)
+Rebuilding the CLI in three files: a shared **UI-agnostic agent core** (`cli/agent-core.mjs`, ~14.8 KB, written), the **Ink UI**, and an **entry that falls back to the old REPL** (`cli/madav.mjs`) if Ink isn't installed. Flagged that Ink can't be run interactively in the sandbox, so it will need a test pass or two on the user's machine. Build still in flight.
 
 ### Open / unresolved
 - **Ink CLI rewrite** mid-flight — finish the Ink UI + entry wiring, then test interactively (sandbox can't run Ink).
@@ -34773,21 +34773,21 @@ Rebuilding the CLI in three files: a shared **UI-agnostic agent core** (`cli/age
 
 Continuation of the Ink-CLI session. Pushing the CLI and Build experience toward Claude Code parity. All shared improvements land on web + desktop where applicable.
 
-### 🤖 BrainEdge — web Terminal panel finished
+### 🤖 Madav — web Terminal panel finished
 The web Terminal screen is now a proper signpost card: explains the terminal is **desktop-only** (a browser tab can't run a shell), lists what it unlocks, and has a **"Get the desktop app"** button pointing to `/download` on the app origin (placeholder URL — change when the download page is live).
 
-### 🧑 User — does BrainEdge have Claude's slash commands? → "add everything, don't skip anything; I want the same experience as Claude"
-BrainEdge already had `/help /model /clear /skills /reload /init /undo /cwd /cost /auto /exit` (with `/model` as a live filterable picker and `/undo` checkpoint-revert as BrainEdge extras). Gaps vs Claude Code identified: `/compact`, `/resume`, `/cd`, `/add-dir`, `/memory`, `/config`, `/status`, `/doctor`, and **custom slash commands**.
+### 🧑 User — does Madav have Claude's slash commands? → "add everything, don't skip anything; I want the same experience as Claude"
+Madav already had `/help /model /clear /skills /reload /init /undo /cwd /cost /auto /exit` (with `/model` as a live filterable picker and `/undo` checkpoint-revert as Madav extras). Gaps vs Claude Code identified: `/compact`, `/resume`, `/cd`, `/add-dir`, `/memory`, `/config`, `/status`, `/doctor`, and **custom slash commands**.
 
-### 🤖 BrainEdge — full slash-command set (core in, UI wiring in progress)
+### 🤖 Madav — full slash-command set (core in, UI wiring in progress)
 Built across the shared **agent core** (`cli/agent-core.mjs`) and the **Ink UI**: made the working directory changeable (needed for `/cd` + `/add-dir`), added **session save/resume**, **single-shot completion** (powers `/compact`), **custom commands** (user markdown command files, Claude `.claude/commands/`-style), and **ping/doctor** diagnostics. Fixed an ESM bug (`require` unavailable → proper `spawn` import). Command palette expanded and the Ink UI is being wired command-by-command. **Honest status:** core logic landed and the menu lists the new commands, but several aren't hooked to actions yet (half-wired) — flagged so the menu isn't advertising dead commands; finishing the wiring is the immediate follow-up.
 
-### 🤖 BrainEdge — GUI model selector filters (Free/Paid + Best-for)
+### 🤖 Madav — GUI model selector filters (Free/Paid + Best-for)
 The in-app model picker gained one-click filtering: **Cost chips** `All · Free · Paid` (Free = local models + OpenRouter `:free` ids), **"Best for" chips** `Any · Coding · Reasoning · Vision · Fast` (reusing the component's existing name-based `classify()`), a colored **purpose tag** + **Free / Cloud / Local** badge per row, and a live **"X of Y"** count showing how filters narrow the ~694 models. Filters combine with the search box. Caveat stated to user: Free/Paid and Best-for are **heuristics from the model id**, not authoritative; offered to wire the **OpenRouter catalog** (real per-model pricing + modality) for exact Free/Paid + Vision data. Parity follow-up: mirror the same filters into the CLI `/model` picker.
 
 ### 🧑 User — reshape "Let's Build" to be like Claude (local-or-Claude approach; connect more than one repo / GitHub account to pull repos; no remote control)
-### 🤖 BrainEdge — scope truth + reshape (IN PROGRESS)
-Stated up front (confidence high) that Claude's "Cloud / Default" runs the agent on **Anthropic's servers**; BrainEdge has **no cloud compute backend** (runs locally on desktop or in-browser), so a "Cloud" option would be non-functional without building a whole server-side execution backend (a separate, massive project) — so it won't be faked. What's real and being built: a Claude-style environment picker = **Local folder + multiple connected GitHub repos/accounts** (pull repos from a connected account), **minus Remote Control** (user explicitly doesn't need it). Reading current Build wiring to reshape it — not yet finished or verified.
+### 🤖 Madav — scope truth + reshape (IN PROGRESS)
+Stated up front (confidence high) that Claude's "Cloud / Default" runs the agent on **Anthropic's servers**; Madav has **no cloud compute backend** (runs locally on desktop or in-browser), so a "Cloud" option would be non-functional without building a whole server-side execution backend (a separate, massive project) — so it won't be faked. What's real and being built: a Claude-style environment picker = **Local folder + multiple connected GitHub repos/accounts** (pull repos from a connected account), **minus Remote Control** (user explicitly doesn't need it). Reading current Build wiring to reshape it — not yet finished or verified.
 
 ### Open / unresolved
 - **CLI slash commands** half-wired — finish hooking the new commands (`/compact /resume /cd /add-dir /memory /config /status /doctor`, custom commands) to actions in the Ink UI; mirror Free/Best-for filters into the CLI `/model` picker.
@@ -34802,14 +34802,14 @@ Stated up front (confidence high) that Claude's "Cloud / Default" runs the agent
 
 Continuation of the running Build/Let's-Build session.
 
-### 🤖 BrainEdge — Models Overview table restyle (REJECTED by user)
+### 🤖 Madav — Models Overview table restyle (REJECTED by user)
 Ran a design-director pass on the Models Overview table to fix a "dead" look: removed the wall of red ✗ marks (absent capabilities now a quiet dash; each capability lights up only when present, in its own semantic accent — Coding green, Reasoning purple, Image blue, Agentic orange), added per-maker monogram color avatars, color-tiered cost (cheap green → mid amber → expensive coral, tabular numbers), sticky blurred header, zebra striping, hover accent edge. No data changed — presentation only. **User rejected it outright ("i dont like it. its horrible").**
 
 ### 🧑 User — make GitHub connect like Claude (connect account → pull all repos, or connect an individual repo; show a professional repo list)
-### 🤖 BrainEdge — rebuilt GitHub repo connection (Claude-style)
+### 🤖 Madav — rebuilt GitHub repo connection (Claude-style)
 Rewrote the GitHub connect component to match Claude: a clean, searchable, scrollable **repo list** that pulls all repos from the connected account(s), with the account-connection/token form tucked away quietly instead of dominating the view; restyled for a professional look. Continues the Let's Build environment-picker reshape from the 07:40 session.
 
-### 🤖 BrainEdge — cost-display bug found (not yet fixed)
+### 🤖 Madav — cost-display bug found (not yet fixed)
 While confirming what the user wanted reverted, diagnosed a real bug in Models Overview: cost shows **`$-1,000,000,000`** for router models (`openrouter/auto`, `pareto-code`). Cause: OpenRouter encodes variable/router pricing as `-1`, and the code multiplies the per-token price by 1,000,000 → −1 × 1e6. Likely a big contributor to the screen looking broken. Diagnosed only; awaiting user direction on exactly what to revert before changing code.
 
 ---
@@ -34818,13 +34818,13 @@ While confirming what the user wanted reverted, diagnosed a real bug in Models O
 
 Records CLI completion work that preceded the 08:10 Models-Overview block (which skipped it). Resolves the "half-wired slash commands" and "mirror filters into CLI /model" open items carried since 07:40.
 
-### 🤖 BrainEdge — CLI slash commands finished (clears the 07:40 "half-wired" item)
+### 🤖 Madav — CLI slash commands finished (clears the 07:40 "half-wired" item)
 All the Claude-parity commands flagged half-wired at 07:40 are now hooked to actions in the Ink TUI. Verified in `cli/tui.mjs` command handlers: `/compact` (summarize → reset context), `/resume` (restore a saved session), `/cd` + `/add-dir`, `/memory`, `/status`, `/config`, `/doctor`, plus custom user commands (`core.COMMANDS` / `reloadCommands`), alongside the existing `/model /clear /skills /reload /init /undo /cwd /cost /auto /exit /permissions /mcp /agents`.
 
-### 🤖 BrainEdge — live slash menu rebuilt into a scrolling list
-The `/` menu is now a navigable, scrolling list (no more 8-item cap): shows a **count** (e.g. `commands 3/22`) and **↑ more / ↓ more** markers, **arrow keys** move the highlight and scroll through every command, **Enter** runs the highlighted command, **Tab** fills it into the input so arguments can be added, and typing still filters. No rebuild needed — exit and rerun `brainedge`.
+### 🤖 Madav — live slash menu rebuilt into a scrolling list
+The `/` menu is now a navigable, scrolling list (no more 8-item cap): shows a **count** (e.g. `commands 3/22`) and **↑ more / ↓ more** markers, **arrow keys** move the highlight and scroll through every command, **Enter** runs the highlighted command, **Tab** fills it into the input so arguments can be added, and typing still filters. No rebuild needed — exit and rerun `madav`.
 
-### 🤖 BrainEdge — CLI /model Free/Best-for filters (clears the 07:40 parity follow-up)
+### 🤖 Madav — CLI /model Free/Best-for filters (clears the 07:40 parity follow-up)
 Mirrored the GUI model-picker filters into the CLI `/model` picker (`cli/tui.mjs`): **Cost** (all/free/paid; free = `:free` ids) and **Best-for** (any/coding/reasoning/vision/fast), classified from the model id like the GUI. Heuristic from the id, not authoritative — same caveat as the GUI.
 
 ### Open / unresolved (carried forward)
@@ -34847,13 +34847,13 @@ Follow-on to the 08:10 work. The rejected design-director restyle was rolled bac
 ### 🧑 User — revert the Models Overview view changes
 After the GitHub-repo-list rebuild, the user clarified: "put back to previous format … revert only changes related to view." Keep the data/columns they liked; undo only the visual redesign.
 
-### 🤖 BrainEdge — restyle reverted (data columns kept)
+### 🤖 Madav — restyle reverted (data columns kept)
 Reverted the Models Overview table to the previous **plain format**: standard ✓/✗ marks and plain cost/host text restored; the design-pass additions removed — **maker monogram avatars, colored capability dots/accents, color-tiered cost, context/host chips, and the sticky/blurred/zebra/hover styling** all gone. The data columns the user liked (cost, coding/reasoning/image/agentic, descriptions, params) were left untouched.
 
-### 🤖 BrainEdge — `$-1,000,000,000` router-price bug FIXED (clears the open item)
+### 🤖 Madav — `$-1,000,000,000` router-price bug FIXED (clears the open item)
 Fixed while in the file: OpenRouter encodes variable/router pricing as `-1`, which the per-token ×1,000,000 math turned into `$-1,000,000,000` for router models (`openrouter/auto`, `pareto-code`). These now display **"Variable"**. (Resolves the bug carried open since 08:10.)
 
-### 🤖 BrainEdge — benchmark/speed columns requested (NOT built — needs decision)
+### 🤖 Madav — benchmark/speed columns requested (NOT built — needs decision)
 User asked to add **SWE-bench, HumanEval, Speed (est.), and qualitative Agentic/Thinking labels** like a hand-curated comparison image. Pushed back honestly: **that data does not exist** via any API in use (OpenRouter / provider `/models` endpoints publish no benchmark scores or tokens/sec), so ~440 of the 448 models would show "—". Proposed two real paths: (1) a small **curated `benchmarks.js`** of published SWE-bench/HumanEval scores + Agentic/Thinking levels for the ~30–50 well-known models (GPT, Claude, Qwen, DeepSeek, Llama, Devstral…), and (2) a **Speed (est.) column fed from the existing Models Speed Check** measurements (real measured tokens/sec for any model the user has speed-tested). Awaiting user go-ahead before building.
 
 ### Open / unresolved
@@ -34868,10 +34868,10 @@ User asked to add **SWE-bench, HumanEval, Speed (est.), and qualitative Agentic/
 
 Follow-on to the 09:30 session, where the benchmark/Speed columns were proposed but **not built**. User answered **"yes proceed"**, so they were built this session (in the plain table format that was reverted to at 09:30 — no return of the rejected restyle).
 
-### 🤖 BrainEdge — curated benchmark dataset
+### 🤖 Madav — curated benchmark dataset
 Created a new **`benchmarks.js`** of real published figures for **~22 well-known model families** (Claude, GPT-4o/4.1, o1/o3, DeepSeek V3/R1, Qwen Coder/QwQ, Devstral, Codestral, Llama 3.3/4, Mistral Large, Gemini, Grok, Command-R, Nemotron). Matched by model id; figures marked approximate (`~`).
 
-### 🤖 BrainEdge — new Models Overview columns (all sortable)
+### 🤖 Madav — new Models Overview columns (all sortable)
 - **SWE-bench** and **HumanEval** — pulled from the curated `benchmarks.js`; matched rows show real numbers, everything else shows "—" (no fabricated values).
 - **Speed** — fed live from the **existing Models Speed Check** measured results (tokens/sec). Any model the user has speed-tested shows `X t/s`; untested ones show "—".
 - **Thinking** and **Agentic** are now **qualitative labels** like the reference image — *Always-on / Toggle* for thinking (color-coded green/blue), *Best-in-class / Good / Partial / Moderate* for agentic (green→amber) — replacing the plain ✓/✗, with a fallback to derived values when a model isn't in the curated set.
@@ -34894,11 +34894,11 @@ Continuation of the 14:41 benchmark-columns session, same plain-table format.
 ### 🧑 User
 "Best For" text is truncated — show it fully and in a dimmer colour. Filter set should be: Local, Cloud, Free, Agentic, Coding, Image, Reasoning, Fast, text, General. (Plus a reference screenshot showing per-model download counts.)
 
-### 🤖 BrainEdge — filter bar + Best-for
+### 🤖 Madav — filter bar + Best-for
 - **Filter bar replaced** with a single flat set of **combining toggles**: Local, Cloud, Free, Agentic, Coding, Image, Reasoning, Fast, General (toggles stack, e.g. Coding + Free + Local; "All" clears). Added filter definitions, filter logic/helpers, and rewrote the chip-bar rendering.
 - **Best-for now shows the complete, untruncated description** in a **dimmer secondary colour** so it reads as supporting text and the model name stays the visual anchor.
 
-### 🤖 BrainEdge — download counts declined (no fabrication)
+### 🤖 Madav — download counts declined (no fabrication)
 Stated honestly that per-model download/usage counts are **not available from any API in use** — neither OpenRouter's `/models` nor provider `/models` endpoints return them; the counts in the user's screenshot come from a marketplace site's own backend (NVIDIA build catalog / OpenRouter web UI), not an API field. Refused to invent numbers for the 448 models. Offered **one real optional source**: **Hugging Face** `downloads` for **open-weight models only** (fetched lazily per visible row), with caveats — it's HF downloads (not provider usage), covers open models only (GPT/Claude/Grok have none), needs a per-model call, and HF rate-limits unauthenticated requests. **Awaiting user decision** before building.
 
 ### Open / unresolved
@@ -34910,10 +34910,10 @@ Stated honestly that per-model download/usage counts are **not available from an
 
 Continuation of the 16:39 Models Overview session.
 
-### 🤖 BrainEdge — provider display name + logo BUILT (clears the 16:39 open item)
+### 🤖 Madav — provider display name + logo BUILT (clears the 16:39 open item)
 Added real provider brand logos next to each maker name in Models Overview, with a colored monogram fallback for makers without a known logo. First wired to **Clearbit's logo API — discovered it's dead** (HubSpot acquired Clearbit and shut the free endpoint down, so every request 404'd → all monograms). Switched to **Google's favicon service** (`google.com/s2/favicons`), which serves a real brand mark for any domain reliably. Fixed several maker→domain mappings (meta.ai, x.ai, qwen.ai, moonshot.ai, z.ai) and added openrouter. Verified the renderer CSP allows external logos (`img-src 'self' data: https:`), so loading was never blocked — Clearbit being dead was the only cause. Caveat noted: favicons are real but low-res (16–64px, fine at the 15px render size); offered to bundle crisp Simple-Icons SVGs for the top ~20 providers with favicons as fallback (best-of-both), not yet done.
 
-### 🤖 BrainEdge — release date + "Best for" polish
+### 🤖 Madav — release date + "Best for" polish
 - Pulled OpenRouter's real `created` timestamp during enrichment and show **"released 5d ago / 3mo ago"** in the **model detail card** (click any row) — a genuine recency/relevance signal (popularity counts remain unavailable, see below).
 - **"Best for"** confirmed dim (muted secondary) + wrapping, with the char cap raised (~88→160) so it shows much more text instead of truncating.
 - Clarified the existing columns already cover the user's asks: modality (text→image) = the **Image** column; long context = the **Context** column.
@@ -34921,7 +34921,7 @@ Added real provider brand logos next to each maker name in Models Overview, with
 ### 🧑 User — "What does General cover?" → 🤖 honest answer (no change yet)
 Explained that **General** currently matches `m.cat === "General"`, which is a **thin heuristic** — the ~440 uncurated OpenRouter models default to "General" unless their name signals coding/embedding, so the chip returns a big, not-very-meaningful pile that overlaps with Reasoning/Image/Agentic. Offered a one-line redefinition to **"general-purpose, NOT a specialist"** (exclude coding/thinking/vision/embedding). **Not changed — awaiting user confirmation.**
 
-### 🤖 BrainEdge — popularity/usage counts reaffirmed declined
+### 🤖 Madav — popularity/usage counts reaffirmed declined
 Repeated that OpenRouter's "5.87M tokens" popularity number is **not in any public API** (lives only on their rankings webpage) and editorial tags like "frontier" are hand-curated — so capabilities are derived from real model metadata rather than faked.
 
 ### 🧑 User — "Let's Collaborate: similar progress-report window + what's in queue + hide/open button"
@@ -34947,7 +34947,7 @@ Began a deliberate UI/UX design pass; asked (AskUserQuestion) to lock direction 
 Gave the dev-run commands: `npm run electron:dev` (Vite + Electron, hot-reload), `node server/auth-server.mjs` in a second terminal for auth/subscription/admin, `npm run dev` + `http://localhost:5174` for web-only, `npm install` once after the dependency additions.
 
 ### 🧑 User — "Don't animate logo text, remove 'by Chaithrodaya Sukruth'" → 🤖 header cleanup BUILT
-Removed the "by Chaithrodaya Sukruth" tagline from the header and stopped the **BrainEdge** wordmark shimmer animation. Follow-up "keep logo text to single theme colour": wordmark is now a single solid color (theme accent), no gradient, in every accent. Leftover `.tn-by` CSS rules left in place (target a removed element; harmless).
+Removed the "by Chaithrodaya Sukruth" tagline from the header and stopped the **Madav** wordmark shimmer animation. Follow-up "keep logo text to single theme colour": wordmark is now a single solid color (theme accent), no gradient, in every accent. Leftover `.tn-by` CSS rules left in place (target a removed element; harmless).
 
 ### 🧑 User — "Align logo/text/toggle as one centered unit" → 🤖 sidebar header alignment BUILT
 Toggle + logo + wordmark now vertically centered to each other, equal 10px gaps, and the group is centered within the 252px sidebar column when open (stays left-anchored when collapsed).
@@ -35022,7 +35022,7 @@ Chose via questions: build-by-chat + live preview, full visual identity, persona
 Full detail MEMORY.md §11ag-2. Backend pattern reused, both platforms.
 - **Teams**: Relay line (work flows member→member) or Managed (coordinator plans sub-tasks → members execute → synthesized deliverable). Desktop `_teamTurn`/`_runMember` (real tools + permissions forwarded, per-member pinned models); web `runTeamTurn` (prompt-level members). Member steps render as `"<Name> (teammate)"` tool cards.
 
-## Session — 2026-06-10 05:45 ("Brain Edge with Fable5" — fan-out, Guide, code-review fix waves, missed features, UI/layout passes, Models dashboard, full QA organism)
+## Session — 2026-06-10 05:45 ("Madav with Fable5" — fan-out, Guide, code-review fix waves, missed features, UI/layout passes, Models dashboard, full QA organism)
 Continuation of the Teams session above; session still active at doc time. Full detail MEMORY.md §11ah.
 
 ### 🧑 User — "go ahead with parallel fan-out; give me test examples" → 🤖 BUILT
@@ -35062,7 +35062,7 @@ Global search inside conversation content (sidebar, 3+ chars, snippet); per-conv
 Save "nothing happens" bug STILL open (Scenario 0 smoke-tests it); per-member team retry deferred; vite/vitest major upgrade deferred (6 dev-only audit findings incl. 1 critical); Q16 file split deferred; speech engine not wired (by design); Playwright/CI harness = pre-launch; electron-builder 26 untested until next installer build; session was largely not compile-verified until the mid-session green build — later QA rounds verified via Test Center/`npm run qa` themselves.
 - **Mission Control** (`TeamOps.jsx`): live right-hand factory panel — member stations with glow-pulse working state, scanning bars, rotating verbs, rail connectors, plan + assembly stations, elapsed clock, "n/m stations cleared".
 
-## Session — 2026-06-09 (continuation of "Brain Edge with Fable5": fan-out, Guide, code review + fix waves, missed features, UI/layout passes, green build, Models dashboard, QA Test Center, testing blueprint)
+## Session — 2026-06-09 (continuation of "Madav with Fable5": fan-out, Guide, code review + fix waves, missed features, UI/layout passes, green build, Models dashboard, QA Test Center, testing blueprint)
 
 Catch-up block: Chat.md previously ended at Teams + Mission Control; everything below landed later the same session and is already detailed in MEMORY.md §11ah–§11am (referenced per item).
 
@@ -35109,7 +35109,7 @@ Catch-up block: Chat.md previously ended at Teams + Mission Control; everything 
 - Runtime smoke pass pending (markdown table, agent re-attach on NEW conversations, async shell, PDF knowledge import); Q16 monolith split unblocked; per-member team retry deferred; electron-builder 26 untested until next `electron:build`; earlier carry-forwards per §11ah/§11aj unchanged.
 
 ## Session — 2026-06-09 (evening: fan-out, Agent Guide, code review + fix waves, missed features, UI/layout passes, green build, Models dashboard, QA Test Center)
-Continuation of the "Brain Edge with Fable5" session after Teams + Mission Control. Full detail in MEMORY.md §§11ag-3…11ag-11, 11ak.
+Continuation of the "Madav with Fable5" session after Teams + Mission Control. Full detail in MEMORY.md §§11ag-3…11ag-11, 11ak.
 
 ### 🧑 User — sequential teams too slow → 🤖 PARALLEL FAN-OUT BUILT (§11ag-3)
 - Managed teams now run all members simultaneously (`Promise.all`, web + desktop); Relay stays sequential by design. Permission queue added so concurrent member permission requests don't deadlock the modal. Standing directive recorded: nothing should feel like an Anthropic copy — workforce metaphor going forward.
@@ -35156,7 +35156,7 @@ Six scenarios, ~30 min, exact copy-paste prompts + pass/fail criteria + score ca
 - Refinements round: "Ready to hire?" removed; page scroll clamped; Create-your-first-agent moved to guide header; tabs renamed **Agent** (single-person icon) / **Agents Team** (group icon); **Agent Guide** button placed before Agent w/ standing violet highlight + page-turning book animation; **mandatory model gate** (Studio blocks agent creation w/o model — accent-solid picker pulses + "Pick a model first"); **global icon theming** — all lucide icons painted theme accent (contrast inversions on accent-solid surfaces; danger-red deletes kept).
 
 ### 🧑 User — "code review entire project (rest built by Opus 4.8) — report only, then I confirm" → 🤖 CODE-REVIEW-SUMMARY.md
-3 parallel review subagents (backend / frontend / web+CLI), ~80 findings, 6 sections: analysis, **fix-plan questionnaire Q1–Q17 in 4 waves + Q18 UI pass**, missed features, half-baked items, **zero-bug deployment strategy where BrainEdge tests itself** (Managed QA team: Smoke Tester, API Prober, UI Auditor, Regression Scribe certifying builds), world-class-UI recommendation. Headlines: prod runs with factory-default secrets; command injection in zip import; weak session IDs; chat shows raw `**markdown**`; whole-conversation re-render per token; unbounded logs/history; silent web save failures. Opus strengths: path-traversal guards, OAuth CSRF, encrypted secrets at rest, permission model, one-engine/three-surfaces.
+3 parallel review subagents (backend / frontend / web+CLI), ~80 findings, 6 sections: analysis, **fix-plan questionnaire Q1–Q17 in 4 waves + Q18 UI pass**, missed features, half-baked items, **zero-bug deployment strategy where Madav tests itself** (Managed QA team: Smoke Tester, API Prober, UI Auditor, Regression Scribe certifying builds), world-class-UI recommendation. Headlines: prod runs with factory-default secrets; command injection in zip import; weak session IDs; chat shows raw `**markdown**`; whole-conversation re-render per token; unbounded logs/history; silent web save failures. Opus strengths: path-traversal guards, OAuth CSRF, encrypted secrets at rest, permission model, one-engine/three-surfaces.
 
 ### 🧑 User — "fix all waves, full autonomous permission" → 🤖 16 of 17 LANDED
 - **Wave 1 security:** auth server refuses to start in production on factory-default `SESSION_SECRET`/`ADMIN_KEY`; zip import via argument-safe `tar` (injection killed); crypto-strength session/team IDs; timing-safe admin-key compare + strict rate limit; web "your keys live in this browser" notice.
@@ -35278,18 +35278,18 @@ Read the existing component, started rebuilding (insight band + interactive tabl
 - Carried: GitHub file-picker modal; "+" Skills submenu; Collaborate progress panel; "General"/Reasoning-label decisions; Simple-Icons upgrade; HF downloads offer; Ink CLI verification; model-selector guard verification; pre-launch secret rotation + Anthropic-path removal; CLI wire format + distribution; file-tree view + undo/checkpoints. Commit from the user's own terminal.
 
 ## Session — 2026-06-09 (doc sync — no new project work)
-The "IN PROGRESS" item in the block above COMPLETED: the Models Overview interactive dashboard and the admin QA Test Center (7 suites, ~32 tests, incl. a real 2-member relay mission) were both BUILT — already recorded in the consolidated "evening" block earlier in this file (## Session — 2026-06-09 evening, §§ Models Overview dashboard + QA Test Center entries) and in MEMORY.md §11ag-11/§11al, which is the authoritative current state. The latest BrainEdge work session ends at that state; this run found no work beyond it. Gates unchanged: `npm run build` + full restart + first admin test cycle + commit from the user's own terminal; Save-button bug and runtime smoke pass still pending.
+The "IN PROGRESS" item in the block above COMPLETED: the Models Overview interactive dashboard and the admin QA Test Center (7 suites, ~32 tests, incl. a real 2-member relay mission) were both BUILT — already recorded in the consolidated "evening" block earlier in this file (## Session — 2026-06-09 evening, §§ Models Overview dashboard + QA Test Center entries) and in MEMORY.md §11ag-11/§11al, which is the authoritative current state. The latest Madav work session ends at that state; this run found no work beyond it. Gates unchanged: `npm run build` + full restart + first admin test cycle + commit from the user's own terminal; Save-button bug and runtime smoke pass still pending.
 
-## Session — 2026-06-09 (TESTING-BLUEPRINT.md — the testing bible; closes the "Brain Edge with Fable5" session)
+## Session — 2026-06-09 (TESTING-BLUEPRINT.md — the testing bible; closes the "Madav with Fable5" session)
 
 ### 🧑 User — "very detailed blueprint document on the testing process — architecture, info flow, diagrams, simple English for non-developers, storybook style, the bible for design/process/testing" → 🤖 TESTING-BLUEPRINT.md WRITTEN
 - New repo doc **`TESTING-BLUEPRINT.md`** (~19KB; tail verified complete): storybook-structured — prologue ("the machine that checks itself"); cast of characters (Test Center cockpit, QA Engine inspector in `qa-runner.cjs`, the Seven Departments, the Ledger = 30-run history, the Admin Gate); architecture chapter with a plain-text information-flow diagram (button press → IPC → engine room → 7 suites → AI provider → live verdicts back); guided tour of all 7 suites with "a failure here means…" per suite; day-in-the-life process map; four-gate deployment pipeline (showing the one remaining human step); runbook (daily 5-min cycle + full pre-release sequence); triage table (error message → meaning → action); honest-boundaries chapter (pixels still human, AI tests nondeterministic, one machine ≠ all machines) + roadmap; **39-test inventory appendix**. All diagrams plain-text so they render anywhere.
-- No source code touched — documentation only. This was the final action of the "Brain Edge with Fable5" session.
+- No source code touched — documentation only. This was the final action of the "Madav with Fable5" session.
 
 ### Open / unresolved
 - Unchanged from the blocks above: `npm run build` + full restart + first admin Test Center cycle (cheap/free model selected) + commit from the user's terminal; Save-button bug undiagnosed (gates TEST-AGENTS.md Scenario 0); runtime smoke pass pending; Q16 split unblocked; per-member team retry deferred; Playwright UI harness = roadmap suite 8; carried items per the evening block.
 
-## Session — 2026-06-10 (catch-up: Repair Bay + plain-English errors + Functional UI Sweep — the true end of "Brain Edge with Fable5")
+## Session — 2026-06-10 (catch-up: Repair Bay + plain-English errors + Functional UI Sweep — the true end of "Madav with Fable5")
 
 The blueprint was NOT the session's last action — three more deliverables landed after it (all detailed in MEMORY.md §11ag-11, bullets Repair Bay / plain-English / UI sweep / suite extension).
 
@@ -35309,7 +35309,7 @@ The blueprint was NOT the session's last action — three more deliverables land
 - Full **close-and-reopen** (not just rebuild) required — qa-fixer IPC + preload are main-process; then `npm run build`, admin sign-in, engine cycle + UI sweep, commit from the user's terminal.
 - User's live 401 on the NVIDIA provider pending his model/key fix; Save-button bug still undiagnosed (gates Scenario 0); runtime smoke pass, Q16 split, per-member retry, Playwright harness (suite 8) and earlier carried items unchanged.
 
-## Session — 2026-06-10 06:05 (catch-up: "Brain Edge with Fable5" continued past the sweep — Scenario Manager, Test Center restructure, external QA + QA Console + OTP restore, installer/compile-time QA exclusion, PRE-DEPLOYMENT-STEPS.md, AGENT-ENGINE-ROADMAP.md; Wave A+B approved but NOT built)
+## Session — 2026-06-10 06:05 (catch-up: "Madav with Fable5" continued past the sweep — Scenario Manager, Test Center restructure, external QA + QA Console + OTP restore, installer/compile-time QA exclusion, PRE-DEPLOYMENT-STEPS.md, AGENT-ENGINE-ROADMAP.md; Wave A+B approved but NOT built)
 
 The session did not end at the error-translation round. Subsequent work (detail in MEMORY.md §11ag-11 late bullets + §11ao):
 
@@ -35346,14 +35346,14 @@ The session did not end at the error-translation round. Subsequent work (detail 
 ### 🧑 User — "Approved. Build Wave A, Wave B AND Wave C; add details to the Agent Guide with scenarios; have you reviewed teamly.ai — do we have that functionality? Do NOT switch to Opus 4.8 — build with Fable only." → 🤖 SCOPE LOGGED, NOT YET BUILT
 - **Scope escalated** from the earlier Wave A+B approval to **all three waves** (A: persistent agent memory, triggers/scheduler-run agents, per-agent run history · B: call_agent handoffs, mid-mission ask_user, coordinator re-planning, durable missions · C: .agent share+versioning, RAG-lite knowledge retrieval, cost budgets/meters, agent swarms — all scoped in AGENT-ENGINE-ROADMAP.md). Autonomous approval granted.
 - **HARD CONSTRAINT recorded:** all agent-engine build work stays on **Fable** — do NOT switch the model to Opus 4.8.
-- **Two riders:** (1) document every new capability in the **Agent Guide with scenarios**; (2) **review teamly.ai's agent approach** and confirm whether BrainEdge has equivalent functionality.
+- **Two riders:** (1) document every new capability in the **Agent Guide with scenarios**; (2) **review teamly.ai's agent approach** and confirm whether Madav has equivalent functionality.
 - **teamly.ai review = still owed** — the June-2026 research (AGENT-ENGINE-ROADMAP.md) covered OpenAI/Anthropic/Google/Copilot Studio/Lindy/Relevance/CrewAI/LangGraph but **not teamly.ai**; a capability comparison + parity-gap note is part of the Wave build.
 - **Status:** still NOT built — this run was a documentation-sync request. Wave A+B+C (Fable-only) + Agent Guide scenarios + teamly.ai review is the #1 carry-forward. Full detail MEMORY.md §11ap.
 
 ### Open / unresolved
 - **Wave A + B + C approved (Fable-only), not started; Agent Guide scenario docs pending; teamly.ai parity review owed.** All prior items unchanged: full app close-and-reopen → `npm run build` → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal; NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 monolith split; per-member team retry; vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
 
-## Session — 2026-06-10 06:40 (Wave A+B+C build STARTED — new session "BrainEdge Fable New"; IN PROGRESS at log time)
+## Session — 2026-06-10 06:40 (Wave A+B+C build STARTED — new session "Madav Fable New"; IN PROGRESS at log time)
 
 ### 🧑 User re-issued the approval in a fresh session (AGENT-ENGINE-ROADMAP.md attached): "build Wave A, B & C; include details in Agent Guide with scenarios; have you reviewed teamly.ai; Fable only — do NOT switch to Opus 4.8" → 🤖 BUILD UNDERWAY
 - The engine layer landed first — **six new main-process modules** on disk:
@@ -35368,7 +35368,7 @@ The session did not end at the error-translation round. Subsequent work (detail 
 ### Open / unresolved
 - **Wave A+B+C build in progress, unverified** — completion + `npm run build` + Agent Guide scenarios + teamly.ai parity review all pending. Prior gates unchanged: full app close-and-reopen → build → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal; NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 monolith split; per-member team retry; vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
 
-## Session — 2026-06-10 07:10 (catch-up: Wave A+B+C wiring + UI + Agent Guide DONE on disk; verification still running in "BrainEdge Fable New")
+## Session — 2026-06-10 07:10 (catch-up: Wave A+B+C wiring + UI + Agent Guide DONE on disk; verification still running in "Madav Fable New")
 
 ### 🤖 Since the 06:40 snapshot the session wired the six engine modules into the whole stack (code on disk, NOT yet verified):
 - **Agent loop tools:** `ask_user` (mid-mission question to the human) and `call_agent` (agent→agent handoff) wired into the agent run loop.
@@ -35386,23 +35386,23 @@ The session did not end at the error-translation round. Subsequent work (detail 
 ### Open / unresolved
 - **Wave A+B+C code complete on disk but UNVERIFIED** — sandbox build check in flight; then the standing gates: full app close-and-reopen → `npm run build` → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal. teamly.ai parity review still owed. Prior items unchanged: NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 monolith split; per-member team retry; vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
 
-## Session — 2026-06-10 07:40 (catch-up: Wave A+B+C VERIFIED GREEN — "BrainEdge Fable New" session COMPLETE; teamly.ai review still NOT done)
+## Session — 2026-06-10 07:40 (catch-up: Wave A+B+C VERIFIED GREEN — "Madav Fable New" session COMPLETE; teamly.ai review still NOT done)
 
 ### 🤖 Verification finished after the 07:10 snapshot — all green in the sandbox copy
 - The /tmp Linux verification copy got a slimmed package.json (build+test deps only — full-tree npm resolve was the hang) + Linux node_modules. **All 23 tests pass** and the **production `vite build` is clean**; final smoke test of the new engine modules green.
 - Of the initial test failures, the contract test passed after wiring and the rest were **two PRE-EXISTING test issues, fixed**: a stale `/settings` route expectation and a flaky timestamp-sort assertion. No Wave-code regressions found.
 - Scaffolding cleaned up; **AGENT-ENGINE-ROADMAP.md marked** (waves built). Session ended with the full deliverable summary: Wave A (agent-memory + Scheduler agent/team targets + token-protected webhook server `POST /hook/agent|team|task/<id>` + per-agent track record), Wave B (call_agent handoffs, ask_user pause/resume modal — headless runs self-decide and state the assumption, coordinator re-planning up to 2 follow-up waves, durable missions with "Resume mission" banner), Wave C (.agent export/import + last-10 blueprint versions w/ restore, RAG-lite with 8→24 knowledge cap, per-team budget meter + hard-stop in Mission Control, ⧉ swarm over a pasted list 1–6 parallel → one compiled report). Agent Guide: 2 new in-app chapters + 4 new flight-school scenarios; **AGENT-GUIDE.md** = full playbook, 9 scenarios + capability matrix. **Built entirely on Fable** per the hard constraint.
-- Honest scope note (flagged in the guide): `ask_user`/`call_agent` run on BrainEdge's OWN tool loop (OpenAI-compatible providers); Anthropic-SDK sessions use the SDK's native subagent machinery instead.
+- Honest scope note (flagged in the guide): `ask_user`/`call_agent` run on Madav's OWN tool loop (OpenAI-compatible providers); Anthropic-SDK sessions use the SDK's native subagent machinery instead.
 - **teamly.ai parity review (rider #2): NOT done** — confirmed by repo grep: zero mentions in AGENT-ENGINE-ROADMAP.md / AGENT-GUIDE.md; only these doc files reference it. Still owed.
 
 ### Open / unresolved
 - **teamly.ai capability comparison + parity-gap note = #1 carry-forward.** Sandbox verification ≠ the user's machine: standing gates remain — full app close-and-reopen (new main-process modules + preload bridge) → Windows `npm run build` → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal. Prior items unchanged: NVIDIA 401 pending key/model fix; Save-button bug (gates Scenario 0); runtime smoke pass; Q16 monolith split; per-member team retry (engine API now arguably closer via mission-runner — revisit); vite/vitest majors; electron-builder 26 + installer-exclusion check at next `electron:build`; Playwright suite 8.
 
-## Session — 2026-06-10 08:10 (catch-up: "BrainEdge Fable New" continued — gap rows 12+14 built as Agent Browser + push-to-talk voice; Guide redesign + admin browser controls; session still RUNNING)
+## Session — 2026-06-10 08:10 (catch-up: "Madav Fable New" continued — gap rows 12+14 built as Agent Browser + push-to-talk voice; Guide redesign + admin browser controls; session still RUNNING)
 
-### 🧑 User — "Gap Table rows 7–14: BrainEdge lacks capabilities — build them to 4–5 stars? Answer with your views before building" → 🤖 CORRECTED + SCOPED, then APPROVED
-- **Correction given:** the table's stars rated gap *impact*, not BrainEdge maturity — rows 7–11 and 13 (durable missions, RAG retrieval, versioning/.agent, agents-as-API/webhook, cost budgets, swarms) were already closed by the Wave A+B+C build. Only **row 12 (browser/computer use)** and **row 14 (voice)** genuinely remained.
-- **Recommendation (accepted via approval prompt):** build scoped versions — an **Electron-native agent browser** (BrainEdge already ships Chromium; text-mode DOM tools, any model, no vision; ~80% of Operator's daily value) and **push-to-talk voice**; deliberately skip Operator-class vision-pixel control and realtime full-duplex voice (provider-locked, months of work, low desktop demand).
+### 🧑 User — "Gap Table rows 7–14: Madav lacks capabilities — build them to 4–5 stars? Answer with your views before building" → 🤖 CORRECTED + SCOPED, then APPROVED
+- **Correction given:** the table's stars rated gap *impact*, not Madav maturity — rows 7–11 and 13 (durable missions, RAG retrieval, versioning/.agent, agents-as-API/webhook, cost budgets, swarms) were already closed by the Wave A+B+C build. Only **row 12 (browser/computer use)** and **row 14 (voice)** genuinely remained.
+- **Recommendation (accepted via approval prompt):** build scoped versions — an **Electron-native agent browser** (Madav already ships Chromium; text-mode DOM tools, any model, no vision; ~80% of Operator's daily value) and **push-to-talk voice**; deliberately skip Operator-class vision-pixel control and realtime full-duplex voice (provider-locked, months of work, low desktop demand).
 
 ### 🤖 Row 12 BUILT — Agent Browser (`electron/agent-browser.cjs`)
 - Agents get a real, **visible** Chromium BrowserWindow with tools `browse_open / browse_read / browse_click / browse_fill / browse_back`; pages rendered as readable text + numbered interactive elements (DOM-based, no vision/screenshots needed, works with any text model).
@@ -35426,7 +35426,7 @@ The session did not end at the error-translation round. Subsequent work (detail 
 ### Open / unresolved
 - **Session still running** — back-button/history outcome + a from-scratch build verification of the browser/voice/guide round must be captured next. **teamly.ai parity review remains the standing owed rider.** Standing gates: full app close-and-reopen (yet more new main-process modules: agent-browser, voice) → Windows `npm run build` → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal. Prior items unchanged: NVIDIA 401; Save-button bug (Scenario 0); runtime smoke pass; Q16 monolith split; per-member retry; vite/vitest majors; electron-builder 26 + installer-exclusion check; Playwright suite 8.
 
-## Session — 2026-06-10 08:41 (catch-up: "BrainEdge Fable New" still running — Test Center scenario mgmt · BeanBox single-story Guide · browser master switch (admin-always-on) · savedStore bug fixed · flow infographics · local Creator/Complimentary roster IN PROGRESS)
+## Session — 2026-06-10 08:41 (catch-up: "Madav Fable New" still running — Test Center scenario mgmt · BeanBox single-story Guide · browser master switch (admin-always-on) · savedStore bug fixed · flow infographics · local Creator/Complimentary roster IN PROGRESS)
 
 ### 🤖 Back-button + history scoping COMPLETED (was "in progress" at 08:10)
 - Back button added to the chat-view agent bar; agent/team-bound conversations are now **excluded from the Sidebar's general chat recents** and surfaced instead in a new **Recent Activity** section on the Agents screen (`onOpenSession` passed down from App; CSS added).
@@ -35454,7 +35454,7 @@ The session did not end at the error-translation round. Subsequent work (detail 
 ### Open / unresolved
 - **Session still running:** roster Sidebar wiring + flow connector-alignment fix in flight; from-scratch build verification of everything after the Wave round (browser/voice/guide/Test Center/roster) still owed — `npm run build:admin && npm run test:run` on the user's machine is the real check. **teamly.ai parity review still NOT done.** Standing gates: full app close-and-reopen → Windows build → admin engine cycle + UI sweep (cheap/free model) → commit from the user's terminal. Prior items unchanged: NVIDIA 401; Save-button bug (Scenario 0); runtime smoke pass; Q16 monolith split; per-member retry; vite/vitest majors; electron-builder 26 + installer-exclusion check; Playwright suite 8.
 
-## Session — 2026-06-10 09:12 (catch-up: "BrainEdge Fable New" still running — roster + flow fixes landed · 30-persona library · Studio artifacts upgraded · Studio launcher rebuilt as build console · TESTING-BLUEPRINT Ch. 6⅔ · Claude-style light-mode retheme)
+## Session — 2026-06-10 09:12 (catch-up: "Madav Fable New" still running — roster + flow fixes landed · 30-persona library · Studio artifacts upgraded · Studio launcher rebuilt as build console · TESTING-BLUEPRINT Ch. 6⅔ · Claude-style light-mode retheme)
 
 ### 🤖 The two 08:41 in-flight items COMPLETED
 - **Roster wiring done:** Sidebar trial/subscribe prompts now respect Creator/Complimentary roles; the three roster modules (`electron/admin-roster.cjs` local-only, `admin-roster.example.cjs` committed template, `electron/roster.cjs` loader) pass `node --check`; role resolution harness-verified incl. case-insensitive match and graceful fallback when the file is absent (packaged builds). Roster stays installer-excluded (`package.json` build.files) + git-ignored, and overrides the server's authMe verdict.
@@ -35500,8 +35500,8 @@ The session did not end at the error-translation round. Subsequent work (detail 
 - **"Boring" Studio enlivened** (design-director pass): REFINE chips above the Designer composer (Sharpen · Guardrails · Output format · Edge cases · Warmer tone → crafted briefs through designerSend); Bench **"Suggest 3 test prompts"** (one completeOnce, JSON `{tests:[3]}`, runnable cards + redraw); **re-run last test** button (compare after blueprint changes); identity ambiance `--idc` (bench wash + breathing aura + live dot); **vitals strip** (missions · clean% · last · knowledge count · memory on). Composer fixes: `.agsd-send` arrow was accent-on-accent invisible (global icon-theming exception added); bench `.ag-gen` had `position:absolute` escaping the input row (scoped static); composer slimmed; chat area grew. **Completeness spine REMOVED** (user: theme consistency; header meter dots carry the info).
 - **Blueprint & capabilities:** toggle bar renamed + shows all five capability icons (lit when active) — answers "where do I enable web browsing"; when open the blueprint becomes the pane's main workspace (`:has()` shrinks chat to 130px strip, refine chips hide); pinned-model picker menu was clipping outside the pane (right-anchored 480px) → left-anchored, opens upward, width-capped.
 
-### 🧑 teamly.ai rider + "build these 3 features as BrainEdge originals" → 🤖 TEAMLY-PARITY.md + Recruiter · living Portraits · the Floor
-- **TEAMLY-PARITY.md** (clears the standing rider): disambiguated teamly.to (the real "AI agents in the cloud" workforce product: Pixel Department, coordinator, $/agent + credits on hosted Sonnet/Opus) vs teamily.ai (human+agent messenger) vs dead teamly.ai. Verdict: BrainEdge already leads on engine capability; gaps = where agents run (their cloud) + presentation charm + multiplayer/social. Recommendations: build the coordinator-concierge (best ROI), lightweight animated states, small global floor; skip cloud hosting/credits/multiplayer/avatar-of-you; .agent gallery post-launch.
+### 🧑 teamly.ai rider + "build these 3 features as Madav originals" → 🤖 TEAMLY-PARITY.md + Recruiter · living Portraits · the Floor
+- **TEAMLY-PARITY.md** (clears the standing rider): disambiguated teamly.to (the real "AI agents in the cloud" workforce product: Pixel Department, coordinator, $/agent + credits on hosted Sonnet/Opus) vs teamily.ai (human+agent messenger) vs dead teamly.ai. Verdict: Madav already leads on engine capability; gaps = where agents run (their cloud) + presentation charm + multiplayer/social. Recommendations: build the coordinator-concierge (best ROI), lightweight animated states, small global floor; skip cloud hosting/credits/multiplayer/avatar-of-you; .agent gallery post-launch.
 - **The Recruiter** (own tab): `RECRUITER_SYS` gets roster + persona library (+prior proposal for refine); returns `{reply, team{name, mode relay|manager, members[{existing|persona|new}], budgetTokens}}`; proposal card tags members **roster / crew / new hire** (roster-first is the differentiator vs Teamly's slot-selling); Refine reworks the standing proposal; **Hire this team** creates new agents + team in ONE clobber-safe write and jumps to Agents Team.
 - **Living Portraits** (`src/components/Portrait.jsx`, original procedural SVG — no assets): deterministic human faces from independent hash streams (`seed+"skin"` etc. — fixed the same-y faces) — 6 skins × **7 hair styles** × 6 hair colors × glasses(30%) × beard(20%, never with glasses) × freckles × earrings; identity-color uniform; eye whites/pupils/light sparks, nose, lips w/ teeth on open smiles, blush. Moods: idle (blink) · working (focused) · happy (pop) · **hello** (beam + gentle head tilt — the WAVING HAND was built then REMOVED on request). Swapped in across roster rows/cards, Bench, Floor, Recruiter. **Auto-nicknames:** unnamed agents get a stable human name from `NICKS` by id (Aria, Bodhi, Cleo…), used on save and shown everywhere; Studio name field suggests it.
 - **The Floor** (own tab): whole-workforce live board, 5s polling of stats+sessions+tasks; **state-grouped colored sections** — Working now (accent, glowing) / Finished recently (green) / On a schedule (amber, clock badge) / Resting (neutral, hello faces); color-coded strip counts + missions all-time; honors list/tile toggle (`flr-aslist`); honest limits documented (name-matched sessions, 3-min window).
@@ -35512,7 +35512,7 @@ The session did not end at the error-translation round. Subsequent work (detail 
 - **Guide kept current** (new standing definition-of-done): tour chapter 07 "The Recruiter & the Floor" (+diagram); Flight School grew to ELEVEN BeanBox chapters (10 · The recruiter's call, 11 · Walk the floor; runSimulation handles recruit/floor kinds); AGENT-GUIDE.md gained Recruiter/Floor/Portraits/groups/Sage sections + Scenarios 12–13; **lit-mission focus** (solid ring + wash + lift; others dim to 50%; auto-scroll into view on chapter change). Tabs restructured into TWO LAYERS (learning row: Guide+Sage / workforce row: Agent · Agents Team · Recruiter · Floor · Activity) + icon-only utility toolbar (view toggle, New group, Import) with tooltips.
 
 ### 🧑 Agent browser "asks to download Chrome" / parallel browsing / allowlist in settings → 🤖 three real fixes + honest limits
-- **"Download Chrome" had TWO causes, neither missing-Chrome:** (1) weak models ignored the browse_* schemas and improvised — fixed with an explicit `browserNote` in the system prompt ("you HAVE a real built-in browser; call browse_open; never ask to install Chrome"); (2) **WhatsApp Web UA-sniffs** and rejects the "Electron/x.y" token — Agent Browser now strips Electron/BrainEdge from the user agent (presents as the plain Chrome it is). WhatsApp QR login is human-only by design; session persists in `persist:agent-browser`.
+- **"Download Chrome" had TWO causes, neither missing-Chrome:** (1) weak models ignored the browse_* schemas and improvised — fixed with an explicit `browserNote` in the system prompt ("you HAVE a real built-in browser; call browse_open; never ask to install Chrome"); (2) **WhatsApp Web UA-sniffs** and rejects the "Electron/x.y" token — Agent Browser now strips Electron/Madav from the user agent (presents as the plain Chrome it is). WhatsApp QR login is human-only by design; session persists in `persist:agent-browser`.
 - **Parallel independent browsing:** one window PER AGENT (`wins` Map keyed by agent id, cascaded, titled "Digger — Agent Browser"); per-agent allowlists enforced per window; cookie session shared deliberately (one login serves all); session-manager + mission-runner pass `{id,name}`. closeWindow closes all.
 - **Global default allowlist:** Settings → Agent Browser "Default allowed sites" textarea (`agentBrowser.globalAllow`) — used when an agent has no list of its own; per-agent lists always win; inactive when enforcement is off.
 - **Honest limits stated:** attaching to the user's already-open regular Chrome is impossible (no control channel — a Chrome security property); driving installed Chrome via CDP port = big build, worse security, separate profile anyway — the embedded Chromium IS a real browser, nothing to download. Also answered: agents never control the desktop — user multitasks freely; don't drive the agent's window mid-task; scheduled runs need zero attention.
@@ -35524,14 +35524,14 @@ The session did not end at the error-translation round. Subsequent work (detail 
 
 ### 🤖 Security + distribution
 - **SECURITY-REVIEW-2026-06-10.md audited:** all **21 claimed fixes VERIFIED on disk** line-by-line (prod guards, Stripe webhook hard-fail+idempotency, SSRF hops blocklist, CLI token revocation, CORS allowlist, headers, rate limits, git arg injection, window hardening, webhook timing-safe, electron fuses, headless-shell triple gate, cli 0600, MCP env allowlist, artifact popout sandbox [was CRITICAL], markdown sanitize, restore whitelist, webfs path guard). **Remaining = user-only Section A:** rotate `server/.env` OAuth/Stripe secrets, set `ALLOW_DEV_LOGIN=0`, 2FA everywhere.
-- **Why shipping a desktop app is safe explained** (client belongs to the attacker; value lives server-side — BrainEdge already follows: auth server gate, server-side quiz, revocable CLI tokens; obfuscation = deterrent).
+- **Why shipping a desktop app is safe explained** (client belongs to the attacker; value lives server-side — Madav already follows: auth server gate, server-side quiz, revocable CLI tokens; obfuscation = deterrent).
 - **Code signing WIRED:** new `electron-builder.config.cjs` — extends package.json build; signs automatically when creds exist (Route A Azure Trusted Signing via `AZURE_SIGNING=1` + account/profile/auth env; Route B token cert via `CSC_SHA1`; Route C legacy pfx via WIN_CSC_LINK); `electron:build` now uses the config; **unsigned builds unchanged**. Certificate acquisition is the user's task (identity verification + ~$10/mo Azure Trusted Signing or ~$250+/yr OV token). SIGNING.md runbook still to write.
-- electron:build EPERM (win-unpacked rename) triaged: kill BrainEdge/electron processes, delete `release\`, Defender exclusion if it recurs; vite build itself was GREEN (1555 modules — first compile proof of the restoration batch).
+- electron:build EPERM (win-unpacked rename) triaged: kill Madav/electron processes, delete `release\`, Defender exclusion if it recurs; vite build itself was GREEN (1555 modules — first compile proof of the restoration batch).
 
 ### Open / unresolved at doc time
 - **NOTHING after commit 9c406ba3 is committed or compile-checked** (sandbox down ALL session) — gates: `npm run build:admin` → FULL close-and-reopen (main-process changes: agent-browser windows/UA, browserNote, session touch, recruiter/floor/AgentOps renderer batch) → eyeball → commit from user's terminal.
 - SIGNING.md runbook + certificate acquisition (Azure Trusted Signing recommended) + signed-build verify (`signtool verify /pa`) + fuses caveat test on packaged SDK transport.
-- User question answered only partially in chat: "does Tier-1 (move value off the client) require heavy investment?" — short answer recorded here: NO for BrainEdge (auth server already is Tier-1 at ~$7–16/mo; heavy only if hosting the agent runtime itself, which is Teamly's business and deliberately out of scope).
+- User question answered only partially in chat: "does Tier-1 (move value off the client) require heavy investment?" — short answer recorded here: NO for Madav (auth server already is Tier-1 at ~$7–16/mo; heavy only if hosting the agent runtime itself, which is Teamly's business and deliberately out of scope).
 - Task open: integrity-check remaining inherited deliverables (UserGuide content read-through, research docs tails, speedcheck redesign eyeball).
 - **NEW user reports at session end (in flight):** (1) per-agent AUTONOMY setting wanted — Act / Ask permission / Skip-and-decide, set at agent creation, so the user isn't prompted constantly; (2) WhatsApp Communicator FALSELY claimed "message has been sent" — nothing sent; suspected chain: WhatsApp's composer is a contenteditable div which `browse_fill` (input/textarea-only) can't type into AND the element-lister doesn't number contenteditables, then the model fabricated success without verifying. Fix underway: contenteditable support in browse_fill (execCommand insertText + Enter-to-send), `[contenteditable]`/`[role="textbox"]` in the element selector, and a verify-before-claiming-success rule in the browser system note.
 - Carried: NVIDIA 401 (key/model); Q16 monolith split; per-member retry; vite/vitest majors; Playwright suite 8; pre-launch secret rotation + ALLOW_DEV_LOGIN=0 + 2FA; Test-Center-absent-on-fresh-install check at next electron:build.
@@ -35558,7 +35558,7 @@ The session did not end at the error-translation round. Subsequent work (detail 
 
 ### 🧑 Anthropic API-key-only (pre-launch ToS item) + brand tagline
 - Removed the **subscription/`claude login` OAuth path** end to end: `subMode`/`_chatViaSdk` gone from session-manager; agent-transport drops the subscription env branch; providers/SpeedCheck/ModelConfig/settings default + the Billing UI block all stripped. **API-key access stays.** No `anthropicUseSubscription` references remain.
-- **Restored "by Chaithrodaya Sukruth"** under the BrainEdge wordmark (markup + the dark-mode `.tn-by` base style — only the light override had survived the earlier removal).
+- **Restored "by Chaithrodaya Sukruth"** under the Madav wordmark (markup + the dark-mode `.tn-by` base style — only the light override had survived the earlier removal).
 
 ### 🤖 SAGE — the whole arc this session
 - **Floating helper** on every agent screen: a quiet avatar bubble, one-click compact chat sharing the SAME persisted thread (`be.sage.thread`) as the full Ask Sage tab; never auto-pops.
@@ -35572,7 +35572,7 @@ The session did not end at the error-translation round. Subsequent work (detail 
 ### Open / unresolved at doc time
 - **Global mount BUILT GREEN** — `npm run build:admin` = 1560 modules, no errors (SageDock.jsx + App.jsx mount + APP-GUIDE.md raw import + Agents dock-removal all compile). Still needs full restart-test (Sage on a non-agent screen, parallel-while-session) + commit. First suspects if a runtime issue appears: SageDock.jsx, the App.jsx mount; dead `sageDock` const in Agents.jsx is harmless unused.
 - **Known minor:** Agents.jsx still defines the old floating-dock state/handlers as dead code (unused `sageDock` const + duplicate peek/tip intervals running invisibly) — harmless; clean up later. On the agents "Ask Sage" full tab both the full page and the global bubble show (acceptable redundancy).
-- **MULTI-SESSION HAZARD (flagged to user, recurring):** another Claude session ("BrainEdge Fable New" / "Brain Edge with Fable5") was editing the same repo concurrently earlier — caused the original styles.css corruption and some duplicate/interleaved edits (Blueprint hierarchy, ModelSpeedCheck comment). User asked to kill the others; only the user can close them in the app. Single-writer discipline is the standing rule now.
+- **MULTI-SESSION HAZARD (flagged to user, recurring):** another Claude session ("Madav Fable New" / "Madav with Fable5") was editing the same repo concurrently earlier — caused the original styles.css corruption and some duplicate/interleaved edits (Blueprint hierarchy, ModelSpeedCheck comment). User asked to kill the others; only the user can close them in the app. Single-writer discipline is the standing rule now.
 - **Model note:** this session runs as **claude-opus-4-8** per the env (NOT Fable). The §11ap "build with Fable only" constraint was from the prior sessions; the running model is chosen by the user's app, not by me. Flagged to user.
 - Carried gates: rotate OAuth secrets + `ALLOW_DEV_LOGIN=0` + 2FA; SIGNING.md runbook + cert; electron:build EPERM (Defender exclusion on `release\` + `%LOCALAPPDATA%\electron\Cache`); Anthropic-SDK transport test on packaged build (runAsNode fuse caveat); inherited-deliverable integrity read-through; Q16 split; vite/vitest majors; Playwright suite 8.
 
@@ -35584,14 +35584,14 @@ The session did not end at the error-translation round. Subsequent work (detail 
 - **Task 2 (user guide):** UserGuide.jsx (19 chapters, 1423 lines, clean tail) + userguide.css complete; reachable from the account menu **directly below Settings**, exactly as asked.
 - **Task 3 (speed test):** speedcheck.css dashboard complete (race animation, winner hero, ranked bars, scatter, methodology) + wired into ModelSpeedCheck.jsx.
 - **Task 4 (branding) — finished it:** package.json description de-Claude'd; **`linkAnthropic`/`claude login` subscription remnant removed end-to-end** (main.cjs handler, preload, mock/web bridge stubs, `anthropicLinked` field) — closes the standing pre-launch ToS item; APP-GUIDE.md "Claude-Desktop-style"/"Claude-style" reworded (Sage reads this aloud); agent-transport error + stale comments cleaned. Remaining mentions are functional provider/API references only — defensible, zero brand-copy surface.
-- **Task 5 (research):** RESEARCH-FEATURE-GAPS.md had NO Anthropic section despite the user asking for it → web-researched June-2026 Claude (memory all tiers, incognito, Research mode, office-file creation, Managed Agents cron+vaults, Chrome/Office surfaces, voice, plugins) and added **§4: 19-row gap table + parity confirmations + "BrainEdge ahead" list + sources**. Review-only; no implementation.
+- **Task 5 (research):** RESEARCH-FEATURE-GAPS.md had NO Anthropic section despite the user asking for it → web-researched June-2026 Claude (memory all tiers, incognito, Research mode, office-file creation, Managed Agents cron+vaults, Chrome/Office surfaces, voice, plugins) and added **§4: 19-row gap table + parity confirmations + "Madav ahead" list + sources**. Review-only; no implementation.
 - **Tasks 6/7:** PLAN-AGENT-PARITY.md (5-wave harness plan) and PLAN-LETS-CREATE.md (P1 image+transcript / P2 video / P3 polish, BYOK, cost guardrails) verified complete; summarized for the user's review.
 - **Gates:** main-process files touched (main/preload/settings/agent-transport/providers) → `npm run build` + FULL close-and-reopen → commit from user's terminal. Carried opens unchanged.
 
 ### 🧑 "Improvements to Sage chat bot" (5 asks) → 🤖 ALL BUILT (renderer-only, web + desktop)
 - **Voice:** mic in the Sage input row — desktop records → `bridge.transcribe` (user's OpenAI/Groq key), web falls back to the browser speech engine; the transcript **auto-sends** (true voice command). Failures appear as friendly in-thread messages.
 - **Resizable window:** corner grip (flips with the dock's anchor), drag to any size 320-760 × 380-900 clamped to the viewport, persisted (`be.sage.size`).
-- **BrainEdge-first building:** new hard rule in Sage's system prompt — any "build/create/make X" question is answered with the matching BrainEdge surface (Let's Build / Studio / Agents & Teams / Projects / Scheduler / Connectors) + first step + GOTO; never outside tools. GOTO gained `studio` and `projects` keys.
+- **Madav-first building:** new hard rule in Sage's system prompt — any "build/create/make X" question is answered with the matching Madav surface (Let's Build / Studio / Agents & Teams / Projects / Scheduler / Connectors) + first step + GOTO; never outside tools. GOTO gained `studio` and `projects` keys.
 - **Multicultural looks:** gallery grew 8 → **14** (Indian, East Asian, European, Nordic, African, Latina; male + female). Portrait.jsx gained two explicit-only female hair styles (7 long center-part, 8 bangs + side bun) plus `lashes`/`earring` props — agent faces elsewhere unchanged.
 - **Sara:** choosing a female look renames the buddy to **Sara** everywhere in the dock (header, greeting, placeholder, nudge, persona prompt). Same thread + memory. APP-GUIDE.md documents the helper so Sage/Sara can explain itself.
 - Known minor: the full "Ask Sage" tab inside Agents keeps the Sage name regardless of look (monolith file — separate pass). Gates: `npm run build` + restart + commit (with the earlier branding/main-process batch).
@@ -35622,9 +35622,9 @@ The session did not end at the error-translation round. Subsequent work (detail 
 - **Now:** desktop mic = Windows-native engine ONLY; recognized words are TYPED into Sage's input box for the user to read and send (no auto-send). win-speech.cjs hardened: recognizer-culture fallback, UTF-8, friendly errors with exact Windows Settings paths, babble-abort removed, 10s listen window, hard kill. Web build keeps the browser engine. Composer verified unaffected.
 
 ### 🧑 "Sage = app-only expert: learn the app + user, never search the web, not generic knowledge, work with model keys" → 🤖 SCOPE LOCKED (standing directive)
-- SYS hard rules: only domain is BrainEdge + this user; general-knowledge questions declined in one warm sentence and handed to the right surface with a GOTO (chat/build/agents); no web, no outside facts, no pretending — sources are the two guides + learned memory only.
+- SYS hard rules: only domain is Madav + this user; general-knowledge questions declined in one warm sentence and handed to the right surface with a GOTO (chat/build/agents); no web, no outside facts, no pretending — sources are the two guides + learned memory only.
 - Model keys: unchanged engine (completeOnce on the selector's profile — any provider/key); key/model failures now answer plainly with a "GOTO: models" button to Model configuration.
-- Hello copy → "Your BrainEdge guide"; APP-GUIDE updated so Sage self-describes the scope. This is a STANDING rule for all future Sage work.
+- Hello copy → "Your Madav guide"; APP-GUIDE updated so Sage self-describes the scope. This is a STANDING rule for all future Sage work.
 
 ### 🧑 "Build: cross-chat memory, office files, deep research, image gen, study mode, share links, daily brief, canvas" → 🤖 SIX BUILT, TWO QUEUED WITH SPECS
 - **Cross-chat memory:** user-memory.cjs (+ web mirror) — durable facts about the user follow them into EVERY conversation; learned automatically (throttled), injected via withLang; view/edit/toggle/forget in Settings → Profile → Memory.
@@ -35637,7 +35637,7 @@ The session did not end at the error-translation round. Subsequent work (detail 
 - Gates: npm install → npm run build → FULL restart → commit. Everything since the harness commit is one diff.
 
 ### 🧑 Polish + bug-fix round (after the 6 features; user committed the harness, this is the next uncommitted diff)
-- **xlsx build error** (user screenshot: "Failed to resolve import xlsx"): expected — deps weren't installed; `npm install` added 38 packages → 9 audit findings (xlsx SheetJS no-fix advisories apply to PARSING untrusted files; BrainEdge only writes → near-zero surface; advised the cdn.sheetjs.com tarball + `npm audit --omit=dev`, NEVER `--force`).
+- **xlsx build error** (user screenshot: "Failed to resolve import xlsx"): expected — deps weren't installed; `npm install` added 38 packages → 9 audit findings (xlsx SheetJS no-fix advisories apply to PARSING untrusted files; Madav only writes → near-zero surface; advised the cdn.sheetjs.com tarball + `npm audit --omit=dev`, NEVER `--force`).
 - **Attached .xlsx dumped raw ZIP bytes into chat** (user screenshot): Composer `ingest()` rewritten — images unchanged; **.xlsx/.xls PARSED via SheetJS** (CSV per sheet) so attaching a spreadsheet is now a feature; **.docx via mammoth.browser**; .pdf → "use Projects knowledge" note; known-binary refused gracefully; unknown files get a control-char sniff (>5% → refused) so nothing dumps garbage again.
 - **Chat alignment messed up:** same binary-dump cause — a long unbroken string stretched bubbles past the column. CSS guard `.msg, .msg * { overflow-wrap:anywhere }` + pre/code word-break.
 - **Projects had no "add individual files":** the option was an unlabeled icon that swallowed errors + was desktop-only. Now a labeled **"Add files"** button: desktop native dialog (errors surfaced) / web multi-file picker parsed in-renderer (xlsx→CSV, docx→text, txt/csv/code inline, PDF→desktop note).

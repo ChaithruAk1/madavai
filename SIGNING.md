@@ -1,12 +1,12 @@
 # Windows Code Signing — runbook
 
-BrainEdge's build signs the installer automatically **when signing credentials are present
+Madav's build signs the installer automatically **when signing credentials are present
 in the environment**, and stays unsigned (dev/admin builds unaffected) when they're not.
 Wiring lives in `electron-builder.config.cjs`; `npm run electron:build` uses it.
 
 ## What signing does (and doesn't)
 - **Does:** removes the SmartScreen "unknown publisher" scare, shows *your* verified name
-  as publisher, and lets users detect a tampered/repackaged BrainEdge.
+  as publisher, and lets users detect a tampered/repackaged Madav.
 - **Doesn't:** hide or protect your source. Signing is about authenticity, not secrecy.
 
 ## You must obtain a certificate yourself
@@ -43,7 +43,7 @@ npm run electron:build
 
 ## Verify a signed build
 Right-click the produced `release\*.exe` → Properties → **Digital Signatures** tab should
-list your name with a valid timestamp. Or: `signtool verify /pa /v release\BrainEdge*.exe`.
+list your name with a valid timestamp. Or: `signtool verify /pa /v release\Madav*.exe`.
 
 ## EV vs OV
 An **EV** cert grants instant SmartScreen reputation; an **OV** cert builds reputation only

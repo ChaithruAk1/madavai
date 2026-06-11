@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Per-agent run history — every mission an agent runs (chat, team, schedule, webhook,
 // handoff, swarm) appends one event. Powers the agent cards' track record
 // ("12 missions · 92% clean") and the Blueprint's run list. Append-only JSONL with

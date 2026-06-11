@@ -1,4 +1,4 @@
-# BrainEdge — Deploying the auth server (production)
+# Madav — Deploying the auth server (production)
 
 The auth server (`server/`) runs anywhere that runs Node ≥18 and gives you HTTPS. For real users you
 want: a **public HTTPS URL**, a **Postgres database** (instead of the local `users.json`), and the

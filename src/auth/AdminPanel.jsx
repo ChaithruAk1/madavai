@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Admin-only analytics + user management. Gated server-side (admin-email session or x-admin-key).
 import { useEffect, useState } from "react";

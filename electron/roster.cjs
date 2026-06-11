@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Loads the LOCAL admin roster (admin-roster.cjs) if present and resolves a role for an
 // email. The roster file is local-only (git-ignored + excluded from the installer); when
 // it's absent — e.g. in a packaged build on an end user's machine — every lookup returns

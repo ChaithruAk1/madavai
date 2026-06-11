@@ -1,4 +1,4 @@
-# BrainEdge — Agent Ecosystem E2E Test Script
+# Madav — Agent Ecosystem E2E Test Script
 
 One sitting, ~30 minutes, no connectors required. Tests every layer: solo agents, Relay teams,
 Managed (parallel) teams, and a grand finale chaining all three.

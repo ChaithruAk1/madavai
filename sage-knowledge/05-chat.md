@@ -4,7 +4,7 @@
 ### Top bar · Let's Chat / Let's Collaborate / Let's Build
 aliases: mode switch, chat vs build, work surfaces
 What: The three primary work modes in the top navigation.
-Why: Each surface points BrainEdge at a different kind of work.
+Why: Each surface points Madav at a different kind of work.
 Behavior: "Let's Chat" (Conversation) is plain talk — no folder. "Let's Collaborate" (Work on a folder) and "Let's Build" (Code in a repo) are agent modes: they add a folder bar, a permission picker and an environment picker, and can read/edit files and run commands. A running turn keeps running when you switch tabs; each mode remembers its own conversation, restored when you return.
 
 ### Hero · Greeting
@@ -16,7 +16,7 @@ Behavior: A plain session greets you by first name and time of day ("Good mornin
 ### Composer · Message box
 aliases: text area, input, prompt box, type here
 What: The main place you type your message.
-Why: It's how you talk to BrainEdge.
+Why: It's how you talk to Madav.
 Behavior: Enter sends; Shift+Enter makes a new line. The box grows as you type up to ~200px then scrolls. Placeholder hints change by mode and note "/ commands · @ files". Typing "/" at the start opens commands+skills; typing "@" opens the file/connector mention menu. Ctrl/Cmd+U opens the file picker; Backspace on an empty box with an attached skill removes the skill.
 
 ### Composer · Send button
@@ -27,7 +27,7 @@ Behavior: Enabled only when there's text, an attachment, or an attached skill. W
 
 ### Composer · Stop button
 aliases: square, interrupt, halt
-What: Replaces Send while BrainEdge is working.
+What: Replaces Send while Madav is working.
 Why: Lets you cut a turn short.
 Behavior: Shown only while busy. Clicking it interrupts the live session and clears the busy state. The turn keeps running if you merely navigate away — only Stop actually halts it.
 
@@ -46,13 +46,13 @@ Behavior: Opens a menu with: Add files or photos, Mention file / connector, Add 
 ### Add menu · Add files or photos
 aliases: attach file, upload, paperclip, Ctrl+U
 What: Opens your system file picker to attach files.
-Why: Give BrainEdge documents or images to work with.
+Why: Give Madav documents or images to work with.
 Behavior: Shortcut Ctrl/Cmd+U. Images attach as thumbnails for vision. Spreadsheets (.xlsx/.xls) are parsed to CSV per sheet; Word .docx is extracted to text; plain text is inlined. You can also paste or drag files straight in. Each attachment shows as a removable chip.
 
 ### Add menu · Mention file / connector
 aliases: @ mention, reference file, @ menu
 What: Inserts an "@" to mention a file in the working folder or a connector.
-Why: Point BrainEdge at a specific file or connected service without attaching it.
+Why: Point Madav at a specific file or connected service without attaching it.
 Behavior: Same as typing "@". Connectors you've enabled and files from the linked folder appear; arrow keys navigate, Enter/Tab inserts. Names with spaces are quoted (@"My File"). With no folder or connectors it prompts you to link one first.
 
 ### Add menu · Add from GitHub
@@ -87,7 +87,7 @@ Behavior: Connectors list first, then up to 40 matching files from the linked fo
 
 ### Composer · Attachments (file parsing)
 aliases: xlsx, docx, pdf, binary files, what files work
-What: How attached files are turned into something BrainEdge can read.
+What: How attached files are turned into something Madav can read.
 Why: Different file types need different handling.
 Behavior: Spreadsheets become CSV (first 8 sheets); .docx becomes plain text; images go in as vision. A PDF attaches with a note that chat can't extract PDF text — add it to a Project's knowledge instead, since Projects parse PDFs. True binaries (zip, exe, media, fonts, etc.) attach with a note that their contents weren't included, so they never dump garbage into the chat.
 
@@ -111,7 +111,7 @@ Behavior: Lists every configured provider grouped by name and local/cloud, showi
 
 ### Controls row · Permission picker
 aliases: permission mode, ask first, accept edits, act freely, plan mode
-What: Sets how freely BrainEdge may act in agent modes.
+What: Sets how freely Madav may act in agent modes.
 Why: Trade speed for control over edits and commands.
 Behavior: Four modes — "Ask before changes" (default: approve each edit/command), "Auto-accept edits" (apply file edits, still ask for commands), "Act — trust all" (run everything without asking), and "Read-only" (inspect only, never modify). Reads are always free in every mode. Appears only in Collaborate and Build; changing it updates the live session immediately.
 
@@ -147,7 +147,7 @@ Behavior: Consecutive routine steps collapse into a single strip showing "Workin
 
 ### Permission modal · Allow / Decline
 aliases: permission prompt, approve change, allow once, allow for session
-What: The dialog asking before BrainEdge changes your folder.
+What: The dialog asking before Madav changes your folder.
 Why: A safety check before edits and commands when you're in "Ask before changes."
 Behavior: Names the action ("Run a command?", "Edit file?") and shows the literal command or path. "Allow once" permits just this step; "Allow for session" switches you to trust-all for the rest of the session; "Decline" (or Escape / clicking outside) refuses it. Parallel team members queue — one modal shows at a time. Reads never trigger this.
 

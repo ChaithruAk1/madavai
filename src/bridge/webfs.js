@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Browser filesystem for the WEB app's "Let's Collaborate" — backed by the File System Access API
 // (Chrome/Edge). The user picks a real folder on their computer; the assistant reads/writes/edits

@@ -1,4 +1,4 @@
-# BrainEdge — Autonomous Test Report
+# Madav — Autonomous Test Report
 
 **Date:** 2026-06-06
 **Tester:** automated static/build/unit pass (no GUI execution — see Scope)
@@ -36,7 +36,7 @@ settings, skills-manager, telegram-bot, usage-store.
 
 **1b. Renderer parse — `@babel/parser` (jsx) on all of `src/`**
 Result: **23 / 23 files parsed OK, 0 failed.** (Catches broken JSX / imports from the
-Chai→BrainEdge rename and the logo swap.)
+Chai→Madav rename and the logo swap.)
 
 **1c. Extension JS — `node --check extension/*.js`**
 Result: **OK** for `background.js` and `sidepanel.js`.
@@ -63,7 +63,7 @@ Real inputs → expected outputs, all asserted and green:
 | `plain answer` | `plain answer` | ✅ |
 | `<think>only open no close` | `` (empty) | ✅ |
 | `A<think>x</think>B` | `AB` | ✅ |
-| `format... </think> Greetings, friend. Welcome to BrainEdge.` | `Greetings, friend. Welcome to BrainEdge.` | ✅ |
+| `format... </think> Greetings, friend. Welcome to Madav.` | `Greetings, friend. Welcome to Madav.` | ✅ |
 | `` (empty) | `` | ✅ |
 
 The orphan-`</think>` case (row 2/6) is exactly the bug from your screenshot — confirmed handled.
@@ -148,11 +148,11 @@ The orphan-`</think>` case (row 2/6) is exactly the bug from your screenshot —
 
 **Applied during the build (earlier in the session):** reasoning stripper, date injection,
 URL resolver in the extension, dismissable permission modal, Telegram diagnostics, proxy
-support, full BrainEdge rename, app icon.
+support, full Madav rename, app icon.
 
 **Cleanups I could NOT do (sandbox is read-only for deletes) — please run on your host:**
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 git rm src/components/TeaLogo.jsx     # dead file, nothing imports it
 git rm electron/err.tmp               # stray old error log
 ```

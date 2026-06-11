@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // harness.cjs — the DISCIPLINE LAYER around the agent loop. An agent's quality is
 // model × harness; this module is the harness: it repairs sloppy tool calls, keeps
 // context inside the model's window, enforces plan→act→verify method, adapts prompts

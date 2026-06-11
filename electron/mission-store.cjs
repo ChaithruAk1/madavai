@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Durable missions — checkpoint a team mission after every member completes, keyed
 // by the conversation id. If the app crashes (or is closed) mid-mission, reopening
 // the conversation offers "Resume mission" — completed members' work is reused and

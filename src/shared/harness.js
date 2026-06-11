@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // harness.js — browser-safe MIRROR of electron/harness.cjs (the agent discipline layer).
 // Same algorithms, ESM exports, no Node APIs. If you change one file, change both.
 // Web scope: JSON repair, head+tail truncation, stale-result squash, loop breaker.

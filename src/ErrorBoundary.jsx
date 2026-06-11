@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // App-wide error boundary: a render crash anywhere below shows a friendly card
 // instead of a blank white window. Reload restores the app (state is persisted).
 import React from "react";
@@ -12,7 +12,7 @@ export default class ErrorBoundary extends React.Component {
     return { error };
   }
   componentDidCatch(error, info) {
-    try { console.error("[brainedge] render crash:", error, info && info.componentStack); } catch {}
+    try { console.error("[madav] render crash:", error, info && info.componentStack); } catch {}
   }
   render() {
     if (!this.state.error) return this.props.children;

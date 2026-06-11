@@ -1,4 +1,4 @@
-# BrainEdge — FINAL go‑live runbook (web app)
+# Madav — FINAL go‑live runbook (web app)
 
 This is the single source of truth to launch. It assumes the plan: **Render** (always‑on) + **Supabase
 Postgres** + **web app first** + **7‑day trial now, Stripe live within the first week** + host URL (custom
@@ -28,7 +28,7 @@ your **Google** + **GitHub OAuth** credentials (you already made these for testi
 The app creates its own tables automatically on first run. Nothing else to do here.
 
 ## Part 2 — Push the code to GitHub · ~5 min
-In PowerShell, in `C:\Projects\ClaudeCodeUI\BrainEdge`:
+In PowerShell, in `C:\Projects\ClaudeCodeUI\Madav`:
 ```
 git add -A
 git commit -m "Launch"
@@ -42,13 +42,13 @@ lines.
 2. It reads the included `render.yaml`. Confirm: Build `npm install && npm run build`, Start
    `node server/auth-server.mjs`. Choose the **Starter** instance ($7/mo, always‑on) — the free one sleeps
    and makes the first visit slow.
-3. **Create**. First deploy takes a few minutes and gives you a URL like `https://brainedge.onrender.com`.
+3. **Create**. First deploy takes a few minutes and gives you a URL like `https://madav.onrender.com`.
    Copy it — call it **YOUR_URL**.
 
 ## Part 4 — Set the production settings (Render → your service → Environment) · ~10 min
 Add these (the secret‑style ones aren't in the file for safety):
 ```
-AUTH_BASE_URL      = YOUR_URL                      (e.g. https://brainedge.onrender.com)
+AUTH_BASE_URL      = YOUR_URL                      (e.g. https://madav.onrender.com)
 ALLOWED_REDIRECTS  = YOUR_URL                      (same value)
 DATABASE_URL       = (the Supabase URI from Part 1)
 ADMIN_EMAILS       = chaithru@gmail.com            (your admin login)
@@ -118,7 +118,7 @@ You don't need these on day one, but here's the path so nothing surprises you:
 - **Proxy bandwidth**: users on providers that block browsers (NVIDIA/OpenAI) stream through your server,
   which uses egress bandwidth. Users on OpenRouter go direct (free to you). Watch this cost as you grow;
   it's the main variable expense.
-- **Custom domain**: buy one (e.g. brainedge.ai), add it in Render → Settings → Custom Domain, then change
+- **Custom domain**: buy one (e.g. madav.ai), add it in Render → Settings → Custom Domain, then change
   `AUTH_BASE_URL` + `ALLOWED_REDIRECTS` to it and add the new `/auth/*/callback` URLs in Google/GitHub. ~10 min.
 - **Stronger tokens**: before large scale, consider RS256 JWTs + key rotation and the official Stripe SDK.
 

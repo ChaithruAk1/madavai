@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // win-speech.cjs — Windows-NATIVE speech-to-text, zero keys, zero network.
 // Uses the OS speech recognizer (System.Speech — ships with Windows) through a
 // short-lived PowerShell process: listen once on the default microphone, return

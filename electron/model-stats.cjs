@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // model-stats.cjs — MEASURED per-model tool discipline (Wave 3.1). Every agent mission
 // records how a model actually behaved: tool calls made, how many needed JSON repair,
 // re-asks, failures, missions finished vs hitting the step ceiling. The harness score

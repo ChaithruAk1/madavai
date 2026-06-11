@@ -1,5 +1,5 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
-// Persists provider profiles to userData/brainedge-settings.json.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
+// Persists provider profiles to userData/madav-settings.json.
 // Secret fields (API keys, bot token, OAuth secret) are encrypted at rest with the
 // OS keychain via Electron safeStorage, so the JSON on disk never holds plaintext keys.
 const { app, safeStorage } = require("electron");
@@ -7,7 +7,14 @@ const fs = require("fs");
 const path = require("path");
 
 function file() {
-  return path.join(app.getPath("userData"), "brainedge-settings.json");
+  const f = path.join(app.getPath("userData"), "madav-settings.json");
+  // One-time rename from the legacy filename (literal built by concat so brand
+  // sweeps can't clobber the migration; runs only while the old file still exists).
+  try {
+    const legacy = path.join(app.getPath("userData"), ("brain" + "edge") + "-settings.json");
+    if (!fs.existsSync(f) && fs.existsSync(legacy)) fs.renameSync(legacy, f);
+  } catch {}
+  return f;
 }
 
 const ENC_PREFIX = "enc:v1:";

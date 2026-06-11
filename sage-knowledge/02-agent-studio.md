@@ -69,7 +69,7 @@ Behavior: Required to run (Put to work and the Bench both need it). The Designer
 aliases: tools, files, terminal, shell, connectors, skills, browser, desktop, permissions
 What: Six ON/OFF pills granting the agent capabilities: Files, Terminal (shell), Connectors, Skills, Browser, Desktop.
 Why: An agent should hold only the powers its job needs — least privilege.
-Behavior: Each pill is a permission switch; cyan/highlighted = granted. Files reads/writes in a working folder; Terminal runs shell commands (desktop only); Connectors are your enabled MCP apps (mail, GitHub, Slack…); Skills loads installed playbooks; Browser drives BrainEdge's own visible window; Desktop operates native Windows apps. The pill only grants permission — the actual setup (connecting an MCP, installing a skill) lives elsewhere. Browser hides if your admin disabled it.
+Behavior: Each pill is a permission switch; cyan/highlighted = granted. Files reads/writes in a working folder; Terminal runs shell commands (desktop only); Connectors are your enabled MCP apps (mail, GitHub, Slack…); Skills loads installed playbooks; Browser drives Madav's own visible window; Desktop operates native Windows apps. The pill only grants permission — the actual setup (connecting an MCP, installing a skill) lives elsewhere. Browser hides if your admin disabled it.
 
 ### Agent Studio · Allowed sites (browserAllow)
 aliases: site allowlist, domains, browser allow, allowed domains, web allowlist

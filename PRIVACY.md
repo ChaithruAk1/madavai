@@ -1,9 +1,9 @@
-# BrainEdge — Privacy Policy (template)
+# Madav — Privacy Policy (template)
 
 > © 2026 Samskruthi Harish. **DRAFT TEMPLATE** — review with a lawyer and fill in the bracketed
 > fields before publishing. Effective date: [DATE].
 
-BrainEdge ("we", "us") provides the BrainEdge application. This policy explains what we collect and
+Madav ("we", "us") provides the Madav application. This policy explains what we collect and
 why. Contact: **[support@yourdomain.com]**.
 
 ## What we collect
@@ -20,13 +20,13 @@ why. Contact: **[support@yourdomain.com]**.
 
 ## What we do NOT collect
 
-- **Your LLM API keys and your prompts/conversations.** BrainEdge talks to your chosen model providers
+- **Your LLM API keys and your prompts/conversations.** Madav talks to your chosen model providers
   **directly from your device** — your keys and the content you send to models do **not** pass through
   our servers.
 
 ## Content you choose to share or post
 
-Some features publish content to the BrainEdge server **by your explicit action**:
+Some features publish content to the Madav server **by your explicit action**:
 
 - **Shared conversation links** — when you create a share link, the conversation snapshot you selected
   (its title and messages) is **copied from your device to our server** and served at a public,

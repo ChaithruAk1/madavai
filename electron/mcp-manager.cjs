@@ -52,7 +52,7 @@ async function connect(server) {
       env: { ...baseEnv, ...(server.env || {}) },
     });
   }
-  const client = new m.Client({ name: "brainedge", version: "0.1.0" }, { capabilities: {} });
+  const client = new m.Client({ name: "madav", version: "0.1.0" }, { capabilities: {} });
   await client.connect(transport);
   const listed = await client.listTools();
   const entry = { client, tools: listed.tools || [] };

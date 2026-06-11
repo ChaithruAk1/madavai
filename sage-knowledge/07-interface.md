@@ -5,11 +5,11 @@
 aliases: hide sidebar, expand sidebar, icon rail, Ctrl+B
 What: The panel icon at the far left of the top bar that collapses the sidebar to a slim icon rail or expands it back.
 Why: Reclaims width for chat or code while keeping one-click navigation.
-Behavior: Click it (or press Ctrl+B) to toggle. When collapsed, sidebar text labels hide and only icons remain; the BrainEdge brand block in the top bar also hides. The tooltip reads "Collapse sidebar (Ctrl+B)" or "Expand sidebar (Ctrl+B)" depending on state.
+Behavior: Click it (or press Ctrl+B) to toggle. When collapsed, sidebar text labels hide and only icons remain; the Madav brand block in the top bar also hides. The tooltip reads "Collapse sidebar (Ctrl+B)" or "Expand sidebar (Ctrl+B)" depending on state.
 
-### Top bar · BrainEdge brand
+### Top bar · Madav brand
 aliases: logo, wordmark, tagline, by Chaithrodaya Sukruth
-What: The Think logo plus the "BrainEdge" wordmark and the tagline "by Chaithrodaya Sukruth", shown at the top-left.
+What: The Think logo plus the "Madav" wordmark and the tagline "by Chaithrodaya Sukruth", shown at the top-left.
 Why: Tells you which app and edition you're in at a glance.
 Behavior: Purely informational — it isn't clickable. It only appears while the sidebar is expanded; collapsing the sidebar hides the brand block to save space.
 
@@ -66,13 +66,13 @@ Behavior: Click a row to reopen it; the open conversation is highlighted. Agent/
 aliases: download chat, save conversation, export to PDF
 What: The download icon on a Recents row.
 Why: Get a readable copy of a conversation you can keep, send, or print.
-Behavior: Click to download a .md file of the whole conversation — title, export timestamp, and every turn labelled "You" / "BrainEdge" separated by dividers. Markdown opens anywhere and prints to PDF from any editor or browser. The filename comes from the chat title, trimmed to safe characters.
+Behavior: Click to download a .md file of the whole conversation — title, export timestamp, and every turn labelled "You" / "Madav" separated by dividers. Markdown opens anywhere and prints to PDF from any editor or browser. The filename comes from the chat title, trimmed to safe characters.
 
 ### Recents row · Share to community
 aliases: share link, share chat, copy link
 What: The share icon on a Recents row.
 Why: Publish a conversation and hand someone a link.
-Behavior: Click and BrainEdge posts the title and messages to the share service, then copies the returned URL to your clipboard — the row briefly shows "Link copied ✓". If posting fails (e.g., offline), you'll see "Couldn't share" for a couple of seconds instead. The button is disabled while sharing is in flight.
+Behavior: Click and Madav posts the title and messages to the share service, then copies the returned URL to your clipboard — the row briefly shows "Link copied ✓". If posting fails (e.g., offline), you'll see "Couldn't share" for a couple of seconds instead. The button is disabled while sharing is in flight.
 
 ### Recents row · Delete
 aliases: remove chat, trash conversation
@@ -148,7 +148,7 @@ Behavior: "Import folder" copies a folder containing SKILL.md into your primary 
 
 ### Skills · Folders
 aliases: skills directories, add folder, primary folder
-What: The "Folders" button reveals the list of folders BrainEdge scans for skills, with "Add folder" and per-folder remove (X) controls.
+What: The "Folders" button reveals the list of folders Madav scans for skills, with "Add folder" and per-folder remove (X) controls.
 Why: Skills can live wherever you like — a synced drive, a repo, anywhere.
 Behavior: The first folder is badged "primary" — creations and imports land there. "Add folder" opens a directory picker; removing a folder stops scanning it but deletes nothing from disk. Changes save instantly and the list rescans. Desktop only.
 
@@ -193,7 +193,7 @@ Example: Paste `GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...` on its own line to authori
 aliases: verify connector, list tools, connection check
 What: The "Test connection" button in a connector's editor.
 Why: Confirms the server starts and your credentials work before you rely on it mid-task.
-Behavior: Click and BrainEdge launches the server: success reports "Connected — N tools" and lists every available tool as a badge; failure shows "Failed: <reason>" in red so you can fix the command or token. Status text shows "Connecting…" while it runs.
+Behavior: Click and Madav launches the server: success reports "Connected — N tools" and lists every available tool as a badge; failure shows "Failed: <reason>" in red so you can fix the command or token. Status text shows "Connecting…" while it runs.
 
 ### Connectors · Web version note
 aliases: connectors in browser, directory desktop only
@@ -255,20 +255,20 @@ What: A small badge in the Terminal header reading "PTY" (green) or "compat".
 Why: Tells you how capable this shell session is.
 Behavior: "PTY" means a real pseudo-terminal — history, arrow keys, tab completion, and TUI apps all work. "compat" is a fallback pipe shell with basic line editing (backspace, Ctrl+C, Ctrl+U); the banner suggests running `npm run rebuild` for full PTY. The header also shows the working directory when one is set. Desktop only.
 
-### Terminal · Run brainedge
-aliases: start agent in terminal, brainedge command
-What: The "Run brainedge" chip at the right of the Terminal header.
-Why: Launches the BrainEdge agent inside your shell without typing the command.
-Behavior: Clicking types `brainedge` into the active shell and presses Enter, then focuses the terminal so you can keep typing. You can equally type `brainedge` yourself — the chip is just a shortcut.
+### Terminal · Run madav
+aliases: start agent in terminal, madav command
+What: The "Run madav" chip at the right of the Terminal header.
+Why: Launches the Madav agent inside your shell without typing the command.
+Behavior: Clicking types `madav` into the active shell and presses Enter, then focuses the terminal so you can keep typing. You can equally type `madav` yourself — the chip is just a shortcut.
 
 ### Terminal · Web signpost & Get the desktop app
 aliases: terminal in browser, desktop app download
 What: In the web app, Terminal shows "Terminal lives in the desktop app" with a perks list and a "Get the desktop app" button.
 Why: A real shell needs access to your computer, which a browser can't provide.
-Behavior: The card lists what desktop unlocks — any command (git, npm, builds), dev servers, the `brainedge` agent, full machine access. The button opens the download page; the footer notes availability for Windows, macOS, and Linux.
+Behavior: The card lists what desktop unlocks — any command (git, npm, builds), dev servers, the `madav` agent, full machine access. The button opens the download page; the footer notes availability for Windows, macOS, and Linux.
 
 ### Test Center · Admin QA area
 aliases: testcenter, QA tools, admin testing
-What: An internal quality-assurance area for the BrainEdge team.
+What: An internal quality-assurance area for the Madav team.
 Why: Lets admins verify builds; it's not part of the everyday product.
 Behavior: The sidebar entry appears only when you're signed in as an admin AND the build includes the QA tools — end-user installers downloaded from the website never ship them, so most users will never see it. If you don't have it, nothing is missing from your install.

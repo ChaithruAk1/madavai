@@ -30,7 +30,7 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
     <div className={`msg ${isUser ? "user" : "assistant"}`}>
       {!isUser && <div className="avatar"><ThinkLogo size={28} animated={false} /></div>}
       <div className="body">
-        <div className="who">{isUser ? (userName || "You") : "BrainEdge"}</div>
+        <div className="who">{isUser ? (userName || "You") : "Madav"}</div>
         {isUser && Array.isArray(item.images) && item.images.length > 0 && (
           <div className="msg-images">{item.images.map((im, i) => <img key={i} src={im.dataUrl} alt={im.name || ""} />)}</div>
         )}

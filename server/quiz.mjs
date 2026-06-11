@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Speed-check quiz ANSWER KEY + grading. This is intentionally server-side only: the client sends a
 // model's raw answers, the server grades them and returns category scores — so the answer key and the

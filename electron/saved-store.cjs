@@ -1,4 +1,4 @@
-// Personal "Saved" library — interesting BrainEdge responses the user bookmarks.
+// Personal "Saved" library — interesting Madav responses the user bookmarks.
 // One JSON file in userData. Each item:
 //   { id, text, question, meta:{model,provider}, convId, mode, note, tags:[], createdAt }
 const { app } = require("electron");
@@ -6,7 +6,12 @@ const fs = require("fs");
 const path = require("path");
 
 const rand = (p) => p + Math.random().toString(36).slice(2, 9);
-const file = () => path.join(app.getPath("userData"), "brainedge-saved.json");
+try {
+  const legacy = path.join(app.getPath("userData"), ("brain" + "edge") + "-saved.json");
+  const nf = path.join(app.getPath("userData"), "madav-saved.json");
+  if (!fs.existsSync(nf) && fs.existsSync(legacy)) fs.renameSync(legacy, nf);
+} catch {}
+const file = () => path.join(app.getPath("userData"), "madav-saved.json");
 
 function load() {
   try { return JSON.parse(fs.readFileSync(file(), "utf8")); } catch { return []; }

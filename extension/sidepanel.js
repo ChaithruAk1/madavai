@@ -1,4 +1,4 @@
-// BrainEdge for Chrome — side panel (agent brain) with multi-provider model picker.
+// Madav for Chrome — side panel (agent brain) with multi-provider model picker.
 // Observe → ask the active model for one action → execute via the worker → repeat.
 
 const $ = (id) => document.getElementById(id);
@@ -169,7 +169,7 @@ async function askLLM(messages) {
   try {
     res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(c.apiKey ? { Authorization: "Bearer " + c.apiKey } : {}), "HTTP-Referer": "https://brainedge.local", "X-Title": "BrainEdge for Chrome" },
+      headers: { "Content-Type": "application/json", ...(c.apiKey ? { Authorization: "Bearer " + c.apiKey } : {}), "HTTP-Referer": "https://madav.local", "X-Title": "Madav for Chrome" },
       body: JSON.stringify({ model: c.model, messages, temperature: 0 }),
     });
   } catch (e) { throw new Error("Network error to " + url); }
@@ -186,7 +186,7 @@ function parseAction(raw) {
   try { return JSON.parse(m[0]); } catch { return { action: "done", answer: raw.slice(0, 400) }; }
 }
 
-const SYSTEM = `You are BrainEdge, a browsing agent controlling ONE Chrome tab.
+const SYSTEM = `You are Madav, a browsing agent controlling ONE Chrome tab.
 Each turn you receive the page URL, title, a text excerpt, and a numbered list of interactive elements.
 Reply with ONLY a JSON object, no prose, no markdown:
 {"thought":"one short sentence","action":"click|type|submit|scroll|navigate|done","index":<element number or null>,"text":"text to type, or 'up'/'down' for scroll","url":"only for navigate","answer":"only for done — your final answer"}

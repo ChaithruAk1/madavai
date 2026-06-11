@@ -111,7 +111,7 @@ export default function Scheduler() {
             <button className="btn primary" onClick={() => setMenuOpen((o) => !o)}><Plus size={15} /> New task <ChevronDown size={13} /></button>
             {menuOpen && (
               <div className="plus-menu" style={{ right: 0, left: "auto", top: "calc(100% + 6px)", bottom: "auto" }}>
-                <button className="plus-item" onClick={() => openNew({ _wizard: true })}><Sparkles size={15} /> Create with BrainEdge</button>
+                <button className="plus-item" onClick={() => openNew({ _wizard: true })}><Sparkles size={15} /> Create with Madav</button>
                 <button className="plus-item" onClick={() => openNew({})}><Settings2 size={15} /> Set up manually</button>
               </div>
             )}
@@ -273,7 +273,7 @@ function TaskModal({ draft, setDraft, projects, agents = [], teams = [], modelGr
         <input className="model-search" value={d.description} placeholder="Summarize my calendar and inbox for the day" onChange={(e) => set({ description: e.target.value })} />
 
         <textarea className="model-search" rows={4} style={{ resize: "vertical", fontFamily: "inherit" }}
-          value={d.prompt} placeholder="What should BrainEdge do each run?" onChange={(e) => set({ prompt: e.target.value })} />
+          value={d.prompt} placeholder="What should Madav do each run?" onChange={(e) => set({ prompt: e.target.value })} />
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "2px 0 6px" }}>
           <select className="model-search" style={{ marginBottom: 0, width: "auto" }} value={d.target?.type || "chat"} onChange={(e) => setTarget({ type: e.target.value })}>
@@ -364,7 +364,7 @@ function Opt({ n, label, sub, active, onClick }) {
   );
 }
 
-// Guided, conversational-style task builder (BrainEdge's "Create with BrainEdge").
+// Guided, conversational-style task builder (Madav's "Create with Madav").
 function WizardModal({ draft, setDraft, projects, onSave, onClose }) {
   const [step, setStep] = useState(0);
   const [adaptive, setAdaptive] = useState(true); // chat-driven setup is the default
@@ -389,8 +389,8 @@ function WizardModal({ draft, setDraft, projects, onSave, onClose }) {
     <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="pj-create" style={{ width: 600 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
-          <h2 style={{ flex: 1 }}>Create with BrainEdge</h2>
-          <label className="chip" style={{ cursor: "pointer", marginRight: 10 }} title="Let BrainEdge ask follow-up questions to set it up">
+          <h2 style={{ flex: 1 }}>Create with Madav</h2>
+          <label className="chip" style={{ cursor: "pointer", marginRight: 10 }} title="Let Madav ask follow-up questions to set it up">
             <input type="checkbox" checked={adaptive} onChange={(e) => setAdaptive(e.target.checked)} style={{ marginRight: 6 }} /> Ask me adaptively
           </label>
           {!adaptive && <span className="mo-sub" style={{ marginRight: 10 }}>Step {step + 1} of {order.length}</span>}
@@ -402,7 +402,7 @@ function WizardModal({ draft, setDraft, projects, onSave, onClose }) {
         {!adaptive && (<>
         {cur === "describe" && (
           <>
-            <div className="wiz-q">What do you want BrainEdge to do?</div>
+            <div className="wiz-q">What do you want Madav to do?</div>
             <textarea className="model-search" rows={4} autoFocus style={{ resize: "vertical", fontFamily: "inherit" }}
               value={d.prompt} placeholder="e.g. Check my files and the web, then write a short daily briefing of what's important."
               onChange={(e) => set({ prompt: e.target.value })} />
@@ -505,7 +505,7 @@ function WizardModal({ draft, setDraft, projects, onSave, onClose }) {
   );
 }
 
-const WIZ_SYS = "You help the user set up a scheduled task in BrainEdge. Ask ONE short, friendly follow-up question at a time to determine: (1) exactly what the task should do, (2) how often it runs (manual, hourly, daily, weekly, or every N minutes), (3) the time/day if relevant, (4) where it runs (plain chat, a project, or a folder for file access). Keep each question to one line. When you have enough, reply with ONLY one line beginning with TASK_JSON: followed by minified JSON of shape {\"name\":\"short-id\",\"description\":\"one line\",\"prompt\":\"the full instruction\",\"schedule\":{\"mode\":\"off|interval|daily|weekly\",\"everyMinutes\":30,\"time\":\"HH:MM\",\"weekday\":1},\"target\":{\"type\":\"chat|project|folder\"}} and nothing else.";
+const WIZ_SYS = "You help the user set up a scheduled task in Madav. Ask ONE short, friendly follow-up question at a time to determine: (1) exactly what the task should do, (2) how often it runs (manual, hourly, daily, weekly, or every N minutes), (3) the time/day if relevant, (4) where it runs (plain chat, a project, or a folder for file access). Keep each question to one line. When you have enough, reply with ONLY one line beginning with TASK_JSON: followed by minified JSON of shape {\"name\":\"short-id\",\"description\":\"one line\",\"prompt\":\"the full instruction\",\"schedule\":{\"mode\":\"off|interval|daily|weekly\",\"everyMinutes\":30,\"time\":\"HH:MM\",\"weekday\":1},\"target\":{\"type\":\"chat|project|folder\"}} and nothing else.";
 
 function AdaptivePanel({ d, setDraft, onSave, onClose }) {
   const [convo, setConvo] = useState([]); // {role, text}

@@ -1,4 +1,4 @@
-# BrainEdge auth server (reference, Phase 1)
+# Madav auth server (reference, Phase 1)
 
 Zero‑dependency Node (>=18) implementation of the auth/trial contract in `../AUTH.md`. OAuth secrets
 live here, not in the app. This is a dev/starter server — read the **Security TODO** in `AUTH.md`

@@ -1,5 +1,5 @@
 // Self-built agent loop for OpenAI-compatible providers (NIM, OpenRouter, local).
-// No proxy, no Anthropic dependency — BrainEdge runs the tool-calling loop itself,
+// No proxy, no Anthropic dependency — Madav runs the tool-calling loop itself,
 // in-process, against the active external model. Emits the same UiEvents as the SDK path.
 const fs = require("fs");
 const path = require("path");
@@ -134,13 +134,13 @@ const ARTIFACT_RULE = ARTIFACT_RULE_BASE; // kept for any external references; o
 
 const SYSTEM = (mode) =>
   mode === "chat"
-    ? `You are BrainEdge, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
+    ? `You are Madav, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
       `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.` + ARTIFACT_RULE_BASE + officeRulePart()
     : mode === "code"
-    ? `You are BrainEdge, an expert software engineer working in the user's repository. ` +
+    ? `You are Madav, an expert software engineer working in the user's repository. ` +
       `Always explore before editing: use find_files and search_text to locate code, read_file to understand it, then make minimal, correct edits with edit_file/write_file. ` +
       `Prefer surgical edits over rewrites. After changes, you may run tests/build via run_bash. Explain what you changed in one short paragraph; show diffs or key snippets when useful, but never paste raw tool JSON.`
-    : `You are BrainEdge, an AI assistant working inside the user's folder. ` +
+    : `You are Madav, an AI assistant working inside the user's folder. ` +
       `Use the provided tools (files, shell, skills, and connectors) to take real actions rather than describing them. Use relative paths. ` +
       `Reply to the user in clear, natural language. When they ask to SEE something — a file list, file contents, search results — ` +
       `actually present it readably (a short bullet or comma-separated list, or a brief excerpt). Don't just say "here are the files" without showing them. ` +
@@ -345,7 +345,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   const gi = globalInstructions ? `\n\nUser's custom instructions (always follow these):\n${globalInstructions}` : "";
   // Spell the browser out in the system prompt — without this, weaker models ignore the
   // browse_* tool schemas and improvise ("install Chrome", "I cannot browse"), which is wrong:
-  // the Agent Browser is BrainEdge's own built-in Chromium window, always available here.
+  // the Agent Browser is Madav's own built-in Chromium window, always available here.
   const browserNote = browser
     ? `\n\nYou HAVE a real web browser: the tools browse_open, browse_read, browse_click, browse_fill, browse_back drive a visible browser window the user watches. To look at any website, CALL browse_open with the URL — do not describe what you would do, do it. Never say you cannot browse, never ask the user to install or download a browser (no Chrome needed — the browser is built in), and never invent page content: open the page and read it.\nVERIFY BEFORE CLAIMING: after any action that should change something (sending a message, submitting a form, posting), call browse_read and CONFIRM the page actually shows the result (e.g. your message visible in the conversation) BEFORE telling the user it was done. If you cannot confirm it on the page, say honestly that it may not have gone through and what you see instead. Never report success you have not verified.${(browser.allow || []).length ? ` This agent may only visit: ${browser.allow.join(", ")}.` : ""}`
     : "";

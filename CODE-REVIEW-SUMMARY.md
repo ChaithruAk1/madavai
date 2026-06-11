@@ -1,4 +1,4 @@
-# BrainEdge — Full Code Review Summary
+# Madav — Full Code Review Summary
 **Date:** 2026-06-09 · **Scope:** entire codebase · **Status: REPORT ONLY — nothing changed.**
 Method: three parallel deep-read passes (backend+server, frontend, web+CLI); ~80 raw findings consolidated for a non-technical owner.
 
@@ -75,7 +75,7 @@ Grouped into waves; each wave is independently shippable.
 
 ## 3. What Opus missed — features users would expect
 1. **Conversation export/share** — no way to save a chat as PDF/markdown or share a link.
-2. **Per-agent knowledge files** — GPTs let an agent permanently know your docs; BrainEdge only has Projects-level knowledge.
+2. **Per-agent knowledge files** — GPTs let an agent permanently know your docs; Madav only has Projects-level knowledge.
 3. **Global search across conversations** — Recents search is title-only.
 4. **Auto-update mechanism** — desktop users must manually reinstall every release.
 5. **Onboarding flow** — first launch drops users into an empty chat; no "connect a provider" wizard (the #1 support question will be "why doesn't it answer?" = no API key).
@@ -86,7 +86,7 @@ Grouped into waves; each wave is independently shippable.
 ---
 
 ## 4. Half-baked vs the Claude inspiration (honest audit)
-- **Chat rendering** — Claude renders rich markdown/code; BrainEdge shows plain text. *Most visible gap.* (=Q10)
+- **Chat rendering** — Claude renders rich markdown/code; Madav shows plain text. *Most visible gap.* (=Q10)
 - **Artifacts** — preview engine is strong, but no artifact history/versioning, and CDN-loaded libs may blank on strict networks.
 - **Projects** — knowledge is text-only (no PDF/docx parsing); flagged months ago, still open.
 - **Edit diffs** — built for Build/Collaborate tool cards, but no checkpoints/undo UI surfaced (file-tree view also still missing).
@@ -98,11 +98,11 @@ Grouped into waves; each wave is independently shippable.
 ---
 
 ## 5. Zero-bug deployment — agent-powered testing strategy
-The poetic part: **use BrainEdge's own agents to test BrainEdge.**
+The poetic part: **use Madav's own agents to test Madav.**
 
 **Layer 0 — Gate (automated, every build):** `npm run build` must pass; `node --check` every .cjs/.mjs; app boots with a FRESH profile (no settings file) and with a LEGACY settings file (migration test). Any failure = no deploy.
 
-**Layer 1 — QA agent crew (build these as BrainEdge agents):**
+**Layer 1 — QA agent crew (build these as Madav agents):**
 - *Smoke Tester* (files+terminal): runs a scripted checklist — start app, send chat, save agent, restart, verify persistence — and writes a pass/fail report.
 - *API Prober* (connectors): hits every auth-server endpoint (login, /me, billing, admin, /visit) and asserts status codes.
 - *UI Auditor* (files): reads every component file and flags console.errors, broken imports, undefined props.

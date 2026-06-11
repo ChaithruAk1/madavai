@@ -46,7 +46,7 @@ export default function SavedLibrary({ onOpenSession }) {
 
       {shown.length === 0 ? (
         <div className="pjd-files-empty" style={{ marginTop: 20 }}>
-          {items.length === 0 ? "No saved responses yet. Hover any BrainEdge reply and click Save to keep it here." : "No matches."}
+          {items.length === 0 ? "No saved responses yet. Hover any Madav reply and click Save to keep it here." : "No matches."}
         </div>
       ) : (
         <div className="sv-list">

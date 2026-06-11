@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Community forum (v1). Two views in one component: a thread LIST and a single THREAD.
 // Talks to the account server via bridge.apiCall (generic authed fetch).
@@ -80,7 +80,7 @@ function ThreadList({ isAdmin, onOpen }) {
     <div className="cmty" style={{ maxWidth: 860 }}>
       <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Community</h2>
       <p className="mo-sub" style={{ margin: "0 0 14px", color: "var(--text-2)", fontSize: 13 }}>
-        Ask questions, share what you built, and trade ideas with other BrainEdge users.
+        Ask questions, share what you built, and trade ideas with other Madav users.
       </p>
 
       <div className="cmty-bar">

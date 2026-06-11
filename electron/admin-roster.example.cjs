@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // TEMPLATE for the LOCAL ADMIN ROSTER. Copy this file to `admin-roster.cjs` in the
 // same folder and fill in the emails. The real `admin-roster.cjs` is git-ignored and
@@ -8,7 +8,7 @@
 //   admins        → shown as "Creator", full admin, always keep every feature
 //   complimentary → shown as "Complimentary", free access, excluded from subscription/checkout
 //
-// Emails are matched case-insensitively. Restart BrainEdge after editing.
+// Emails are matched case-insensitively. Restart Madav after editing.
 
 module.exports = {
   admins: [

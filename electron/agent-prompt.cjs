@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Shared system-prompt builders for custom agents and team members.
 // One place wires together: identity + instructions + retrieved knowledge + memory.
 // Used by session-manager (interactive) and mission-runner (headless), so an agent
@@ -30,7 +30,7 @@ function knowledgeImages(agent) {
 // System prompt for a solo custom agent.
 function agentSystem(agent, { taskText = "" } = {}) {
   if (!agent || !agent.instructions) return null;
-  return `You are "${agent.name || "a custom agent"}", an agent the user built in BrainEdge.` +
+  return `You are "${agent.name || "a custom agent"}", an agent the user built in Madav.` +
     (agent.description ? ` Purpose: ${agent.description}` : "") + ` ${dateLine()}` +
     `\n\nAgent instructions (always follow):\n${agent.instructions}` +
     knowledgeBlock(agent, taskText) +
@@ -39,7 +39,7 @@ function agentSystem(agent, { taskText = "" } = {}) {
 
 // System prompt for one member of a team mission.
 function memberSystem(member, taskText) {
-  return `You are "${member.name}", one agent on a team inside BrainEdge.` +
+  return `You are "${member.name}", one agent on a team inside Madav.` +
     (member.description ? ` Purpose: ${member.description}` : "") +
     `\n\nAgent instructions (always follow):\n${member.instructions || ""}` +
     knowledgeBlock(member, taskText) +

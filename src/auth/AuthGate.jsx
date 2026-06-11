@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Blocks the whole app behind a signed-in, non-suspended, trial/active account. ALWAYS-ONLINE:
 // validates with the server on launch and every few minutes; offline or invalid ⇒ blocked.
@@ -80,16 +80,16 @@ export default function AuthGate({ children }) {
   return (
     <div className="auth-screen">
       <div className="auth-card">
-        <div className="auth-brand"><ThinkLogo size={44} animated={false} /><div className="auth-word">BrainEdge</div></div>
+        <div className="auth-brand"><ThinkLogo size={44} animated={false} /><div className="auth-word">Madav</div></div>
 
         {phase === "loading" && <div className="auth-msg"><RefreshCw className="spin" size={18} /> Checking your account…</div>}
 
         {phase === "needLogin" && (
           <>
-            <p className="auth-sub">Sign in to use BrainEdge. New accounts get a <b>7‑day free trial</b>.</p>
+            <p className="auth-sub">Sign in to use Madav. New accounts get a <b>7‑day free trial</b>.</p>
             <button className="auth-btn" disabled={!!busy} onClick={() => login("google")}><LogIn size={16} /> {busy === "google" ? "Opening browser…" : "Continue with Google"}</button>
             <button className="auth-btn" disabled={!!busy} onClick={() => login("github")}><LogIn size={16} /> {busy === "github" ? "Opening browser…" : "Continue with GitHub"}</button>
-            <p className="auth-fine">A browser window opens to sign in securely, then returns you here. BrainEdge requires an internet connection.</p>
+            <p className="auth-fine">A browser window opens to sign in securely, then returns you here. Madav requires an internet connection.</p>
             {import.meta.env && import.meta.env.DEV && (
               <button className="auth-btn ghost" style={{ marginTop: 14, fontSize: 12 }} disabled={!!busy} onClick={() => login("dev")}>Dev sign‑in (testing only)</button>
             )}
@@ -99,7 +99,7 @@ export default function AuthGate({ children }) {
 
         {phase === "offline" && (
           <>
-            <div className="auth-msg"><Wifi size={18} /> BrainEdge needs an internet connection and a signed‑in account.</div>
+            <div className="auth-msg"><Wifi size={18} /> Madav needs an internet connection and a signed‑in account.</div>
             <p className="auth-sub">It can't run offline. Reconnect, then retry.</p>
             <button className="auth-btn" onClick={() => { setPhase("loading"); check(); }}><RefreshCw size={16} /> Retry</button>
           </>
@@ -115,13 +115,13 @@ export default function AuthGate({ children }) {
 
         {phase === "expired" && (
           <>
-            <div className="auth-msg"><Sparkles size={18} /> {me && me.status === "trialing" ? "Upgrade BrainEdge" : "Your free trial has ended"}</div>
-            <p className="auth-sub">Subscribe to keep using BrainEdge. You keep using your own model API keys — you're paying for the BrainEdge experience.</p>
+            <div className="auth-msg"><Sparkles size={18} /> {me && me.status === "trialing" ? "Upgrade Madav" : "Your free trial has ended"}</div>
+            <p className="auth-sub">Subscribe to keep using Madav. You keep using your own model API keys — you're paying for the Madav experience.</p>
             <button className="auth-btn primary" disabled={!!busy || awaiting} onClick={subscribe}>{busy === "checkout" ? "Opening checkout…" : awaiting ? "Waiting for payment…" : "Subscribe"}</button>
             {me && me.status === "trialing" && <button className="auth-btn ghost" onClick={() => setPhase("ok")}>Keep using my trial</button>}
             <button className="auth-btn ghost" onClick={logout}><LogOut size={16} /> Sign out</button>
             {err && <p className="auth-fine" style={{ color: "var(--danger)" }}>{err}</p>}
-            <p className="auth-fine">Complete checkout in your browser — BrainEdge unlocks automatically when payment is confirmed.</p>
+            <p className="auth-fine">Complete checkout in your browser — Madav unlocks automatically when payment is confirmed.</p>
           </>
         )}
       </div>

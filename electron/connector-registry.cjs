@@ -1,5 +1,5 @@
 // Connector directory — pulls the OFFICIAL, open MCP registry and normalizes each
-// server into a BrainEdge connector config the UI can add with one click.
+// server into a Madav connector config the UI can add with one click.
 //   Source: https://registry.modelcontextprotocol.io/v0/servers  (public, no key)
 // Results are cached to userData with a TTL so the directory is instant and works
 // offline. Remote ("remotes") servers map to a URL connector; npm packages map to
@@ -9,7 +9,12 @@ const fs = require("fs");
 const path = require("path");
 
 const API = "https://registry.modelcontextprotocol.io/v0/servers";
-const featFile = () => path.join(app.getPath("userData"), "brainedge-connector-featured.json");
+try {
+  const legacy = path.join(app.getPath("userData"), ("brain" + "edge") + "-connector-featured.json");
+  const nf = path.join(app.getPath("userData"), "madav-connector-featured.json");
+  if (!fs.existsSync(nf) && fs.existsSync(legacy)) fs.renameSync(legacy, nf);
+} catch {}
+const featFile = () => path.join(app.getPath("userData"), "madav-connector-featured.json");
 const TTL_MS = 6 * 60 * 60 * 1000;
 
 // Globally popular connectors to surface by default (curated — the open registry has

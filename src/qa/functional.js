@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Functional UI Sweep — drives the REAL interface like a user would: clicks the real
 // tabs, types into the real composer, pastes a real image, opens real pages — and
 // asserts what a user would see. Pure DOM (no React imports), so it keeps running
@@ -238,7 +238,7 @@ export const builtinList = () => SCENARIOS.map((s) => ({ id: "builtin:" + s.area
 
 // AI drafting: plain-English description → declarative steps (reviewed by the admin before saving).
 export async function draftScenario(area, description) {
-  const sys = `You write UI test scenarios for BrainEdge as JSON steps. Available step types:\n${STEP_DOCS.map((s) => `- ${s.do}${s.needs ? ` (${s.needs})` : ""}: ${s.help}`).join("\n")}\nNavigation labels that exist: Let's Chat, Let's Collaborate, Let's Build, Projects, Agents, Studio, Terminal, Scheduler, Consumption, Skills, Connectors, Models overview.\nReply with ONLY a JSON object: {"name":"short scenario name","steps":[{"do":"navigate","target":"Let's Chat"},...]} . Start with a navigate step. End with an expect step that proves the outcome. 3-8 steps.`;
+  const sys = `You write UI test scenarios for Madav as JSON steps. Available step types:\n${STEP_DOCS.map((s) => `- ${s.do}${s.needs ? ` (${s.needs})` : ""}: ${s.help}`).join("\n")}\nNavigation labels that exist: Let's Chat, Let's Collaborate, Let's Build, Projects, Agents, Studio, Terminal, Scheduler, Consumption, Skills, Connectors, Models overview.\nReply with ONLY a JSON object: {"name":"short scenario name","steps":[{"do":"navigate","target":"Let's Chat"},...]} . Start with a navigate step. End with an expect step that proves the outcome. 3-8 steps.`;
   const r = await bridge.completeOnce([{ role: "system", content: sys }, { role: "user", content: `Area: ${area}\nWhat to test: ${description}` }]);
   const text = (r && r.text) || "";
   const i = text.indexOf("{"), j = text.lastIndexOf("}");

@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Mission runner — runs agents and teams HEADLESS (no UI session): scheduled triggers,
 // webhook triggers, call_agent handoffs, and swarm runs all land here. Records run
 // history and feeds agent memory, so background work builds the same track record

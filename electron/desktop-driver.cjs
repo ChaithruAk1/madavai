@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Desktop Applications Driver — agents drive NATIVE Windows apps using UI Automation.
 // No vision model required: windows are rendered to readable, indented text plus a
 // numbered list of interactive elements (buttons, edits, lists, tabs, checkboxes,
@@ -363,7 +363,7 @@ async function opOpen(app, allow) {
 async function exec(name, args = {}) {
   if (process.platform !== "win32") return "Desktop control is only available on Windows.";
   // builtIn gate — does THIS build ship the feature? Friendly refusal if not.
-  try { if (!require("./features.cjs").builtIn("desktop")) return "Desktop control isn't included in this build of BrainEdge."; } catch {}
+  try { if (!require("./features.cjs").builtIn("desktop")) return "Desktop control isn't included in this build of Madav."; } catch {}
   // Admin master switch.
   if (!isEnabled()) return "Desktop control is turned off by your admin (Settings → Extras → Desktop control).";
   if (_busy) return "A desktop operation is already running — try again in a moment.";

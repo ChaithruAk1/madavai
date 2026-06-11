@@ -1,15 +1,15 @@
-# Agent Engine Roadmap — Making BrainEdge's Agents Best-in-Class
+# Agent Engine Roadmap — Making Madav's Agents Best-in-Class
 *Researched June 2026 against OpenAI (AgentKit/Agents SDK), Anthropic (Agent SDK/Skills), Google (Gemini Enterprise/ADK/A2A), Microsoft Copilot Studio, Lindy, Relevance AI, CrewAI, LangGraph. Plain-English advice; no code changed yet.*
 
 ---
 
-## Where BrainEdge already competes
+## Where Madav already competes
 
 Solo agents with identity/instructions/knowledge/tool toggles · build-by-chat Designer + live Bench (OpenAI's best UX, matched) · Relay + Managed teams with **parallel fan-out** (matches Lindy swarm-lite, CrewAI crews) · Mission Control live visualization (almost nobody has this for consumers) · per-member pinned models (rare!) · MCP connectors · skills · permission modes (real HITL for tools) · agents re-attach to conversations · model-selector economics (no per-seat agent pricing). The foundation is genuinely strong.
 
-## The gap table (what the market has that BrainEdge lacks)
+## The gap table (what the market has that Madav lacks)
 
-| # | Capability | Who has it | BrainEdge today | Impact |
+| # | Capability | Who has it | Madav today | Impact |
 |---|---|---|---|---|
 | 1 | **Persistent agent memory** (learns across sessions) | Everyone — OpenAI Sessions, Claude memory tool, Google Memory Bank, CrewAI unified memory | None — every mission starts amnesiac | ★★★★★ |
 | 2 | **Triggers** — agents run on schedule/events (email arrives, webhook fires) | Lindy/Relevance/Copilot Studio built their businesses on this | Scheduler exists but can't run agents/teams | ★★★★★ |

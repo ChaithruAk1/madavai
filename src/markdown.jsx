@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Dependency-free markdown → React renderer for chat bubbles.
 // Safe by construction: we only ever build React elements (never innerHTML), so model
 // output cannot inject markup or scripts. Covers the constructs models actually emit:

@@ -135,7 +135,17 @@ export default function ModelSpeedCheck() {
   const [quality, setQuality] = useState(true); // score coding/reasoning/agentic by default
   const [paneOpen, setPaneOpen] = useState(true);
   const [failOpen, setFailOpen] = useState(false);
-  const [kpiLayout, setKpiLayout] = useState(() => { try { return JSON.parse(localStorage.getItem("brainedge.speedKpiLayout.v1")) || null; } catch { return null; } });
+  const [kpiLayout, setKpiLayout] = useState(() => {
+    try {
+      const KEY = "madav.speedKpiLayout.v1";
+      let raw = localStorage.getItem(KEY);
+      if (raw == null) { // one-time copy migration from the legacy key
+        const legacy = localStorage.getItem(("brain" + "edge") + ".speedKpiLayout.v1");
+        if (legacy != null) { try { localStorage.setItem(KEY, legacy); } catch {} raw = legacy; }
+      }
+      return JSON.parse(raw) || null;
+    } catch { return null; }
+  });
   const dragKpi = useRef(null); // eslint-disable-line no-unused-vars
   const [zoom, setZoom] = useState(null); // {kind:"kpi"|"scatter", ...} // eslint-disable-line no-unused-vars
   const [tier, setTier] = useState("all"); // all | free | paid
@@ -282,7 +292,7 @@ export default function ModelSpeedCheck() {
       return same ? prev : next;
     });
   }, [kpiKeysStr]); // eslint-disable-line
-  useEffect(() => { if (kpiLayout) { try { localStorage.setItem("brainedge.speedKpiLayout.v1", JSON.stringify(kpiLayout)); } catch {} } }, [kpiLayout]);
+  useEffect(() => { if (kpiLayout) { try { localStorage.setItem("madav.speedKpiLayout.v1", JSON.stringify(kpiLayout)); } catch {} } }, [kpiLayout]);
   const kpiByKey = Object.fromEntries(KPIS.map((k) => [k.key, k]));
   const pickBy = (sel, dir) => ok.length ? ok.reduce((a, b) => (dir === "high" ? sel(b) > sel(a) : sel(b) < sel(a)) ? b : a) : null;
   const fastest = pickBy((r) => r.tps, "high");

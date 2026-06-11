@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // build-features — generates the per-channel feature manifest consumed by BOTH build layers:
 //
 //   electron/build-features.json   → engine gates (electron/features.cjs builtIn()) AND
@@ -11,7 +11,7 @@
 //   node scripts/build-features.mjs --all    ADMIN channel — every feature included.
 //   node scripts/build-features.mjs          PUBLIC channel — reads the owner's Extras
 //                                            switchboard (Settings → Extras) from
-//                                            %APPDATA%/brainedge/brainedge-settings.json;
+//                                            %APPDATA%/madav/madav-settings.json;
 //                                            anything switched OFF there is excluded.
 //
 // Both output files are gitignored and rewritten on every build — never edit by hand.
@@ -25,9 +25,15 @@ const all = process.argv.includes("--all");
 
 let extras = {};
 if (!all) {
-  const f = path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "brainedge", "brainedge-settings.json");
-  try { extras = JSON.parse(fs.readFileSync(f, "utf8")).extras || {}; }
-  catch { console.warn("[features] Couldn't read " + f + " — defaulting to ALL features ON."); }
+  const APPDATA = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+  const LEGACY = "brain" + "edge"; // legacy brand, built via concat so rename sweeps skip it
+  const f = path.join(APPDATA, "madav", "madav-settings.json");
+  const fLegacy = path.join(APPDATA, LEGACY, LEGACY + "-settings.json"); // not-yet-migrated machines
+  let read = false;
+  for (const candidate of [f, fLegacy]) {
+    try { extras = JSON.parse(fs.readFileSync(candidate, "utf8")).extras || {}; read = true; break; } catch {}
+  }
+  if (!read) console.warn("[features] Couldn't read " + f + " — defaulting to ALL features ON.");
 }
 
 const manifest = { channel: all ? "admin" : "public" };

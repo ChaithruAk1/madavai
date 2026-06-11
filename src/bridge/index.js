@@ -1,9 +1,9 @@
-// Picks the real Electron bridge (window.brainedge) when running in the desktop app,
+// Picks the real Electron bridge (window.madav) when running in the desktop app,
 // otherwise the WEB bridge (browser implementation backed by the auth server + localStorage +
 // direct-to-provider streaming). The UI imports ONLY from here.
 import { webBridge } from "./webBridge.js";
 
-const real = typeof window !== "undefined" ? window.brainedge : null;
+const real = typeof window !== "undefined" ? window.madav : null;
 
 export const bridge = real || webBridge;
 export const isReal = Boolean(real);   // true in the desktop app

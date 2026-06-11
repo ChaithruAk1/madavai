@@ -1,4 +1,4 @@
-# The BrainEdge Testing Bible
+# The Madav Testing Bible
 ### A blueprint for zero-bug deployment — told as the story it actually is
 
 *Version 1.0 · June 2026 · For everyone — no programming knowledge needed.*
@@ -7,7 +7,7 @@
 
 ## Prologue — the machine that checks itself
 
-Every factory has a quality inspector. Most software companies hire people to click every button before a release, hoping to catch what broke. BrainEdge does something better: **it inspects itself**.
+Every factory has a quality inspector. Most software companies hire people to click every button before a release, hoping to catch what broke. Madav does something better: **it inspects itself**.
 
 Inside the app lives a quality engine. When the admin presses one button, the app walks through its own body — its code, its memory, its file hands, its AI brain, its agent teams, its server heart — and reports, honestly, what works and what doesn't. AI agents do the testing. Humans only read the verdict.
 
@@ -19,7 +19,7 @@ This document is the complete blueprint of that machine: what it is, how it's bu
 
 Four characters run this story:
 
-**The Test Center** (what you see) — a page in BrainEdge, visible only to admins, at the bottom of the sidebar. It has one big button — *Run full test cycle* — a live progress board, an issues list, and a history of past runs. Think of it as the cockpit.
+**The Test Center** (what you see) — a page in Madav, visible only to admins, at the bottom of the sidebar. It has one big button — *Run full test cycle* — a live progress board, an issues list, and a history of past runs. Think of it as the cockpit.
 
 **The QA Engine** (what does the work) — an inspector living in the app's engine room (`electron/qa-runner.cjs`). It owns the checklist of ~32 tests, runs them one by one, times each, and reports every result the moment it has one. Think of it as the inspector walking the factory floor.
 
@@ -33,7 +33,7 @@ And one guard at the door: **the Admin Gate**. The Test Center exercises every p
 
 ## Chapter 2 — The architecture: how it's wired
 
-BrainEdge has two halves: the **face** (the window you see — React) and the **engine room** (a background process that owns files, settings, models and agents — Electron's main process). The Test Center lives in the face; the QA Engine lives in the engine room, because that's where everything worth testing actually happens.
+Madav has two halves: the **face** (the window you see — React) and the **engine room** (a background process that owns files, settings, models and agents — Electron's main process). The Test Center lives in the face; the QA Engine lives in the engine room, because that's where everything worth testing actually happens.
 
 ```
  ┌────────────────────────  THE FACE (what you see)  ───────────────────────┐
@@ -154,7 +154,7 @@ Only Gate 2 needs a human, and only for the one thing agents can't yet do: *look
 ## Chapter 6 — The runbook: exactly how to execute
 
 **Daily cycle (5 minutes):**
-1. Open BrainEdge (desktop) and sign in with your **admin** account.
+1. Open Madav (desktop) and sign in with your **admin** account.
 2. In the model selector, pick a **cheap or free model** — a full cycle makes ~9 real AI calls.
 3. Sidebar → **Test Center** (bottom; only admins see it).
 4. Press **Run full test cycle**. Watch the board fill. (~1–3 minutes, mostly the live AI tests.)

@@ -1,4 +1,4 @@
-# EdgeTrader: Rebuilding the TradingAgents Concept on BrainEdge
+# EdgeTrader: Rebuilding the TradingAgents Concept on Madav
 
 **Status: PROPOSAL — awaiting approval. No build started.**
 Date: 2026-06-11
@@ -33,9 +33,9 @@ That's ~12 LLM roles wired through LangGraph with significant accidental complex
 
 The *valuable* ideas to keep: specialist analysis perspectives, the adversarial bull/bear debate (highest-value step per the paper's ablations), a risk check before the final call, deep-think models only at judge points, and outcome-based reflection memory.
 
-## 2. What BrainEdge already gives us for free
+## 2. What Madav already gives us for free
 
-| TradingAgents builds by hand | BrainEdge equivalent |
+| TradingAgents builds by hand | Madav equivalent |
 |---|---|
 | LangGraph orchestration, state schema, conditional edges | **Teams** (Relay = sequential, Managed = coordinator + parallel + re-planning), mission checkpointing, crash-safe resume |
 | LLM client factory for 10 providers, deep/quick split | Provider-agnostic agent loop; **per-agent pinned models** (cheap model for analysts, strong model for judges) |
@@ -73,7 +73,7 @@ LLM calls per run: TradingAgents default ≈ 14–18 (incl. tool loops + signal 
 - `get_news(ticker, days)` — Yahoo Finance headlines + summaries
 - `resolve_outcome(ticker, decision_date, horizon_days, benchmark)` — realized return + alpha vs SPY (powers the reflection loop)
 
-Sentiment: instead of StockTwits/Reddit API plumbing, the Context Analyst uses BrainEdge's **built-in browser tool** to skim 1–2 public pages (e.g. StockTwits ticker page), with the allowlist limited to known finance domains. Zero extra code; honest about source quality.
+Sentiment: instead of StockTwits/Reddit API plumbing, the Context Analyst uses Madav's **built-in browser tool** to skim 1–2 public pages (e.g. StockTwits ticker page), with the allowlist limited to known finance domains. Zero extra code; honest about source quality.
 
 Optional later: swap/add Alpha Vantage or FinnHub behind the same MCP tool names — agents never change.
 
@@ -89,12 +89,12 @@ Phase 3: Chief Strategist drafts decision → Risk Critic challenges it
 Phase 4: Chief Strategist final verdict (structured JSON block) + full report saved to working folder
 ```
 
-State passing = BrainEdge's native handoff (each agent receives prior outputs as mission context). Debaters receive the two reports + opponent's last message only — not the entire accumulated transcript — killing the token-duplication problem.
+State passing = Madav's native handoff (each agent receives prior outputs as mission context). Debaters receive the two reports + opponent's last message only — not the entire accumulated transcript — killing the token-duplication problem.
 
 ### 3.4 Memory & reflection (TradingAgents' best current idea, kept)
 
 - `decisions/decision-log.md` in the working folder: append-only entries `[date | ticker | verdict | conviction | pending]` — mirrors upstream's `TradingMemoryLog`.
-- **Scheduled task (weekly)**: a small "Reflector" run calls `resolve_outcome()` for pending entries past horizon, writes realized return/alpha, generates a 2–4 sentence lesson, and stores it in the **Chief Strategist's BrainEdge agent memory** (and a lesson for Bull/Bear when the debate's losing side was right).
+- **Scheduled task (weekly)**: a small "Reflector" run calls `resolve_outcome()` for pending entries past horizon, writes realized return/alpha, generates a 2–4 sentence lesson, and stores it in the **Chief Strategist's Madav agent memory** (and a lesson for Bull/Bear when the debate's losing side was right).
 - On each new run, recent same-ticker decisions + top cross-ticker lessons are injected automatically via agent memory — no Chroma/BM25, no embeddings.
 
 ### 3.5 Skills (playbooks instead of hard-coded prompts)
@@ -105,15 +105,15 @@ Three SKILL.md files in the skills folder (auto-discovered):
 2. `adversarial-debate/SKILL.md` — rules: argue assigned side at full strength, attack opponent's weakest claim, cite specific numbers from reports, no hedging.
 3. `verdict-format/SKILL.md` — the exact JSON output contract + 5-tier scale (STRONG BUY/BUY/HOLD/SELL/STRONG SELL), conviction rubric, "avoid defaulting to Hold without justification" (upstream's anti-Hold-bias instruction, which their ablations support).
 
-Prompts live in editable skill files, not code — tunable from the BrainEdge UI.
+Prompts live in editable skill files, not code — tunable from the Madav UI.
 
 ### 3.6 Multi-ticker batch runs & background execution
 
 Unlike upstream (one ticker per `propagate()` call, foreground only), EdgeTrader is designed batch-first:
 
 - **Input**: a watchlist — chat ("Analyze NVDA, AAPL, TSLA"), a `watchlist.txt`/CSV in the working folder, or a webhook POST.
-- **Batch Runner**: a thin dispatcher (BrainEdge mission per ticker) that queues N tickers and runs them as independent missions with a configurable concurrency limit (2–3 parallel; analysts within each mission already run parallel). Missions are checkpointed, so a crash mid-batch resumes where it left off.
-- **Background execution**: runs fire via BrainEdge's Scheduler (cron) or Webhooks with no user at the keyboard. Mission Control shows live progress if you happen to be watching; otherwise results land on disk.
+- **Batch Runner**: a thin dispatcher (Madav mission per ticker) that queues N tickers and runs them as independent missions with a configurable concurrency limit (2–3 parallel; analysts within each mission already run parallel). Missions are checkpointed, so a crash mid-batch resumes where it left off.
+- **Background execution**: runs fire via Madav's Scheduler (cron) or Webhooks with no user at the keyboard. Mission Control shows live progress if you happen to be watching; otherwise results land on disk.
 - **Consolidated output**: per-ticker reports (`reports/<TICKER>-<date>.md`) plus one **digest** per batch (`reports/digest-<date>.md`): ranked table of all tickers — verdict, conviction, one-line thesis, key risk — sorted by conviction. Decision-log entries appended for every ticker.
 - Optional: notification on batch completion (email/Telegram via an MCP connector) — decision point 6 below.
 
@@ -123,7 +123,7 @@ Final verdicts are emitted as **machine-readable signals**, not just prose, so a
 
 - Every run appends a structured record to `signals/signals.jsonl`: `{date, ticker, verdict, conviction, entry_zone, invalidation_level, horizon_days, report_path}`. This file IS the integration contract.
 - **Execution Adapter interface** (defined now, implemented later): a deliberately thin seam — `propose_orders(signals) → order list` and `submit(order)` — to be backed by a broker MCP server (Alpaca, Zerodha/Kite, IBKR, etc. all have APIs; Alpaca paper-trading is the natural first target since it's free and fake-money).
-- **Staged rollout when the time comes**: (1) signals file only — you trade manually off the digest; (2) paper-trading adapter — orders go to a simulated account, and realized paper P&L feeds the reflection loop (better learning signal than 5-day alpha); (3) live broker — only with mandatory human approval per order (BrainEdge `ask_user()` / "ask first" permission mode), position-size caps, max-daily-order limits, and a kill-switch flag in config.
+- **Staged rollout when the time comes**: (1) signals file only — you trade manually off the digest; (2) paper-trading adapter — orders go to a simulated account, and realized paper P&L feeds the reflection loop (better learning signal than 5-day alpha); (3) live broker — only with mandatory human approval per order (Madav `ask_user()` / "ask first" permission mode), position-size caps, max-daily-order limits, and a kill-switch flag in config.
 - Nothing in phases 1–6 blocks on this; the only build-now cost is the signals.jsonl writer (~trivial) and keeping the verdict schema stable.
 
 To be clear about my own role: I can build this software, including the adapter code, but I won't ever place trades or move money myself — order submission always runs under your account, with your approval gates.
@@ -137,14 +137,14 @@ To be clear about my own role: I can build this software, including the adapter 
 ### 3.9 Safety rails (non-negotiable)
 
 - **Phases 1–6 are analysis-only**; execution arrives only via the staged path in 3.7, never enabled by default.
-- Live trading (stage 3) requires per-order human approval, hard position caps, and a config kill-switch. Reports carry a standing "information, not advice" disclaimer (consistent with BrainEdge's existing Marketscout/Risklens stance).
+- Live trading (stage 3) requires per-order human approval, hard position caps, and a config kill-switch. Reports carry a standing "information, not advice" disclaimer (consistent with Madav's existing Marketscout/Risklens stance).
 - Permission mode "ask first" for shell/browser during initial runs; browser allowlist restricted to finance domains.
 
 ## 4. Build phases
 
 | Phase | Work | Est. effort | Exit criterion |
 |---|---|---|---|
-| **1. Data MCP** | Build `finance-data` server (4 tools), register as BrainEdge connector | ~½ day | Each tool returns clean data for NVDA/AAPL from chat |
+| **1. Data MCP** | Build `finance-data` server (4 tools), register as Madav connector | ~½ day | Each tool returns clean data for NVDA/AAPL from chat |
 | **2. Skills** | Write the 3 SKILL.md playbooks | ~½ day | Skills discovered and loadable |
 | **3. Agents** | Define the 6 agents (instructions, tools, pinned models, identities) in Agent Studio | ~½ day | Each agent passes a Live Bench smoke test |
 | **4. Team** | Assemble Managed team, wire phase order, structured-verdict parsing, report writer | ~½–1 day | End-to-end run on 1 ticker produces full report + log entry |
@@ -157,14 +157,14 @@ Total for phases 1–6: roughly 4–4½ working days, of which only Phase 1 and 
 
 ## 4b. What kind of build is this? (your question answered)
 
-It is **~80% configuration of BrainEdge, ~20% small additions** — not a fork or parallel application:
+It is **~80% configuration of Madav, ~20% small additions** — not a fork or parallel application:
 
-- **Agents**: yes, I create all 6 during the build. They're defined as BrainEdge agent definitions (instructions + tools + pinned model + identity) via Agent Studio / settings JSON — the same mechanism as your existing 27 personas (Marketscout, Risklens, Quant...). They become permanent, reusable agents in your install: visible as agent cards, individually chattable, with their own memory and track record. No application source-code change needed for this part.
+- **Agents**: yes, I create all 6 during the build. They're defined as Madav agent definitions (instructions + tools + pinned model + identity) via Agent Studio / settings JSON — the same mechanism as your existing 27 personas (Marketscout, Risklens, Quant...). They become permanent, reusable agents in your install: visible as agent cards, individually chattable, with their own memory and track record. No application source-code change needed for this part.
 - **Team, skills, schedules**: also pure configuration — a Managed team definition, 3 SKILL.md files dropped in the skills folder, cron triggers.
-- **New code, running alongside the app** (not modifying it): the `finance-data` MCP server (Phase 1) and the Batch Runner + digest/signals writers (Phase 5b). Both plug in through BrainEdge's existing connector/working-folder mechanisms.
-- **Future app-level addition**: the Execution Adapter (Phase 7) is the only piece that could warrant touching BrainEdge itself (e.g. an approval UI for orders) — and even that can ship first as another MCP server.
+- **New code, running alongside the app** (not modifying it): the `finance-data` MCP server (Phase 1) and the Batch Runner + digest/signals writers (Phase 5b). Both plug in through Madav's existing connector/working-folder mechanisms.
+- **Future app-level addition**: the Execution Adapter (Phase 7) is the only piece that could warrant touching Madav itself (e.g. an approval UI for orders) — and even that can ship first as another MCP server.
 
-So: the agents do the thinking; BrainEdge already provides the machinery; we add two small bolt-on components and zero core-app changes until/unless live trading is pursued.
+So: the agents do the thinking; Madav already provides the machinery; we add two small bolt-on components and zero core-app changes until/unless live trading is pursued.
 
 ## 5. Decision points for you (defaults marked ★)
 
@@ -178,9 +178,9 @@ So: the agents do the thinking; BrainEdge already provides the machinery; we add
 
 ## 6. What we deliberately do NOT rebuild
 
-- LangGraph / conditional-edge machinery (BrainEdge teams replace it)
+- LangGraph / conditional-edge machinery (Madav teams replace it)
 - Signal-extraction LLM call (structured output contract instead)
 - Msg-clear nodes and shared-message-channel hacks (isolated agent contexts)
-- 10-provider LLM factory (BrainEdge handles providers)
+- 10-provider LLM factory (Madav handles providers)
 - Online/offline data matrix and dual-vendor fallback router (one MCP server; vendors swappable behind it)
-- Chroma/BM25 memory (BrainEdge agent memory + markdown decision log)
+- Chroma/BM25 memory (Madav agent memory + markdown decision log)

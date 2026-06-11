@@ -1,6 +1,6 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // "Studio" — a build console. You lead with the IDEA (one prompt bar), optionally pick a
-// format "lens" and style, and BrainEdge forges it into a live, runnable preview. Distinct
+// format "lens" and style, and Madav forges it into a live, runnable preview. Distinct
 // from a category-card picker: the prompt is the hero; formats are lenses, not gates.
 import { useEffect, useRef, useState } from "react";
 import { Globe, FileText, Gamepad2, Wrench, Palette, Workflow, ListChecks, Sparkles, Wand2, ArrowRight, CornerDownLeft, Shuffle } from "lucide-react";
@@ -87,7 +87,7 @@ export default function StudioLauncher({ onStart }) {
         {/* header */}
         <div className="stu2-kicker"><Wand2 size={13} /> Studio · the build console</div>
         <h1 className="stu2-title">What should we <span className="stu2-grad">build</span> today?</h1>
-        <p className="stu2-sub">Describe an idea in a line — BrainEdge forges it into a <b>live, runnable preview</b> you can refine. Pick a lens to shape the format, or just hit create.</p>
+        <p className="stu2-sub">Describe an idea in a line — Madav forges it into a <b>live, runnable preview</b> you can refine. Pick a lens to shape the format, or just hit create.</p>
 
         {/* the console: prompt bar */}
         <div className="stu2-console">
@@ -142,7 +142,7 @@ export default function StudioLauncher({ onStart }) {
         <div className="stu2-rail">
           <div className="stu2-rail-node"><span className="stu2-rail-ic"><Wand2 size={15} /></span><span>Your idea</span></div>
           <span className="stu2-rail-line" />
-          <div className="stu2-rail-node accent"><span className="stu2-rail-ic"><Sparkles size={15} /></span><span>BrainEdge forges it</span></div>
+          <div className="stu2-rail-node accent"><span className="stu2-rail-ic"><Sparkles size={15} /></span><span>Madav forges it</span></div>
           <span className="stu2-rail-line" />
           <div className="stu2-rail-node ok"><span className="stu2-rail-ic"><ArrowRight size={15} /></span><span>Live preview to refine</span></div>
         </div>

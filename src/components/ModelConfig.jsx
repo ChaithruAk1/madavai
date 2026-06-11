@@ -64,9 +64,9 @@ export default function ModelConfig({ onChanged }) {
   // Backup/restore: the whole settings object (providers+keys+agents+teams+preferences) as one JSON file.
   const backupAll = async () => {
     const cur = await bridge.getSettings();
-    const blob = new Blob([JSON.stringify({ app: "brainedge", exportedAt: new Date().toISOString(), settings: cur }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ app: "madav", exportedAt: new Date().toISOString(), settings: cur }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `brainedge-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = `madav-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   // Only settings keys the app actually knows about may come in from a backup file —
@@ -83,7 +83,8 @@ export default function ModelConfig({ onChanged }) {
     reader.onload = async () => {
       try {
         const j = JSON.parse(String(reader.result || ""));
-        if (!j || j.app !== "brainedge" || !j.settings || typeof j.settings.profiles !== "object") { setStatus("Not a BrainEdge backup file."); return; }
+        const _okApp = j && (j.app === "madav" || j.app === ("brain" + "edge")); // accept legacy backups too
+        if (!_okApp || !j.settings || typeof j.settings.profiles !== "object") { setStatus("Not a Madav backup file."); return; }
         // Drop unknown top-level keys (whitelist) so a crafted backup can't inject settings the UI never exposes.
         const incoming = {};
         for (const k of RESTORE_KEYS) if (k in j.settings) incoming[k] = j.settings[k];
@@ -193,7 +194,7 @@ export default function ModelConfig({ onChanged }) {
           </div>
           {isWeb && (
             <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 0" }}>
-              🔒 Your API keys stay in <b>this browser's storage</b> and go only to the provider — BrainEdge servers never see them.
+              🔒 Your API keys stay in <b>this browser's storage</b> and go only to the provider — Madav servers never see them.
               Anyone with access to this browser profile could use them, so avoid shared computers.
             </p>
           )}

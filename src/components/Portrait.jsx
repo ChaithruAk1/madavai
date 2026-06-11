@@ -1,5 +1,5 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
-// Portrait — BrainEdge's living agent faces. Original, procedural SVG portraits.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
+// Portrait — Madav's living agent faces. Original, procedural SVG portraits.
 // Every agent gets a UNIQUE deterministic face (independent hash streams: skin, hair
 // style + color, glasses, beard, freckles, earrings). The uniform wears the identity
 // color. Moods animate via CSS (.pt-* in styles.css):

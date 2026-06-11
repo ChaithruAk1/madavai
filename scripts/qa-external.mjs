@@ -1,7 +1,7 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // EXTERNAL QA + CHECKPOINT/RESTORE — the safety net OUTSIDE the application.
 // Runs from a plain terminal with zero dependence on the app, so it works even when
-// BrainEdge is too broken to start. Every GREEN verification automatically saves a
+// Madav is too broken to start. Every GREEN verification automatically saves a
 // snapshot of the working source code; one command restores the last known good state.
 //
 //   node scripts/qa-external.mjs            verify everything (+ auto-checkpoint on green)
@@ -119,7 +119,7 @@ if (arg === "restore") { restore(); process.exit(0); }
 if (arg === "list") { list(); process.exit(0); }
 
 const noBuild = process.argv.includes("--no-build");
-say(`\nBrainEdge external QA ${dim("(runs without the app — your safety net)")}\n`);
+say(`\nMadav external QA ${dim("(runs without the app — your safety net)")}\n`);
 const checks = buildChecks(noBuild);
 let fails = 0;
 for (const c of checks) {

@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import savedStore from "../../electron/saved-store.cjs";
 
-const file = path.join(os.tmpdir(), "brainedge-test", "brainedge-saved.json");
+const file = path.join(os.tmpdir(), "madav-test", "madav-saved.json");
 
 beforeEach(() => { try { fs.unlinkSync(file); } catch {} });
 

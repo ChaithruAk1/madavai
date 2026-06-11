@@ -94,7 +94,7 @@ def t_webhook():
         with urllib.request.urlopen(cfg["base_url"].rstrip("/") + "/hook/ping", timeout=3) as r:
             assert json.loads(r.read().decode()).get("ok")
     except Exception:
-        raise RuntimeError("BrainEdge webhook not reachable (start BrainEdge with webhooks enabled — "
+        raise RuntimeError("Madav webhook not reachable (start Madav with webhooks enabled — "
                            "needed for batch runs, not for chat runs)")
 
 
@@ -112,7 +112,7 @@ check("all python sources parse", t_mcp_parse)
 check("indicator math (SMA/RSI/Bollinger/ATR)", t_indicators)
 check("verdict parser (JSON + fallback)", t_verdict_parser)
 check("executor safety gates (off, paper-forced, confirm)", t_executor_gates)
-check("BrainEdge webhook reachable (only needed for batch runs)", t_webhook, optional=True)
+check("Madav webhook reachable (only needed for batch runs)", t_webhook, optional=True)
 check("live market data (AAPL snapshot, needs internet)", t_market_data, optional=True)
 print(f"\n{PASS} passed, {FAIL} failed, {WARN} warning(s)")
 sys.exit(1 if FAIL else 0)

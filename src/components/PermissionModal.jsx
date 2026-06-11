@@ -32,7 +32,7 @@ export default function PermissionModal({ req, onAllow, onAllowAlways, onDeny })
           <h3>{s.title}?</h3>
         </div>
         <div className="modal-body">
-          BrainEdge wants to make a change in your folder.
+          Madav wants to make a change in your folder.
           {s.detail && <div className="tcall">{s.mono ? `$ ${s.detail}` : s.detail}</div>}
         </div>
         <div className="modal-actions">

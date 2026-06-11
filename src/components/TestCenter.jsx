@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // QA Test Center (ADMIN ONLY) — one button runs the full agent-powered test cycle across
 // every layer of the app: code integrity, data stores, file tools, the live model engine
 // (instruction-following, agent identity, team planning, markdown/JSON discipline), and
@@ -129,7 +129,7 @@ export default function TestCenter({ onNavigate }) {
 
   const diagnoseIssue = async (t) => {
     if (!bridge.qaDiagnose) {
-      setRepair(t.id, { state: "error", error: "The Repair Bay was added in this update but the app hasn't reloaded it yet — close BrainEdge completely and reopen it, then try again." });
+      setRepair(t.id, { state: "error", error: "The Repair Bay was added in this update but the app hasn't reloaded it yet — close Madav completely and reopen it, then try again." });
       return;
     }
     setRepair(t.id, { state: "diagnosing", error: null });
@@ -231,7 +231,7 @@ export default function TestCenter({ onNavigate }) {
       <div className="ag-head">
         <div>
           <h2 className="ag-title"><FlaskConical size={20} /> Test Center</h2>
-          <p className="ag-sub">BrainEdge tests BrainEdge. Two testers, one library, one history — run both daily, fix what turns red.</p>
+          <p className="ag-sub">Madav tests Madav. Two testers, one library, one history — run both daily, fix what turns red.</p>
         </div>
         <div className="ag-head-right">
           <button className="btn primary" disabled={busy} onClick={() => { setTab("engine"); start(); }}>{busy ? <><Loader2 size={14} className="ag-spin" /> {pct}%</> : <><Play size={14} /> Run engine cycle</>}</button>

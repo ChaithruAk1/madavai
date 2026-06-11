@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Repair Bay — the fix half of the zero-bug loop.
 // For a failed Test Center check: an AI repair agent reads the error + the suspect file,
 // produces a plain-English diagnosis and an EXACT proposed patch. Nothing is applied
@@ -38,7 +38,7 @@ function suspectFiles(testId) {
     skills_discover: [e("skills-manager.cjs")],
     task_store: [e("task-store.cjs")],
     viamobile_log: [e("viamobile-log.cjs")],
-    cli_parses: [path.join("cli", "agent-core.mjs"), path.join("cli", "brainedge.mjs")],
+    cli_parses: [path.join("cli", "agent-core.mjs"), path.join("cli", "madav.mjs")],
     server_health: [path.join("server", "auth-server.mjs")],
     server_version: [path.join("server", "auth-server.mjs")],
     admin_locked: [path.join("server", "auth-server.mjs")],
@@ -73,7 +73,7 @@ async function diagnose(test) {
     catch { return null; }
   }).filter(Boolean);
 
-  const sys = `You are the repair agent inside BrainEdge's QA Test Center. A self-test failed; diagnose it and, when the cause is in the provided code, propose ONE minimal surgical fix.
+  const sys = `You are the repair agent inside Madav's QA Test Center. A self-test failed; diagnose it and, when the cause is in the provided code, propose ONE minimal surgical fix.
 Reply with ONLY a JSON object, no prose, no code fence:
 {"diagnosis":"2-4 plain-English sentences a non-developer understands: what broke and why",
  "fixable":true|false,

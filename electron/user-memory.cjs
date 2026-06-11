@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // user-memory.cjs — CROSS-CHAT MEMORY (the #1 competitive gap, now closed).
 // One small, durable, human-readable memory about THE USER that follows them into
 // every conversation: chat, collaborate, build, projects. Same proven shape as

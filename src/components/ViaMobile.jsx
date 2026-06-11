@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 import { useEffect, useState } from "react";
 import { Smartphone, Trash2, RefreshCw, FolderInput, ChevronDown, ChevronRight, HelpCircle, ExternalLink } from "lucide-react";
 import { bridge } from "../bridge/index.js";
@@ -74,7 +74,7 @@ export default function ViaMobile({ onSettingsChanged } = {}) {
           {items.length > 0 && <button className="btn ghost danger" onClick={clear}><Trash2 size={14} /> Clear</button>}
         </div>
         <p style={{ color: "var(--text-1)", fontSize: 13.5, marginTop: 4, lineHeight: 1.65 }}>
-          Via Mobile lets you operate BrainEdge remotely through a private Telegram bot. Send the bot an instruction from your
+          Via Mobile lets you operate Madav remotely through a private Telegram bot. Send the bot an instruction from your
           phone and it is executed here on this computer by your active model, with the result delivered back to your chat —
           so you can start work, follow up, or get answers while away from your desk. Because each request runs locally, the bot
           inherits the same capabilities available in the app: answering questions and drafting content, invoking your installed
@@ -115,7 +115,7 @@ export default function ViaMobile({ onSettingsChanged } = {}) {
                 <ol>
                   <li><b>Install Telegram</b> on your phone (or use Telegram Desktop / web) and sign in.</li>
                   <li><b>Create the bot.</b> In Telegram, search for <code>@BotFather</code> (the official one has a blue checkmark) and open it. Tap <b>Start</b>, then send <code>/newbot</code>.</li>
-                  <li><b>Name it.</b> BotFather asks for a display name (anything, e.g. <i>My BrainEdge</i>), then a <b>username</b> that must be unique and end in <code>bot</code> (e.g. <code>my_brainedge_bot</code>).</li>
+                  <li><b>Name it.</b> BotFather asks for a display name (anything, e.g. <i>My Madav</i>), then a <b>username</b> that must be unique and end in <code>bot</code> (e.g. <code>my_madav_bot</code>).</li>
                   <li><b>Copy the token.</b> BotFather replies with an HTTP API token like <code>123456789:AAH…</code>. Copy the whole thing and paste it into <b>Bot token</b> below. Keep it secret — anyone with it can message your bot.</li>
                   <li><b>Find your user id.</b> In Telegram, search <code>@userinfobot</code>, open it, tap <b>Start</b>. It replies with your numeric <b>Id</b> (e.g. <code>123456789</code>). Paste that into <b>Allowed Telegram user id(s)</b>. Only ids listed here may use the bot; add more separated by commas.</li>
                   <li><b>Choose the run target.</b> <b>Chat</b> = answers only, no file or shell access (safest). <b>A folder</b> = the agent can read/edit files and run commands in that folder — only use this for a folder you trust it with.</li>

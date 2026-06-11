@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Agent Browser — agents drive a REAL browser window using Electron's own Chromium.
 // No vision model required: pages are rendered to readable text plus a numbered list
 // of interactive elements, so ANY text model can browse, click, and fill forms.
@@ -57,7 +57,7 @@ function ensureWin(key, title) {
   w = new BrowserWindow({
     width: 1080, height: 780,
     x: 80 + (wins.size % 5) * 36, y: 60 + (wins.size % 5) * 36, // cascade, don't stack
-    title: title ? `${title} — Agent Browser` : "BrainEdge — Agent Browser",
+    title: title ? `${title} — Agent Browser` : "Madav — Agent Browser",
     backgroundColor: "#101216",
     webPreferences: {
       nodeIntegration: false,
@@ -77,8 +77,8 @@ function ensureWin(key, title) {
     const ses = w.webContents.session;
     const ua = ses.getUserAgent()
       .replace(/\sElectron\/[\d.]+/i, "")
-      .replace(/\sBrainEdge\/[\d.]+/i, "")
-      .replace(/\sbrainedge\/[\d.]+/i, "");
+      .replace(/\sMadav\/[\d.]+/i, "")
+      .replace(/\smadav\/[\d.]+/i, "");
     ses.setUserAgent(ua);
     w.webContents.setUserAgent(ua);
   } catch {}

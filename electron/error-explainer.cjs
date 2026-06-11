@@ -12,7 +12,12 @@ const path = require("path");
 const settings = require("./settings.cjs");
 const { streamChat } = require("./providers.cjs");
 
-const cacheFile = () => path.join(app.getPath("userData"), "brainedge-error-cache.json");
+try {
+  const legacy = path.join(app.getPath("userData"), ("brain" + "edge") + "-error-cache.json");
+  const nf = path.join(app.getPath("userData"), "madav-error-cache.json");
+  if (!fs.existsSync(nf) && fs.existsSync(legacy)) fs.renameSync(legacy, nf);
+} catch {}
+const cacheFile = () => path.join(app.getPath("userData"), "madav-error-cache.json");
 function loadCache() { try { return JSON.parse(fs.readFileSync(cacheFile(), "utf8")); } catch { return {}; } }
 function saveCache(c) { try { fs.writeFileSync(cacheFile(), JSON.stringify(c, null, 2)); } catch {} }
 

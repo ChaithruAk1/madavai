@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Desktop auth client: system-browser OAuth via a one-shot loopback, the session token stored
 // ENCRYPTED via safeStorage, and ALWAYS-ONLINE validation against the auth server (see AUTH.md).
@@ -8,7 +8,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { URL } = require("node:url");
 
-const TOKEN_FILE = () => path.join(app.getPath("userData"), "brainedge-session.bin");
+try {
+  const legacy = path.join(app.getPath("userData"), ("brain" + "edge") + "-session.bin");
+  const nf = path.join(app.getPath("userData"), "madav-session.bin");
+  if (!fs.existsSync(nf) && fs.existsSync(legacy)) fs.renameSync(legacy, nf);
+} catch {}
+const TOKEN_FILE = () => path.join(app.getPath("userData"), "madav-session.bin");
 
 function saveToken(t) {
   try {
@@ -35,7 +40,7 @@ function signIn(provider, authBaseUrl) {
       if (u.pathname !== "/cb") { res.writeHead(404); return res.end(); }
       const token = u.searchParams.get("token");
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.end("<!doctype html><meta charset=utf-8><body style='font-family:system-ui;background:#0b0d12;color:#e6e9ef;display:grid;place-items:center;height:100vh'><div style='text-align:center'><h2>Signed in to BrainEdge</h2><p>You can close this window and return to the app.</p></div>");
+      res.end("<!doctype html><meta charset=utf-8><body style='font-family:system-ui;background:#0b0d12;color:#e6e9ef;display:grid;place-items:center;height:100vh'><div style='text-align:center'><h2>Signed in to Madav</h2><p>You can close this window and return to the app.</p></div>");
       if (token) { saveToken(token); finish({ ok: true }); } else finish({ error: "no token returned" });
     });
     srv.listen(0, "127.0.0.1", () => {

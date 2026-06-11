@@ -175,7 +175,7 @@ export default function ProjectsBrowser({ onOpen, onStartChat, onStartCowork, on
           <aside className="pjd-rail">
             <div className="pjd-railsec">
               <div className="pjd-railhead">Instructions</div>
-              <p className="mo-sub" style={{ margin: "0 0 8px" }}>Tailors BrainEdge's responses across every chat in this project.</p>
+              <p className="mo-sub" style={{ margin: "0 0 8px" }}>Tailors Madav's responses across every chat in this project.</p>
               <textarea className="model-search" rows={5} style={{ resize: "vertical", fontFamily: "inherit", width: "100%" }}
                 placeholder="Tone, role, rules, context to always remember…" value={instr}
                 onChange={(e) => setInstr(e.target.value)} onBlur={saveInstr} />

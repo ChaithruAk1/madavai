@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Agent memory — each agent keeps a small file of durable learnings that survives
 // across missions (the agent memory-tool pattern). After a mission, a cheap model call
 // extracts up to three durable notes (user preferences, domain facts, corrections);

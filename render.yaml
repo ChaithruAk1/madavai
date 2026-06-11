@@ -3,7 +3,7 @@
 # in the dashboard (marked sync:false). See GO-LIVE.md for the full walkthrough.
 services:
   - type: web
-    name: brainedge
+    name: madav
     runtime: node
     plan: free
     buildCommand: npm install && npm run build
@@ -19,7 +19,7 @@ services:
       - key: ADMIN_KEY
         generateValue: true
       # --- set these yourself in the Render dashboard (Environment tab) ---
-      - key: AUTH_BASE_URL          # your live URL, e.g. https://brainedge.onrender.com
+      - key: AUTH_BASE_URL          # your live URL, e.g. https://madav.onrender.com
         sync: false
       - key: ALLOWED_REDIRECTS      # same URL (your web app origin)
         sync: false

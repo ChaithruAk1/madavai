@@ -9,7 +9,7 @@ Behavior: Sits in the top "learning" tab strip, left of Ask Sage. Opens the chap
 
 ### Agents · Tab row · Ask Sage
 aliases: mentor, chatbot, help, sage tab, ask
-What: A tab that opens Sage's full-page chat — your agent buddy who answers any BrainEdge-agent question.
+What: A tab that opens Sage's full-page chat — your agent buddy who answers any Madav-agent question.
 Why: Faster than reading the guide; Sage gives a krisp answer and can whisk you to the right screen.
 Behavior: Shares one continuous thread with the floating Sage dock. Replies are short and warm, and may add a "Take me there" button that jumps you straight to Studio, Teams, Recruiter, Floor or Activity.
 

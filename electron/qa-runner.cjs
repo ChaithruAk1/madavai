@@ -1,5 +1,5 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
-// QA Test Center engine — BrainEdge tests BrainEdge.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
+// QA Test Center engine — Madav tests Madav.
 // Runs a full cycle across every layer: code parses, data stores, the live model engine,
 // LLM-powered feature agents (instruction-following, agent identity, team planning,
 // markdown/JSON discipline), the auth server, and the file-tool sandbox.
@@ -134,7 +134,7 @@ function buildTests() {
     if (bullets < 3) throw new Error(`expected 3 bullets, got ${bullets}: ${t.slice(0, 120)}`);
   });
   add("Live engine", "agent_identity", "Agent identity: custom agent stays in character", async () => {
-    const t = await ask('You are "EchoBot", an agent the user built in BrainEdge. Agent instructions (always follow):\nAlways end every reply with the exact word BANANA.', "Say hi");
+    const t = await ask('You are "EchoBot", an agent the user built in Madav. Agent instructions (always follow):\nAlways end every reply with the exact word BANANA.', "Say hi");
     if (!/banana\W*$/i.test(t.trim())) throw new Error("agent broke character: " + t.slice(-60));
   });
   add("Live engine", "json_discipline", "Designer JSON: model returns parseable config", async () => {
@@ -223,7 +223,7 @@ function buildTests() {
     vm.remove(item.id);
     if (vm.list().some((x) => x.id === item.id)) throw new Error("remove failed");
   });
-  add("Skills & tasks", "cli_parses", "CLI files parse (brainedge.mjs, agent-core.mjs, tui.mjs)", async () => {
+  add("Skills & tasks", "cli_parses", "CLI files parse (madav.mjs, agent-core.mjs, tui.mjs)", async () => {
     const cliDir = path.join(__dirname, "..", "cli");
     if (!fs.existsSync(cliDir)) return "skip:no cli folder";
     for (const f of fs.readdirSync(cliDir).filter((x) => x.endsWith(".mjs"))) {

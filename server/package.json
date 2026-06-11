@@ -1,9 +1,9 @@
 {
-  "name": "brainedge-auth-server",
+  "name": "madav-auth-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "BrainEdge auth + trial + billing server (reference).",
+  "description": "Madav auth + trial + billing server (reference).",
   "main": "auth-server.mjs",
   "scripts": {
     "start": "node auth-server.mjs"

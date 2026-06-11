@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // First-run onboarding: the #1 support question is "why doesn't it answer?" (no API key).
 // A 60-second guided start: pick a provider → paste a key (or go local) → verified → chatting.
 import { useState } from "react";
@@ -42,9 +42,9 @@ export default function Onboarding({ onDone }) {
   return (
     <div className="scrim" style={{ zIndex: 60 }}>
       <div className="ob-card">
-        <div className="agg-kicker"><Sparkles size={13} /> Welcome to BrainEdge</div>
+        <div className="agg-kicker"><Sparkles size={13} /> Welcome to Madav</div>
         <h2 className="ob-h">Let's get you talking to a model</h2>
-        <p className="ob-p">BrainEdge runs on any AI provider — your key stays on this device. Pick one to start (you can add more later in Settings):</p>
+        <p className="ob-p">Madav runs on any AI provider — your key stays on this device. Pick one to start (you can add more later in Settings):</p>
 
         <div className="ob-choices">
           {CHOICES.map((c) => (

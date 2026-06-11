@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Browser-side chat transport — an ESM mirror of electron/providers.cjs so the WEB app streams
 // from the same OpenAI-/Anthropic-compatible endpoints the desktop app uses. Calls go straight

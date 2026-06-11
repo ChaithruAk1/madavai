@@ -24,7 +24,7 @@
 
 ## 1. GATE 0 — the machine assembles (5 min)
 ```powershell
-cd C:\Projects\ClaudeCodeUI\BrainEdge
+cd C:\Projects\ClaudeCodeUI\Madav
 npm install          # only if package.json changed since last time
 npm run qa           # external verification: every file parses + clean build + checkpoint
 ```
@@ -63,7 +63,7 @@ node server/auth-server.mjs   # smoke it locally once against the dist build
 **Desktop installer:**
 ```powershell
 # bump "version" in package.json first (e.g. 0.3.0 → 0.4.0)
-npm run electron:build        # → release/BrainEdge-Setup-x.y.z.exe + portable
+npm run electron:build        # → release/Madav-Setup-x.y.z.exe + portable
 ```
 
 ## 6. GATE 3 — verify the artifacts (15 min)

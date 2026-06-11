@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 const { app, BrowserWindow, ipcMain, dialog, shell, powerSaveBlocker, session } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -10,6 +10,27 @@ const pExecFile = require("util").promisify(execFile);
 
 const b64url = (buf) => buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ===== ONE-TIME DATA MIGRATION: legacy app name → Madav ============================
+// The app was renamed; the userData folder moves with the package/product name, which
+// would silently orphan every setting, project and conversation. On first launch with
+// the new name, adopt the legacy folder wholesale (rename = instant; copy fallback).
+// MUST run before ANY store touches userData. The legacy literal is built by
+// concatenation so brand-rename sweeps can never clobber this migration.
+(() => {
+  try {
+    const LEGACY_NAME = "brain" + "edge";
+    const newDir = app.getPath("userData");
+    const legacyDir = path.join(path.dirname(newDir), LEGACY_NAME);
+    if (!fs.existsSync(legacyDir)) return; // nothing to migrate
+    const hasData = (d) => { try { return fs.readdirSync(d).some((f) => f.endsWith(".json") || f === "sessions-data" || f === "projects-data"); } catch { return false; } };
+    if (fs.existsSync(newDir) && hasData(newDir)) return; // new home already in use — never overwrite
+    try { if (fs.existsSync(newDir)) fs.rmSync(newDir, { recursive: true, force: true }); fs.renameSync(legacyDir, newDir); }
+    catch { try { fs.cpSync(legacyDir, newDir, { recursive: true, force: false, errorOnExist: false }); } catch {} } // cross-device/locked: copy, keep legacy as backup
+    console.log("[migrate] adopted legacy data folder:", legacyDir, "→", newDir);
+  } catch (e) { console.warn("[migrate] legacy-data adoption skipped:", String((e && e.message) || e)); }
+})();
+
 const settings = require("./settings.cjs");
 const { SessionManager } = require("./session-manager.cjs");
 const { listModels, ping } = require("./providers.cjs");
@@ -56,9 +77,9 @@ const terminalMod = () => {
   try {
     const undici = require("undici");
     undici.setGlobalDispatcher(undici.EnvHttpProxyAgent ? new undici.EnvHttpProxyAgent() : new undici.ProxyAgent(px));
-    console.log(`[brainedge] proxy enabled → ${px} (NO_PROXY=${process.env.NO_PROXY})`);
+    console.log(`[madav] proxy enabled → ${px} (NO_PROXY=${process.env.NO_PROXY})`);
   } catch (e) {
-    console.log("[brainedge] proxy requested but undici not available — run `npm install undici`. Direct connection. " + (e && e.message));
+    console.log("[madav] proxy requested but undici not available — run `npm install undici`. Direct connection. " + (e && e.message));
   }
 })();
 
@@ -156,15 +177,15 @@ function applyCSP() {
 
 // One SessionManager; it pushes UiEvents to the focused renderer.
 const sm = new SessionManager((uiEvent) => {
-  if (win && !win.isDestroyed()) win.webContents.send("brainedge:event", uiEvent);
+  if (win && !win.isDestroyed()) win.webContents.send("madav:event", uiEvent);
 });
 
 // ---- IPC: commands (renderer → main) ----
-ipcMain.handle("brainedge:start", (_e, req) => sm.start(req));
-ipcMain.handle("brainedge:sendInput", (_e, { sessionId, text, images }) => sm.sendInput(sessionId, text, images));
-ipcMain.handle("brainedge:interrupt", (_e, { sessionId }) => sm.interrupt(sessionId));
-ipcMain.handle("brainedge:setPermissionMode", (_e, { sessionId, mode }) => sm.setPermissionMode(sessionId, mode));
-ipcMain.on("brainedge:resolvePermission", (_e, { requestId, result }) => sm.resolvePermission(requestId, result));
+ipcMain.handle("madav:start", (_e, req) => sm.start(req));
+ipcMain.handle("madav:sendInput", (_e, { sessionId, text, images }) => sm.sendInput(sessionId, text, images));
+ipcMain.handle("madav:interrupt", (_e, { sessionId }) => sm.interrupt(sessionId));
+ipcMain.handle("madav:setPermissionMode", (_e, { sessionId, mode }) => sm.setPermissionMode(sessionId, mode));
+ipcMain.on("madav:resolvePermission", (_e, { requestId, result }) => sm.resolvePermission(requestId, result));
 
 // ---- IPC: model speed check (cloud) ----
 const speedtest = require("./speedtest.cjs");
@@ -175,7 +196,7 @@ let speedRunning = false; // true while a run is in flight (survives renderer na
 let speedStartedAt = 0;
 // The run lives entirely in the main process, so leaving/returning to the view (or
 // even closing the window) does not stop it; the result is persisted on completion.
-ipcMain.handle("brainedge:runSpeedTest", async (_e, { tests, prompt, maxTokens, quiz }) => {
+ipcMain.handle("madav:runSpeedTest", async (_e, { tests, prompt, maxTokens, quiz }) => {
   const cfg = settings.load();
   const usePrompt = (prompt || "").trim() || DEFAULT_SPEED_PROMPT;
   const quizList = Array.isArray(quiz) ? quiz.filter((q) => q && q.id && q.prompt) : [];
@@ -222,7 +243,7 @@ ipcMain.handle("brainedge:runSpeedTest", async (_e, { tests, prompt, maxTokens, 
     try {
       const after = settings.load();
       if (after.activeProfileId !== _speedSnap.pid || ((after.profiles[_speedSnap.pid] || {}).model !== _speedSnap.model)) {
-        console.warn(`[brainedge] speed test changed the active selection (${_speedSnap.pid}/${_speedSnap.model} → ${after.activeProfileId}/${(after.profiles[after.activeProfileId] || {}).model}) — restoring.`);
+        console.warn(`[madav] speed test changed the active selection (${_speedSnap.pid}/${_speedSnap.model} → ${after.activeProfileId}/${(after.profiles[after.activeProfileId] || {}).model}) — restoring.`);
         const fixed = { ...after, activeProfileId: _speedSnap.pid };
         if (fixed.profiles[_speedSnap.pid]) fixed.profiles[_speedSnap.pid] = { ...fixed.profiles[_speedSnap.pid], model: _speedSnap.model };
         settings.save(fixed);
@@ -232,22 +253,22 @@ ipcMain.handle("brainedge:runSpeedTest", async (_e, { tests, prompt, maxTokens, 
 });
 // Snapshot of the user's active selection, taken when a speed run starts (see guard above).
 let _speedSnap = { pid: null, model: null };
-ipcMain.handle("brainedge:cancelSpeedTest", () => { speedAborts.forEach((a) => { try { a.abort(); } catch {} }); speedAborts = []; speedRunning = false; return true; });
-ipcMain.handle("brainedge:getSpeedTestLast", () => { try { return JSON.parse(fs.readFileSync(speedFile(), "utf8")); } catch { return null; } });
-ipcMain.handle("brainedge:getSpeedTestStatus", () => ({ running: speedRunning, startedAt: speedStartedAt }));
+ipcMain.handle("madav:cancelSpeedTest", () => { speedAborts.forEach((a) => { try { a.abort(); } catch {} }); speedAborts = []; speedRunning = false; return true; });
+ipcMain.handle("madav:getSpeedTestLast", () => { try { return JSON.parse(fs.readFileSync(speedFile(), "utf8")); } catch { return null; } });
+ipcMain.handle("madav:getSpeedTestStatus", () => ({ running: speedRunning, startedAt: speedStartedAt }));
 
 // ---- IPC: OpenRouter model metadata (enriches Models Overview) ----
 const orCatalog = require("./openrouter-catalog.cjs");
-ipcMain.handle("brainedge:getOpenRouterCatalog", (_e, opts) => orCatalog.getCatalog(opts || {}));
+ipcMain.handle("madav:getOpenRouterCatalog", (_e, opts) => orCatalog.getCatalog(opts || {}));
 
 // ---- IPC: cross-chat user memory (view / edit / clear from Settings → Profile) ----
 const userMemory = require("./user-memory.cjs");
-ipcMain.handle("brainedge:getUserMemory", () => userMemory.get());
-ipcMain.handle("brainedge:setUserMemory", (_e, notes) => userMemory.setNotes(notes));
-ipcMain.handle("brainedge:clearUserMemory", () => userMemory.clear());
+ipcMain.handle("madav:getUserMemory", () => userMemory.get());
+ipcMain.handle("madav:setUserMemory", (_e, notes) => userMemory.setNotes(notes));
+ipcMain.handle("madav:clearUserMemory", () => userMemory.clear());
 
 // ---- IPC: measured per-model harness stats (tool discipline; PLAN-AGENT-PARITY 3.1) ----
-ipcMain.handle("brainedge:getModelStats", () => {
+ipcMain.handle("madav:getModelStats", () => {
   try {
     const ms = require("./model-stats.cjs");
     const all = ms.all();
@@ -259,28 +280,28 @@ ipcMain.handle("brainedge:getModelStats", () => {
 
 // ---- IPC: persisted chat history (Let's Talk / Collaborate / Build) ----
 const sstore = require("./sessions-store.cjs");
-ipcMain.handle("brainedge:listSessions", (_e, mode, agentScope) => sstore.listSessions(mode, agentScope));
-ipcMain.handle("brainedge:getSession", (_e, id) => sstore.getSession(id));
-ipcMain.handle("brainedge:deleteSession", (_e, id) => sstore.deleteSession(id));
-ipcMain.handle("brainedge:searchSessions", (_e, { q, mode }) => sstore.searchSessions(q, mode));
+ipcMain.handle("madav:listSessions", (_e, mode, agentScope) => sstore.listSessions(mode, agentScope));
+ipcMain.handle("madav:getSession", (_e, id) => sstore.getSession(id));
+ipcMain.handle("madav:deleteSession", (_e, id) => sstore.deleteSession(id));
+ipcMain.handle("madav:searchSessions", (_e, { q, mode }) => sstore.searchSessions(q, mode));
 // Update check: compares this build against a version JSON served by the auth server (or any URL).
-ipcMain.handle("brainedge:getAppVersion", () => { try { return app.getVersion(); } catch { return "0.0.0"; } });
+ipcMain.handle("madav:getAppVersion", () => { try { return app.getVersion(); } catch { return "0.0.0"; } });
 
-// ---- QA Test Center (admin) — BrainEdge tests BrainEdge ----
+// ---- QA Test Center (admin) — Madav tests Madav ----
 // DEV/ADMIN-ONLY TOOLING: these files are EXCLUDED from packaged installers
 // (see build.files "!electron/qa-*" in package.json). End users who download the
 // setup never receive the test engine or the Repair Bay. The guarded require
 // below makes a packaged app simply report "not in this build" instead of crashing.
 let qa = null, qaFixer = null;
 try { qa = require("./qa-runner.cjs"); qaFixer = require("./qa-fixer.cjs"); } catch { /* packaged build — QA not shipped */ }
-const QA_MISSING = { error: "Testing tools aren't included in this build of BrainEdge.", available: false };
-ipcMain.handle("brainedge:qaStart", () => qa ? qa.runCycle((e) => { try { win.webContents.send("brainedge:qa", e); } catch {} }) : QA_MISSING);
-ipcMain.handle("brainedge:qaStatus", () => qa ? { available: true, ...qa.status() } : QA_MISSING);
-ipcMain.handle("brainedge:qaHistory", () => qa ? qa.history() : []);
+const QA_MISSING = { error: "Testing tools aren't included in this build of Madav.", available: false };
+ipcMain.handle("madav:qaStart", () => qa ? qa.runCycle((e) => { try { win.webContents.send("madav:qa", e); } catch {} }) : QA_MISSING);
+ipcMain.handle("madav:qaStatus", () => qa ? { available: true, ...qa.status() } : QA_MISSING);
+ipcMain.handle("madav:qaHistory", () => qa ? qa.history() : []);
 // Repair Bay: AI diagnosis is automatic; APPLYING a fix always requires the admin's explicit approval click.
-ipcMain.handle("brainedge:qaDiagnose", async (_e, test) => { if (!qaFixer) return QA_MISSING; try { return await qaFixer.diagnose(test); } catch (err) { return { error: String(err.message || err) }; } });
-ipcMain.handle("brainedge:qaApplyFix", (_e, fix) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.applyFix(fix); } catch (err) { return { error: String(err.message || err) }; } });
-ipcMain.handle("brainedge:qaRollback", (_e, args) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.rollback(args); } catch (err) { return { error: String(err.message || err) }; } });
+ipcMain.handle("madav:qaDiagnose", async (_e, test) => { if (!qaFixer) return QA_MISSING; try { return await qaFixer.diagnose(test); } catch (err) { return { error: String(err.message || err) }; } });
+ipcMain.handle("madav:qaApplyFix", (_e, fix) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.applyFix(fix); } catch (err) { return { error: String(err.message || err) }; } });
+ipcMain.handle("madav:qaRollback", (_e, args) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.rollback(args); } catch (err) { return { error: String(err.message || err) }; } });
 
 // ---- IPC: Saved library (bookmarked responses) ----
 // Each save is written to a local JSON store AND mirrored into an auto-created
@@ -295,8 +316,8 @@ function ensureSavedProject() {
   try { store.updateProject(p.id, { instructions: "Answers you saved from chats are collected here as knowledge. Ask questions in this project to recall or build on them." }); } catch {}
   return p.id;
 }
-ipcMain.handle("brainedge:listSaved", () => savedStore.listSaved());
-ipcMain.handle("brainedge:saveResponse", (_e, item) => {
+ipcMain.handle("madav:listSaved", () => savedStore.listSaved());
+ipcMain.handle("madav:saveResponse", (_e, item) => {
   const rec = savedStore.addSaved(item || {});
   try {
     const pid = ensureSavedProject();
@@ -309,37 +330,37 @@ ipcMain.handle("brainedge:saveResponse", (_e, item) => {
   } catch {}
   return rec;
 });
-ipcMain.handle("brainedge:updateSaved", (_e, { id, patch }) => savedStore.updateSaved(id, patch || {}));
-ipcMain.handle("brainedge:removeSaved", (_e, id) => {
+ipcMain.handle("madav:updateSaved", (_e, { id, patch }) => savedStore.updateSaved(id, patch || {}));
+ipcMain.handle("madav:removeSaved", (_e, id) => {
   const rec = savedStore.listSaved().find((x) => x.id === id);
   if (rec && rec.projectId && rec.knId) { try { store.removeKnowledge(rec.projectId, rec.knId); } catch {} }
   return savedStore.removeSaved(id);
 });
 
 // ---- IPC: settings + models ----
-ipcMain.handle("brainedge:getSettings", () => settings.load());
-ipcMain.handle("brainedge:saveSettings", (_e, next) => settings.save(next));
-ipcMain.handle("brainedge:listModels", async (_e, profileId) => {
+ipcMain.handle("madav:getSettings", () => settings.load());
+ipcMain.handle("madav:saveSettings", (_e, next) => settings.save(next));
+ipcMain.handle("madav:listModels", async (_e, profileId) => {
   const s = settings.load();
   const p = profileId ? s.profiles[profileId] : settings.activeProfile(s);
   try { return await listModels(p); } catch { return []; }
 });
-ipcMain.handle("brainedge:pingProvider", async (_e, profileId) => {
+ipcMain.handle("madav:pingProvider", async (_e, profileId) => {
   const s = settings.load();
   const p = profileId ? s.profiles[profileId] : settings.activeProfile(s);
   try { return await ping(p); } catch { return false; }
 });
 
 // ---- IPC: folder picker (for Cowork/Code working directory) ----
-ipcMain.handle("brainedge:chooseFolder", async () => {
+ipcMain.handle("madav:chooseFolder", async () => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"] });
   return r.canceled ? null : r.filePaths[0];
 });
-ipcMain.handle("brainedge:openExternal", (_e, url) => { try { if (/^(https?:\/\/|mailto:)/i.test(String(url || ""))) { shell.openExternal(String(url)); return true; } return false; } catch { return false; } });
+ipcMain.handle("madav:openExternal", (_e, url) => { try { if (/^(https?:\/\/|mailto:)/i.test(String(url || ""))) { shell.openExternal(String(url)); return true; } return false; } catch { return false; } });
 
 // ---- IPC: shallow directory listing (for @-mention file picker) ----
 const DIR_SKIP = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", "dist", "build", ".next", ".cache"]);
-ipcMain.handle("brainedge:listDir", (_e, dir) => {
+ipcMain.handle("madav:listDir", (_e, dir) => {
   if (!dir) return [];
   try {
     const out = [];
@@ -355,25 +376,25 @@ ipcMain.handle("brainedge:listDir", (_e, dir) => {
 });
 
 // ---- IPC: connectors (MCP) ----
-ipcMain.handle("brainedge:testConnector", (_e, server) => mcp.testServer(server));
+ipcMain.handle("madav:testConnector", (_e, server) => mcp.testServer(server));
 const connectorRegistry = require("./connector-registry.cjs");
-ipcMain.handle("brainedge:listConnectorDirectory", (_e, opts) => connectorRegistry.listDirectory(opts || {}));
+ipcMain.handle("madav:listConnectorDirectory", (_e, opts) => connectorRegistry.listDirectory(opts || {}));
 
 // ---- IPC: skills ----
-ipcMain.handle("brainedge:listSkills", () => {
+ipcMain.handle("madav:listSkills", () => {
   const cfg = settings.load();
   const disabled = new Set(cfg.disabledSkills || []);
   return skillsMgr.discover(cfg.skillsDirs).map((s) => ({ ...s, enabled: !disabled.has(s.dir) }));
 });
-ipcMain.handle("brainedge:readSkill", (_e, dir) => skillsMgr.readSkill(dir));
-ipcMain.handle("brainedge:setSkillEnabled", (_e, { dir, enabled }) => {
+ipcMain.handle("madav:readSkill", (_e, dir) => skillsMgr.readSkill(dir));
+ipcMain.handle("madav:setSkillEnabled", (_e, { dir, enabled }) => {
   const cfg = settings.load();
   const set = new Set(cfg.disabledSkills || []);
   if (enabled) set.delete(dir); else set.add(dir);
   settings.save({ ...cfg, disabledSkills: [...set] });
   return true;
 });
-ipcMain.handle("brainedge:deleteSkill", (_e, dir) => {
+ipcMain.handle("madav:deleteSkill", (_e, dir) => {
   try {
     fs.rmSync(dir, { recursive: true, force: true });
     const cfg = settings.load();
@@ -381,7 +402,7 @@ ipcMain.handle("brainedge:deleteSkill", (_e, dir) => {
     return { ok: true };
   } catch (e) { return { error: String(e.message || e) }; }
 });
-ipcMain.handle("brainedge:createSkill", (_e, name) => {
+ipcMain.handle("madav:createSkill", (_e, name) => {
   const dir = (settings.load().skillsDirs || [])[0];
   if (!dir) return { error: "Add a skills folder first." };
   try { return skillsMgr.createStarter(dir, name); } catch (e) { return { error: String(e.message || e) }; }
@@ -391,7 +412,7 @@ ipcMain.handle("brainedge:createSkill", (_e, name) => {
 //  - if the folder itself has SKILL.md → import it as one skill
 //  - if it's a parent of several skill subfolders → import each
 //  - guards against copying a folder into itself / one already in the skills path
-ipcMain.handle("brainedge:importSkillFolder", async () => {
+ipcMain.handle("madav:importSkillFolder", async () => {
   const dest = (settings.load().skillsDirs || [])[0];
   if (!dest) return { error: "Add a skills folder first." };
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"], title: "Select a skill folder (or a folder of skills)" });
@@ -427,7 +448,7 @@ ipcMain.handle("brainedge:importSkillFolder", async () => {
 });
 
 // Import a skill from a .zip or .skill archive (extract into the first skills folder).
-ipcMain.handle("brainedge:importSkillZip", async () => {
+ipcMain.handle("madav:importSkillZip", async () => {
   const dest = (settings.load().skillsDirs || [])[0];
   if (!dest) return { error: "Add a skills folder first." };
   const r = await dialog.showOpenDialog(win, { properties: ["openFile"], filters: [{ name: "Skill archive", extensions: ["zip", "skill"] }] });
@@ -458,13 +479,13 @@ ipcMain.handle("brainedge:importSkillZip", async () => {
 });
 
 // ---- IPC: projects + conversations ----
-ipcMain.handle("brainedge:listProjects", () => store.listProjects());
-ipcMain.handle("brainedge:getProject", (_e, id) => store.getProject(id));
-ipcMain.handle("brainedge:createProject", (_e, name) => store.createProject(name));
-ipcMain.handle("brainedge:updateProject", (_e, { id, patch }) => store.updateProject(id, patch));
-ipcMain.handle("brainedge:deleteProject", (_e, id) => store.deleteProject(id));
+ipcMain.handle("madav:listProjects", () => store.listProjects());
+ipcMain.handle("madav:getProject", (_e, id) => store.getProject(id));
+ipcMain.handle("madav:createProject", (_e, name) => store.createProject(name));
+ipcMain.handle("madav:updateProject", (_e, { id, patch }) => store.updateProject(id, patch));
+ipcMain.handle("madav:deleteProject", (_e, id) => store.deleteProject(id));
 
-ipcMain.handle("brainedge:addKnowledgeText", (_e, { projectId, name, content }) => store.addKnowledge(projectId, { name, type: "text", content }));
+ipcMain.handle("madav:addKnowledgeText", (_e, { projectId, name, content }) => store.addKnowledge(projectId, { name, type: "text", content }));
 // Knowledge import — now also parses PDF and Word (.docx) into text via lazy-loaded
 // parsers (pdf-parse / mammoth). If a parser is missing or a file is image-only,
 // the file is skipped with a clear reason instead of importing garbage.
@@ -501,7 +522,7 @@ async function knowledgeText(fp) {
   }
   return fs.readFileSync(fp, "utf8");
 }
-ipcMain.handle("brainedge:addKnowledgeFile", async (_e, projectId) => {
+ipcMain.handle("madav:addKnowledgeFile", async (_e, projectId) => {
   const r = await dialog.showOpenDialog(win, {
     properties: ["openFile", "multiSelections"],
     filters: [
@@ -521,10 +542,10 @@ ipcMain.handle("brainedge:addKnowledgeFile", async (_e, projectId) => {
   }
   return { added, skipped, project: store.getProject(projectId) };
 });
-ipcMain.handle("brainedge:removeKnowledge", (_e, { projectId, knId }) => store.removeKnowledge(projectId, knId));
+ipcMain.handle("madav:removeKnowledge", (_e, { projectId, knId }) => store.removeKnowledge(projectId, knId));
 
 // Link a project to a source folder or a GitHub repo (gives its conversations file access).
-ipcMain.handle("brainedge:linkProjectFolder", async (_e, projectId) => {
+ipcMain.handle("madav:linkProjectFolder", async (_e, projectId) => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory"], title: "Link a folder to this project" });
   if (r.canceled) return { canceled: true };
   store.updateProject(projectId, { folder: r.filePaths[0], githubUrl: "" });
@@ -533,7 +554,7 @@ ipcMain.handle("brainedge:linkProjectFolder", async (_e, projectId) => {
 // Only http(s) repo URLs are accepted (blocks ext::/ssh tricks), and "--" stops git
 // from ever parsing the URL positional as an option (e.g. --upload-pack=...).
 const isHttpRepoUrl = (u) => /^https?:\/\//i.test(String(u || "").trim());
-ipcMain.handle("brainedge:linkGithub", async (_e, { projectId, url }) => {
+ipcMain.handle("madav:linkGithub", async (_e, { projectId, url }) => {
   if (!url) return { error: "Enter a repository URL." };
   if (!isHttpRepoUrl(url)) return { error: "Repository URL must start with https:// (or http://)." };
   const repoName = (url.split("/").pop() || "repo").replace(/\.git$/, "");
@@ -548,7 +569,7 @@ ipcMain.handle("brainedge:linkGithub", async (_e, { projectId, url }) => {
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
 // Clone a repo to work on directly in Build (not tied to a project) — returns the local folder.
-ipcMain.handle("brainedge:cloneRepo", async (_e, url) => {
+ipcMain.handle("madav:cloneRepo", async (_e, url) => {
   if (!url) return { error: "Enter a repository URL." };
   if (!isHttpRepoUrl(url)) return { error: "Repository URL must start with https:// (or http://)." };
   const repoName = (String(url).split("/").pop() || "repo").replace(/\.git$/, "");
@@ -559,18 +580,18 @@ ipcMain.handle("brainedge:cloneRepo", async (_e, url) => {
     return { folder: dest };
   } catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
-ipcMain.handle("brainedge:pullGithub", async (_e, projectId) => {
+ipcMain.handle("madav:pullGithub", async (_e, projectId) => {
   const p = store.getProject(projectId);
   if (!p || !p.folder) return { error: "No linked repo." };
   try { await pExecFile("git", ["pull"], { cwd: p.folder, timeout: 180000 }); return { ok: true }; }
   catch (e) { return { error: String((e && e.message) || e).slice(0, 400) }; }
 });
-ipcMain.handle("brainedge:unlinkProjectSource", (_e, projectId) => store.updateProject(projectId, { folder: "", githubUrl: "" }));
+ipcMain.handle("madav:unlinkProjectSource", (_e, projectId) => store.updateProject(projectId, { folder: "", githubUrl: "" }));
 
-ipcMain.handle("brainedge:listConversations", (_e, projectId) => store.listConversations(projectId));
-ipcMain.handle("brainedge:getConversation", (_e, id) => store.getConversation(id));
-ipcMain.handle("brainedge:createConversation", (_e, projectId) => store.createConversation(projectId));
-ipcMain.handle("brainedge:deleteConversation", (_e, id) => store.deleteConversation(id));
+ipcMain.handle("madav:listConversations", (_e, projectId) => store.listConversations(projectId));
+ipcMain.handle("madav:getConversation", (_e, id) => store.getConversation(id));
+ipcMain.handle("madav:createConversation", (_e, projectId) => store.createConversation(projectId));
+ipcMain.handle("madav:deleteConversation", (_e, id) => store.deleteConversation(id));
 
 // ---- IPC: agent engine (memory · history · missions · versions · share files) ----
 const agentMemory = require("./agent-memory.cjs");
@@ -581,43 +602,43 @@ const agentFiles = require("./agent-files.cjs");
 const webhookServer = require("./webhook-server.cjs");
 
 // Memory — what an agent has learned (view/edit/clear in the Studio Blueprint).
-ipcMain.handle("brainedge:getAgentMemory", (_e, agentId) => agentMemory.get(agentId));
-ipcMain.handle("brainedge:setAgentMemory", (_e, { agentId, notes }) => agentMemory.setNotes(agentId, notes));
-ipcMain.handle("brainedge:clearAgentMemory", (_e, agentId) => agentMemory.clear(agentId));
+ipcMain.handle("madav:getAgentMemory", (_e, agentId) => agentMemory.get(agentId));
+ipcMain.handle("madav:setAgentMemory", (_e, { agentId, notes }) => agentMemory.setNotes(agentId, notes));
+ipcMain.handle("madav:clearAgentMemory", (_e, agentId) => agentMemory.clear(agentId));
 
 // Track record — per-agent run history + roster-wide stats for the agent cards.
-ipcMain.handle("brainedge:getAgentHistory", (_e, agentId) => agentHistory.list(agentId, 50));
-ipcMain.handle("brainedge:getAgentStats", () => agentHistory.stats());
+ipcMain.handle("madav:getAgentHistory", (_e, agentId) => agentHistory.list(agentId, 50));
+ipcMain.handle("madav:getAgentStats", () => agentHistory.stats());
 
 // Durable missions — checkpoint lookup for the "Resume mission" banner.
-ipcMain.handle("brainedge:getMission", (_e, convId) => missionStore.get(convId));
+ipcMain.handle("madav:getMission", (_e, convId) => missionStore.get(convId));
 
 // .agent share files + versioning.
-ipcMain.handle("brainedge:exportAgent", (_e, agent) => agentFiles.exportAgent(win, agent));
-ipcMain.handle("brainedge:importAgent", () => agentFiles.importAgent(win));
-ipcMain.handle("brainedge:snapshotAgentVersion", (_e, agent) => agentFiles.snapshot(agent));
-ipcMain.handle("brainedge:listAgentVersions", (_e, agentId) => agentFiles.listVersions(agentId));
+ipcMain.handle("madav:exportAgent", (_e, agent) => agentFiles.exportAgent(win, agent));
+ipcMain.handle("madav:importAgent", () => agentFiles.importAgent(win));
+ipcMain.handle("madav:snapshotAgentVersion", (_e, agent) => agentFiles.snapshot(agent));
+ipcMain.handle("madav:listAgentVersions", (_e, agentId) => agentFiles.listVersions(agentId));
 
 // Webhook triggers — local HTTP server; external systems fire agents/teams/tasks.
 function reconcileWebhooks() {
   return webhookServer.reconcile({
     settings, taskStore, taskRunner: runner, missionRunner,
-    onRun: (kind, id, run) => { try { if (win && !win.isDestroyed()) win.webContents.send("brainedge:taskRun", { kind, id, run }); } catch {} },
+    onRun: (kind, id, run) => { try { if (win && !win.isDestroyed()) win.webContents.send("madav:taskRun", { kind, id, run }); } catch {} },
   });
 }
-ipcMain.handle("brainedge:applyWebhooks", () => reconcileWebhooks());
-ipcMain.handle("brainedge:webhookStatus", () => webhookServer.status());
-ipcMain.handle("brainedge:newWebhookToken", () => webhookServer.newToken());
+ipcMain.handle("madav:applyWebhooks", () => reconcileWebhooks());
+ipcMain.handle("madav:webhookStatus", () => webhookServer.status());
+ipcMain.handle("madav:newWebhookToken", () => webhookServer.newToken());
 
 // Voice — push-to-talk transcription via the user's own Whisper-capable key.
-ipcMain.handle("brainedge:transcribe", (_e, args) => {
+ipcMain.handle("madav:transcribe", (_e, args) => {
   if (!features.builtIn("voice")) return NOT_IN_BUILD;
   const v = voiceMod();
   if (!v) return NOT_IN_BUILD;
   return v.transcribe(args || {});
 });
 // Windows-native speech-to-text: OS recognizer, no key, no network (win-speech.cjs).
-ipcMain.handle("brainedge:winSpeech", (_e, args) => {
+ipcMain.handle("madav:winSpeech", (_e, args) => {
   if (!features.builtIn("voice")) return NOT_IN_BUILD;
   try {
     const ws = require("./win-speech.cjs");
@@ -628,14 +649,14 @@ ipcMain.handle("brainedge:winSpeech", (_e, args) => {
 
 // Swarms — run one agent over a list with a bounded parallel pool.
 const swarmAborts = new Map(); // swarmId -> AbortController
-ipcMain.handle("brainedge:runSwarm", async (_e, { agentId, items, template, concurrency }) => {
+ipcMain.handle("madav:runSwarm", async (_e, { agentId, items, template, concurrency }) => {
   const cfg = settings.load();
   const agent = missionRunner.findAgent(cfg, agentId);
   if (!agent) return { error: "Agent not found." };
   const swarmId = "swarm_" + Math.random().toString(36).slice(2, 9);
   const ac = new AbortController();
   swarmAborts.set(swarmId, ac);
-  const progress = (p) => { try { if (win && !win.isDestroyed()) win.webContents.send("brainedge:swarm", { swarmId, ...p }); } catch {} };
+  const progress = (p) => { try { if (win && !win.isDestroyed()) win.webContents.send("madav:swarm", { swarmId, ...p }); } catch {} };
   try {
     const r = await missionRunner.runSwarm({ agent, items, template, concurrency, onProgress: progress, signal: ac.signal });
     return { swarmId, results: r.results, report: r.report };
@@ -645,7 +666,7 @@ ipcMain.handle("brainedge:runSwarm", async (_e, { agentId, items, template, conc
     swarmAborts.delete(swarmId);
   }
 });
-ipcMain.handle("brainedge:cancelSwarm", (_e, swarmId) => {
+ipcMain.handle("madav:cancelSwarm", (_e, swarmId) => {
   const ac = swarmAborts.get(swarmId);
   if (ac) { try { ac.abort(); } catch {} swarmAborts.delete(swarmId); return true; }
   // No id (or already gone) → cancel everything in flight.
@@ -654,29 +675,29 @@ ipcMain.handle("brainedge:cancelSwarm", (_e, swarmId) => {
 });
 
 // ---- IPC: scheduled / background tasks ----
-ipcMain.handle("brainedge:listTasks", () => taskStore.listTasks());
-ipcMain.handle("brainedge:createTask", () => taskStore.createTask());
-ipcMain.handle("brainedge:updateTask", (_e, { id, patch }) => taskStore.updateTask(id, patch));
-ipcMain.handle("brainedge:deleteTask", (_e, id) => taskStore.deleteTask(id));
-ipcMain.handle("brainedge:getRuns", (_e, id) => taskStore.getRuns(id));
-ipcMain.handle("brainedge:getUsage", (_e, days) => usage.summary(days));
+ipcMain.handle("madav:listTasks", () => taskStore.listTasks());
+ipcMain.handle("madav:createTask", () => taskStore.createTask());
+ipcMain.handle("madav:updateTask", (_e, { id, patch }) => taskStore.updateTask(id, patch));
+ipcMain.handle("madav:deleteTask", (_e, id) => taskStore.deleteTask(id));
+ipcMain.handle("madav:getRuns", (_e, id) => taskStore.getRuns(id));
+ipcMain.handle("madav:getUsage", (_e, days) => usage.summary(days));
 
 // ---- IPC: messaging (Telegram) ----
-ipcMain.handle("brainedge:applyMessaging", async () => {
+ipcMain.handle("madav:applyMessaging", async () => {
   if (!features.builtIn("viamobile")) return NOT_IN_BUILD;
   const bot = tgbot();
   if (!bot) return NOT_IN_BUILD;
   await reconcileMessaging();
   return bot.getStatus();
 });
-ipcMain.handle("brainedge:messagingStatus", () => {
+ipcMain.handle("madav:messagingStatus", () => {
   if (!features.builtIn("viamobile")) return NOT_IN_BUILD;
   const bot = tgbot();
   if (!bot) return NOT_IN_BUILD;
   return bot.getStatus();
 });
 // One-shot completion (used by the adaptive scheduler wizard for model-driven Q&A).
-ipcMain.handle("brainedge:completeOnce", async (_e, messages) => {
+ipcMain.handle("madav:completeOnce", async (_e, messages) => {
   try {
     const profile = settings.activeProfile();
     if (!profile || !profile.baseUrl) return { error: "No provider configured." };
@@ -687,16 +708,16 @@ ipcMain.handle("brainedge:completeOnce", async (_e, messages) => {
 });
 
 const viaMobileLog = require("./viamobile-log.cjs");
-ipcMain.handle("brainedge:listViaMobile", () => viaMobileLog.list());
-ipcMain.handle("brainedge:removeViaMobile", (_e, id) => viaMobileLog.remove(id));
-ipcMain.handle("brainedge:clearViaMobile", () => viaMobileLog.clear());
+ipcMain.handle("madav:listViaMobile", () => viaMobileLog.list());
+ipcMain.handle("madav:removeViaMobile", (_e, id) => viaMobileLog.remove(id));
+ipcMain.handle("madav:clearViaMobile", () => viaMobileLog.clear());
 
 // ---- IPC: account auth + 7-day trial (see AUTH.md). Always-online; gates the whole UI. ----
 const auth = require("./auth.cjs");
 const authBase = () => (settings.load().authBaseUrl || "http://127.0.0.1:8787");
-ipcMain.handle("brainedge:authSignIn", (_e, provider) => auth.signIn(provider === "github" ? "github" : provider === "dev" ? "dev" : "google", authBase()));
+ipcMain.handle("madav:authSignIn", (_e, provider) => auth.signIn(provider === "github" ? "github" : provider === "dev" ? "dev" : "google", authBase()));
 const roster = require("./roster.cjs");
-ipcMain.handle("brainedge:authMe", async () => {
+ipcMain.handle("madav:authMe", async () => {
   const r = await auth.me(authBase());
   // LOCAL ROSTER OVERRIDE (admin-roster.cjs on this machine) beats the server. This is the
   // hijack-resistant control: even if someone edits admin-emails.txt on the server, whoever
@@ -726,42 +747,42 @@ ipcMain.handle("brainedge:authMe", async () => {
   } catch {}
   return r;
 });
-ipcMain.handle("brainedge:authSignOut", () => auth.signOut(authBase()));
-ipcMain.handle("brainedge:billingCheckout", () => auth.billing("checkout", authBase()));
-ipcMain.handle("brainedge:billingPortal", () => auth.billing("portal", authBase()));
+ipcMain.handle("madav:authSignOut", () => auth.signOut(authBase()));
+ipcMain.handle("madav:billingCheckout", () => auth.billing("checkout", authBase()));
+ipcMain.handle("madav:billingPortal", () => auth.billing("portal", authBase()));
 // Analytics: fire-and-forget product events, and admin-key-gated stats/users/actions.
-ipcMain.handle("brainedge:track", (_e, type, meta) => auth.track(type, meta, authBase()));
-ipcMain.handle("brainedge:adminStats", (_e, adminKey) => auth.adminGet("stats", adminKey, authBase()));
-ipcMain.handle("brainedge:adminUsers", (_e, adminKey) => auth.adminGet("users", adminKey, authBase()));
-ipcMain.handle("brainedge:adminAction", (_e, id, action, adminKey) => auth.adminAction(id, action, adminKey, authBase()));
-ipcMain.handle("brainedge:scoreQuiz", (_e, batch) => auth.scoreQuiz(batch, authBase()));
+ipcMain.handle("madav:track", (_e, type, meta) => auth.track(type, meta, authBase()));
+ipcMain.handle("madav:adminStats", (_e, adminKey) => auth.adminGet("stats", adminKey, authBase()));
+ipcMain.handle("madav:adminUsers", (_e, adminKey) => auth.adminGet("users", adminKey, authBase()));
+ipcMain.handle("madav:adminAction", (_e, id, action, adminKey) => auth.adminAction(id, action, adminKey, authBase()));
+ipcMain.handle("madav:scoreQuiz", (_e, batch) => auth.scoreQuiz(batch, authBase()));
 // Generic authenticated call to the account server (community forum, product requests, share links).
-ipcMain.handle("brainedge:apiCall", (_e, method, path, body) => auth.apiCall(method, path, body, authBase()));
+ipcMain.handle("madav:apiCall", (_e, method, path, body) => auth.apiCall(method, path, body, authBase()));
 
 // Terminal access (CLI): one-click provisioning that reuses the user's provider keys + subscription.
 const cliInstall = require("./cli-install.cjs");
-ipcMain.handle("brainedge:enableCli", () => cliInstall.enableCli(authBase()));
-ipcMain.handle("brainedge:cliStatus", () => cliInstall.cliStatus());
-ipcMain.handle("brainedge:disableCli", () => cliInstall.disableCli());
+ipcMain.handle("madav:enableCli", () => cliInstall.enableCli(authBase()));
+ipcMain.handle("madav:cliStatus", () => cliInstall.cliStatus());
+ipcMain.handle("madav:disableCli", () => cliInstall.disableCli());
 
 // Embedded terminal — a real shell inside the app (streams I/O to an xterm.js view).
-ipcMain.handle("brainedge:termCreate", (e, opts) => {
+ipcMain.handle("madav:termCreate", (e, opts) => {
   if (!features.builtIn("terminal")) return NOT_IN_BUILD;
   const t = terminalMod();
   if (!t) return NOT_IN_BUILD;
   return t.create(e.sender, opts || {});
 });
-ipcMain.handle("brainedge:termInput", (_e, { id, data }) => {
+ipcMain.handle("madav:termInput", (_e, { id, data }) => {
   const t = features.builtIn("terminal") ? terminalMod() : null;
   if (!t) return NOT_IN_BUILD;
   return t.input(id, data);
 });
-ipcMain.handle("brainedge:termResize", (_e, { id, cols, rows }) => {
+ipcMain.handle("madav:termResize", (_e, { id, cols, rows }) => {
   const t = features.builtIn("terminal") ? terminalMod() : null;
   if (!t) return NOT_IN_BUILD;
   return t.resize(id, cols, rows);
 });
-ipcMain.handle("brainedge:termKill", (_e, id) => {
+ipcMain.handle("madav:termKill", (_e, id) => {
   const t = features.builtIn("terminal") ? terminalMod() : null;
   if (!t) return NOT_IN_BUILD;
   return t.kill(id);
@@ -769,20 +790,20 @@ ipcMain.handle("brainedge:termKill", (_e, id) => {
 
 // Mobile link — continue a Let's Collaborate session from Telegram.
 const mobileLink = require("./mobile-link.cjs");
-ipcMain.handle("brainedge:getMobileLink", () => mobileLink.get());
-ipcMain.handle("brainedge:setMobileLink", (_e, link) => mobileLink.set(link));
-ipcMain.handle("brainedge:clearMobileLink", () => mobileLink.clear());
+ipcMain.handle("madav:getMobileLink", () => mobileLink.get());
+ipcMain.handle("madav:setMobileLink", (_e, link) => mobileLink.set(link));
+ipcMain.handle("madav:clearMobileLink", () => mobileLink.clear());
 
 // Keep-awake: prevent the OS from sleeping so scheduled tasks keep firing.
 let psbId = null;
-ipcMain.handle("brainedge:setKeepAwake", (_e, on) => {
+ipcMain.handle("madav:setKeepAwake", (_e, on) => {
   try {
     if (on) { if (psbId === null || !powerSaveBlocker.isStarted(psbId)) psbId = powerSaveBlocker.start("prevent-app-suspension"); }
     else if (psbId !== null) { powerSaveBlocker.stop(psbId); psbId = null; }
   } catch {}
   return !!on;
 });
-ipcMain.handle("brainedge:runTaskNow", async (_e, id) => {
+ipcMain.handle("madav:runTaskNow", async (_e, id) => {
   const t = taskStore.getTask(id);
   if (!t) return { status: "error", output: "Task not found." };
   const run = await runner.runTask(t);
@@ -809,7 +830,7 @@ async function schedulerTick() {
     try {
       const run = await runner.runTask(t);
       taskStore.addRun(t.id, run);
-      if (win && !win.isDestroyed()) win.webContents.send("brainedge:taskRun", { taskId: t.id, run });
+      if (win && !win.isDestroyed()) win.webContents.send("madav:taskRun", { taskId: t.id, run });
     } catch {}
   }
 }
@@ -817,17 +838,17 @@ if (features.builtIn("scheduler")) setInterval(schedulerTick, 60000);
 else console.log("[scheduler] not included in this build — task scheduler disabled.");
 
 // ---- IPC: account / sign-in ----
-ipcMain.handle("brainedge:saveAccount", (_e, account) => {
+ipcMain.handle("madav:saveAccount", (_e, account) => {
   const cfg = settings.load();
   settings.save({ ...cfg, account: { ...(cfg.account || {}), ...account } });
   return settings.load().account;
 });
-ipcMain.handle("brainedge:signOut", () => {
+ipcMain.handle("madav:signOut", () => {
   const cfg = settings.load();
   settings.save({ ...cfg, account: { name: "", email: "", avatar: "", googleLinked: false } });
   return true;
 });
-ipcMain.handle("brainedge:googleSignIn", async () => {
+ipcMain.handle("madav:googleSignIn", async () => {
   const cfg = settings.load();
   const clientId = cfg.googleClientId;
   if (!clientId) return { error: "Add a Google OAuth Client ID (Account settings) first. Create one at console.cloud.google.com → Credentials → OAuth client → Desktop app." };
@@ -842,7 +863,7 @@ ipcMain.handle("brainedge:googleSignIn", async () => {
         const u = new URL(req.url, "http://127.0.0.1");
         const code = u.searchParams.get("code");
         res.writeHead(200, { "Content-Type": "text/html" });
-        res.end("<html><body style='font-family:system-ui;background:#0b0d12;color:#eef;display:grid;place-items:center;height:100vh'><h2>BrainEdge — signed in. You can close this window.</h2></body></html>");
+        res.end("<html><body style='font-family:system-ui;background:#0b0d12;color:#eef;display:grid;place-items:center;height:100vh'><h2>Madav — signed in. You can close this window.</h2></body></html>");
         if (!code) return finish({ error: "No authorization code returned." });
         const body = new URLSearchParams({ code, client_id: clientId, redirect_uri: redirectUri, grant_type: "authorization_code", code_verifier: verifier });
         if (cfg.googleClientSecret) body.set("client_secret", cfg.googleClientSecret);
@@ -868,7 +889,7 @@ ipcMain.handle("brainedge:googleSignIn", async () => {
 });
 
 // GitHub sign-in via device flow (no secret needed; enable Device Flow on your OAuth app).
-ipcMain.handle("brainedge:githubSignIn", async () => {
+ipcMain.handle("madav:githubSignIn", async () => {
   const cfg = settings.load();
   const clientId = cfg.githubClientId;
   if (!clientId) return { error: "Add a GitHub OAuth Client ID in Profile first (github.com → Settings → Developer settings → OAuth Apps → enable Device Flow)." };
@@ -889,7 +910,7 @@ ipcMain.handle("brainedge:githubSignIn", async () => {
         body: JSON.stringify({ client_id: clientId, device_code: dc.device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code" }),
       })).json();
       if (tk.access_token) {
-        const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tk.access_token, "User-Agent": "BrainEdge", Accept: "application/vnd.github+json" } })).json();
+        const u = await (await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tk.access_token, "User-Agent": "Madav", Accept: "application/vnd.github+json" } })).json();
         const account = { ...(cfg.account || {}), name: u.name || u.login || "", email: u.email || "", avatar: u.avatar_url || "", githubLinked: true };
         settings.save({ ...settings.load(), account });
         return { account };

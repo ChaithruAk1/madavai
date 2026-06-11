@@ -1,6 +1,6 @@
-# BrainEdge — Build Roadmap
+# Madav — Build Roadmap
 
-**Goal:** replicate Claude Desktop functionality in a custom app (BrainEdge), with a simple, efficient,
+**Goal:** replicate Claude Desktop functionality in a custom app (Madav), with a simple, efficient,
 and flexible way to run Anthropic, external-cloud, and local LLMs.
 
 **Two transports, one UI contract** (`src/bridge/contract.js`). The renderer only ever sees
@@ -17,7 +17,7 @@ The end-to-end spine. Proves Electron ⇄ main ⇄ provider ⇄ streamed UI.
 
 **Scope**
 - Electron shell: `BrowserWindow`, dev/prod loading, lifecycle.
-- `window.brainedge` preload bridge implementing the full `Bridge` contract over IPC.
+- `window.madav` preload bridge implementing the full `Bridge` contract over IPC.
 - `SessionManager` with a working **chat transport**:
   - OpenAI-compatible (`/v1/chat/completions`) — OpenRouter, DeepSeek, Groq, Together, Ollama, LM Studio.
   - Anthropic-compatible (`/v1/messages`) — Anthropic direct, or the free-claude-code proxy.

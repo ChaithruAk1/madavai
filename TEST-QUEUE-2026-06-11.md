@@ -86,10 +86,10 @@ with a custom agent; plain Let's Chat without skills/connectors has no tool loop
 
 1. Studio → your test agent → Capabilities → toggle **Desktop** on → in "Allowed apps"
    type: `notepad`.
-2. Put to work → task: "Open Notepad and type 'Hello from BrainEdge' into it."
+2. Put to work → task: "Open Notepad and type 'Hello from Madav' into it."
 3. **PASS:** permission prompts appear for open/focus/type (approve each — reads are
    free); Notepad opens; the text lands in it. Chat shows human cards ("Opened
-   notepad", "Typed \"Hello from BrainEdge\" into the app").
+   notepad", "Typed \"Hello from Madav\" into the app").
 4. Guardrails: ask it to "open calculator" → refused (calc isn't in the allowlist you
    set). Clear the allowlist → calc works (empty = any).
 5. Settings → Extras → **PASS:** "Desktop control" toggle exists; switch it OFF → the

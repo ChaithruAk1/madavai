@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Composer from "../../src/components/Composer.jsx";
 
-// In jsdom there is no window.brainedge, so the Composer uses the in-memory mockBridge.
+// In jsdom there is no window.madav, so the Composer uses the in-memory mockBridge.
 
 describe("Composer", () => {
   it("renders a textarea", () => {

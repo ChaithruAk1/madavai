@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // AgentOps — Mission Control's little sibling: a live side panel for SOLO agent turns.
 // Shows the working portrait, an elapsed clock, and every tool step as it happens.
 // Reuses the .tops-* station styling from Mission Control so the two feel like family.

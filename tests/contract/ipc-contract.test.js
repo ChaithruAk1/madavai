@@ -18,7 +18,7 @@ const handled = new Set([
   ...matchAll(/ipcMain\.(?:handle|on)\(\s*["'`]([\w:]+)["'`]/g, main),
 ]);
 
-// Method names exposed on window.brainedge, and methods implemented by the mock.
+// Method names exposed on window.madav, and methods implemented by the mock.
 const preloadMethods = new Set(matchAll(/^\s{2}([a-zA-Z]\w*):\s*(?:async\s*)?\(/gm, preload));
 const mockMethods = new Set([
   ...matchAll(/^\s{2}(?:async\s+)?([a-zA-Z]\w*)\s*\(/gm, mock),

@@ -135,7 +135,7 @@ export default function Settings({ onChanged }) {
             </div>
 
             <div className="prof-card">
-              <div className="prof-card-h"><span className="prof-ico"><Sparkles size={15} /></span> Instructions for BrainEdge</div>
+              <div className="prof-card-h"><span className="prof-ico"><Sparkles size={15} /></span> Instructions for Madav</div>
               <p className="prof-sub">Applied to <b>every</b> conversation (Chat, Code, Cowork, Projects) — tone, role, rules, and things to always remember.</p>
               <textarea className="model-search" rows={6} style={{ resize: "vertical", fontFamily: "inherit" }}
                 value={s.globalInstructions || ""} onChange={(e) => setS({ ...s, globalInstructions: e.target.value })}
@@ -160,7 +160,7 @@ export default function Settings({ onChanged }) {
         {section === "terminal" && (
           <div style={{ maxWidth: 720 }}>
             <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Terminal access</h2>
-            <p style={{ color: "var(--text-2)", fontSize: 13, margin: "0 0 16px" }}>Run BrainEdge as a coding agent in any terminal — like the desktop app, but in your shell. It's set up automatically for active subscribers using the provider and key you already configured; the controls below let you re-run or turn it off.</p>
+            <p style={{ color: "var(--text-2)", fontSize: 13, margin: "0 0 16px" }}>Run Madav as a coding agent in any terminal — like the desktop app, but in your shell. It's set up automatically for active subscribers using the provider and key you already configured; the controls below let you re-run or turn it off.</p>
             <CliAccess />
           </div>
         )}
@@ -322,7 +322,7 @@ function AgentBrowserSettings({ s, setField }) {
   );
 }
 
-/* Cross-chat memory — what BrainEdge remembers about you, everywhere.
+/* Cross-chat memory — what Madav remembers about you, everywhere.
    Lives in a local file on this device; injected only into your own model's prompts. */
 function UserMemoryCard({ s, setField }) {
   const [notes, setNotes] = useState(null); // null = loading
@@ -338,7 +338,7 @@ function UserMemoryCard({ s, setField }) {
     <div className="prof-card">
       <div className="prof-card-h"><span className="prof-ico"><Brain size={15} /></span> Memory</div>
       <p className="prof-sub">
-        BrainEdge quietly remembers durable facts about you (preferences, your projects, corrections) and applies them
+        Madav quietly remembers durable facts about you (preferences, your projects, corrections) and applies them
         in <b>every</b> conversation. Stored only on this device — view and edit everything below.
       </p>
       <label className="chip" style={{ cursor: "pointer", display: "inline-flex", marginBottom: 10 }}>

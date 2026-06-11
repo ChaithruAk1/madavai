@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Voice — push-to-talk transcription. The renderer records audio (MediaRecorder)
 // and sends it here; we transcribe through the user's OWN OpenAI-compatible Whisper
 // endpoint (OpenAI or Groq key — whichever profile has one). No new accounts, no

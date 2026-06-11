@@ -1,23 +1,23 @@
-# BrainEdge — Authentication, Trial & Access Control (Phase 1)
+# Madav — Authentication, Trial & Access Control (Phase 1)
 
-> © 2026 Samskruthi Harish. Proprietary. This document is the contract between the BrainEdge
-> client (desktop + future web) and the BrainEdge **auth server**.
+> © 2026 Samskruthi Harish. Proprietary. This document is the contract between the Madav
+> client (desktop + future web) and the Madav **auth server**.
 
 ## Goals
 
-1. Every user must **sign in** (Google or GitHub only) to use BrainEdge — web *or* desktop.
+1. Every user must **sign in** (Google or GitHub only) to use Madav — web *or* desktop.
 2. **7‑day free trial** from first sign‑up, then a mandatory **paid subscription** (Stripe; no card
    required up front for launch).
 3. **Always online**: the desktop app does **not** run offline. It validates the session with the
    server on every launch and periodically; no connection or invalid account ⇒ blocked.
 4. **Behavior tracking** tied to the account id (analytics, added later).
 5. **Ban / suspend** a user server‑side; takes effect within minutes everywhere.
-6. Users keep using **their own LLM API keys** — BrainEdge never proxies models or pays for
-   inference. What is gated is **the BrainEdge experience**, not the model calls.
+6. Users keep using **their own LLM API keys** — Madav never proxies models or pays for
+   inference. What is gated is **the Madav experience**, not the model calls.
 
 ## What is gated vs. local
 
-- **Gated (requires a valid, non‑suspended, trial/active account, online):** the whole BrainEdge UI.
+- **Gated (requires a valid, non‑suspended, trial/active account, online):** the whole Madav UI.
 - **Local & private (unchanged):** the user's LLM keys and all inference — those still go directly
   from the user's machine to their chosen provider. The auth server never sees prompts or keys.
 
@@ -116,7 +116,7 @@ session token.
 ## "Always online" rule
 
 - On launch the gate **must** get a successful `/me`. If the request fails (no internet) or returns
-  non‑OK, the app shows a blocking **"BrainEdge needs an internet connection and a signed‑in account"**
+  non‑OK, the app shows a blocking **"Madav needs an internet connection and a signed‑in account"**
   screen — it never falls back to an offline/cached session.
 - A re‑validation runs every few minutes; a failure or `suspended`/`expired` result re‑locks the app.
 

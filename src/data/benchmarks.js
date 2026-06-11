@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Curated, APPROXIMATE benchmark figures for well-known models, matched by model-id substring.
 // No provider API publishes these, so they're hand-maintained from public evals (SWE-bench Verified,

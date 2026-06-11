@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Chat transport: stream from OpenAI- or Anthropic-compatible endpoints.
 // Node 18+/Electron has global fetch + ReadableStream. No deps.
 

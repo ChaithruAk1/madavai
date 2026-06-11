@@ -1,7 +1,7 @@
 @echo off
-REM BrainEdge auto-sync: stage, commit (only if there are changes), and push.
+REM Madav auto-sync: stage, commit (only if there are changes), and push.
 REM Runs as you, so it uses your saved GitHub credentials.
-cd /d "C:\Projects\ClaudeCodeUI\BrainEdge"
+cd /d "C:\Projects\ClaudeCodeUI\Madav"
 
 git add -A
 REM Exit quietly if nothing is staged.

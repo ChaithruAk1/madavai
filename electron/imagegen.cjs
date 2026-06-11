@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // imagegen.cjs — TEXT→IMAGE through the model selector. No separate key system:
 // the active profile + model do the work. Primary path is the OpenAI-compatible
 // chat/completions call with modalities ["image","text"] (OpenRouter serves Gemini

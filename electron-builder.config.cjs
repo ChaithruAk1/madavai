@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // electron-builder config = the "build" block from package.json + Windows code signing
 // layered on top WHEN signing credentials are present in the environment.
 // With no credentials this exports the exact same config as before — dev and admin
@@ -42,8 +42,8 @@ if (channel === "public" && feat) {
   for (const [k, files] of Object.entries(EXCLUDABLE)) if (feat[k] === false) build.files.push(...files);
 }
 // Channel-stamped artifacts so the two installers can never be confused:
-build.artifactName = `BrainEdge-${channel}-\${version}-setup.\${ext}`;
-build.portable = { ...(build.portable || {}), artifactName: `BrainEdge-${channel}-portable-\${version}.\${ext}` };
+build.artifactName = `Madav-${channel}-\${version}-setup.\${ext}`;
+build.portable = { ...(build.portable || {}), artifactName: `Madav-${channel}-portable-\${version}.\${ext}` };
 
 if (process.env.AZURE_SIGNING === "1") {
   build.win.azureSignOptions = {

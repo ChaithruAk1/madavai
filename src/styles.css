@@ -1,5 +1,5 @@
-/* © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE. */
-/* BrainEdge — "Aurora Noir": original futuristic-minimal dark theme. */
+/* © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE. */
+/* Madav — "Aurora Noir": original futuristic-minimal dark theme. */
 :root {
   --bg-0: #07080b;            /* app canvas (near-black, cool) */
   --bg-1: #0d0f14;            /* panels */
@@ -44,14 +44,14 @@
   --warn: #b45309;
   --danger: #dc2626;
 }
-/* Default accent turns terracotta in light; custom accents are untouched. */
+/* Default accent in light = deep teal rgb(0,128,113); a custom user accent still wins. */
 :root[data-theme="light"][data-accent="default"] {
-  --accent: #c96442;
-  --accent-rgb: 201,100,66;
-  --accent-2: #d97757;
-  --accent2-rgb: 217,119,87;
-  --accent-weak: rgba(201,100,66,0.12);
-  --accent-line: rgba(201,100,66,0.5);
+  --accent: #008071;
+  --accent-rgb: 0,128,113;
+  --accent-2: #0a9a87;
+  --accent2-rgb: 10,154,135;
+  --accent-weak: rgba(0,128,113,0.12);
+  --accent-line: rgba(0,128,113,0.5);
 }
 :root[data-theme="light"] body {
   /* one barely-there warm wash — no teal glow in light */
@@ -65,6 +65,8 @@
 :root[data-theme="light"] .plus-menu,
 :root[data-theme="light"] .slash-menu,
 :root[data-theme="light"] .msg-menu { background: rgba(253,252,250,0.99); box-shadow: 0 18px 50px rgba(62,55,42,0.16); }
+/* Model selector dropdown hardcodes a dark glass background — re-skin for light. */
+:root[data-theme="light"] .model-menu { background: rgba(253,252,250,0.98); box-shadow: 0 18px 50px rgba(62,55,42,0.18); }
 :root[data-theme="light"] .sidebar.glass { background: linear-gradient(180deg, rgba(62,55,42,0.025), rgba(62,55,42,0) 22%), var(--bg-1); }
 :root[data-theme="light"] *::-webkit-scrollbar-thumb { background: rgba(62,55,42,0.20); }
 /* Quiet chrome: selected nav reads as warm grey; the accent is saved for actions. */
@@ -75,11 +77,11 @@
 :root[data-theme="light"] .hist-item.active {
   background: var(--bg-2); box-shadow: none; border-color: transparent; color: var(--text-0);
 }
-:root[data-theme="light"] .nav-item.active svg,
-:root[data-theme="light"] .tn-tab.active .tn-tabicon { color: var(--text-0); filter: none; animation: none; }
+:root[data-theme="light"] .nav-item.active svg { color: var(--text-0); filter: none; animation: none; }
+:root[data-theme="light"] .tn-tab.active .tn-tabicon { color: var(--accent); filter: none; animation: none; }
 :root[data-theme="light"] .tn-tab { background: var(--bg-1); border-color: var(--line); }
 :root[data-theme="light"] .tn-tab:hover { background: var(--bg-2); border-color: var(--line-2); box-shadow: none; }
-:root[data-theme="light"] .tn-tabicon { color: var(--text-1); filter: none; }
+:root[data-theme="light"] .tn-tabicon { color: var(--accent); filter: none; } /* mode icons follow the default/custom accent */
 /* Primary actions carry the accent (terracotta by default) — never black. */
 :root[data-theme="light"] .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
 :root[data-theme="light"] .btn.primary:hover { background: var(--accent-2); }
@@ -1093,7 +1095,7 @@ input, textarea, select { font-family: inherit; }
 .bot-help li { font-size: 13px; line-height: 1.55; color: var(--text-1); }
 .bot-help code { background: var(--bg-3); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font-family: var(--mono); font-size: 12px; color: var(--text-0); }
 .bot-help-note { font-size: 12px; color: var(--text-2); line-height: 1.5; margin: 12px 0 0; padding-left: 8px; }
-/* Scheduler wizard (Create with BrainEdge) */
+/* Scheduler wizard (Create with Madav) */
 .wiz-q { font-size: 15px; font-weight: 500; color: var(--text-0); margin: 14px 0 10px; }
 .wiz-opts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
 .wiz-opt { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--bg-1); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; color: var(--text-0); font: inherit; cursor: pointer; transition: border-color .12s, background .12s; }
@@ -1383,8 +1385,8 @@ textarea.model-search { line-height: 1.5; }
   color: var(--accent); -webkit-text-fill-color: var(--accent); background: none;
 }
 .tn-by { font-size: 11px; font-weight: 500; color: var(--text-2); letter-spacing: .2px; margin-top: -1px; }
-/* Light mode: solid single-color wordmark, no shimmer animation. */
-:root[data-theme="light"] .tn-name { background: none; -webkit-text-fill-color: var(--text-0); color: var(--text-0); animation: none; }
+/* Light mode: wordmark carries the ACCENT (default teal or the user's custom pick), no shimmer. */
+:root[data-theme="light"] .tn-name { background: none; -webkit-text-fill-color: var(--accent); color: var(--accent); animation: none; }
 :root[data-theme="light"] .tn-by { background: none; -webkit-text-fill-color: var(--text-2); color: var(--text-2); animation: none; }
 /* Center the tab group over the chat/content area (right of the sidebar), not the whole window.
    Sidebar is 236px when open → shift the center by half that. Collapsed → true center. */
@@ -1746,10 +1748,10 @@ textarea.model-search { line-height: 1.5; }
 /* book icon: pages turning */
 .agg-book { animation: agg-flip 2.6s ease-in-out infinite; transform-origin: 50% 50%; }
 @keyframes agg-flip { 0%, 55%, 100% { transform: rotateY(0deg); } 65% { transform: rotateY(-140deg); } 75% { transform: rotateY(0deg); } 85% { transform: rotateY(-140deg); } 95% { transform: rotateY(0deg); } }
-/* guide tab + tab divider — guide gets its own standing highlight (distinct violet, not the accent) */
-.ags-guide-tab { color: #a99bff; border-color: rgba(139,124,246,0.55); background: rgba(139,124,246,0.16); font-weight: 600; }
-.ags-guide-tab:hover { background: rgba(139,124,246,0.26); }
-.ags-guide-tab svg { color: #a99bff !important; }
+/* guide tab + tab divider — consistent with the theme accent (was a fixed lavender) */
+.ags-guide-tab { color: var(--accent); border-color: var(--accent-line); background: var(--accent-weak); font-weight: 600; }
+.ags-guide-tab:hover { background: rgba(var(--accent-rgb), 0.22); }
+.ags-guide-tab svg { color: var(--accent) !important; }
 .ags-tab-div { width: 1px; align-self: stretch; background: var(--line); margin: 2px 4px; }
 /* Studio model picker: stands out like "Put to work" (it's what agents run on) */
 /* Studio model picker: a simple, quiet bordered button (accent reserved for the

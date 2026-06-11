@@ -1,8 +1,8 @@
-# BrainEdge for Chrome (browsing agent)
+# Madav for Chrome (browsing agent)
 
 A Manifest V3 Chrome extension: a side‑panel agent that reads the active tab and
 clicks / types / navigates for you, driven by **your own** OpenAI‑compatible LLMs.
-It has the same multi‑provider + model‑selector concept as the BrainEdge desktop app.
+It has the same multi‑provider + model‑selector concept as the Madav desktop app.
 
 It's independent of the desktop app — keys live in `chrome.storage`, and it only
 touches the page you point it at. It cannot read files or run shell commands

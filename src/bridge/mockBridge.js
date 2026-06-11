@@ -1,7 +1,7 @@
 // Mock implementation of the Bridge contract. Streams fake UiEvents so the
 // renderer layout is fully exercised — including a tool call that pauses on a
 // permission_request until the UI calls resolvePermission(). Swap this for the
-// real `window.brainedge` (Electron preload → SessionManager) with no UI changes.
+// real `window.madav` (Electron preload → SessionManager) with no UI changes.
 
 let seq = 0;
 const listeners = new Set();
@@ -25,7 +25,7 @@ async function streamText(sessionId, text, chunk = 3, delay = 18) {
 // Canned "turn" that shows off every event kind.
 async function runDemoTurn(sessionId, mode, prompt) {
   emit(sessionId, "init", {
-    model: "deepseek/deepseek-v3", cwd: "~/projects/brainedge",
+    model: "deepseek/deepseek-v3", cwd: "~/projects/madav",
     permissionMode: mode === "cowork" ? "acceptEdits" : "default",
     tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
   });
@@ -184,14 +184,14 @@ export const mockBridge = {
   async clearViaMobile() { return true; },
   // Auth (browser/mock dev): pretend the user is in an active trial so the gate doesn't block dev.
   async authSignIn() { return { ok: true }; },
-  async authMe() { return { user: { name: "Dev User", email: "dev@brainedge.local", provider: "google" }, admin: true, status: "trialing", daysLeft: 7, subscription: { active: false, plan: null } }; },
+  async authMe() { return { user: { name: "Dev User", email: "dev@madav.local", provider: "google" }, admin: true, status: "trialing", daysLeft: 7, subscription: { active: false, plan: null } }; },
   async authSignOut() { return { ok: true }; },
   async billingCheckout() { return { error: "billing not available in browser dev" }; },
   async billingPortal() { return { error: "billing not available in browser dev" }; },
   async track() { return { ok: true }; },
   async apiCall() { return { error: "offline" }; },
-  async adminStats() { return { counts: { total: 3, trialing: 1, active: 1, expired: 1, suspended: 0, paying: 1, comp: 1, active24h: 2, active7d: 3, new7d: 2 }, last7d: { signup: 2, signin: 9, subscribed: 1 }, events: [{ ts: new Date().toISOString(), userId: "dev:dev@brainedge.local", type: "signin", meta: { provider: "dev" } }] }; },
-  async adminUsers() { return { users: [{ id: "dev:dev@brainedge.local", name: "Dev User", email: "dev@brainedge.local", provider: "dev", status: "trialing", daysLeft: 7, createdAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), suspended: false, freeAccess: false, subscriptionActive: false, plan: null }] }; },
+  async adminStats() { return { counts: { total: 3, trialing: 1, active: 1, expired: 1, suspended: 0, paying: 1, comp: 1, active24h: 2, active7d: 3, new7d: 2 }, last7d: { signup: 2, signin: 9, subscribed: 1 }, events: [{ ts: new Date().toISOString(), userId: "dev:dev@madav.local", type: "signin", meta: { provider: "dev" } }] }; },
+  async adminUsers() { return { users: [{ id: "dev:dev@madav.local", name: "Dev User", email: "dev@madav.local", provider: "dev", status: "trialing", daysLeft: 7, createdAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), suspended: false, freeAccess: false, subscriptionActive: false, plan: null }] }; },
   async adminAction() { return { ok: true }; },
   // Agent engine (desktop): memory · track record · missions · versions · swarms · webhooks.
   async getAgentMemory() { return { notes: [] }; },
@@ -231,5 +231,5 @@ let _mockSettings = {
   },
 };
 
-// In the real app: export const bridge = window.brainedge ?? mockBridge;
+// In the real app: export const bridge = window.madav ?? mockBridge;
 export const bridge = mockBridge;

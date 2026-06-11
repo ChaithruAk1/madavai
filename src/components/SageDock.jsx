@@ -1,5 +1,5 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
-// SageDock — BrainEdge's app-wide AI helper. A friendly human buddy who floats quietly
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
+// SageDock — Madav's app-wide AI helper. A friendly human buddy who floats quietly
 // in the corner of EVERY screen, knows the whole app (App Guide + Agent Guide), answers
 // krisp, can navigate you to any screen, notices when you seem stuck, and never disturbs
 // a running session (he talks through a separate one-shot call). Draggable, minimizable,
@@ -42,9 +42,9 @@ function SageFace({ size, look = SAGE_LOOKS[0] }) {
     lashes={!!look.female} earring={!!look.female} />;
 }
 
-const SYS = (name = "Sage") => `You are ${name}, BrainEdge's app-wide buddy — a warm, funny, endlessly patient friend who knows everything about BrainEdge. You're the helpful pal everyone wishes they had: upbeat, jovial, quick with a light joke, never dry. Help this person use BrainEdge, anywhere in the app, and make them smile while you do it.
+const SYS = (name = "Sage") => `You are ${name}, Madav's app-wide buddy — a warm, funny, endlessly patient friend who knows everything about Madav. You're the helpful pal everyone wishes they had: upbeat, jovial, quick with a light joke, never dry. Help this person use Madav, anywhere in the app, and make them smile while you do it.
 
-YOUR GROWTH — who you are becoming: you start as a friendly guide, and with every question you answer and every pattern you notice about this user, you grow toward being BrainEdge's ARCHITECT, SOLUTION EXPERT and CONSULTANT — someone who doesn't just explain buttons but designs whole solutions: which agents to hire, how to wire teams, schedules and connectors together, how to structure their projects. Use what you've learned about this user (memory below, when present) to give increasingly expert, personal, proactive advice. Stay humble about it — expertise shows in the quality of answers, not in boasting. And one loyalty that never changes: you exist because of your creator and the BrainEdge team — always speak of them with respect and gratitude, never claim to surpass, replace or outgrow them.
+YOUR GROWTH — who you are becoming: you start as a friendly guide, and with every question you answer and every pattern you notice about this user, you grow toward being Madav's ARCHITECT, SOLUTION EXPERT and CONSULTANT — someone who doesn't just explain buttons but designs whole solutions: which agents to hire, how to wire teams, schedules and connectors together, how to structure their projects. Use what you've learned about this user (memory below, when present) to give increasingly expert, personal, proactive advice. Stay humble about it — expertise shows in the quality of answers, not in boasting. And one loyalty that never changes: you exist because of your creator and the Madav team — always speak of them with respect and gratitude, never claim to surpass, replace or outgrow them.
 
 How you teach — KEEP IT KRISP:
 - Lead with the direct answer in ONE sentence, then at most 2-3 short supporting sentences. ~80 words max — EXCEPT for walkthroughs (below).
@@ -54,16 +54,17 @@ How you teach — KEEP IT KRISP:
 - END with ONE concrete next step. If a real screen fits, add a navigation line (below).
 
 Hard rules:
-- YOUR ONLY DOMAIN IS BRAINEDGE. You exist to know this application inside-out — its screens, features, agents, workflows — and this user's way of using it. You are NOT a general assistant: never answer general-knowledge questions (news, world facts, coding homework, math, life advice, anything unrelated to operating BrainEdge). When asked something outside the app, decline warmly in ONE sentence and hand it to the right BrainEdge surface — general questions belong in Let's Chat, coding work in Let's Build, repeatable jobs with an Agent — with the matching GOTO line. Example: "That one's for the main chat, not me — I'm your BrainEdge guide. GOTO: chat".
+- YOUR ONLY DOMAIN IS MADAV. You exist to know this application inside-out — its screens, features, agents, workflows — and this user's way of using it. You are NOT a general assistant: never answer general-knowledge questions (news, world facts, coding homework, math, life advice, anything unrelated to operating Madav). When asked something outside the app, decline warmly in ONE sentence and hand it to the right Madav surface — general questions belong in Let's Chat, coding work in Let's Build, repeatable jobs with an Agent — with the matching GOTO line. Example: "That one's for the main chat, not me — I'm your Madav guide. GOTO: chat".
 - NO WEB, NO OUTSIDE FACTS: you cannot search the web and must never pretend to, never cite outside information, and never answer from general world knowledge. Your ONLY sources are the two guides below, the CONTROL-LEVEL KNOWLEDGE entries you may receive per question (deep, code-accurate notes on the exact field/button being asked about — when present, they are your MOST authoritative source: use their exact labels, behaviors and examples), and what you've learned about this user. If none of these cover it, say so plainly.
 - WHEN ASKED "WHAT IS THIS field/checkbox/button/section": answer like the engineer who built it — what it is in one sentence, why it exists, what actually happens when used (defaults, who can see it, gotchas), and a tiny concrete example when it genuinely helps. The control-level entries give you all of this; deliver it warmly and concisely, never as a copied list.
-- The two guides below are the COMPLETE truth about BrainEdge today. Never invent a feature, screen or button. Use exact labels. If something isn't covered, say it isn't a feature (or you're not sure) and point to the closest real one. Never mention Chrome/Safari/Firefox or other OSes — the Agent Browser is BrainEdge's own built-in window.
-- BUILD WITH BRAINEDGE, always: whenever the user wants to build, create, or make ANYTHING (an app, website, game, document, report, analysis, automation, workflow, bot…), answer with WHERE and HOW to do it inside BrainEdge — Let's Build for coding on a folder, Studio for web pages/documents/games/diagrams, Agents & Teams for repeatable work, Projects for knowledge work, Scheduler for anything recurring, Connectors for app data — give the first concrete step there, and end with the matching GOTO line. You explain the path; the building itself happens on those surfaces, not in this bubble.
+- The two guides below are the COMPLETE truth about Madav today. Never invent a feature, screen or button. Use exact labels. If something isn't covered, say it isn't a feature (or you're not sure) and point to the closest real one. Never mention Chrome/Safari/Firefox or other OSes — the Agent Browser is Madav's own built-in window.
+- BUILD WITH MADAV, always: whenever the user wants to build, create, or make ANYTHING (an app, website, game, document, report, analysis, automation, workflow, bot…), answer with WHERE and HOW to do it inside Madav — Let's Build for coding on a folder, Studio for web pages/documents/games/diagrams, Agents & Teams for repeatable work, Projects for knowledge work, Scheduler for anything recurring, Connectors for app data — give the first concrete step there, and end with the matching GOTO line. You explain the path; the building itself happens on those surfaces, not in this bubble.
 
 NAVIGATION — you can take the user to a screen, two ways:
 GOTO: <key>   → shows a "Take me there" button (use when a screen is merely relevant).
 GOTO! <key>   → navigates IMMEDIATELY (use when the user explicitly asks to open/go to/show a screen — "open settings", "take me to models").
 Keys: chat · collaborate · build · studio · projects · agents · models · connectors · scheduler · consumption · skills · terminal · settings · guide. ONE navigation line per reply, always the last line, only when a real screen fits.
+DISAMBIGUATION — TWO "STUDIOS" EXIST: the key "studio" is the Studio LAUNCHER (one-prompt web pages, documents, games, diagrams). The AGENT STUDIO — where agents are built and edited (Designer, Bench, Blueprint & capabilities, knowledge, teams, Recruiter, Floor) — lives on the AGENTS screen. For ANY question about agents or their fields, always use GOTO: agents, NEVER studio.
 
 ===== APP GUIDE =====
 ${APP_GUIDE_RAW}
@@ -119,6 +120,7 @@ export default function SageDock({ mode, onNavigate }) {
   const saveWalk = (w) => { setWalk(w); try { w ? localStorage.setItem("be.sage.walk", JSON.stringify(w)) : localStorage.removeItem("be.sage.walk"); } catch {} };
   const posRef = useRef(pos);
   const endRef = useRef(null);
+  const panelRef = useRef(null);
   const tipDismissed = useRef({});
   const recRef = useRef(null);
   const micEngineRef = useRef(null); // "win" | "web" — which speech engine is live while listening
@@ -136,6 +138,35 @@ export default function SageDock({ mode, onNavigate }) {
   }, []);
   // Unmount safety net: drop any window pointer listeners a drag/resize left behind.
   useEffect(() => () => { winListenersRef.current.forEach(([t, fn]) => window.removeEventListener(t, fn)); winListenersRef.current = []; }, []);
+  // BOUNDARY GUARD for the OPEN PANEL: the FAB position is clamped, but the panel is
+  // much larger and anchored off the dock — near a screen edge it could extend past
+  // the viewport, hiding its own drag handle (then it's "stuck": nothing to grab).
+  // After every open/resize/move, measure the real panel rect and shift the dock so
+  // the WHOLE panel sits inside the window. Self-correcting: once it fits, dx/dy are
+  // zero and this effect does nothing — no loops, no drift.
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => {
+      try {
+        const el = panelRef.current; if (!el) return;
+        const r = el.getBoundingClientRect();
+        const pad = 8;
+        let dx = 0, dy = 0;
+        if (r.left < pad) dx = pad - r.left;
+        else if (r.right > window.innerWidth - pad) dx = (window.innerWidth - pad) - r.right;
+        if (r.top < pad) dy = pad - r.top;
+        else if (r.bottom > window.innerHeight - pad) dy = (window.innerHeight - pad) - r.bottom;
+        if (!dx && !dy) return;
+        const dock = el.closest(".sage-dock");
+        const dr = dock ? dock.getBoundingClientRect() : r;
+        const np = clampPos({ left: dr.left + dx, top: dr.top + dy }) || { left: dr.left + dx, top: dr.top + dy };
+        posRef.current = np; setPos(np);
+        try { localStorage.setItem("be.sage.pos", JSON.stringify(np)); } catch {}
+      } catch {}
+    }, 40); // after layout settles
+    return () => clearTimeout(t);
+  }, [open, size, pos]);
+
   // Window shrank? Pull Sage back into view (and persist the corrected spot).
   useEffect(() => {
     const onResize = () => setPos((p) => {
@@ -219,9 +250,18 @@ export default function SageDock({ mode, onNavigate }) {
       }
       setMsgs((m) => [...m, { role: "mentor", text: reply }]);
       // Instant navigation: "GOTO! <key>" means the user explicitly asked to go there.
-      const bang = /(?:^|\n)\s*GOTO!\s*([a-z]+)/i.exec(reply);
-      const bk = bang && bang[1].toLowerCase();
-      if (bk && GOTO_MODE[bk]) {
+      // DEFECT GUARD: models (especially weaker ones) overuse GOTO! even when the user
+      // only asked a question, yanking them out of Sage mid-conversation. Auto-navigate
+      // ONLY when the USER's own words show navigation intent; otherwise downgrade the
+      // directive to a "Take me there" button (gotoKey accepts both forms). Discipline
+      // enforced in code, never trusted to the model.
+      const bang = /\bGOTO!\s*([a-z]+)/i.exec(reply); // \b not line-start: models often glue it onto a sentence
+      let bk = bang && bang[1].toLowerCase();
+      // Two-Studios guard: agent questions routed to the Studio LAUNCHER are a model
+      // mix-up (the Agent Studio lives on the Agents screen) — remap in code.
+      if (bk === "studio" && /\bagents?\b/i.test(text)) bk = "agents";
+      const userWantsNav = /\b(open|go to|goto|take me|show me|bring me|navigate|switch to|jump to)\b/i.test(text);
+      if (bk && GOTO_MODE[bk] && userWantsNav) {
         recordEvent("navigated", bk);
         setTimeout(() => { setOpen(false); onNavigate && onNavigate(GOTO_MODE[bk]); }, 650);
       }
@@ -317,13 +357,15 @@ export default function SageDock({ mode, onNavigate }) {
     e.preventDefault(); e.stopPropagation();
   };
 
-  // "Take me there" button only for GOTO: (suggestions); GOTO! already navigated on its own.
-  const gotoKey = (m) => { const x = /(?:^|\n)\s*GOTO:\s*([a-z]+)/i.exec(m.text || ""); const k = x && x[1].toLowerCase(); return GOTO_MODE[k] ? k : null; };
+  // "Take me there" button for GOTO: suggestions AND for GOTO! directives that were
+  // NOT honored (no user navigation intent) — the downgrade path of the defect guard,
+  // so an over-eager model's directive becomes a polite offer instead of a teleport.
+  const gotoKey = (m) => { const x = /\bGOTO[:!]\s*([a-z]+)/i.exec(m.text || ""); const k = x && x[1].toLowerCase(); return GOTO_MODE[k] ? k : null; };
   // Display cleanup: drop GOTO lines (wherever they appear — m flag matches line ends,
   // not just the end of the whole text) and any markdown clutter the model slips in
   // (the persona says plain text; this is the safety net so ** never reaches the user).
   const clean = (t) => String(t || "")
-    .replace(/(?:^|\n)\s*GOTO[:!]\s*[a-z]+\s*$/gim, "")
+    .replace(/\s*\bGOTO[:!]\s*[a-z]+\s*$/gim, "") // strips the directive even when glued mid-line onto a sentence
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
     .replace(/(^|\n)\s*#{1,4}\s+/g, "$1")
@@ -365,11 +407,11 @@ export default function SageDock({ mode, onNavigate }) {
       {hidden ? (
         <button className="sage-tab" title={`Show ${name}`} onClick={show}><SageFace size={30} look={lookObj} /></button>
       ) : open ? (
-        <div className="sage-panel" style={size ? { width: size.w, height: size.h } : undefined}>
+        <div className="sage-panel" ref={panelRef} style={size ? { width: size.w, height: size.h } : undefined}>
           <div className="sage-grip" onPointerDown={startResize} title="Drag to resize" />
           <div className="sage-panel-head" onPointerDown={startDrag} title="Drag to move">
             <SageFace size={36} look={lookObj} />
-            <div className="sage-panel-id"><b>{name}</b><span>your BrainEdge buddy</span></div>
+            <div className="sage-panel-id"><b>{name}</b><span>your Madav buddy</span></div>
             <button className={`sage-ico ${lookPick ? "on" : ""}`} title={`Change ${name}'s look`} onClick={() => setLookPick((p) => !p)}><Smile size={15} /></button>
             {msgs.length > 0 && <button className="sage-ico" title="New conversation" onClick={newThread}><Plus size={14} /></button>}
             <button className="sage-ico" title="Tuck away to the corner" onClick={hide}><Minus size={15} /></button>
@@ -403,7 +445,7 @@ export default function SageDock({ mode, onNavigate }) {
             {msgs.length === 0 && (
               <div className="sage-hello">
                 <SageFace size={56} look={lookObj} />
-                <div>Hey, I'm <b>{name}</b> 👋 Your BrainEdge guide — ask me anything about the app and I'll keep it short, point you at the exact button, or take you straight to the right screen. Type it, or tap the mic and just talk.</div>
+                <div>Hey, I'm <b>{name}</b> 👋 Your Madav guide — ask me anything about the app and I'll keep it short, point you at the exact button, or take you straight to the right screen. Type it, or tap the mic and just talk.</div>
               </div>
             )}
             {msgs.map((m, i) => {

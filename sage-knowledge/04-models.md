@@ -233,7 +233,7 @@ Behavior: Picking a preset creates the profile and opens its editor immediately.
 ### Models → Providers · Provider profile editor
 aliases: provider settings, base url, api key field, wire format, kind, connection fields
 What: The editor for one provider profile: Display name, Wire format (OpenAI-compatible /v1/chat/completions or Anthropic-compatible /v1/messages), Base URL, and API key (a password field).
-Why: These four fields are everything BrainEdge needs to talk to a provider.
+Why: These four fields are everything Madav needs to talk to a provider.
 Behavior: Field edits save as you type. The API key placeholder says "leave blank for local" — local endpoints don't need one. The trash button deletes the profile (you can't delete the last one). A note clarifies: every provider stays available at once; the top-bar model selector decides which runs.
 
 ### Models → Providers · Save & load models
@@ -262,7 +262,7 @@ Behavior: Honest warning, shown on screen: the backup contains your API keys in 
 
 ### Models → Providers · Keys stay in this browser notice
 aliases: where are my keys stored, key security web, browser storage keys
-What: A notice shown only in the web version, under the API key field: "Your API keys stay in this browser's storage and go only to the provider — BrainEdge servers never see them."
+What: A notice shown only in the web version, under the API key field: "Your API keys stay in this browser's storage and go only to the provider — Madav servers never see them."
 Why: Answers the natural trust question before pasting a key.
 Behavior: Informational only. The flip side it states: anyone with access to that browser profile could use the keys, so avoid shared computers. The desktop app stores keys locally and doesn't show this notice.
 

@@ -1,13 +1,13 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // .agent share files + versioning.
 //  - Export one agent (with its knowledge, tools, identity) to a portable .agent file;
-//    import one on any BrainEdge install. Prerequisite for sharing/marketplace.
+//    import one on any Madav install. Prerequisite for sharing/marketplace.
 //  - Every Studio save snapshots the previous version (last 10 kept) with rollback.
 const { app, dialog } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
-const FORMAT = "brainedge.agent/v1";
+const FORMAT = "madav.agent/v1";
 const MAX_VERSIONS = 10;
 
 const vdir = () => path.join(app.getPath("userData"), "agent-versions");
@@ -36,13 +36,13 @@ async function exportAgent(win, agent) {
   const r = await dialog.showSaveDialog(win, {
     title: "Export agent",
     defaultPath: name + ".agent",
-    filters: [{ name: "BrainEdge agent", extensions: ["agent"] }],
+    filters: [{ name: "Madav agent", extensions: ["agent"] }],
   });
   if (r.canceled || !r.filePath) return { canceled: true };
   const payload = {
     format: FORMAT,
     exportedAt: new Date().toISOString(),
-    app: "BrainEdge",
+    app: "Madav",
     agent: {
       name: agent.name || "", description: agent.description || "", instructions: agent.instructions || "",
       tools: agent.tools || {}, identity: agent.identity || null, knowledge: agent.knowledge || [],
@@ -58,7 +58,7 @@ async function importAgent(win) {
   const r = await dialog.showOpenDialog(win, {
     title: "Import a .agent file",
     properties: ["openFile"],
-    filters: [{ name: "BrainEdge agent", extensions: ["agent", "json"] }],
+    filters: [{ name: "Madav agent", extensions: ["agent", "json"] }],
   });
   if (r.canceled || !r.filePaths.length) return { canceled: true };
   try {

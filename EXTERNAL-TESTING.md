@@ -4,12 +4,12 @@
 ---
 
 ## 1. What this is, in one paragraph
-The in-app Test Center is excellent — but it lives inside BrainEdge, so if the app is too broken to start, the Test Center dies with it. External testing is the independent inspector: it runs from outside, checks that every code file is valid and that the app actually builds, and — the key part — **every time everything is green, it automatically saves a checkpoint** (a complete copy of the working source code). When something later breaks badly, **one click restores the last working state.**
+The in-app Test Center is excellent — but it lives inside Madav, so if the app is too broken to start, the Test Center dies with it. External testing is the independent inspector: it runs from outside, checks that every code file is valid and that the app actually builds, and — the key part — **every time everything is green, it automatically saves a checkpoint** (a complete copy of the working source code). When something later breaks badly, **one click restores the last working state.**
 
 ## 2. Two ways to run it
 
 ### A. The QA Console (recommended — no terminal)
-1. Open the BrainEdge project folder in Windows Explorer.
+1. Open the Madav project folder in Windows Explorer.
 2. **Double-click `QA-Console.cmd`.** A dashboard opens in your browser.
 3. Use the buttons:
    - **▶ Full verification** — all checks + the real build (~1–2 min). Green saves a checkpoint.
@@ -70,7 +70,7 @@ Restore changes your source code, so the QA Console won't run it on a bare click
 | Build fails with missing packages | Run `npm install`, then verify again |
 
 ## 8. What end users get (and don't): distribution policy
-The testing machinery is **for you, not for your customers**. The installer people download from the BrainEdge website ships **none of it**:
+The testing machinery is **for you, not for your customers**. The installer people download from the Madav website ships **none of it**:
 
 | Piece | In YOUR project folder | In the user installer |
 |---|---|---|

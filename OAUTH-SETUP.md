@@ -1,4 +1,4 @@
-# BrainEdge — Real Google & GitHub sign‑in setup
+# Madav — Real Google & GitHub sign‑in setup
 
 The auth server already implements both OAuth flows (`/auth/google/*`, `/auth/github/*`). You just
 need to create the two OAuth apps, give the server their credentials, and run it **without** the dev
@@ -10,11 +10,11 @@ HTTPS URL when you deploy.
 1. Go to **console.cloud.google.com** → create or pick a **project** (top bar).
 2. **APIs & Services → OAuth consent screen**:
    - User type **External** → Create.
-   - App name `BrainEdge`, your support email, developer email → Save.
+   - App name `Madav`, your support email, developer email → Save.
    - Scopes: add `.../auth/userinfo.email`, `.../auth/userinfo.profile`, `openid` → Save.
    - **Test users**: add your own Gmail (while the app is in "Testing", only listed users can sign in).
 3. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
-   - Application type **Web application**, name `BrainEdge desktop`.
+   - Application type **Web application**, name `Madav desktop`.
    - **Authorized redirect URIs** → add exactly:
      `http://127.0.0.1:8787/auth/google/callback`
    - Create → copy the **Client ID** and **Client secret**.
@@ -22,14 +22,14 @@ HTTPS URL when you deploy.
 ## 2. GitHub OAuth app
 
 1. **github.com → Settings → Developer settings → OAuth Apps → New OAuth App.**
-2. Application name `BrainEdge`; Homepage URL `http://127.0.0.1:8787`.
+2. Application name `Madav`; Homepage URL `http://127.0.0.1:8787`.
 3. **Authorization callback URL** (exactly):
    `http://127.0.0.1:8787/auth/github/callback`
 4. Register application → copy the **Client ID**; click **Generate a new client secret** → copy it.
 
 ## 3. Run the server with OAuth (dev login OFF)
 
-In the BrainEdge folder (replace the four values; add your Stripe vars too if testing billing):
+In the Madav folder (replace the four values; add your Stripe vars too if testing billing):
 ```
 $env:SESSION_SECRET="a-long-random-string"; $env:GOOGLE_CLIENT_ID="...apps.googleusercontent.com"; $env:GOOGLE_CLIENT_SECRET="..."; $env:GITHUB_CLIENT_ID="..."; $env:GITHUB_CLIENT_SECRET="..."; node server/auth-server.mjs
 ```

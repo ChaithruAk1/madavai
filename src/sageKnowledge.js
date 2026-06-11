@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // sageKnowledge — Sage's control-level memory, with LOCAL retrieval.
 //
 // THE DESIGN (read SAGE-KNOWLEDGE-PROCESS.md for the full story):

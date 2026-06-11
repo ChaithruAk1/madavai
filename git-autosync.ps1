@@ -1,11 +1,11 @@
-# BrainEdge — auto-sync to git.
+# Madav — auto-sync to git.
 # Commits and pushes any pending changes. Designed to be run on a schedule (e.g. every 30 min).
 # One-time setup (run in PowerShell, as your user):
-#   schtasks /Create /SC MINUTE /MO 30 /TN "BrainEdge AutoSync" ^
-#     /TR "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\Projects\ClaudeCodeUI\BrainEdge\git-autosync.ps1\"" /F
-# Remove later with:  schtasks /Delete /TN "BrainEdge AutoSync" /F
+#   schtasks /Create /SC MINUTE /MO 30 /TN "Madav AutoSync" ^
+#     /TR "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\Projects\ClaudeCodeUI\Madav\git-autosync.ps1\"" /F
+# Remove later with:  schtasks /Delete /TN "Madav AutoSync" /F
 
-param([string]$Repo = "C:\Projects\ClaudeCodeUI\BrainEdge")
+param([string]$Repo = "C:\Projects\ClaudeCodeUI\Madav")
 
 Set-Location $Repo
 

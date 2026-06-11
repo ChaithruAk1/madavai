@@ -63,7 +63,7 @@ Behavior: Clicking a row reopens that Collaborate session where it left off. Eac
 
 ### Project page · Instructions
 aliases: project instructions, custom instructions, system prompt for project, project rules
-What: The "Instructions" box in the right rail — "Tailors BrainEdge's responses across every chat in this project."
+What: The "Instructions" box in the right rail — "Tailors Madav's responses across every chat in this project."
 Why: Set tone, role, rules, and standing context once instead of repeating it in every chat.
 Behavior: Free-form text; it saves automatically when you click away from the box (on blur) — there's no Save button. The first 100 characters also become the project card's description on the Projects grid.
 Example: "You are reviewing legal contracts. Always flag liability clauses."
@@ -96,19 +96,19 @@ Behavior: Type or paste, then click the button (tooltip "Add text"); the content
 aliases: knowledge list, project files list, remove file, attached documents
 What: The rows under Files & sources, one per knowledge item, showing its name, size in characters ("1234c"), and a trash button.
 Why: See and prune exactly what context the project carries.
-Behavior: The trash button removes that item from the project immediately — no confirmation. When empty, the area reads "Add PDFs, documents, or text to reference in this project." Items count toward what BrainEdge reads each chat, so trim stale ones.
+Behavior: The trash button removes that item from the project immediately — no confirmation. When empty, the area reads "Add PDFs, documents, or text to reference in this project." Items count toward what Madav reads each chat, so trim stale ones.
 
 ### Scheduled tasks · New task
 aliases: create task, add scheduled task, new automation, task menu
-What: The "New task" button opens a small menu: "Create with BrainEdge" (guided/chat-driven) or "Set up manually" (a form).
+What: The "New task" button opens a small menu: "Create with Madav" (guided/chat-driven) or "Set up manually" (a form).
 Why: Two paths to the same task — describe it conversationally, or fill in fields yourself.
-Behavior: "Create with BrainEdge" opens a wizard where BrainEdge asks one question at a time (toggle "Ask me adaptively" off for fixed steps: describe → frequency → when → target → review). "Set up manually" opens the full form directly. Both end in the same saved task. On an empty list, "Daily brief" and "Weekly review" starter chips prefill the form.
+Behavior: "Create with Madav" opens a wizard where Madav asks one question at a time (toggle "Ask me adaptively" off for fixed steps: describe → frequency → when → target → review). "Set up manually" opens the full form directly. Both end in the same saved task. On an empty list, "Daily brief" and "Weekly review" starter chips prefill the form.
 
 ### Scheduled tasks · Name & Description
 aliases: task name, task description, required fields
 What: The two required fields (marked *) at the top of the task form, plus the larger prompt box below them.
 Why: Name and description identify the task in the list; the prompt is what actually runs.
-Behavior: Save is disabled until both Name and Description have text. The prompt box ("What should BrainEdge do each run?") is the instruction executed on every run — except for the Daily brief target, where it just adds extra topics on top of the built-in digest.
+Behavior: Save is disabled until both Name and Description have text. The prompt box ("What should Madav do each run?") is the instruction executed on every run — except for the Daily brief target, where it just adds extra topics on top of the built-in digest.
 Example: Name "daily-briefing", prompt "Summarize my unread emails and today's calendar."
 
 ### Scheduled tasks · Target dropdown
@@ -144,7 +144,7 @@ Behavior: Search matches the task name and description as you type. The sort but
 ### Scheduled tasks · Webhook triggers
 aliases: webhooks, POST hook, fire agent from outside, zapier trigger, curl example
 What: A desktop-only card letting external systems (Zapier, mail rules, CI, cron) fire an agent, team, or scheduled task via `POST http://127.0.0.1:<port>/hook/<agent|team|task>/<id>` with a JSON `{"prompt": …}` body.
-Why: Connect BrainEdge to anything that can make an HTTP request.
+Why: Connect Madav to anything that can make an HTTP request.
 Behavior: Ticking "Enabled" generates a bearer token automatically and starts a listener (status shows "listening on :8765" or an error). You can change the Port, pick what to fire ("Agent" / "Team" / "Scheduled task" plus a target), and "Copy example" copies a ready curl command. It's token-protected and local-only by default (127.0.0.1) — anyone with the token can run your agents, so treat it like a password. Not available in the web build.
 
 ### Via Mobile · Enable Telegram bot
@@ -156,7 +156,7 @@ Behavior: Tick it, then click Apply to actually start the bot — the status chi
 ### Via Mobile · Bot token (from @BotFather)
 aliases: telegram token, api token, botfather token, bot key
 What: A password-masked field for the HTTP API token BotFather gives you when you create a bot.
-Why: The token is how BrainEdge logs in as your bot.
+Why: The token is how Madav logs in as your bot.
 Behavior: Paste the whole token (like `123456:ABC-…`); it displays masked and saves as you type, but takes effect only after Apply. Keep it secret — anyone holding it can message as your bot. The collapsible "How to set up your Telegram bot" guide above walks through getting one via `/newbot`.
 
 ### Via Mobile · Allowed Telegram user id(s)

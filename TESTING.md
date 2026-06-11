@@ -1,4 +1,4 @@
-# BrainEdge — Full Test Plan
+# Madav — Full Test Plan
 
 Work top to bottom. Each item: do the steps, confirm the expected result, tick the box.
 Mark anything broken with `❌ + note` so we can fix it together.
@@ -10,7 +10,7 @@ Legend: 🖥 desktop app · 🌐 chrome extension · ⚠ known-fragile area
 ## 0. Pre-flight
 - [ ] `npm install` completes (undici present).
 - [ ] `npm run electron:dev` launches the window; no red errors in the terminal or DevTools console.
-- [ ] App title bar / taskbar shows the **BrainEdge** name; window icon is the synapse mark.
+- [ ] App title bar / taskbar shows the **Madav** name; window icon is the synapse mark.
 - [ ] Top nav shows **Let's Talk / Let's Collaborate / Let's Build**, sidebar shows **Projects, Skills, Connectors, Dispatch, Consumption**, Settings bottom-left.
 - [ ] Hero shows the large animated synapse + greeting; input accepts typing.
 
@@ -26,7 +26,7 @@ Legend: 🖥 desktop app · 🌐 chrome extension · ⚠ known-fragile area
 - [ ] Send "hi" → clean one-line reply, **no `<think>` / chain-of-thought leak**. ⚠ (test a reasoning model too)
 - [ ] Ask the date → correct current date (no "I don't know").
 - [ ] Multi-turn context retained within a conversation.
-- [ ] Switch provider mid-session → next message uses the new model (terminal `[brainedge] turn` log confirms).
+- [ ] Switch provider mid-session → next message uses the new model (terminal `[madav] turn` log confirms).
 - [ ] Error path: select a provider with no key → clear "No API key" message, not a raw 401.
 
 ## C. Let's Collaborate (cowork) 🖥
@@ -59,7 +59,7 @@ Legend: 🖥 desktop app · 🌐 chrome extension · ⚠ known-fragile area
 ## G. Skills 🖥
 - [ ] Skills list scans configured folders; shows your skills.
 - [ ] Toggle a skill off → it's no longer used; on → used again.
-- [ ] Create a new skill → SKILL.md scaffold mentions **BrainEdge** (not Chai/Chakra).
+- [ ] Create a new skill → SKILL.md scaffold mentions **Madav** (not Chai/Chakra).
 - [ ] In chat with a matching skill, the model calls `load_skill` and follows it. ⚠
 - [ ] Import skill folder / zip works.
 
@@ -97,7 +97,7 @@ Legend: 🖥 desktop app · 🌐 chrome extension · ⚠ known-fragile area
 - [ ] Profile: set name/email/avatar → persists.
 - [ ] "Link your profile": Google sign-in (needs your Google Client ID) fills name/email/avatar.
 - [ ] GitHub sign-in (device flow, needs GitHub Client ID) fills profile.
-- [ ] Instructions for BrainEdge: set text → applied to every conversation (verify the model obeys it).
+- [ ] Instructions for Madav: set text → applied to every conversation (verify the model obeys it).
 
 ## O. Claude Sign in (subscription mode) 🖥 ⚠
 - [ ] Run `claude login` in a terminal first.
@@ -108,12 +108,12 @@ Legend: 🖥 desktop app · 🌐 chrome extension · ⚠ known-fragile area
 
 ## P. Corporate proxy 🖥
 - [ ] Settings → Model configuration → Corporate proxy: set a proxy URL → restart.
-- [ ] Terminal logs `[brainedge] proxy enabled → …`.
+- [ ] Terminal logs `[madav] proxy enabled → …`.
 - [ ] Cloud provider calls route through the proxy; **local Ollama still works** (bypassed).
 
 ## Q. Build & packaging 🖥
 - [ ] `npm run electron:build` succeeds.
-- [ ] `release/` has the installer **and** `BrainEdge-portable-<ver>.exe` **and** `win-unpacked/`.
+- [ ] `release/` has the installer **and** `Madav-portable-<ver>.exe` **and** `win-unpacked/`.
 - [ ] Portable exe runs by double-click — no install, no admin; synapse icon on the exe/shortcut.
 - [ ] Fresh machine: config starts empty (re-enter keys), then everything works.
 
@@ -138,5 +138,5 @@ Legend: 🖥 desktop app · 🌐 chrome extension · ⚠ known-fragile area
 6. Extension element-selection reliability on JS-heavy sites.
 
 > Tip: keep the terminal (and DevTools console) visible while testing — the
-> `[brainedge]` logs and any red errors are the fastest way to pinpoint a failure.
+> `[madav]` logs and any red errors are the fastest way to pinpoint a failure.
 > Paste me whatever breaks and we'll fix it.

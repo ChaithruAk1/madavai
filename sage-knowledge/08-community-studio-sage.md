@@ -125,7 +125,7 @@ Behavior: Replaces the list when the server can't be reached; submitting also fa
 aliases: build console, describe an idea, what should we build today
 What: The big textarea under "What should we build today?" with a sparkle icon and a "Create" button.
 Why: The prompt is the hero — you lead with the idea; formats are optional lenses, not gates.
-Behavior: Type your idea and press Create (or Ctrl/Cmd+Enter — the button tooltip reads "Create (⌘/Ctrl+Enter)"). Create stays disabled until you've typed something or picked a lens with a type. BrainEdge then forges the idea into a live, runnable preview you can refine.
+Behavior: Type your idea and press Create (or Ctrl/Cmd+Enter — the button tooltip reads "Create (⌘/Ctrl+Enter)"). Create stays disabled until you've typed something or picked a lens with a type. Madav then forges the idea into a live, runnable preview you can refine.
 
 ### Studio · Rotating placeholder
 aliases: example placeholder, cycling hint text
@@ -153,14 +153,14 @@ Behavior: Studio composes a full prompt from your description plus any lens, typ
 
 ### Onboarding · Provider choices
 aliases: first run setup, pick a provider, welcome wizard
-What: The first-run "Welcome to BrainEdge" card — "Let's get you talking to a model" — with four provider buttons: OpenRouter (marked "recommended" — "One key, 400+ models — has FREE models"), Google Gemini ("Free tier available"), NVIDIA NIM ("Free credits for developers"), and Local model ("LM Studio / Ollama on this computer — no key, fully private").
+What: The first-run "Welcome to Madav" card — "Let's get you talking to a model" — with four provider buttons: OpenRouter (marked "recommended" — "One key, 400+ models — has FREE models"), Google Gemini ("Free tier available"), NVIDIA NIM ("Free credits for developers"), and Local model ("LM Studio / Ollama on this computer — no key, fully private").
 Why: The #1 support question is "why doesn't it answer?" — no API key; this fixes it in about 60 seconds.
 Behavior: Pick one to start; you can add more providers later in Settings. Your key stays on this device.
 
 ### Onboarding · API key field
 aliases: paste key, where to get a key, API key input
 What: A password-style input shown for key-based providers, with a pointer like "Get a free key at openrouter.ai/keys, then paste it:" (Gemini: aistudio.google.com/apikey; NIM: build.nvidia.com).
-Why: The key is what lets BrainEdge talk to the provider.
+Why: The key is what lets Madav talk to the provider.
 Behavior: Paste the key and press Enter or Connect. Choosing "Local model" skips this entirely — instead you're told to make sure LM Studio (or Ollama) is running with a model loaded.
 
 ### Onboarding · Connect
@@ -175,9 +175,9 @@ What: The wizard's exit buttons.
 Why: Onboarding is fully skippable — nothing is forced.
 Behavior: After a successful Connect, "Start chatting →" closes the wizard and you're live. "Skip for now" (always available) closes it without configuring anything — you can set up a provider later in Settings; the wizard won't reappear on next launch.
 
-### User Guide · BrainEdge User Guide
+### User Guide · Madav User Guide
 aliases: handbook, help docs, manual, open the guide, get help
-What: A full-page, searchable 19-chapter handbook covering every BrainEdge feature — from Welcome and Providers through Chat, Collaborate, Build, Projects, Artifacts, Agents, Teams, Swarms, Scheduler, Browser, Voice, Connectors, Mobile, Consumption, Models, Account, and Troubleshooting.
+What: A full-page, searchable 19-chapter handbook covering every Madav feature — from Welcome and Providers through Chat, Collaborate, Build, Projects, Artifacts, Agents, Teams, Swarms, Scheduler, Browser, Voice, Connectors, Mobile, Consumption, Models, Account, and Troubleshooting.
 Why: The complete reference, illustrated with built-in vector screen mockups (flows, step lists, tables, copyable "Try it" prompts) rather than screenshots.
 Behavior: Open it from the sidebar account menu → "User Guide". A search box filters the chapter list, numbered in the left table of contents, and inline "→" buttons jump you straight to the real screen being described.
 
@@ -244,6 +244,6 @@ Behavior: Appears only after ~16 seconds on Agents, Connectors, Models, Schedule
 
 ### Sage · What Sage can and cannot do
 aliases: sage scope, can sage search the web, sage limitations, general questions
-What: Sage's domain is BrainEdge only — its screens, features, agents, and your way of using them.
+What: Sage's domain is Madav only — its screens, features, agents, and your way of using them.
 Why: He's a guide, not a general assistant — that keeps his answers exact.
 Behavior: He answers from the app's built-in guides plus what he's learned about you; he has NO web access and never cites outside facts — if the guides don't cover it, he says so plainly. General questions get warmly redirected: world facts and chat to Let's Chat, coding to Let's Build, repeatable jobs to Agents. He thinks with whatever model your selector points at, so a broken key affects him too.

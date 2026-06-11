@@ -1,4 +1,4 @@
-# BrainEdge — Full Code Review & Readiness Report
+# Madav — Full Code Review & Readiness Report
 **Date:** 2026-06-09 · **Scope:** entire codebase · **Status: REPORT ONLY — nothing changed.**
 Plain language throughout. §2 has YES/NO boxes for your decisions.
 

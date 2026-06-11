@@ -1,4 +1,4 @@
-// BrainEdge mark — a firing synapse: a central node with radiating spokes to
+// Madav mark — a firing synapse: a central node with radiating spokes to
 // six satellite nodes that pulse in sequence, plus an expanding "firing" ring.
 // Reusable at any size; scales cleanly down to the chat avatar.
 // Colors are CSS-driven (.think-logo classes) so the mark follows the chosen accent.

@@ -1,4 +1,4 @@
-# BrainEdge Agent Guide
+# Madav Agent Guide
 
 *The complete guide to the agent engine — what every capability does, when to reach for it, and thirteen hands-on scenarios. Updated June 2026 with the Wave A/B/C engine (memory, triggers, track record, handoffs, mid-mission questions, coordinator re-planning, durable missions, .agent share files, RAG-lite knowledge, cost guardrails, swarms) plus the workforce layer: the Recruiter, the Floor, living portraits, roster groups, and Sage the in-app mentor.*
 
@@ -34,7 +34,7 @@ After every successful mission the agent extracts up to three *durable* learning
 Two kinds:
 
 1. **Schedules** — Scheduler → New task → target **"Run an agent"** or **"Run an agent team"**. Interval / daily / weekly. Agents with file tools can be given an optional working folder. Results land in the task's run history, the agent's track record, and its memory.
-2. **Webhooks** — enable *Webhook triggers* at the bottom of the Scheduler page. BrainEdge runs a token-protected local HTTP listener:
+2. **Webhooks** — enable *Webhook triggers* at the bottom of the Scheduler page. Madav runs a token-protected local HTTP listener:
 
 ```
 POST http://127.0.0.1:8765/hook/agent/<agent-id>
@@ -66,14 +66,14 @@ Set a per-mission budget on a team (team builder → *Mission budget*), or a glo
 Knowledge files are no longer crammed whole into the prompt. Small libraries are included verbatim (unchanged behavior); large ones are chunked along headings/paragraphs and only the passages relevant to *this* task are retrieved. The cap rises from 8 files to 24, and large files stop crowding out instructions. No embeddings, no index, no extra cost.
 
 ### Agent Browser — agents that drive a real browser
-Switch on the **Browser** capability and the agent gets a real, visible Chromium window (BrainEdge's own — no extra install). It browses in *text mode*: pages come back as readable text plus a numbered list of interactive elements, so **any model works — no vision required**. Tools: `browse_open`, `browse_read`, `browse_click [n]`, `browse_fill [n]`, `browse_back`.
+Switch on the **Browser** capability and the agent gets a real, visible Chromium window (Madav's own — no extra install). It browses in *text mode*: pages come back as readable text plus a numbered list of interactive elements, so **any model works — no vision required**. Tools: `browse_open`, `browse_read`, `browse_click [n]`, `browse_fill [n]`, `browse_back`.
 
 Safety, because web pages are hostile input: reading is free, but every navigation, click, and form-fill goes through your permission system; an optional **per-agent site allowlist** confines it (redirects off-list are blocked too); **password and payment fields are always refused** — the agent must hand those to you; and page text is wrapped in an UNTRUSTED marker so instructions embedded in webpages are treated as data, not commands. The window is visible the whole time — you watch every move, and you can take over with your own mouse whenever you like.
 
 What it's NOT: vision-driven pixel control of arbitrary apps (Operator/Mariner class). That remains deliberately unbuilt — flaky, model-restricted, and months of work for marginal gain at this stage.
 
 ### Voice — push-to-talk in, spoken replies out
-The mic button records while active; click again to stop, and the audio is transcribed through **your own** Whisper-capable key (OpenAI or Groq — auto-detected from your profiles) straight into the composer. The speaker toggle next to the model picker reads final answers aloud using your OS's built-in voices — free, offline, works everywhere. Realtime full-duplex voice (OpenAI Realtime / Gemini Live) is deliberately not built: provider-locked plumbing that fights BrainEdge's any-model design.
+The mic button records while active; click again to stop, and the audio is transcribed through **your own** Whisper-capable key (OpenAI or Groq — auto-detected from your profiles) straight into the composer. The speaker toggle next to the model picker reads final answers aloud using your OS's built-in voices — free, offline, works everywhere. Realtime full-duplex voice (OpenAI Realtime / Gemini Live) is deliberately not built: provider-locked plumbing that fights Madav's any-model design.
 
 ### .agent share files + versions
 - **Export:** Studio → Blueprint → *Export .agent file*. Portable JSON: instructions, capabilities, knowledge, identity. Memory and model pins deliberately stay private.
@@ -104,7 +104,7 @@ Every agent has an **Autonomy** setting in its Blueprint, so you aren't prompted
 - **Autonomy (how often it asks permission):** same **Blueprint & capabilities** panel → **Autonomy** row → Ask first / Act freely / Skip & decide.
 - **Pin a model to an agent:** Blueprint & capabilities → **Pinned model**.
 - **Knowledge files:** Blueprint & capabilities → **Knowledge**.
-- **The browser is BrainEdge's own built-in window** — there is no Chrome/Safari/Firefox involved and nothing to install. Never reference other browsers or operating systems.
+- **The browser is Madav's own built-in window** — there is no Chrome/Safari/Firefox involved and nothing to install. Never reference other browsers or operating systems.
 
 ### Sage — the mentor who knows this whole guide
 **Ask Sage** (next to the Agent Guide, and a tab inside it) is a conversational mentor that knows everything in this guide and learns each release's new features automatically. It teaches with analogies and short stories, keeps answers brief, never invents features, and always ends with a concrete next step in the app.

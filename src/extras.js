@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Extras — the feature switchboard (Settings → Extras, visible to Creator/Complimentary
 // accounts only). Each entry is a feature the owner can turn on/off for this install.
 //
@@ -14,13 +14,13 @@ export const EXTRAS = [
   { key: "imagegen",  label: "Image generation",     desc: "The create_image tool in chats and agent missions (uses the selected model; needs an image-capable model)." },
   { key: "office",    label: "Office file creation", desc: "Real spreadsheets, Word docs, PowerPoint decks and PDFs built in chat (officedoc cards)." },
   { key: "browser",   label: "Agent Browser",        desc: "Agents drive a real browser window to research and act on live sites.", map: ["agentBrowser", "enabled"] },
-  { key: "memory",    label: "Cross-chat memory",    desc: "BrainEdge remembers durable facts about the user across conversations.", map: ["userMemory", "enabled"] },
+  { key: "memory",    label: "Cross-chat memory",    desc: "Madav remembers durable facts about the user across conversations.", map: ["userMemory", "enabled"] },
   { key: "desktop",   label: "Desktop control",      desc: "Agents operate native Windows applications (open, read, click, type) with app allowlists and credential-field refusal." },
   { key: "research",  label: "Deep Research",        desc: "Multi-source web research with cited reports (deep_research tool)." },
   { key: "studio",    label: "Studio",               desc: "The Studio launcher — build web pages, documents, games and diagrams from a prompt." },
   { key: "terminal",  label: "Terminal",             desc: "The in-app terminal panel." },
   { key: "scheduler", label: "Scheduler",            desc: "Scheduled tasks, agent triggers and webhooks screen." },
-  { key: "viamobile", label: "Via Mobile",           desc: "Control BrainEdge from your phone over Telegram." },
+  { key: "viamobile", label: "Via Mobile",           desc: "Control Madav from your phone over Telegram." },
 ];
 
 // Which features exist in THIS build (two-channel installers: scripts/build-features.mjs

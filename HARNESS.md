@@ -1,12 +1,12 @@
-# The BrainEdge Harness — how your agents work like a frontier AI
+# The Madav Harness — how your agents work like a frontier AI
 
-*Built June 2026. This document explains, in plain English, the discipline layer that now wraps every BrainEdge agent. Engine code: `electron/harness.cjs` + `electron/agent-openai.cjs` (desktop), `src/shared/harness.js` + `webBridge.js` (web), `electron/model-stats.cjs` (measurement).*
+*Built June 2026. This document explains, in plain English, the discipline layer that now wraps every Madav agent. Engine code: `electron/harness.cjs` + `electron/agent-openai.cjs` (desktop), `src/shared/harness.js` + `webBridge.js` (web), `electron/model-stats.cjs` (measurement).*
 
 ---
 
 ## The idea in one paragraph
 
-An agent's quality = **the model's brain × the harness around it**. BrainEdge can't ship a frontier brain — you bring your own models. But most of what makes a frontier agent feel "magical" isn't the brain at all: it's the workplace discipline around it. Plans before action. Evidence before "done". Repairing small mistakes instead of collapsing. Never running out of memory mid-job. That discipline is now built into BrainEdge itself, so **every model you plug in — including small local ones — works inside the same system that makes the best agents good.**
+An agent's quality = **the model's brain × the harness around it**. Madav can't ship a frontier brain — you bring your own models. But most of what makes a frontier agent feel "magical" isn't the brain at all: it's the workplace discipline around it. Plans before action. Evidence before "done". Repairing small mistakes instead of collapsing. Never running out of memory mid-job. That discipline is now built into Madav itself, so **every model you plug in — including small local ones — works inside the same system that makes the best agents good.**
 
 ---
 
@@ -49,7 +49,7 @@ These cost extra model calls, so they're opt-in per agent:
 
 Every agent mission now measures the model that ran it: how many tool calls, how many needed repair, how many re-asks, failures, missions finished vs stalled. This builds a per-model **harness score (0–10)** you can see in **Models Overview → expand any row → "Harness"**. It says "not measured" until a model has ≥10 real tool calls — no fabricated numbers, ever.
 
-The score feeds back into the engine automatically: well-behaved models are left alone (Tier A); models with sloppy-JSON history get discipline examples and periodic reminders (Tier B); models that can't do native tool calls switch to the text protocol (Tier C). **This per-model adaptation is BrainEdge's moat — single-model products (ChatGPT, Claude, Gemini) can't copy it without rebuilding around model plurality.**
+The score feeds back into the engine automatically: well-behaved models are left alone (Tier A); models with sloppy-JSON history get discipline examples and periodic reminders (Tier B); models that can't do native tool calls switch to the text protocol (Tier C). **This per-model adaptation is Madav's moat — single-model products (ChatGPT, Claude, Gemini) can't copy it without rebuilding around model plurality.**
 
 ---
 
@@ -70,8 +70,8 @@ The shared algorithms live in twin files (`electron/harness.cjs` ↔ `src/shared
 - **No new permission paths.** Every harness feature runs inside the existing permission gates: plan mode is still read-only, `noShell` still strips the shell at three layers, per-agent autonomy still applies. `set_plan` and `explore_parallel` touch no files and no network beyond the existing tool routes.
 - **Text-protocol injection is closed by design.** Tool blocks are parsed **only from the assistant's own text — never from tool results or web page content** — so a hostile page cannot inject tool calls into an agent reading it. This rule is documented at the top of both harness files; keep it when editing.
 - **Scouts are read-only by construction** (allowlist of 4 read tools), not by prompt.
-- **The measurement store holds counters only** — no prompts, no file contents, no keys, nothing sensitive (`%APPDATA%/brainedge/model-stats.json`).
-- **Protecting your code** (your question about hacking): the engine improvements ship inside the same protections as the rest of BrainEdge — value lives server-side (auth gate, server-side quiz, revocable CLI tokens), the client bundle is obfuscated, secrets are OS-keychain encrypted, and the 21-point hardening from SECURITY-REVIEW-2026-06-10.md (sandboxed artifacts, SSRF blocklist, timing-safe compares, electron fuses) is unchanged by this work. The honest frame remains: a desktop client always belongs to its user; defense = keep the valuable parts on the server and revocable, which BrainEdge already does.
+- **The measurement store holds counters only** — no prompts, no file contents, no keys, nothing sensitive (`%APPDATA%/madav/model-stats.json`).
+- **Protecting your code** (your question about hacking): the engine improvements ship inside the same protections as the rest of Madav — value lives server-side (auth gate, server-side quiz, revocable CLI tokens), the client bundle is obfuscated, secrets are OS-keychain encrypted, and the 21-point hardening from SECURITY-REVIEW-2026-06-10.md (sandboxed artifacts, SSRF blocklist, timing-safe compares, electron fuses) is unchanged by this work. The honest frame remains: a desktop client always belongs to its user; defense = keep the valuable parts on the server and revocable, which Madav already does.
 
 ---
 

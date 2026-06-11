@@ -59,7 +59,7 @@ def _keys():
     k, s = os.environ.get("ALPACA_KEY_ID", ""), os.environ.get("ALPACA_SECRET_KEY", "")
     if not k or not s:
         raise RuntimeError("ALPACA_KEY_ID / ALPACA_SECRET_KEY env vars not set. "
-                           "Set them in the shell that launches BrainEdge.")
+                           "Set them in the shell that launches Madav.")
     return k, s
 
 

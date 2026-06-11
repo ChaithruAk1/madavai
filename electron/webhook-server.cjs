@@ -1,6 +1,6 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Webhook triggers — a tiny local HTTP server that lets ANY external system fire a
-// BrainEdge agent, team, or scheduled task: Zapier, IFTTT, a mail filter, a cron box,
+// Madav agent, team, or scheduled task: Zapier, IFTTT, a mail filter, a cron box,
 // a CI pipeline. Token-protected; binds to 127.0.0.1 by default (set webhooks.lan
 // to accept LAN calls). This is the "runs while you sleep" half of triggers.
 //
@@ -70,7 +70,7 @@ function reconcile(deps) {
     console.warn([
       "",
       "============================================================",
-      "[brainedge] WARNING: webhook triggers are bound to 0.0.0.0.",
+      "[madav] WARNING: webhook triggers are bound to 0.0.0.0.",
       "  Your agent workforce is reachable by EVERY device on this",
       "  network. Anyone with the token can run agents headlessly.",
       "  Disable webhooks.lan unless you trust the whole network.",
@@ -85,7 +85,7 @@ function reconcile(deps) {
       const ip = (req.socket && req.socket.remoteAddress) || "?";
       if (rateLimited(ip)) return send(res, 429, { ok: false, error: "rate limit exceeded (30 req/min)" });
       const auth = (req.headers.authorization || "").replace(/^Bearer\s+/i, "") || u.searchParams.get("token") || "";
-      if (u.pathname === "/hook/ping") return send(res, 200, { ok: true, app: "BrainEdge" });
+      if (u.pathname === "/hook/ping") return send(res, 200, { ok: true, app: "Madav" });
       if (!token || !tokenMatches(auth, token)) return send(res, 401, { ok: false, error: "bad or missing token" });
       const m = /^\/hook\/(agent|team|task)\/([\w.-]+)$/.exec(u.pathname);
       if (!m || req.method !== "POST") return send(res, 404, { ok: false, error: "unknown route" });
@@ -128,7 +128,7 @@ function reconcile(deps) {
   });
 
   server.on("error", (e) => { state = { running: false, port, error: String((e && e.message) || e) }; server = null; });
-  server.listen(port, host, () => { state = { running: true, port, error: "" }; console.log(`[brainedge] webhook triggers listening on ${host}:${port}`); });
+  server.listen(port, host, () => { state = { running: true, port, error: "" }; console.log(`[madav] webhook triggers listening on ${host}:${port}`); });
   state = { running: true, port, error: "" };
   return status();
 }

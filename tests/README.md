@@ -1,4 +1,4 @@
-# BrainEdge test library
+# Madav test library
 
 Central tests for core features. Layered so most regressions are caught in seconds, without launching Electron or needing API keys.
 

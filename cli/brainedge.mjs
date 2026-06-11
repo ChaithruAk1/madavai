@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
-// BrainEdge CLI — a terminal coding agent on ANY provider.
-// Run inside the folder you want to work in:  brainedge   (or: node cli/brainedge.mjs)
+// Madav CLI — a terminal coding agent on ANY provider.
+// Run inside the folder you want to work in:  madav   (or: node cli/brainedge.mjs)
 //
-// Config (first match wins): env vars, ./brainedge.config.json, ~/.brainedge/config.json
-//   BRAINEDGE_BASE_URL · BRAINEDGE_API_KEY · BRAINEDGE_MODEL · BRAINEDGE_KIND ("openai" | "anthropic")
+// Config (first match wins): env vars, ./madav.config.json, ~/.madav/config.json
+//   MADAV_BASE_URL · MADAV_API_KEY · MADAV_MODEL · MADAV_KIND ("openai" | "anthropic")
 // Flags:  --yes  auto-approve everything    --model <id>    override the model
 //
 // UI: a rich Ink (React-for-terminal) interface when run in an interactive terminal; a plain readline
-// fallback otherwise (or when BRAINEDGE_PLAIN=1, or if Ink isn't installed yet — run `npm install`).
+// fallback otherwise (or when MADAV_PLAIN=1, or if Ink isn't installed yet — run `npm install`).
 import readline from "node:readline";
 import * as core from "./agent-core.mjs";
 
@@ -17,22 +17,22 @@ const C = { dim: "\x1b[2m", red: "\x1b[31m", green: "\x1b[32m", cyan: "\x1b[36m"
 const col = (k, s) => (process.stdout.isTTY ? C[k] + s + C.reset : s);
 
 if (!core.configured()) {
-  console.error(col("red", "BrainEdge CLI is not configured.") + "\nCreate ~/.brainedge/config.json like:\n" +
+  console.error(col("red", "Madav CLI is not configured.") + "\nCreate ~/.madav/config.json like:\n" +
     col("dim", `{
   "baseUrl": "https://openrouter.ai/api/v1",
   "apiKey": "sk-or-...",
   "model": "deepseek/deepseek-chat",
   "kind": "openai"
-}`) + "\n…or set BRAINEDGE_BASE_URL / BRAINEDGE_API_KEY / BRAINEDGE_MODEL.");
+}`) + "\n…or set MADAV_BASE_URL / MADAV_API_KEY / MADAV_MODEL.");
   process.exit(1);
 }
 
 // Subscription gate (only when provisioned by the desktop app).
 const ent = await core.verifyEntitlement();
 if (!ent.ok) { console.error(col("red", ent.reason || "Not authorized.")); process.exit(1); }
-if (ent.offline) console.log(col("dim", "(couldn't reach BrainEdge to verify — offline; continuing)\n"));
+if (ent.offline) console.log(col("dim", "(couldn't reach Madav to verify — offline; continuing)\n"));
 
-const RICH = process.stdout.isTTY && process.stdin.isTTY && !process.env.BRAINEDGE_PLAIN;
+const RICH = process.stdout.isTTY && process.stdin.isTTY && !process.env.MADAV_PLAIN && !process.env[("BRAIN" + "EDGE") + "_PLAIN"];
 if (RICH) {
   try { const tui = await import("./tui.mjs"); tui.start(); }
   catch (e) { console.log(col("dim", "(rich UI unavailable — " + (e && e.message || e) + "; using plain mode. Run `npm install` to enable it.)\n")); plain(); }
@@ -47,7 +47,7 @@ function plain() {
   const messages = [{ role: "system", content: core.SYSTEM() }];
   const confirm = async (label) => /^y/i.test(await ask(col("yellow", "  ⚠ " + label + "  allow? [y/N] ")));
 
-  console.log(col("cyan", "BrainEdge") + col("dim", `  ${core.cfg.model}  ·  ${core.ROOT}`));
+  console.log(col("cyan", "Madav") + col("dim", `  ${core.cfg.model}  ·  ${core.ROOT}`));
   console.log(col("dim", `Type a task. /help for commands, /exit to quit.\n`));
 
   async function turn(text) {

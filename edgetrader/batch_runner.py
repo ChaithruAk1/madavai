@@ -1,14 +1,14 @@
-"""EdgeTrader batch runner — multi-ticker analysis through the BrainEdge team.
+"""EdgeTrader batch runner — multi-ticker analysis through the Madav team.
 
 For each ticker in watchlist.txt (or CLI args) it fires the EdgeTrader relay team
-via BrainEdge's local webhook, parses the Chief Strategist's verdict JSON, and writes:
+via Madav's local webhook, parses the Chief Strategist's verdict JSON, and writes:
 
   reports/<TICKER>-<date>.md       Chief Strategist's decision + rationale per ticker
   reports/digest-<date>.md         ranked digest across the batch
   signals/signals.jsonl            machine-readable signal per verdict (broker contract)
   decisions/decision-log.md        append-only decision log ([... | pending] entries)
 
-Requires BrainEdge to be RUNNING with webhook triggers enabled (the installer
+Requires Madav to be RUNNING with webhook triggers enabled (the installer
 enables them and wires edgetrader/config.json).
 
 Usage:
@@ -75,7 +75,7 @@ def load_lessons_context() -> str:
 def run_ticker(ticker: str) -> dict:
     wh = CFG["webhook"]
     if not wh.get("token"):
-        raise RuntimeError("webhook.token is empty in config.json — run the installer or copy the token from BrainEdge's Scheduler page.")
+        raise RuntimeError("webhook.token is empty in config.json — run the installer or copy the token from Madav's Scheduler page.")
     if not wh.get("team_id"):
         raise RuntimeError("webhook.team_id is empty in config.json — run scripts/install-edgetrader.mjs.")
     prompt = (
@@ -96,7 +96,7 @@ def run_ticker(ticker: str) -> dict:
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"webhook HTTP {e.code}: {e.read().decode()[:300]}")
     except urllib.error.URLError as e:
-        raise RuntimeError(f"Cannot reach BrainEdge webhook at {url} — is BrainEdge running with webhooks enabled? ({e.reason})")
+        raise RuntimeError(f"Cannot reach Madav webhook at {url} — is Madav running with webhooks enabled? ({e.reason})")
     text = body.get("output") or body.get("text") or body.get("result") or json.dumps(body)
     if not body.get("ok", True):
         raise RuntimeError(f"team run failed: {str(text)[:200]}")

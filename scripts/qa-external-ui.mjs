@@ -1,7 +1,7 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // QA CONSOLE — a friendly UI for the external safety net.
 // Independent of the app on purpose: it's a tiny local web page served by Node alone,
-// so it works even when BrainEdge itself won't start. It runs the same trusted
+// so it works even when Madav itself won't start. It runs the same trusted
 // qa-external.mjs underneath and streams its output live into the browser.
 //
 //   Double-click QA-Console.cmd   (or: node scripts/qa-external-ui.mjs)
@@ -39,10 +39,10 @@ function sendEmail(cfg, subject, body) {
     if (!smtpUser || !smtpPass || !otpEmail) return reject(new Error("email not configured"));
     const sock = tls.connect(smtpPort, smtpHost, { servername: smtpHost });
     const cmds = [
-      `EHLO brainedge.local`,
+      `EHLO madav.local`,
       `AUTH LOGIN`, Buffer.from(smtpUser).toString("base64"), Buffer.from(smtpPass).toString("base64"),
       `MAIL FROM:<${smtpUser}>`, `RCPT TO:<${otpEmail}>`, `DATA`,
-      `From: BrainEdge QA <${smtpUser}>\r\nTo: <${otpEmail}>\r\nSubject: ${subject}\r\n\r\n${body}\r\n.`,
+      `From: Madav QA <${smtpUser}>\r\nTo: <${otpEmail}>\r\nSubject: ${subject}\r\n\r\n${body}\r\n.`,
       `QUIT`,
     ];
     let i = 0, buf = "";
@@ -75,8 +75,8 @@ async function dispatchOtp() {
   const cfg = qaConfig();
   const code = newOtp();
   const sentTo = [];
-  try { await sendEmail(cfg, "BrainEdge restore code", `Your BrainEdge RESTORE confirmation code is: ${code}\n\nIt expires in 5 minutes. If you didn't request a restore, ignore this.`); sentTo.push("email " + String(cfg.otpEmail).replace(/^(..).*(@.*)$/, "$1…$2")); } catch {}
-  try { await sendSms(cfg, `BrainEdge restore code: ${code} (expires in 5 min)`); sentTo.push("text message " + String(cfg.otpPhone).slice(-4).padStart(8, "•")); } catch {}
+  try { await sendEmail(cfg, "Madav restore code", `Your Madav RESTORE confirmation code is: ${code}\n\nIt expires in 5 minutes. If you didn't request a restore, ignore this.`); sentTo.push("email " + String(cfg.otpEmail).replace(/^(..).*(@.*)$/, "$1…$2")); } catch {}
+  try { await sendSms(cfg, `Madav restore code: ${code} (expires in 5 min)`); sentTo.push("text message " + String(cfg.otpPhone).slice(-4).padStart(8, "•")); } catch {}
   if (!sentTo.length) { console.log(`\n  🔐 RESTORE CONFIRMATION CODE: ${code}   (expires in 5 minutes)\n`); sentTo.push("this terminal window (set up scripts/qa-config.json for email/SMS)"); }
   return sentTo;
 }
@@ -99,7 +99,7 @@ function runJob(args) {
   return true;
 }
 
-const PAGE = `<!doctype html><meta charset="utf-8"><title>BrainEdge QA Console</title>
+const PAGE = `<!doctype html><meta charset="utf-8"><title>Madav QA Console</title>
 <style>
   :root{--bg:#0b0f14;--card:#121821;--line:#232b36;--text:#e8eef7;--dim:#8b96a5;--acc:#13c2d6;--ok:#5fb573;--bad:#f08a86}
   body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui;display:flex;flex-direction:column;align-items:center;padding:34px 18px}
@@ -118,8 +118,8 @@ const PAGE = `<!doctype html><meta charset="utf-8"><title>BrainEdge QA Console</
   .note{color:var(--dim);font-size:12px;margin-top:14px;line-height:1.6}
 </style>
 <div class="wrap">
-  <h1>🛟 BrainEdge QA Console</h1>
-  <p class="sub">The safety net that lives OUTSIDE the app — verify the code, keep automatic checkpoints, and restore the last working state. Works even when BrainEdge won't start.</p>
+  <h1>🛟 Madav QA Console</h1>
+  <p class="sub">The safety net that lives OUTSIDE the app — verify the code, keep automatic checkpoints, and restore the last working state. Works even when Madav won't start.</p>
   <div class="btns">
     <button class="primary" id="b-full" onclick="job('')">▶ Full verification <span style="font-weight:400">(checks + build)</span></button>
     <button id="b-fast" onclick="job('--no-build')">⚡ Fast check <span style="opacity:.7">(skips build)</span></button>

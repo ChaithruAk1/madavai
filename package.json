@@ -1,14 +1,14 @@
 {
-  "name": "brainedge",
+  "name": "madav",
   "version": "0.3.0",
   "private": true,
-  "description": "BrainEdge — chat, agents, and an AI workforce over any cloud or local LLM",
+  "description": "Madav — chat, agents, and an AI workforce over any cloud or local LLM",
   "author": "Samskruthi Harish <chaithru@gmail.com>",
   "license": "UNLICENSED",
   "type": "module",
   "main": "electron/main.cjs",
   "bin": {
-    "brainedge": "cli/brainedge.mjs"
+    "madav": "cli/madav.mjs"
   },
   "scripts": {
     "dev": "cross-env VITE_INCLUDE_QA=1 vite",
@@ -37,7 +37,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "docx": "^8.5.0",
     "ink": "^5.0.1",
-    "jspdf": "^2.5.2",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.383.0",
     "mammoth": "^1.8.0",
     "pdf-parse": "^1.1.1",
@@ -68,8 +68,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.chaithrodaya.brainedge",
-    "productName": "BrainEdge",
+    "appId": "com.chaithrodaya.madav",
+    "productName": "Madav",
     "directories": {
       "output": "release"
     },
@@ -123,7 +123,7 @@
       ]
     },
     "portable": {
-      "artifactName": "BrainEdge-portable-${version}.exe"
+      "artifactName": "Madav-portable-${version}.exe"
     }
   }
 }

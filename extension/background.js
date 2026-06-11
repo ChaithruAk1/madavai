@@ -1,4 +1,4 @@
-// BrainEdge for Chrome — service worker.
+// Madav for Chrome — service worker.
 // The side panel (the "brain") sends three commands here; we inject tiny functions
 // into the active tab to OBSERVE the page or ACT on it, and handle navigation.
 

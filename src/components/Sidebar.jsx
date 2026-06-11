@@ -144,8 +144,8 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     try {
       const conv = await bridge.getSession(id);
       if (!conv) return;
-      const md = `# ${conv.title || "Conversation"}\n\n_Exported from BrainEdge · ${new Date().toLocaleString()}_\n\n` +
-        (conv.messages || []).map((m) => `**${m.role === "user" ? "You" : "BrainEdge"}**\n\n${m.content}`).join("\n\n---\n\n");
+      const md = `# ${conv.title || "Conversation"}\n\n_Exported from Madav · ${new Date().toLocaleString()}_\n\n` +
+        (conv.messages || []).map((m) => `**${m.role === "user" ? "You" : "Madav"}**\n\n${m.content}`).join("\n\n---\n\n");
       const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -295,7 +295,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
           <ChevronRight className="sb-t sb-profile-gear" size={14} style={{ transition: "transform .15s", transform: menuOpen ? "rotate(90deg)" : "none" }} />
         </button>
       </div>
-      <div className="sb-copyright sb-t">© 2026 BrainEdge · Proprietary</div>
+      <div className="sb-copyright sb-t">© 2026 Madav · Proprietary</div>
     </aside>
   );
 }

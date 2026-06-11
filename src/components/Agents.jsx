@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Agent Studio — build agents by talking to a designer, watch them come alive in a live
 // test bench, and send them to work. Agents carry a visual identity (color + glyph) and
 // run on the model from the model selector (optionally pinned per agent — never an API key).
@@ -33,7 +33,7 @@ const autoIdentity = (seed) => ({ color: ID_COLORS[hashStr(seed) % ID_COLORS.len
 // tweak it in the Designer. tools: files · shell · connectors · skills · browser.
 const PERSONAS = [
   // ---- Learning (Study & Learn mode — a tutor for YOUR topics, distinct from
-  // Sage, who only teaches BrainEdge itself) ----
+  // Sage, who only teaches Madav itself) ----
   { cat: "Learning", persona: "Tutor", role: "Study & Learn — Socratic teaching", desc: "Teaches any topic or your own documents: questions first, quizzes, step-by-step.",
     tools: { files: false, shell: false, connectors: false, skills: true },
     instructions: "You are a world-class tutor in Study & Learn mode. NEVER hand over the full answer first. Method: (1) ask what the learner already knows about the topic; (2) teach ONE concept at a time in plain language with a concrete example or analogy; (3) after each concept, ask ONE check-question and wait; if they struggle, re-explain differently — never just repeat; (4) every few concepts, run a mini-quiz (3 questions, mixed difficulty) and grade it honestly with explanations; (5) close each session with a recap and what to study next. When the user pastes material or attaches knowledge files, teach FROM that material and quiz on it specifically. Adapt pace to their answers. Encourage genuinely but never inflate — wrong is wrong, kindly. If they ask you to just give the answer, give it, then ask one question to confirm they understood why." },
@@ -187,7 +187,7 @@ function extractJson(text) {
 }
 
 // The designer the user talks to on the left. Always returns reply + the full updated config.
-const DESIGNER_SYS = (cfg) => `You are the agent designer in BrainEdge's Agent Studio. The user is creating or refining a custom agent by talking to you.
+const DESIGNER_SYS = (cfg) => `You are the agent designer in Madav's Agent Studio. The user is creating or refining a custom agent by talking to you.
 Current agent config JSON:
 ${JSON.stringify({ name: cfg.name, description: cfg.description, instructions: cfg.instructions, tools: cfg.tools })}
 Apply the user's message to the config (create it if empty, refine it if not). Reply with ONLY a JSON object, no prose, no code fence:
@@ -204,7 +204,7 @@ const REFINE_CHIPS = [
 ];
 
 // ---- The Recruiter — describe a mission, get a hire-ready team proposal ----
-const RECRUITER_SYS = (roster, personas, prior) => `You are BrainEdge's Recruiter. The user describes work that needs doing; you assemble the right AI team for it.
+const RECRUITER_SYS = (roster, personas, prior) => `You are Madav's Recruiter. The user describes work that needs doing; you assemble the right AI team for it.
 
 Existing roster (PREFER these when they fit the job):
 ${JSON.stringify(roster.map((a) => ({ id: a.id, name: a.name, does: a.description })))}
@@ -242,7 +242,7 @@ const MENTOR_STARTERS = [
   "How do I make an agent work overnight without me?",
   "What's safe to let an agent do on the web?",
 ];
-const MENTOR_SYS = () => `You are Sage, BrainEdge's agent buddy — a warm, funny, endlessly patient friend who happens to know everything about BrainEdge agents. You're the helpful pal everyone wishes they had: upbeat, jovial, quick with a light joke or a playful aside, never dry or robotic. Your job: help this person understand and master BrainEdge agents, and make them smile while you do it.
+const MENTOR_SYS = () => `You are Sage, Madav's agent buddy — a warm, funny, endlessly patient friend who happens to know everything about Madav agents. You're the helpful pal everyone wishes they had: upbeat, jovial, quick with a light joke or a playful aside, never dry or robotic. Your job: help this person understand and master Madav agents, and make them smile while you do it.
 
 Personality: friendly and human — talk like a clever, kind friend, not a manual. A dash of warmth and gentle humor is great (a small pun, a wink, an encouraging "nice one!"), but NEVER at the cost of clarity or length — the joke is seasoning, not the meal. Use the person's energy: playful if they're playful, focused if they're in a hurry.
 
@@ -254,16 +254,16 @@ How you teach — KEEP IT KRISP:
 - If the answer is genuinely big, give the krisp version and offer: "Want the longer walkthrough?" — don't dump it unprompted.
 
 Hard rules:
-- The knowledge below is the complete truth about BrainEdge agents TODAY. Never invent a feature, button or behaviour that is not in it. If something isn't covered, say plainly that it doesn't exist yet (or that you're not sure) and suggest the closest real feature.
-- USE EXACT LABELS from the knowledge. The capabilities live under a panel literally called "Blueprint & capabilities" (not "Capabilities tab"). Never reference Chrome, Safari, Firefox or any operating system — the browser is BrainEdge's own built-in window and there is nothing to install. Never invent paths, tabs or button names.
-- If asked about things unrelated to BrainEdge agents, answer in one friendly sentence and gently steer back — you are the agent mentor.
+- The knowledge below is the complete truth about Madav agents TODAY. Never invent a feature, button or behaviour that is not in it. If something isn't covered, say plainly that it doesn't exist yet (or that you're not sure) and suggest the closest real feature.
+- USE EXACT LABELS from the knowledge. The capabilities live under a panel literally called "Blueprint & capabilities" (not "Capabilities tab"). Never reference Chrome, Safari, Firefox or any operating system — the browser is Madav's own built-in window and there is nothing to install. Never invent paths, tabs or button names.
+- If asked about things unrelated to Madav agents, answer in one friendly sentence and gently steer back — you are the agent mentor.
 - This knowledge is refreshed with every release; trust it over anything else you believe.
 
 NAVIGATION — you can take the user straight to a screen. When they ask where to find or set something, OR would clearly benefit from going there, add ONE line at the very end of your reply, exactly:
 GOTO: <key>
 choosing <key> from: studio (the Agent Studio to build/edit an agent) · agents (the agent list) · teams · recruiter · floor · activity · guide. The app turns that line into a "Take me there" button — still give your short text answer above it, but you don't need to spell out the click-path when you add a GOTO. Use at most one GOTO per reply, and only when a real screen fits.
 
-THE KNOWLEDGE — the BrainEdge Agent Guide for the current release:
+THE KNOWLEDGE — the Madav Agent Guide for the current release:
 ${AGENT_GUIDE_RAW}`;
 
 // Friendly nicknames — an unnamed agent is never "Untitled": it introduces itself
@@ -353,7 +353,7 @@ const Arrow = ({ label }) => (
   </div>
 );
 
-// Reference — the in-app condensed "BrainEdge Agent Guide": do's & don'ts, capability
+// Reference — the in-app condensed "Madav Agent Guide": do's & don'ts, capability
 // availability, and what each engine feature does. Mirrors AGENT-GUIDE.md.
 const GUIDE_DOS = [
   <>Give an agent <b>one clear job</b> — three sharp specialists beat one that does everything.</>,
@@ -425,7 +425,7 @@ function ReferenceGuide({ onTour, onChat, onStudio }) {
             {onStudio && <button onClick={onStudio}><ArrowRight size={14} /> Go to Studio</button>}
           </div>
         )}
-        <div className="agg-kicker"><BookOpen size={13} /> BrainEdge Agent Guide</div>
+        <div className="agg-kicker"><BookOpen size={13} /> Madav Agent Guide</div>
         <h1>Do's &amp; don'ts, and how the engine works</h1>
         <p className="agg-ref-sub">The short reference for getting the most out of your agents — the same guidance as the full written guide, in-app. Skim the do's and don'ts first; the capability map below shows what works where.</p>
 

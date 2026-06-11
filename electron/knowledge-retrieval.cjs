@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // RAG-lite knowledge retrieval — no embeddings, no external index. When an agent's
 // knowledge is small it is included whole (exactly the old behavior). When it grows
 // past the prompt budget, docs are split into heading/paragraph chunks and only the

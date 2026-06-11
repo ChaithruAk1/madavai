@@ -1,5 +1,5 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
-// The in-app User Guide: a full-page, searchable handbook covering every BrainEdge
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
+// The in-app User Guide: a full-page, searchable handbook covering every Madav
 // feature. Reached from the sidebar account menu (User Guide / Get help). All styling
 // lives in src/userguide.css (.ug- prefix) — styles.css is never touched.
 import { useEffect, useRef, useState } from "react";
@@ -147,7 +147,7 @@ function H3({ children }) {
 
 /* ----------------------------------------------------------------------------
    Shot — a "beautiful screenshot": a stylized, theme-aware vector mockup of a
-   BrainEdge screen with an accent highlight ring on the control being taught.
+   Madav screen with an accent highlight ring on the control being taught.
    Drawn with CSS (no images), so it's crisp at any size, matches light AND dark
    themes, and never goes stale the way a real PNG would after a redesign.
 ---------------------------------------------------------------------------- */
@@ -159,7 +159,7 @@ function Shot({ screen, caption }) {
   return (
     <figure className="ug-shot">
       <div className="ug-shot-win">
-        <div className="ug-shot-bar"><i /><i /><i /><span>BrainEdge</span></div>
+        <div className="ug-shot-bar"><i /><i /><i /><span>Madav</span></div>
         <div className="ug-shot-body">
           <div className="ug-shot-side">
             <span className="ug-shot-logo" />
@@ -248,10 +248,10 @@ const SECTIONS = [
     render: (nav) => (
       <>
         <p>
-          BrainEdge is one workspace for everything you do with AI models: chatting, working on
+          Madav is one workspace for everything you do with AI models: chatting, working on
           your files, building software, and running autonomous agents — all powered by{" "}
           <strong>your own model providers</strong>. You bring an API key (or a free local model);
-          BrainEdge brings the tools.
+          Madav brings the tools.
         </p>
         <p>Here is the entire setup, start to first answer, in three moves:</p>
         <Flow
@@ -309,7 +309,7 @@ const SECTIONS = [
     render: (nav) => (
       <>
         <p>
-          BrainEdge doesn't sell you a model — it connects to the providers you already use. Each
+          Madav doesn't sell you a model — it connects to the providers you already use. Each
           connection is a <strong>profile</strong>: a name, a base URL, an API key, and a chosen
           model. You can keep as many profiles as you like, and they're all available at once; the
           model you pick in the selector decides which provider actually answers.
@@ -334,7 +334,7 @@ const SECTIONS = [
           </Step>
           <Step n={2} title="Paste the key, pick a default model">
             Keys are stored <strong>only on this device</strong> — they never pass through
-            BrainEdge servers. After saving, BrainEdge fetches the provider's live model list.
+            Madav servers. After saving, Madav fetches the provider's live model list.
           </Step>
           <Step n={3} title="Use the selector">
             Back in any chat, open the model selector next to the message box. Models are grouped
@@ -353,7 +353,7 @@ const SECTIONS = [
         <H3>Cost basics</H3>
         <p>
           Cloud providers charge <strong>per token</strong> (a token is roughly four characters).
-          You pay them directly through your own account — BrainEdge adds nothing on top. Local
+          You pay them directly through your own account — Madav adds nothing on top. Local
           models are free forever. The <Go nav={nav} to="consumption">Consumption</Go> page
           estimates what each conversation used.
         </p>
@@ -418,7 +418,7 @@ const SECTIONS = [
           </li>
           <li>
             <strong>Global search:</strong> type 3+ characters in the sidebar search box and
-            BrainEdge searches <em>inside</em> every conversation, showing matching snippets — not
+            Madav searches <em>inside</em> every conversation, showing matching snippets — not
             just titles.
           </li>
           <li>
@@ -543,9 +543,9 @@ const SECTIONS = [
           label="Try it"
           text={"Explore this repo and give me a tour: what it does, how it's organized, where the entry point is, and one thing you'd improve first."}
         />
-        <H3>The BrainEdge CLI</H3>
+        <H3>The Madav CLI</H3>
         <p>
-          Prefer living in a terminal? BrainEdge ships a command-line companion so you can start
+          Prefer living in a terminal? Madav ships a command-line companion so you can start
           sessions from any shell. Set it up under{" "}
           <Chip>Settings → Terminal access</Chip> — it walks you through installing the command and
           shows usage examples. <Go nav={nav} to="settings">Open Settings</Go>
@@ -657,7 +657,7 @@ const SECTIONS = [
         <H3>Studio — start from an idea</H3>
         <p>
           <Go nav={nav} to="studio">Open Studio</Go> The Studio launcher flips the flow: instead of
-          chatting first, you describe the thing you want to build, and BrainEdge opens a fresh
+          chatting first, you describe the thing you want to build, and Madav opens a fresh
           build conversation seeded with your idea — a build console where the artifact takes shape
           iteration by iteration.
         </p>
@@ -916,7 +916,7 @@ const SECTIONS = [
     render: (nav) => (
       <>
         <p>
-          The <strong>Scheduler</strong> makes BrainEdge work while you don't: run a prompt, an
+          The <strong>Scheduler</strong> makes Madav work while you don't: run a prompt, an
           agent, or an entire team on a timetable — or fire them from the outside world with a
           webhook. <Go nav={nav} to="scheduler">Open Scheduler</Go>
         </p>
@@ -938,7 +938,7 @@ const SECTIONS = [
         </Steps>
         <H3>Webhook triggers</H3>
         <p>
-          Enable <em>Webhook triggers</em> at the bottom of the Scheduler page and BrainEdge starts
+          Enable <em>Webhook triggers</em> at the bottom of the Scheduler page and Madav starts
           a token-protected listener on your machine. Anything that can send an HTTP POST — a mail
           rule, Zapier, CI, a cron box — can now put your agents to work:
         </p>
@@ -977,7 +977,7 @@ const SECTIONS = [
       <>
         <p>
           Switch on the <strong>Browser</strong> capability and an agent can drive a real, visible
-          browser window — BrainEdge's own, no extra install. It browses in <strong>text
+          browser window — Madav's own, no extra install. It browses in <strong>text
           mode</strong>: pages come back as readable text plus a numbered list of links and fields,
           so any model works, vision or not. You watch every move, and you can grab the mouse
           yourself at any time.
@@ -1032,7 +1032,7 @@ const SECTIONS = [
     render: (nav) => (
       <>
         <p>
-          Voice in BrainEdge is two independent halves: <strong>talk in</strong> (push-to-talk
+          Voice in Madav is two independent halves: <strong>talk in</strong> (push-to-talk
           transcription) and <strong>hear back</strong> (spoken replies). Use either, or both.
         </p>
         <Flow
@@ -1059,7 +1059,7 @@ const SECTIONS = [
           text={"Give me a two-paragraph summary of what my agents did this week."}
         />
         <Callout tone="info" title="Why not full-duplex live voice?">
-          Realtime two-way voice is provider-locked plumbing that fights BrainEdge's any-model
+          Realtime two-way voice is provider-locked plumbing that fights Madav's any-model
           design, so it's deliberately not built. Push-to-talk plus spoken replies covers the
           hands-free loop with any model you choose.
         </Callout>
@@ -1129,7 +1129,7 @@ const SECTIONS = [
     render: (nav) => (
       <>
         <p>
-          <strong>Via Mobile</strong> connects BrainEdge to a private Telegram bot, so the desktop
+          <strong>Via Mobile</strong> connects Madav to a private Telegram bot, so the desktop
           can keep working while you step away — and you can keep the conversation going from your
           phone.
         </p>
@@ -1140,10 +1140,10 @@ const SECTIONS = [
           </Step>
           <Step n={2} title="Paste the token">
             <Go nav={nav} to="viamobile">Open Via Mobile</Go> — paste the token and start the
-            bridge. BrainEdge shows your bot's link; open it on your phone and say hi.
+            bridge. Madav shows your bot's link; open it on your phone and say hi.
           </Step>
           <Step n={3} title="Chat from anywhere">
-            Messages to the bot run through your BrainEdge — your providers, your model, your
+            Messages to the bot run through your Madav — your providers, your model, your
             agents — and answers come back to Telegram.
           </Step>
           <Step n={4} title="Continue on phone">
@@ -1156,7 +1156,7 @@ const SECTIONS = [
           if it ever leaks.
         </Callout>
         <Callout tone="info" title="The desktop does the work">
-          The phone is a remote control: your BrainEdge app (and your keys) stay on your computer,
+          The phone is a remote control: your Madav app (and your keys) stay on your computer,
           which needs to be running for the bridge to answer.
         </Callout>
       </>
@@ -1267,10 +1267,10 @@ const SECTIONS = [
         <Table
           head={["Data", "Where it lives"]}
           rows={[
-            ["API keys", "On this device only — never sent to BrainEdge servers."],
+            ["API keys", "On this device only — never sent to Madav servers."],
             ["Conversation history", "Local to this device."],
             ["Agents, teams, memory, projects", "Local to this device."],
-            ["Account & subscription", "BrainEdge's account service (email, plan status)."],
+            ["Account & subscription", "Madav's account service (email, plan status)."],
             ["Prompts & responses", "Sent only to the provider of the model you selected."],
           ]}
         />
@@ -1328,7 +1328,7 @@ const SECTIONS = [
           <p>
             You're sending faster than your provider tier allows — common on free tiers and during
             parallel team waves or swarms. Wait a minute, lower swarm parallelism, or upgrade the
-            provider tier. This is a provider-side ceiling, not a BrainEdge setting.
+            provider tier. This is a provider-side ceiling, not a Madav setting.
           </p>
         </Faq>
         <Faq q="Responses feel slow">
@@ -1473,9 +1473,9 @@ export default function UserGuide({ onNavigate }) {
             <div className="ug-hero-kicker">
               <BookOpen size={13} /> Handbook
             </div>
-            <h1>BrainEdge User Guide</h1>
+            <h1>Madav User Guide</h1>
             <p className="ug-hero-sub">
-              Everything BrainEdge can do — explained step by step, from your first chat to a
+              Everything Madav can do — explained step by step, from your first chat to a
               scheduled team of agents working overnight. No jargon required.
             </p>
             <div className="ug-hero-chips">
@@ -1505,7 +1505,7 @@ export default function UserGuide({ onNavigate }) {
           <footer className="ug-footer">
             <GitBranch size={13} />
             <span>
-              BrainEdge evolves quickly — screens may gain new buttons between releases, but the
+              Madav evolves quickly — screens may gain new buttons between releases, but the
               concepts in this guide stay true. Happy building.
             </span>
           </footer>

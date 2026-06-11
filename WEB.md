@@ -1,4 +1,4 @@
-# BrainEdge — Web app
+# Madav — Web app
 
 The same React UI that runs in the desktop app also runs in a browser. There is **one codebase**;
 a bridge layer decides at runtime whether it's talking to Electron or to the web.
@@ -8,9 +8,9 @@ a bridge layer decides at runtime whether it's talking to Electron or to the web
 `src/bridge/index.js` picks the implementation:
 
 ```
-bridge = window.brainedge   // desktop (Electron preload → main process)
+bridge = window.madav   // desktop (Electron preload → main process)
        || webBridge         // browser (src/bridge/webBridge.js)
-export const isWeb = !window.brainedge;
+export const isWeb = !window.madav;
 ```
 
 `webBridge` provides the **entire** bridge contract in the browser:
@@ -65,7 +65,7 @@ Host the auth server with HTTPS (see `DEPLOY.md`), then:
 - Add the same origin's `/auth/google/callback` and `/auth/github/callback` to the Google/GitHub
   consoles (or keep the auth server on its own domain and point the app there).
 - Override the API base if the web app is served from a different origin than the API by setting
-  `window.__BRAINEDGE_AUTH_BASE__` before the app script (otherwise it's same‑origin).
+  `window.__MADAV_AUTH_BASE__` before the app script (otherwise it's same‑origin).
 
 ## What's desktop‑only (and why)
 

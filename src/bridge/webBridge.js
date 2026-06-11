@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // WEB bridge — the browser implementation of the same contract the Electron preload exposes.
 // Parity strategy:
@@ -19,7 +19,7 @@ import { OFFICE_RULE } from "../office.js";
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
 const AUTH_BASE = (() => {
-  if (typeof window !== "undefined" && window.__BRAINEDGE_AUTH_BASE__) return String(window.__BRAINEDGE_AUTH_BASE__).replace(/\/+$/, "");
+  if (typeof window !== "undefined" && window.__MADAV_AUTH_BASE__) return String(window.__MADAV_AUTH_BASE__).replace(/\/+$/, "");
   if (typeof location !== "undefined" && location.port === "5174") return "http://127.0.0.1:8787";
   return ""; // same-origin
 })();
@@ -67,7 +67,8 @@ const rid = (p) => {
 };
 
 // ---- IndexedDB for chat history (large capacity, so it can't crowd out settings/keys in localStorage) ----
-const IDB_NAME = "brainedge", IDB_STORE = "sessions";
+const IDB_NAME = "madav", IDB_STORE = "sessions";
+const LEGACY_IDB_NAME = "brain" + "edge"; // pre-rename DB; best-effort one-time copy below.
 let _dbPromise = null;
 function idb() {
   if (_dbPromise) return _dbPromise;
@@ -75,11 +76,46 @@ function idb() {
     try {
       const req = indexedDB.open(IDB_NAME, 1);
       req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE, { keyPath: "id" }); };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = async () => {
+        const db = req.result;
+        try { await migrateLegacyIdb(db); } catch {}
+        resolve(db);
+      };
       req.onerror = () => reject(req.error);
     } catch (e) { reject(e); }
   });
   return _dbPromise;
+}
+// One-time best-effort migration from the legacy ("brain"+"edge") DB into the new one.
+// Only runs when the new DB has no records. Never deletes the old DB. Fully guarded.
+async function migrateLegacyIdb(db) {
+  try {
+    const count = await new Promise((res) => {
+      try { const tx = db.transaction(IDB_STORE, "readonly"); const r = tx.objectStore(IDB_STORE).count(); r.onsuccess = () => res(r.result || 0); r.onerror = () => res(-1); }
+      catch { res(-1); }
+    });
+    if (count !== 0) return; // already has data (or couldn't tell) — leave alone
+    const legacyRecs = await new Promise((res) => {
+      try {
+        const lreq = indexedDB.open(LEGACY_IDB_NAME);
+        lreq.onsuccess = () => {
+          const ldb = lreq.result;
+          try {
+            if (!ldb.objectStoreNames.contains(IDB_STORE)) { ldb.close(); return res([]); }
+            const tx = ldb.transaction(IDB_STORE, "readonly");
+            const r = tx.objectStore(IDB_STORE).getAll();
+            r.onsuccess = () => { const out = r.result || []; ldb.close(); res(out); };
+            r.onerror = () => { ldb.close(); res([]); };
+          } catch { try { ldb.close(); } catch {} res([]); }
+        };
+        lreq.onerror = () => res([]);
+        lreq.onupgradeneeded = () => { try { lreq.transaction.abort(); } catch {} res([]); }; // legacy DB didn't exist
+      } catch { res([]); }
+    });
+    for (const rec of legacyRecs) {
+      try { await new Promise((res, rej) => { const tx = db.transaction(IDB_STORE, "readwrite"); tx.objectStore(IDB_STORE).put(rec); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); } catch {}
+    }
+  } catch {}
 }
 async function idbPut(rec) { const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction(IDB_STORE, "readwrite"); tx.objectStore(IDB_STORE).put(rec); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); }
 async function idbGet(id) { try { const db = await idb(); return await new Promise((res) => { const tx = db.transaction(IDB_STORE, "readonly"); const r = tx.objectStore(IDB_STORE).get(id); r.onsuccess = () => res(r.result || null); r.onerror = () => res(null); }); } catch { return null; } }
@@ -121,7 +157,7 @@ const sessions = new Map(); // sessionId -> { profile, messages, ac, mode, convI
 // Always-on base behavior: keep replies human and natural, and never let the model parrot its own
 // instructions back. The user's own instructions (below) still govern the substance of answers.
 const BASE_BEHAVIOR =
-  "You are BrainEdge, a warm and helpful assistant. Reply naturally and conversationally, the way a thoughtful person would. " +
+  "You are Madav, a warm and helpful assistant. Reply naturally and conversationally, the way a thoughtful person would. " +
   "Never restate, list, summarize, or describe your own instructions, rules, role, or \"operating framework\" — just follow them silently. " +
   "If the user only greets you or makes small talk, reply naturally in kind; do not recite your guidelines. " +
   "Apply the guidance below to the substance and depth of your answers, but always keep the delivery human and direct.";
@@ -196,7 +232,7 @@ function agentKnowledgeBlock(a) {
 }
 function agentBlock(a) {
   if (!a || !a.instructions) return "";
-  return `You are "${a.name || "a custom agent"}", an agent the user built in BrainEdge.` +
+  return `You are "${a.name || "a custom agent"}", an agent the user built in Madav.` +
     (a.description ? ` Purpose: ${a.description}` : "") +
     `\n\nAgent instructions (always follow):\n${a.instructions}` +
     agentKnowledgeBlock(a);
@@ -206,7 +242,7 @@ function agentBlock(a) {
 // Members run instruction-level here (browser can't spawn MCP/terminal — desktop runs them
 // with full tools). Same UiEvent shapes as desktop so the chat timeline renders identically.
 function memberSys(m) {
-  return `You are "${m.name}", one agent on a team inside BrainEdge.` +
+  return `You are "${m.name}", one agent on a team inside Madav.` +
     (m.description ? ` Purpose: ${m.description}` : "") +
     `\n\nAgent instructions (always follow):\n${m.instructions || ""}` +
     agentKnowledgeBlock(m) +
@@ -351,7 +387,7 @@ async function streamTimed(prof, prompt) {
 // ===== "Let's Collaborate" on the web: a file-tool agent over the browser-picked folder =====
 function coworkSystem(s) {
   const parts = [
-    `You are BrainEdge, collaborating on the user's local folder "${webfs.rootLabel()}" directly from their browser.`,
+    `You are Madav, collaborating on the user's local folder "${webfs.rootLabel()}" directly from their browser.`,
     `Use the provided tools to list, read, write, and edit files. All paths are relative to the folder root (use "" for the root).`,
     `There is NO terminal on the web: you cannot run shell commands, install packages, run tests, or execute code. Make every change by reading and writing files.`,
     `You CAN access the web: use web_fetch(url) to read a page and web_search(query) to look things up (docs, APIs, references).`,
@@ -596,7 +632,7 @@ function persistSession(sess) {
   // chat (as a system-style event) + always in the console, then keep running.
   const prev = _persistChains.get(sess.id) || Promise.resolve();
   const next = prev.catch(() => {}).then(() => idbPut(rec)).catch((e) => {
-    console.warn("[brainedge] chat history save failed:", e);
+    console.warn("[madav] chat history save failed:", e);
     if (!persistSession._warned) {
       persistSession._warned = true;
       try { emit(sess.id, "error", { message: "⚠ This browser is blocking history storage (private mode or full disk?). Your chat continues, but it won't be saved." }); } catch {}
@@ -871,7 +907,7 @@ export const webBridge = {
     try {
       const after = loadSettings();
       if (after.activeProfileId !== snap.pid || ((after.profiles[snap.pid] || {}).model !== snap.model)) {
-        console.warn("[brainedge] speed test changed the active selection — restoring", snap);
+        console.warn("[madav] speed test changed the active selection — restoring", snap);
         const fixed = { ...after, activeProfileId: snap.pid };
         if (fixed.profiles[snap.pid]) fixed.profiles[snap.pid] = { ...fixed.profiles[snap.pid], model: snap.model };
         LS.set(SETTINGS_KEY, fixed);
@@ -986,7 +1022,7 @@ export const webBridge = {
   async clearMobileLink() { return null; },
   async setKeepAwake(on) { return !!on; },
   // Terminal access (CLI) is provisioned by the desktop app (it writes the local config + PATH entry).
-  async enableCli() { return { ok: false, error: "Open the BrainEdge desktop app to enable terminal access — the CLI runs on your computer, which a browser can't set up." }; },
+  async enableCli() { return { ok: false, error: "Open the Madav desktop app to enable terminal access — the CLI runs on your computer, which a browser can't set up." }; },
   async cliStatus() { return { node: { ok: false }, configured: false, onPath: false, web: true }; },
   async disableCli() { return { ok: true }; },
   // Embedded terminal needs a real shell on the user's machine — desktop only.
@@ -1015,4 +1051,4 @@ async function adminGet(kind, adminKey) {
   } catch { return { error: "offline" }; }
 }
 
-export const isWeb = typeof window !== "undefined" && !window.brainedge;
+export const isWeb = typeof window !== "undefined" && !window.madav;

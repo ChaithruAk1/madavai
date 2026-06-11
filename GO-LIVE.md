@@ -1,6 +1,6 @@
 # Go live — put the web app on a public URL
 
-This is the plain‑English walkthrough to take BrainEdge from "runs on my laptop" to "real users can
+This is the plain‑English walkthrough to take Madav from "runs on my laptop" to "real users can
 visit it." You'll use two free services: **Supabase** (database) and **Render** (hosting). Budget ~30–45 min.
 
 ## Why a database?
@@ -31,11 +31,11 @@ git push
    - **Build command:** `npm install && npm run build`
    - **Start command:** `node server/auth-server.mjs`
 3. Click **Create**. The first deploy takes a few minutes and gives you a URL like
-   `https://brainedge.onrender.com`. Copy it.
+   `https://madav.onrender.com`. Copy it.
 
 ## Step 4 — Fill in the settings (Render → Environment)
 In your service → **Environment**, add these (the password‑style ones):
-- `AUTH_BASE_URL` = your Render URL (e.g. `https://brainedge.onrender.com`)
+- `AUTH_BASE_URL` = your Render URL (e.g. `https://madav.onrender.com`)
 - `ALLOWED_REDIRECTS` = the **same** URL
 - `DATABASE_URL` = the Supabase string from Step 1
 - `ADMIN_EMAILS` = your email (so you're the admin)
@@ -48,9 +48,9 @@ Save — Render redeploys. The startup log should say `store postgres`.
 ## Step 5 — Point Google & GitHub at the live URL
 Your login apps currently only trust `127.0.0.1`. Add the live address:
 - **Google** (console.cloud.google.com → Credentials → your OAuth client → Authorized redirect URIs):
-  add `https://brainedge.onrender.com/auth/google/callback`
+  add `https://madav.onrender.com/auth/google/callback`
 - **GitHub** (Developer settings → your OAuth App → Authorization callback URL):
-  set/add `https://brainedge.onrender.com/auth/github/callback`
+  set/add `https://madav.onrender.com/auth/github/callback`
 
 (Use your real Render URL.)
 
@@ -60,7 +60,7 @@ Open your Render URL in a browser and sign in with Google. You're live. Share th
 ## Step 7 (later) — Turn on payments
 When you're ready to charge:
 1. In Stripe, create a **recurring Price**, copy its `price_...` id.
-2. Stripe → Developers → Webhooks → add endpoint `https://brainedge.onrender.com/billing/webhook`
+2. Stripe → Developers → Webhooks → add endpoint `https://madav.onrender.com/billing/webhook`
    (events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`);
    copy its signing secret.
 3. In Render Environment, set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`. Save.

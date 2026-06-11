@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // features — the engine's view of the build channel. builtIn(key) answers "does THIS
 // build ship feature <key>?" from electron/build-features.json (written by
 // scripts/build-features.mjs at build time; admin channel = everything true).

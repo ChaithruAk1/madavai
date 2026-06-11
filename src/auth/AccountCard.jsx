@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // Account block for Settings: shows the signed-in user + subscription status, with Manage / Subscribe
 // and Sign out. Reads the live account from the auth server; hidden when not signed in.
 import { useEffect, useState } from "react";

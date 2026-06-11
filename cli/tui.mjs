@@ -1,6 +1,6 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
-// BrainEdge CLI — Ink (React-for-terminal) UI, modeled on top agent CLIs: a persistent rounded input box,
+// Madav CLI — Ink (React-for-terminal) UI, modeled on top agent CLIs: a persistent rounded input box,
 // a floating slash-command menu, bordered permission panels, live streaming, a spinner you can interrupt
 // with Esc, and an arrow-key model picker. Written with React.createElement so it runs without a build.
 import React from "react";
@@ -19,7 +19,7 @@ const PALETTE = [
   ["/help", "show commands"], ["/model", "pick a model"], ["/compact", "summarize & shrink context"],
   ["/resume", "reopen a past session"], ["/clear", "new conversation"], ["/cd", "change working folder"],
   ["/add-dir", "add another folder"], ["/memory", "edit project guide"], ["/skills", "list skills"],
-  ["/reload", "re-scan skills & commands"], ["/init", "create BRAINEDGE.md"], ["/undo", "revert last edit"],
+  ["/reload", "re-scan skills & commands"], ["/init", "create MADAV.md"], ["/undo", "revert last edit"],
   ["/cwd", "show folder"], ["/status", "session status"], ["/config", "show configuration"],
   ["/doctor", "run health checks"], ["/permissions", "approval mode"], ["/cost", "token estimate"],
   ["/auto", "toggle auto-approve"], ["/mcp", "connectors (desktop)"], ["/agents", "sub-agents (auto)"],
@@ -146,9 +146,9 @@ function App() {
       case "add-dir": case "adddir": { if (!arg) { push("note", { text: "usage: /add-dir <path>" }); break; } try { const d = core.addDir(arg); rebuildSys(); push("note", { text: "added folder: " + d }); } catch (e) { push("error", { text: e.message || String(e) }); } break; }
       case "memory": { const r = core.openMemory(); push("note", { text: r.opened ? `opened ${r.file}` : `edit ${r.file}` }); break; }
       case "cwd": push("note", { text: core.listRoots().join("\n") }); break;
-      case "skills": push("note", { text: core.SKILLS.length ? core.SKILLS.map((s) => "  ✦ " + s.name + " — " + s.description).join("\n") : "No skills. Add SKILL.md folders under .brainedge/skills, then /reload." }); break;
+      case "skills": push("note", { text: core.SKILLS.length ? core.SKILLS.map((s) => "  ✦ " + s.name + " — " + s.description).join("\n") : "No skills. Add SKILL.md folders under .madav/skills, then /reload." }); break;
       case "reload": core.reloadSkills(); core.reloadCommands(); rebuildSys(); push("note", { text: `reloaded — ${core.SKILLS.length} skill(s), ${core.COMMANDS.length} command(s)` }); break;
-      case "init": { const f = path.join(core.ROOT, "BRAINEDGE.md"); if (fs.existsSync(f)) push("note", { text: "BRAINEDGE.md already exists" }); else { fs.writeFileSync(f, "# Project guide\n\nDescribe this project, its conventions, and rules the agent should always follow.\n"); rebuildSys(); push("note", { text: "created BRAINEDGE.md" }); } break; }
+      case "init": { const f = path.join(core.ROOT, "MADAV.md"); if (fs.existsSync(f)) push("note", { text: "MADAV.md already exists" }); else { fs.writeFileSync(f, "# Project guide\n\nDescribe this project, its conventions, and rules the agent should always follow.\n"); rebuildSys(); push("note", { text: "created MADAV.md" }); } break; }
       case "undo": push("note", { text: core.undoLast() }); break;
       case "status": push("note", { text: [`model    ${core.cfg.model}`, `provider ${core.cfg.baseUrl}`, `folder   ${core.ROOT}`, `messages ${msgs.current.filter((m) => m.role === "user" || m.role === "assistant").length}`, `approve  ${core.state.auto ? "auto" : "ask"}`, `plan     ${planLabel()}`].join("\n") }); break;
       case "config": push("note", { text: [`model    ${core.cfg.model}`, `kind     ${core.cfg.kind}`, `baseUrl  ${core.cfg.baseUrl}`, `apiKey   ${core.cfg.apiKey ? "set" : "missing"}`, `gated    ${core.cfg.token ? "yes" : "no"}`].join("\n") }); break;
@@ -156,7 +156,7 @@ function App() {
       case "permissions": push("note", { text: `approval: ${core.state.auto ? "auto-approve (no prompts)" : "ask before changes"} — toggle with /auto` }); break;
       case "cost": { const ch = msgs.current.reduce((n, m) => n + (typeof m.content === "string" ? m.content.length : 0), 0); push("note", { text: `~${Math.round(ch / 4)} tokens this session (estimate)` }); break; }
       case "auto": core.state.auto = !core.state.auto; push("note", { text: "auto-approve " + (core.state.auto ? "ON" : "OFF") }); break;
-      case "mcp": push("note", { text: "Connectors (MCP) are managed in the BrainEdge desktop app." }); break;
+      case "mcp": push("note", { text: "Connectors (MCP) are managed in the Madav desktop app." }); break;
       case "agents": push("note", { text: "Sub-agents run automatically — the model calls spawn_subagent for big independent tasks." }); break;
       default: { const cc = core.COMMANDS.find((x) => x.name === cmd); if (cc) { push("user", { text: v }); runAgent(core.expandCommand(cmd, arg)); } else push("error", { text: "unknown command — /help for the list" }); }
     }
@@ -208,7 +208,7 @@ function App() {
   const seg = (color, s) => h(Text, { color }, s);
   function renderItem(item) {
     if (item.kind === "banner") return h(Box, { key: item.id, flexDirection: "column", borderStyle: "round", borderColor: TEAL, paddingX: 1, marginBottom: 1 },
-      h(Text, null, h(Text, { color: TEAL, bold: true }, "⬢ BRAINEDGE "), seg(DIM, "cli")),
+      h(Text, null, h(Text, { color: TEAL, bold: true }, "⬢ MADAV "), seg(DIM, "cli")),
       h(Text, null, seg("#e4e8f0", "Welcome back "), h(Text, { color: TEAL, bold: true }, (core.USER.name ? core.USER.name.split(" ")[0] : "there") + "!")),
       h(Text, null, " "),
       h(Text, null, seg(DIM, "model  "), core.cfg.model || "—"),

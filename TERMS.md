@@ -1,8 +1,8 @@
-# BrainEdge — Terms of Use
+# Madav — Terms of Use
 
 _Last updated: 2026 · © 2026 Samskruthi Harish. All rights reserved._
 
-These Terms of Use ("Terms") govern your use of the BrainEdge application and related
+These Terms of Use ("Terms") govern your use of the Madav application and related
 software (the "Software"). By installing or using the Software, you agree to these Terms.
 If you do not agree, do not use the Software.
 
@@ -44,7 +44,7 @@ incidental, or consequential damages, or for loss of data, profits, or credentia
 arising from your use of the Software or any connected third‑party service.
 
 ## 8. Trademarks
-"BrainEdge" and the BrainEdge logo are trademarks of Samskruthi Harish. See TRADEMARKS.md.
+"Madav" and the Madav logo are trademarks of Samskruthi Harish. See TRADEMARKS.md.
 
 ## 9. Changes
 The Author may update these Terms; continued use after changes constitutes acceptance.

@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // "Add content from GitHub". Link a GitHub account, pick a repository (or paste a URL),
 // then select individual files to add to the chat as context. Files are returned as { name, content }
@@ -107,7 +107,7 @@ export default function GithubContent({ onClose, onAttach }) {
                   <div className="env-search" style={{ maxWidth: 360, margin: "0 auto" }}><Github size={13} /><input type="password" autoFocus value={token} placeholder="Paste a GitHub token (repo scope)" onChange={(e) => setToken(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") connect(); }} /></div>
                   <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 10 }}>
                     <button className="btn primary" disabled={busy === "connect" || !token.trim()} onClick={connect}>{busy === "connect" ? "Connecting…" : "Connect account"}</button>
-                    <a href="#" className="env-link" onClick={(e) => { e.preventDefault(); bridge.openExternal?.("https://github.com/settings/tokens/new?scopes=repo&description=BrainEdge"); }}>Create a token →</a>
+                    <a href="#" className="env-link" onClick={(e) => { e.preventDefault(); bridge.openExternal?.("https://github.com/settings/tokens/new?scopes=repo&description=Madav"); }}>Create a token →</a>
                   </div>
                 </>
               ) : (

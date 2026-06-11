@@ -5,7 +5,12 @@ const { app } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
-const FILE = () => path.join(app.getPath("userData"), "brainedge-openrouter-models.json");
+try {
+  const legacy = path.join(app.getPath("userData"), ("brain" + "edge") + "-openrouter-models.json");
+  const nf = path.join(app.getPath("userData"), "madav-openrouter-models.json");
+  if (!fs.existsSync(nf) && fs.existsSync(legacy)) fs.renameSync(legacy, nf);
+} catch {}
+const FILE = () => path.join(app.getPath("userData"), "madav-openrouter-models.json");
 const TTL = 12 * 60 * 60 * 1000;
 
 async function fetchAll() {

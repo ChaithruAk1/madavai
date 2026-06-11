@@ -27,7 +27,7 @@ Behavior: Shown for billable accounts that aren't currently active. Clicking ope
 
 ### Settings → Profile · Sign out
 aliases: log out, logout, sign off, switch account, disconnect
-What: A button on the Account card that signs you out of your BrainEdge account.
+What: A button on the Account card that signs you out of your Madav account.
 Why: Use it to switch accounts or sign out on a shared machine.
 Behavior: Signs out via the auth server and reloads the whole app immediately — unsent text in other screens is lost, so finish what you're doing first.
 
@@ -44,7 +44,7 @@ Why: Personalizes buttons, highlights, and active states across the app.
 Behavior: Clicking Default restores the multi-color look. "Custom" is actually a native color picker hidden under the chip — click it and choose any color. Saves and applies immediately; no Save button.
 Example: Click Custom, pick #13c2d6, and the app's highlights turn teal right away.
 
-### Settings → Profile · Instructions for BrainEdge
+### Settings → Profile · Instructions for Madav
 aliases: custom instructions, system prompt, global instructions, persona, rules
 What: A text box for instructions applied to every conversation — Chat, Code, Cowork, and Projects.
 Why: Set tone, role, and standing rules once instead of repeating them per chat.
@@ -53,7 +53,7 @@ Example: "Be warm and concise. I'm a senior engineer — skip the basics. Prefer
 
 ### Settings → Profile → Memory · Remember things about me across chats
 aliases: memory toggle, remember me, cross-chat memory, forget, memory switch
-What: A checkbox controlling whether BrainEdge remembers durable facts about you (preferences, projects, corrections) across all conversations.
+What: A checkbox controlling whether Madav remembers durable facts about you (preferences, projects, corrections) across all conversations.
 Why: Memory makes every chat smarter about you; turn it off if you'd rather start fresh each time.
 Behavior: Default ON. Saves immediately on change. Turning it off keeps existing notes but stops using them and stops learning new ones — nothing is deleted. Memory is stored only in a local file on this device and is injected only into your own model's prompts. This is the same switch as "Cross-chat memory" in Extras — one source of truth.
 
@@ -71,33 +71,33 @@ Behavior: Acts immediately with no confirmation dialog, and there is no undo —
 
 ### Settings → Profile → Advanced · Account server URL
 aliases: auth server, server address, backend url, account url, self-hosted
-What: A field (tucked inside the collapsed "Advanced" section) holding the URL of the account/auth server BrainEdge talks to.
+What: A field (tucked inside the collapsed "Advanced" section) holding the URL of the account/auth server Madav talks to.
 Why: Only needed if you run your own account server or a non-default deployment.
 Behavior: Saves immediately on change. The placeholder shows the local default style ("http://127.0.0.1:8787 (or your deployed https URL)"). A wrong value breaks sign-in and subscription checks, so leave it alone unless you know your deployment's address.
 
 ### Settings → Terminal access · Enable terminal access
-aliases: cli, command line, brainedge command, terminal setup, shell agent
-What: A button that provisions the `brainedge` CLI so you can run BrainEdge as a coding agent in any terminal.
+aliases: cli, command line, madav command, terminal setup, shell agent
+What: A button that provisions the `madav` CLI so you can run Madav as a coding agent in any terminal.
 Why: Same brain as the desktop app, but in your shell — great for working inside project folders.
-Behavior: One click writes your existing provider settings to a local config and adds a `brainedge` command to your PATH — no API key re-entry. It's set up automatically for active subscribers; this button re-runs that. Once configured the button label changes to "Re-run setup". Requires Node.js; if it's missing the card links to nodejs.org. Subscription is checked each time the CLI starts. In the web version this whole card is replaced by a notice — setup only works from the desktop app.
-Example: After enabling, `cd` into a project and type `brainedge`; inside the CLI, `/help` lists commands and `/undo` reverts the last edit.
+Behavior: One click writes your existing provider settings to a local config and adds a `madav` command to your PATH — no API key re-entry. It's set up automatically for active subscribers; this button re-runs that. Once configured the button label changes to "Re-run setup". Requires Node.js; if it's missing the card links to nodejs.org. Subscription is checked each time the CLI starts. In the web version this whole card is replaced by a notice — setup only works from the desktop app.
+Example: After enabling, `cd` into a project and type `madav`; inside the CLI, `/help` lists commands and `/undo` reverts the last edit.
 
 ### Settings → Terminal access · Disable
 aliases: turn off cli, remove command, uninstall cli, disable terminal
 What: A button that turns off terminal access.
-Why: Use it if you no longer want the `brainedge` command available in your shell.
+Why: Use it if you no longer want the `madav` command available in your shell.
 Behavior: Appears only when the CLI is already configured. Removes the setup immediately and refreshes the status shown on the card. You can re-enable any time with one click — your provider settings in the app are untouched.
 
 ### Settings → Terminal access · Copy
-aliases: copy command, clipboard, copy brainedge
-What: A small button next to the `brainedge` command shown after a successful setup.
+aliases: copy command, clipboard, copy madav
+What: A small button next to the `madav` command shown after a successful setup.
 Why: Saves you typing the command in your terminal.
-Behavior: Copies the literal text "brainedge" to your clipboard. It appears inside the green "Ready" panel along with the model the CLI will use; open a new terminal so the PATH change is picked up.
+Behavior: Copies the literal text "madav" to your clipboard. It appears inside the green "Ready" panel along with the model the CLI will use; open a new terminal so the PATH change is picked up.
 
 ### Settings · Community
 aliases: forum, discussions, chat with users, community page
 What: A sidebar entry opening the in-app Community screen.
-Why: A place to talk with other BrainEdge users.
+Why: A place to talk with other Madav users.
 Behavior: Visible to everyone. Admins get extra moderation abilities on this screen (the page is passed your admin status). The Community page itself has its own controls documented separately.
 
 ### Settings · Product requests
@@ -144,7 +144,7 @@ Behavior: Default ON. This is a unified view of the same switch as "Agent Browse
 
 ### Settings → Extras · Cross-chat memory
 aliases: memory switch, remember user, persistent memory, memory master
-What: A toggle for BrainEdge remembering durable facts about the user across conversations — marked "master switch".
+What: A toggle for Madav remembering durable facts about the user across conversations — marked "master switch".
 Why: Same control as the Memory card checkbox, surfaced here for the install owner.
 Behavior: Default ON. Maps to the same settings key (userMemory.enabled) as "Remember things about me across chats" on the Profile Memory card — they are one switch. Turning it off keeps stored notes but stops using or adding to them.
 
@@ -170,7 +170,7 @@ Behavior: Default ON. Interface feature — saving is immediate and the change a
 aliases: terminal panel, in-app terminal, console, shell panel
 What: A toggle for the in-app terminal panel.
 Why: Some owners don't want users running shell commands from inside the app.
-Behavior: Default ON. Interface feature — applies immediately on toggle. Note this is the in-app panel, separate from "Terminal access" (the brainedge CLI), which has its own settings page.
+Behavior: Default ON. Interface feature — applies immediately on toggle. Note this is the in-app panel, separate from "Terminal access" (the madav CLI), which has its own settings page.
 
 ### Settings → Extras · Scheduler
 aliases: scheduled tasks, triggers, webhooks, cron, automation screen
@@ -180,7 +180,7 @@ Behavior: Default ON. Interface feature — saves and applies immediately.
 
 ### Settings → Extras · Via Mobile
 aliases: telegram, phone control, mobile access, remote control
-What: A toggle for controlling BrainEdge from your phone over Telegram.
+What: A toggle for controlling Madav from your phone over Telegram.
 Why: Disable if you don't want a remote phone channel into this install.
 Behavior: Default ON. Interface feature — saves and applies immediately on toggle.
 

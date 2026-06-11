@@ -1,4 +1,4 @@
-// © 2026 Samskruthi Harish. BrainEdge — Proprietary. All rights reserved. See LICENSE.
+// © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // TeamOps — mission control for a running agent team. The user WATCHES the floor:
 // every member is a workstation that lights up when it's working, hands off down the
 // line, and stamps its output when done. Pure presentation; data comes from UiEvents.
