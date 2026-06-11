@@ -11,16 +11,12 @@ import Connectors from "./components/Connectors.jsx";
 import Skills from "./components/Skills.jsx";
 import Plugins from "./components/Plugins.jsx";
 import ProjectsBrowser from "./components/ProjectsBrowser.jsx";
-import Scheduler from "./components/Scheduler.jsx";
-import ViaMobile from "./components/ViaMobile.jsx";
 import Consumption from "./components/Consumption.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
-import StudioLauncher from "./components/StudioLauncher.jsx";
 import Agents from "./components/Agents.jsx";
 import TeamOps from "./components/TeamOps.jsx";
 import AgentOps from "./components/AgentOps.jsx";
-import SageDock from "./components/SageDock.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import UserGuide from "./components/UserGuide.jsx";
 // ADMIN-ONLY, BUILD-GATED: the Test Center UI (and the functional sweep it imports) is
@@ -29,7 +25,27 @@ import UserGuide from "./components/UserGuide.jsx";
 // branch, so the QA interface never exists in what end users download.
 const QA_IN_BUILD = import.meta.env.VITE_INCLUDE_QA === "1";
 const TestCenter = QA_IN_BUILD ? lazy(() => import("./components/TestCenter.jsx")) : null;
-import TerminalPanel from "./components/TerminalPanel.jsx";
+// ---- Two-channel feature flags (Extras switchboard → public installer) ----
+// scripts/build-features.mjs writes VITE_FEAT_<KEY>=0 for features the owner switched
+// off in Settings → Extras before a PUBLIC build; Vite folds each comparison to a
+// constant, so Rollup statically DROPS the feature's chunk from the public bundle
+// (exact same mechanism as the QA exclusion above). Dev + admin builds have everything.
+const FEAT_SAGE = import.meta.env.VITE_FEAT_SAGE !== "0";
+const FEAT_STUDIO = import.meta.env.VITE_FEAT_STUDIO !== "0";
+const FEAT_TERMINAL = import.meta.env.VITE_FEAT_TERMINAL !== "0";
+const FEAT_SCHEDULER = import.meta.env.VITE_FEAT_SCHEDULER !== "0";
+const FEAT_VIAMOBILE = import.meta.env.VITE_FEAT_VIAMOBILE !== "0";
+const SageDockLazy = FEAT_SAGE ? lazy(() => import("./components/SageDock.jsx")) : null;
+const StudioLauncher = FEAT_STUDIO ? lazy(() => import("./components/StudioLauncher.jsx")) : null;
+const TerminalPanel = FEAT_TERMINAL ? lazy(() => import("./components/TerminalPanel.jsx")) : null;
+const Scheduler = FEAT_SCHEDULER ? lazy(() => import("./components/Scheduler.jsx")) : null;
+const ViaMobile = FEAT_VIAMOBILE ? lazy(() => import("./components/ViaMobile.jsx")) : null;
+// Features the build excludes are forced OFF in the runtime switchboard the UI consults
+// (sidebar entries etc.) — one merged source the rest of the app reads.
+const BUILD_OFF = [!FEAT_SAGE && "sage", !FEAT_STUDIO && "studio", !FEAT_TERMINAL && "terminal", !FEAT_SCHEDULER && "scheduler", !FEAT_VIAMOBILE && "viamobile"].filter(Boolean);
+const NotInBuild = () => (
+  <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">This feature isn't included in this edition of BrainEdge.</div></div></div>
+);
 import EnvPicker from "./components/EnvPicker.jsx";
 import ThinkLogo from "./components/ThinkLogo.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
@@ -720,7 +736,7 @@ export default function App() {
       <Sidebar active={mode} onSelect={switchMode}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
         onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession}
-        extras={(settings && settings.extras) || {}} />
+        extras={{ ...((settings && settings.extras) || {}), ...Object.fromEntries(BUILD_OFF.map((k) => [k, false])) }} />
       <div className="main">
         {isSettings ? (
           <Settings onChanged={setSettings} />
@@ -731,9 +747,9 @@ export default function App() {
         ) : isPlugins ? (
           <Plugins onNavigate={switchMode} />
         ) : isViaMobile ? (
-          <ViaMobile onNavigate={switchMode} onSettingsChanged={setSettings} />
+          ViaMobile ? <Suspense fallback={null}><ViaMobile onNavigate={switchMode} onSettingsChanged={setSettings} /></Suspense> : <NotInBuild />
         ) : isScheduler ? (
-          <Scheduler />
+          Scheduler ? <Suspense fallback={null}><Scheduler /></Suspense> : <NotInBuild />
         ) : isConsumption ? (
           <Consumption />
         ) : isGuide ? (
@@ -745,9 +761,9 @@ export default function App() {
         ) : isAgents ? (
           <Agents onLaunch={startAgentSession} onLaunchTeam={startTeamSession} onOpenSession={openSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
         ) : isStudio ? (
-          <StudioLauncher onStart={startStudio} />
+          StudioLauncher ? <Suspense fallback={null}><StudioLauncher onStart={startStudio} /></Suspense> : <NotInBuild />
         ) : isTerminal ? (
-          <TerminalPanel cwd={cwd} />
+          TerminalPanel ? <Suspense fallback={null}><TerminalPanel cwd={cwd} /></Suspense> : <NotInBuild />
         ) : isModels ? (
           <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
             tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : "models")} />
@@ -976,7 +992,7 @@ export default function App() {
       )}
 
       {/* Sage — the app-wide buddy: floats over every screen, never disturbs a running session */}
-      {(!settings || (settings.extras || {}).sage !== false) && <SageDock mode={mode} onNavigate={switchMode} />}
+      {SageDockLazy && (!settings || (settings.extras || {}).sage !== false) && <Suspense fallback={null}><SageDockLazy mode={mode} onNavigate={switchMode} /></Suspense>}
     </div>
   );
 }

@@ -27,6 +27,7 @@ const ARTIFACT_RULE_BASE = " When you build or change something runnable — an 
 // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js).
 // Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per turn.
 function officeRulePart() {
+  try { if (!require("./features.cjs").builtIn("office")) return ""; } catch {}
   try { if ((settings.load().extras || {}).office === false) return ""; } catch {}
   return " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
 }
@@ -38,7 +39,7 @@ function withLang(cfg) {
   // Cross-chat memory: what BrainEdge remembers about this user follows them into
   // every conversation (toggle + editor in Settings → Profile → Memory).
   let mem = "";
-  try { mem = require("./user-memory.cjs").block(cfg); } catch {}
+  try { if (require("./features.cjs").builtIn("memory")) mem = require("./user-memory.cjs").block(cfg); } catch {}
   return [BEHAVIOR, langLine, gi].filter(Boolean).join("\n\n") + mem;
 }
 const path = require("path");
@@ -99,7 +100,7 @@ class SessionManager {
         usage.append({ ...t, at: Date.now() }); this._recordAgentRun(sessionId, t, data, true); this._persistTurn(sessionId);
         // Cross-chat memory: fire-and-forget extraction of durable user facts from
         // this completed turn (throttled inside user-memory; never blocks the UI).
-        try { const cfg = settings.load(); require("./user-memory.cjs").learnFromTurn(settings.activeProfile(cfg), cfg, t.userText, t.replyText); } catch {}
+        try { if (require("./features.cjs").builtIn("memory")) { const cfg = settings.load(); require("./user-memory.cjs").learnFromTurn(settings.activeProfile(cfg), cfg, t.userText, t.replyText); } } catch {}
         this._turns.delete(sessionId);
       }
       else if (kind === "error") { this._recordAgentRun(sessionId, t, data, false); this._persistTurn(sessionId); this._turns.delete(sessionId); }
@@ -202,11 +203,25 @@ class SessionManager {
   // to that agent's site allowlist. Desktop only (Electron window).
   _browserFor(agentLike) {
     if (!agentLike || !agentLike.tools || !agentLike.tools.browser) return null;
+    if (!require("./features.cjs").builtIn("browser")) return null; // not in this build
     try {
-      const ab = require("./agent-browser.cjs");
+      const ab = require("./agent-browser.cjs"); // may be physically absent in public builds
       if (!ab.isEnabled()) return null; // admin master switch is off
       // Per-agent identity → per-agent window, so parallel agents browse independently.
       return ab.forAllowlist(agentLike.browserAllow || "", { id: agentLike.id, name: agentLike.name });
+    } catch { return null; }
+  }
+
+  // Desktop Driver binding: agents with the Desktop capability operate native Windows
+  // apps (UI Automation), confined to their app allowlist. Mirrors _browserFor.
+  _desktopFor(agentLike) {
+    if (!agentLike || !agentLike.tools || !agentLike.tools.desktop) return null;
+    if (!require("./features.cjs").builtIn("desktop")) return null; // not in this build
+    try {
+      const dd = require("./desktop-driver.cjs"); // may be physically absent in public builds
+      if (!dd.isEnabled()) return null; // admin master switch is off
+      const allow = String(agentLike.desktopAllow || "").split(/[,\s]+/).map((x) => x.trim()).filter(Boolean);
+      return { allow };
     } catch { return null; }
   }
 
@@ -306,6 +321,7 @@ class SessionManager {
         roster: this._rosterFor(s, cfg),
         callAgent: this._makeCallAgent(s, profile, cfg, emit, controller.signal),
         browser: this._browserFor(s.agent), // chat-mode agents can browse too
+        desktop: this._desktopFor(s.agent), // …and operate native Windows apps
         agentOpts: this._harnessFor(s.agent, profile),
       });
     } finally {
@@ -372,6 +388,7 @@ class SessionManager {
       systemOverride: this._memberSys(member, task),
       allowAskUser: true, // members can pause the mission with a question for the user
       browser: this._browserFor(member),
+      desktop: this._desktopFor(member),
       noShell: !t.shell, // Shell capability off → run_bash neither offered nor executable
       agentOpts: this._harnessFor(member, prof),
     });
@@ -599,8 +616,20 @@ class SessionManager {
 
   async _chatTurn(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
+    // Agent image knowledge: on the FIRST turn of a session with a custom agent, inline
+    // the agent's knowledge images so vision-capable models see them up front. They ride
+    // the normal image path (image_url / base64). NOTE: models without vision will error
+    // or ignore image blocks — acceptable for v1; text knowledge is unaffected.
+    let turnText = userText, turnImages = images;
+    if (s.agent && s.history.length === 0) {
+      const knImgs = agentPrompt.knowledgeImages(s.agent);
+      if (knImgs.length) {
+        turnImages = [...(images || []), ...knImgs];
+        turnText = userText + knImgs.map((im) => `\n[Agent knowledge image: ${im.name}]`).join("");
+      }
+    }
     // Vision: inline image blocks (OpenAI image_url / Anthropic base64) on this no-tool path.
-    s.history.push({ role: "user", content: inlineContent(userText, images, profile.kind) });
+    s.history.push({ role: "user", content: inlineContent(turnText, turnImages, profile.kind) });
     const controller = new AbortController();
     s.controller = controller;
     this._send(sessionId, "init", { model: profile.model, provider: profile.name, kind: profile.kind, mode: s.mode });
@@ -733,6 +762,7 @@ class SessionManager {
           roster: this._rosterFor(s, cfg),
           callAgent: this._makeCallAgent(s, profile, cfg, emit, controller.signal),
           browser: this._browserFor(s.agent),
+          desktop: this._desktopFor(s.agent),
           // A custom agent with Shell off never gets run_bash; plain folder
           // sessions (no agent) keep the full toolset as before.
           noShell: !!(s.agent && s.agent.tools && !s.agent.tools.shell),

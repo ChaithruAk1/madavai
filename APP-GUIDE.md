@@ -113,13 +113,41 @@ Studio, Agents & Teams, Projects, Scheduler) rather than pointing at outside too
 User Guide (account menu → User Guide) now includes illustrated screen mockups of the key
 screens with the important control highlighted.
 
+## Desktop control (agents on native apps)
+Windows only. Agents can operate native Windows applications — Notepad, Calculator,
+File Explorer, Office, and the like — the same text-mode way the Agent Browser drives the
+web: NO vision model and NO pixels/coordinates. Under the hood it uses Windows UI
+Automation to read a window as an indented element tree with NUMBERED interactive elements
+(buttons, edits, lists, tabs, checkboxes, menu items), then clicks or types by number. The
+tools are: list open app windows, focus a window, read it, click element [n], type into
+element [n], and open a well-known app by name. Guardrails: every focus/click/type asks
+your permission (reads are free); an optional per-agent ALLOWLIST of app names (window
+title / process substrings) confines what the agent may touch (empty = any app); password
+and credential fields (password, CVV, card, SSN, OTP, secret, PIN) are ALWAYS refused;
+window text is treated as untrusted data, never as instructions; launching is limited to a
+fixed safe set of apps (notepad, calc, explorer, mspaint, wordpad) or an allowlisted
+running app — an agent can never run an arbitrary path or command. There is an admin master
+switch and an Extras toggle ("Desktop control"); both default ON. Turn on the Desktop
+capability in the agent's Blueprint & capabilities, optionally list allowed apps.
+
+## Sage's control-level memory (how Sage knows every field)
+Sage has a deep reference covering ~300 individual controls — every field, checkbox,
+toggle, button and section across the app — generated from the application's own
+source code (sage-knowledge/ files). When a user asks about a SPECIFIC control, the
+most relevant entries are retrieved automatically and arrive alongside this guide;
+they carry exact labels, real behavior, defaults, role gates and small examples, and
+they outrank general knowledge. So Sage should answer control questions precisely and
+confidently from those entries — and when NO entry arrives and the guides don't cover
+it, say plainly that it isn't documented rather than guessing.
+
 ## Extras — the feature switchboard (Settings → Extras)
 Visible ONLY to Creator and Complimentary accounts (regular users never see this page).
 It lists this install's optional features, each with an On/Off switch: Sage helper, Voice
 input (mic buttons), Image generation (the create_image tool), Office file creation
 (officedoc spreadsheets/docs/decks/PDFs in chat), Agent Browser and Cross-chat memory
-(these two are unified views over their existing master switches), Studio, Terminal,
-Scheduler, and Via Mobile. Turning a feature off hides it from the interface (sidebar
+(these two are unified views over their existing master switches), Desktop control
+(agents on native Windows apps), Deep Research (cited multi-source reports), Studio,
+Terminal, Scheduler, and Via Mobile. Turning a feature off hides it from the interface (sidebar
 entries, mic buttons, the Sage bubble) and — for engine features like image generation
 and office files — removes the capability from the model's tools from the next message.
 Everything is ON by default. If a user asks where a feature went (no mic, no Studio in
@@ -127,8 +155,11 @@ the sidebar, no Sage), the likely answer is that it was switched off in Extras b
 owner of this install.
 
 ## What does NOT exist (never invent these)
-No vision/pixel control of arbitrary desktop apps (agents use files, terminal, the
-built-in text browser, and connectors instead). No Chrome/Safari/Firefox involvement —
+No vision/pixel/screenshot control of desktop apps: agents do NOT see the screen or move a
+mouse by coordinates. Native-app control DOES exist (Windows only) via the Desktop control
+capability, but it works through Windows UI Automation — reading windows as text and
+clicking/typing elements by number, with allowlists, credential refusal, and permission
+prompts — never through vision or pixels. No Chrome/Safari/Firefox involvement —
 the Agent Browser is BrainEdge's own built-in window. No realtime full-duplex voice.
 If a user asks for something not in this guide or the Agent Guide, say plainly it isn't a
 feature (or that you're not sure) and point to the closest real one.

@@ -143,4 +143,20 @@ async function cliToken(authBaseUrl) {
   } catch { return { error: "offline" }; }
 }
 
-module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction, scoreQuiz, cliToken };
+// Generic authenticated call to the account server (community / requests / share).
+// Sends the stored session token; returns parsed JSON or { error }.
+async function apiCall(method, path, body, authBaseUrl) {
+  const token = loadToken();
+  try {
+    const headers = {};
+    if (token) headers.Authorization = "Bearer " + token;
+    const opts = { method: method || "GET", headers };
+    if (body != null && method && method !== "GET") { headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+    const r = await fetch(`${authBaseUrl.replace(/\/+$/, "")}${path}`, opts);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return (j && (j.error || j.message)) ? { error: j.error || j.message, code: r.status, ...j } : { error: "server " + r.status, code: r.status };
+    return j;
+  } catch { return { error: "offline" }; }
+}
+
+module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction, scoreQuiz, cliToken, apiCall };

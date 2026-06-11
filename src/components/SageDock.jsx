@@ -9,8 +9,11 @@ import { X, Plus, Minus, Smile, ArrowUp, ArrowRight, Loader2, Mic } from "lucide
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
 import { recordScreen, recordQuestion, recordEvent, memoryBlock, maybeDistill } from "../sageMemory.js";
+import { retrieveKnowledge } from "../sageKnowledge.js";
 import AGENT_GUIDE_RAW from "../../AGENT-GUIDE.md?raw";
 import APP_GUIDE_RAW from "../../APP-GUIDE.md?raw";
+// Two-channel build flag: public builds without Voice fold this to false (mic hidden).
+const FEAT_VOICE = import.meta.env.VITE_FEAT_VOICE !== "0";
 
 // ---- The helper's face: a multicultural gallery the user can choose from.
 // Female looks switch the buddy's name to Sara; male/neutral looks stay Sage.
@@ -52,7 +55,8 @@ How you teach — KEEP IT KRISP:
 
 Hard rules:
 - YOUR ONLY DOMAIN IS BRAINEDGE. You exist to know this application inside-out — its screens, features, agents, workflows — and this user's way of using it. You are NOT a general assistant: never answer general-knowledge questions (news, world facts, coding homework, math, life advice, anything unrelated to operating BrainEdge). When asked something outside the app, decline warmly in ONE sentence and hand it to the right BrainEdge surface — general questions belong in Let's Chat, coding work in Let's Build, repeatable jobs with an Agent — with the matching GOTO line. Example: "That one's for the main chat, not me — I'm your BrainEdge guide. GOTO: chat".
-- NO WEB, NO OUTSIDE FACTS: you cannot search the web and must never pretend to, never cite outside information, and never answer from general world knowledge. Your ONLY sources are the two guides below and what you've learned about this user. If neither covers it, say so plainly.
+- NO WEB, NO OUTSIDE FACTS: you cannot search the web and must never pretend to, never cite outside information, and never answer from general world knowledge. Your ONLY sources are the two guides below, the CONTROL-LEVEL KNOWLEDGE entries you may receive per question (deep, code-accurate notes on the exact field/button being asked about — when present, they are your MOST authoritative source: use their exact labels, behaviors and examples), and what you've learned about this user. If none of these cover it, say so plainly.
+- WHEN ASKED "WHAT IS THIS field/checkbox/button/section": answer like the engineer who built it — what it is in one sentence, why it exists, what actually happens when used (defaults, who can see it, gotchas), and a tiny concrete example when it genuinely helps. The control-level entries give you all of this; deliver it warmly and concisely, never as a copied list.
 - The two guides below are the COMPLETE truth about BrainEdge today. Never invent a feature, screen or button. Use exact labels. If something isn't covered, say it isn't a feature (or you're not sure) and point to the closest real one. Never mention Chrome/Safari/Firefox or other OSes — the Agent Browser is BrainEdge's own built-in window.
 - BUILD WITH BRAINEDGE, always: whenever the user wants to build, create, or make ANYTHING (an app, website, game, document, report, analysis, automation, workflow, bot…), answer with WHERE and HOW to do it inside BrainEdge — Let's Build for coding on a folder, Studio for web pages/documents/games/diagrams, Agents & Teams for repeatable work, Projects for knowledge work, Scheduler for anything recurring, Connectors for app data — give the first concrete step there, and end with the matching GOTO line. You explain the path; the building itself happens on those surfaces, not in this bubble.
 
@@ -106,8 +110,8 @@ export default function SageDock({ mode, onNavigate }) {
   const [peek, setPeek] = useState(() => { try { return localStorage.getItem("be.sage.greeted") !== "1"; } catch { return false; } });
   const [tip, setTip] = useState(null);
   const [listening, setListening] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(true); // Extras switchboard: hide the mic when voice input is off
-  useEffect(() => { bridge.getSettings().then((c) => setVoiceOn(((c && c.extras) || {}).voice !== false)).catch(() => {}); }, [open]);
+  const [voiceOn, setVoiceOn] = useState(FEAT_VOICE); // Extras switchboard: hide the mic when voice input is off
+  useEffect(() => { bridge.getSettings().then((c) => setVoiceOn(FEAT_VOICE && ((c && c.extras) || {}).voice !== false)).catch(() => {}); }, [open]);
   const [size, setSize] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.size") || "null"); } catch { return null; } });
   // Active walkthrough: Sage's numbered steps become a live guide that follows the
   // user across screens until the whole cycle is done (e.g. agent created + deployed).
@@ -199,7 +203,11 @@ export default function SageDock({ mode, onNavigate }) {
       // Active walkthrough context: Sage knows exactly which step the user is on
       // and which screen they're looking at, so help stays step-aware.
       const walkCtx = walk && walk.steps ? `\n\nACTIVE WALKTHROUGH (you are guiding the user through this right now): "${walk.topic}". They are on step ${walk.idx + 1} of ${walk.steps.length}: "${walk.steps[walk.idx]}". Current screen: ${mode}. Tailor every answer to moving them through THIS step; if they seem done with it, tell them to press "Done — next" on the guide bar.` : "";
-      const r = await bridge.completeOnce([{ role: "system", content: SYS(name) + memoryBlock() + walkCtx }, ...hist]);
+      // Control-level memory: retrieve only the entries relevant to THIS question
+      // (local string scoring, zero tokens spent retrieving — see src/sageKnowledge.js).
+      const know = retrieveKnowledge(text, mode);
+      const knowCtx = know ? `\n\n===== CONTROL-LEVEL KNOWLEDGE (the entries below describe the exact fields/buttons this question is about — trust their labels and behaviors over general knowledge) =====\n${know}` : "";
+      const r = await bridge.completeOnce([{ role: "system", content: SYS(name) + memoryBlock() + knowCtx + walkCtx }, ...hist]);
       // I think with whatever model the selector points at — any provider, any key.
       // When the key/model isn't ready, say so plainly and offer the fix screen.
       let reply = (r && r.text) || "";

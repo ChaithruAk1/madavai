@@ -32,6 +32,14 @@ function describe(name, input = {}) {
     case "browse_click": return { icon: MousePointerClick, verb: "Clicked", obj: input.n != null ? `item ${input.n} on the page` : "on the page" };
     case "browse_fill": return { icon: Keyboard, verb: "Typed", obj: trim(input.text ? `"${input.text}"` : "into the page", 60) };
     case "browse_back": return { icon: ArrowLeft, verb: "Went back", obj: "a page" };
+    // Desktop Applications Driver — plain words for native-app actions.
+    case "desktop_apps": return { icon: Globe, verb: "Looked at", obj: "the open app windows" };
+    case "desktop_focus": return { icon: MousePointerClick, verb: "Switched to", obj: input.n != null ? `app window ${input.n}` : "an app window" };
+    case "desktop_read": return { icon: Globe, verb: "Read", obj: "the app window" };
+    case "desktop_click": return { icon: MousePointerClick, verb: "Clicked", obj: input.n != null ? `item ${input.n} in the app` : "in the app" };
+    case "desktop_type": return { icon: Keyboard, verb: "Typed", obj: trim(input.text ? `"${input.text}"` : "into the app", 60) };
+    case "desktop_open": return { icon: Globe, verb: "Opened", obj: trim(input.app || "an app") };
+    case "deep_research": return { icon: Search, verb: "Researched", obj: trim(input.query || "the web") };
     // Newer abilities
     case "create_image": return { icon: ImageIcon, verb: "Created image", obj: trim(input.prompt || "") };
     case "set_plan": return { icon: ListChecks, verb: "Updated", obj: "the working plan" };

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+// Two-channel build flag: public builds without Voice fold this to false and the mic code drops out.
+const FEAT_VOICE = import.meta.env.VITE_FEAT_VOICE !== "0";
 import GithubContent from "./GithubContent.jsx";
 
 export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNewChat, onPickFolder, onAddRepo, cwd, controls }) {
@@ -37,8 +39,8 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   }, []);
 
   const loadSkills = () => { bridge.listSkills && bridge.listSkills().then((l) => setSkills((l || []).filter((s) => s.enabled !== false))).catch(() => {}); };
-  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || []).filter((c) => c.enabled !== false)); setVoiceOn(((s && s.extras) || {}).voice !== false); }).catch(() => {}); };
-  const [voiceOn, setVoiceOn] = useState(true); // Extras switchboard: hide the mic when voice input is off
+  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || []).filter((c) => c.enabled !== false)); setVoiceOn(FEAT_VOICE && ((s && s.extras) || {}).voice !== false); }).catch(() => {}); };
+  const [voiceOn, setVoiceOn] = useState(FEAT_VOICE); // Extras switchboard: hide the mic when voice input is off
   useEffect(() => { loadSkills(); loadConnectors(); }, []);
   useEffect(() => { if (cwd && bridge.listDir) bridge.listDir(cwd).then((l) => setDirFiles(l || [])).catch(() => setDirFiles([])); else setDirFiles([]); }, [cwd]);
 

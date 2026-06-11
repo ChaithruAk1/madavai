@@ -189,6 +189,7 @@ export const mockBridge = {
   async billingCheckout() { return { error: "billing not available in browser dev" }; },
   async billingPortal() { return { error: "billing not available in browser dev" }; },
   async track() { return { ok: true }; },
+  async apiCall() { return { error: "offline" }; },
   async adminStats() { return { counts: { total: 3, trialing: 1, active: 1, expired: 1, suspended: 0, paying: 1, comp: 1, active24h: 2, active7d: 3, new7d: 2 }, last7d: { signup: 2, signin: 9, subscribed: 1 }, events: [{ ts: new Date().toISOString(), userId: "dev:dev@brainedge.local", type: "signin", meta: { provider: "dev" } }] }; },
   async adminUsers() { return { users: [{ id: "dev:dev@brainedge.local", name: "Dev User", email: "dev@brainedge.local", provider: "dev", status: "trialing", daysLeft: 7, createdAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), suspended: false, freeAccess: false, subscriptionActive: false, plan: null }] }; },
   async adminAction() { return { ok: true }; },

@@ -19,7 +19,26 @@ const store = require("./projects-store.cjs");
 const taskStore = require("./task-store.cjs");
 const runner = require("./task-runner.cjs");
 const usage = require("./usage-store.cjs");
-const tgbot = require("./telegram-bot.cjs");
+const features = require("./features.cjs");
+
+// Excludable modules are PHYSICALLY ABSENT in public builds AND gated by builtIn().
+// Lazy guarded getters so a missing file (or a disabled gate) never crashes the app.
+const NOT_IN_BUILD = { error: "This feature isn't included in this build." };
+let _tgbot;
+const tgbot = () => {
+  if (_tgbot === undefined) { try { _tgbot = require("./telegram-bot.cjs"); } catch { _tgbot = null; } }
+  return _tgbot;
+};
+let _voice;
+const voiceMod = () => {
+  if (_voice === undefined) { try { _voice = require("./voice.cjs"); } catch { _voice = null; } }
+  return _voice;
+};
+let _terminal;
+const terminalMod = () => {
+  if (_terminal === undefined) { try { _terminal = require("./terminal.cjs"); } catch { _terminal = null; } }
+  return _terminal;
+};
 
 // Corporate-proxy support: route ALL outbound HTTP(S) — provider/LLM calls, MCP,
 // Telegram — through the proxy named in HTTPS_PROXY/HTTP_PROXY, honoring NO_PROXY.
@@ -44,11 +63,14 @@ const tgbot = require("./telegram-bot.cjs");
 })();
 
 async function reconcileMessaging() {
+  if (!features.builtIn("viamobile")) { console.log("[messaging] Via Mobile (Telegram) not included in this build — skipping."); return; }
+  const bot = tgbot();
+  if (!bot) { console.log("[messaging] telegram-bot module absent — skipping."); return; }
   const m = settings.load().messaging || {};
   if (m.enabled && m.platform === "telegram" && m.telegramToken) {
-    await tgbot.start({ token: m.telegramToken, allowed: m.telegramAllowedUserIds, target: m.target, folder: m.folder });
+    await bot.start({ token: m.telegramToken, allowed: m.telegramAllowedUserIds, target: m.target, folder: m.folder });
   } else {
-    tgbot.stop();
+    bot.stop();
   }
 }
 
@@ -588,11 +610,19 @@ ipcMain.handle("brainedge:webhookStatus", () => webhookServer.status());
 ipcMain.handle("brainedge:newWebhookToken", () => webhookServer.newToken());
 
 // Voice — push-to-talk transcription via the user's own Whisper-capable key.
-const voice = require("./voice.cjs");
-ipcMain.handle("brainedge:transcribe", (_e, args) => voice.transcribe(args || {}));
+ipcMain.handle("brainedge:transcribe", (_e, args) => {
+  if (!features.builtIn("voice")) return NOT_IN_BUILD;
+  const v = voiceMod();
+  if (!v) return NOT_IN_BUILD;
+  return v.transcribe(args || {});
+});
 // Windows-native speech-to-text: OS recognizer, no key, no network (win-speech.cjs).
 ipcMain.handle("brainedge:winSpeech", (_e, args) => {
-  try { return require("./win-speech.cjs").recognizeOnce((args || {}).timeoutSec); }
+  if (!features.builtIn("voice")) return NOT_IN_BUILD;
+  try {
+    const ws = require("./win-speech.cjs");
+    return ws.recognizeOnce((args || {}).timeoutSec);
+  }
   catch (e) { return { error: String((e && e.message) || e) }; }
 });
 
@@ -632,8 +662,19 @@ ipcMain.handle("brainedge:getRuns", (_e, id) => taskStore.getRuns(id));
 ipcMain.handle("brainedge:getUsage", (_e, days) => usage.summary(days));
 
 // ---- IPC: messaging (Telegram) ----
-ipcMain.handle("brainedge:applyMessaging", async () => { await reconcileMessaging(); return tgbot.getStatus(); });
-ipcMain.handle("brainedge:messagingStatus", () => tgbot.getStatus());
+ipcMain.handle("brainedge:applyMessaging", async () => {
+  if (!features.builtIn("viamobile")) return NOT_IN_BUILD;
+  const bot = tgbot();
+  if (!bot) return NOT_IN_BUILD;
+  await reconcileMessaging();
+  return bot.getStatus();
+});
+ipcMain.handle("brainedge:messagingStatus", () => {
+  if (!features.builtIn("viamobile")) return NOT_IN_BUILD;
+  const bot = tgbot();
+  if (!bot) return NOT_IN_BUILD;
+  return bot.getStatus();
+});
 // One-shot completion (used by the adaptive scheduler wizard for model-driven Q&A).
 ipcMain.handle("brainedge:completeOnce", async (_e, messages) => {
   try {
@@ -694,6 +735,8 @@ ipcMain.handle("brainedge:adminStats", (_e, adminKey) => auth.adminGet("stats", 
 ipcMain.handle("brainedge:adminUsers", (_e, adminKey) => auth.adminGet("users", adminKey, authBase()));
 ipcMain.handle("brainedge:adminAction", (_e, id, action, adminKey) => auth.adminAction(id, action, adminKey, authBase()));
 ipcMain.handle("brainedge:scoreQuiz", (_e, batch) => auth.scoreQuiz(batch, authBase()));
+// Generic authenticated call to the account server (community forum, product requests, share links).
+ipcMain.handle("brainedge:apiCall", (_e, method, path, body) => auth.apiCall(method, path, body, authBase()));
 
 // Terminal access (CLI): one-click provisioning that reuses the user's provider keys + subscription.
 const cliInstall = require("./cli-install.cjs");
@@ -702,11 +745,27 @@ ipcMain.handle("brainedge:cliStatus", () => cliInstall.cliStatus());
 ipcMain.handle("brainedge:disableCli", () => cliInstall.disableCli());
 
 // Embedded terminal — a real shell inside the app (streams I/O to an xterm.js view).
-const terminal = require("./terminal.cjs");
-ipcMain.handle("brainedge:termCreate", (e, opts) => terminal.create(e.sender, opts || {}));
-ipcMain.handle("brainedge:termInput", (_e, { id, data }) => terminal.input(id, data));
-ipcMain.handle("brainedge:termResize", (_e, { id, cols, rows }) => terminal.resize(id, cols, rows));
-ipcMain.handle("brainedge:termKill", (_e, id) => terminal.kill(id));
+ipcMain.handle("brainedge:termCreate", (e, opts) => {
+  if (!features.builtIn("terminal")) return NOT_IN_BUILD;
+  const t = terminalMod();
+  if (!t) return NOT_IN_BUILD;
+  return t.create(e.sender, opts || {});
+});
+ipcMain.handle("brainedge:termInput", (_e, { id, data }) => {
+  const t = features.builtIn("terminal") ? terminalMod() : null;
+  if (!t) return NOT_IN_BUILD;
+  return t.input(id, data);
+});
+ipcMain.handle("brainedge:termResize", (_e, { id, cols, rows }) => {
+  const t = features.builtIn("terminal") ? terminalMod() : null;
+  if (!t) return NOT_IN_BUILD;
+  return t.resize(id, cols, rows);
+});
+ipcMain.handle("brainedge:termKill", (_e, id) => {
+  const t = features.builtIn("terminal") ? terminalMod() : null;
+  if (!t) return NOT_IN_BUILD;
+  return t.kill(id);
+});
 
 // Mobile link — continue a Let's Collaborate session from Telegram.
 const mobileLink = require("./mobile-link.cjs");
@@ -754,7 +813,8 @@ async function schedulerTick() {
     } catch {}
   }
 }
-setInterval(schedulerTick, 60000);
+if (features.builtIn("scheduler")) setInterval(schedulerTick, 60000);
+else console.log("[scheduler] not included in this build — task scheduler disabled.");
 
 // ---- IPC: account / sign-in ----
 ipcMain.handle("brainedge:saveAccount", (_e, account) => {
@@ -841,7 +901,7 @@ ipcMain.handle("brainedge:githubSignIn", async () => {
   } catch (e) { return { error: String((e && e.message) || e) }; }
 });
 
-app.on("before-quit", () => { mcp.disconnectAll(); try { terminal.killAll(); } catch {} try { webhookServer.stop(); } catch {} });
+app.on("before-quit", () => { mcp.disconnectAll(); try { const t = terminalMod(); if (t) t.killAll(); } catch {} try { webhookServer.stop(); } catch {} });
 
 // Auto-provision terminal access for paying subscribers (silent). No-op if already set up, if no
 // provider is configured yet, or if the subscription isn't active (cliToken enforces that server-side).
@@ -853,6 +913,12 @@ async function autoEnableCli() {
     if (r && r.ok) console.log("[cli] terminal access auto-enabled for subscriber");
   } catch {}
 }
-app.whenReady().then(() => { createWindow(); reconcileMessaging(); reconcileWebhooks(); setTimeout(autoEnableCli, 3000); });
+app.whenReady().then(() => {
+  createWindow();
+  reconcileMessaging();
+  if (features.builtIn("scheduler")) reconcileWebhooks();
+  else console.log("[scheduler] not included in this build — webhook server not started.");
+  setTimeout(autoEnableCli, 3000);
+});
 app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

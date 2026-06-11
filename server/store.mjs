@@ -7,6 +7,12 @@
 //
 // Interface: getUser, upsertUser, patchUser, findByCustomer,
 //            logEvent, recentEvents, listUsers   (last three power analytics / the admin page)
+//
+// Community / sharing collections (Phase 3): shares, requests, threads, posts.
+// Each is a generic id-keyed collection exposed via the same async shape on both backends:
+//   col(name) -> { all(), get(id), insert(doc), update(id, patch), remove(id) }
+// JSON backend stores them as top-level arrays in the same users.json file; Postgres stores each
+// as a (id text primary key, data jsonb) table created on startup alongside users/events.
 import fs from "node:fs";
 import path from "node:path";
 
@@ -21,12 +27,24 @@ const newUser = (idn) => ({
   suspended: false, freeAccess: false, subscriptionActive: false, plan: null, stripeCustomerId: null, stripeSubId: null,
 });
 
+// Names of the generic id-keyed collections (stored as arrays in JSON, jsonb tables in Postgres).
+const COLLECTIONS = ["shares", "requests", "threads", "posts"];
+
 // ---- JSON file backend ----
 function jsonStore(file) {
-  const load = () => { try { const d = JSON.parse(fs.readFileSync(file, "utf8")); if (!d.events) d.events = []; return d; } catch { return { users: {}, events: [] }; } };
+  const load = () => { try { const d = JSON.parse(fs.readFileSync(file, "utf8")); if (!d.events) d.events = []; for (const c of COLLECTIONS) if (!d[c]) d[c] = []; return d; } catch { const d = { users: {}, events: [] }; for (const c of COLLECTIONS) d[c] = []; return d; } };
   const save = (db) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(db, null, 2)); };
+  // Generic id-keyed collection backed by a JSON array; mirrors the Postgres col() shape below.
+  const jcol = (name) => ({
+    async all() { return load()[name].slice(); },
+    async get(id) { return load()[name].find((x) => x.id === id) || null; },
+    async insert(doc) { const db = load(); db[name].push(doc); save(db); return doc; },
+    async update(id, patch) { const db = load(); const x = db[name].find((y) => y.id === id); if (x) { Object.assign(x, patch); save(db); } return x || null; },
+    async remove(id) { const db = load(); const before = db[name].length; db[name] = db[name].filter((x) => x.id !== id); if (db[name].length !== before) save(db); },
+  });
   return {
     kind: "json",
+    col: jcol,
     async getUser(id) { return load().users[id] || null; },
     async upsertUser(idn) {
       const db = load(); let u = db.users[idn.sub];
@@ -62,6 +80,8 @@ async function pgStore(url) {
   await pool.query(`create table if not exists events (
     id bigserial primary key, ts timestamptz default now(), user_id text, type text, meta jsonb )`);
   await pool.query(`create index if not exists events_ts_idx on events (ts desc)`);
+  // Generic id-keyed jsonb collections (shares/requests/threads/posts). Same DDL pattern as events.
+  for (const c of COLLECTIONS) await pool.query(`create table if not exists ${c} ( id text primary key, data jsonb )`);
   const COLS = { subscriptionActive: "subscription_active", stripeCustomerId: "stripe_customer_id", stripeSubId: "stripe_sub_id", suspended: "suspended", freeAccess: "free_access", plan: "plan", trialEndsAt: "trial_ends_at", lastSeenAt: "last_seen_at", tokenVersion: "token_version" };
   const row2u = (r) => r && ({
     id: r.id, provider: r.provider, email: r.email, name: r.name, avatar: r.avatar,
@@ -69,8 +89,26 @@ async function pgStore(url) {
     subscriptionActive: r.subscription_active, plan: r.plan, stripeCustomerId: r.stripe_customer_id, stripeSubId: r.stripe_sub_id,
     tokenVersion: r.token_version || 1,
   });
+  // Generic id-keyed jsonb collection; name is validated against COLLECTIONS so it's never raw user input.
+  const pcol = (name) => {
+    if (!COLLECTIONS.includes(name)) throw new Error("unknown collection " + name);
+    return {
+      async all() { const { rows } = await pool.query(`select data from ${name}`); return rows.map((r) => r.data); },
+      async get(id) { const { rows } = await pool.query(`select data from ${name} where id=$1`, [id]); return rows[0] ? rows[0].data : null; },
+      async insert(doc) { await pool.query(`insert into ${name} (id,data) values ($1,$2)`, [doc.id, JSON.stringify(doc)]); return doc; },
+      async update(id, patch) {
+        const { rows } = await pool.query(`select data from ${name} where id=$1`, [id]);
+        if (!rows[0]) return null;
+        const merged = Object.assign({}, rows[0].data, patch);
+        await pool.query(`update ${name} set data=$2 where id=$1`, [id, JSON.stringify(merged)]);
+        return merged;
+      },
+      async remove(id) { await pool.query(`delete from ${name} where id=$1`, [id]); },
+    };
+  };
   return {
     kind: "postgres",
+    col: pcol,
     async getUser(id) { const { rows } = await pool.query("select * from users where id=$1", [id]); return row2u(rows[0]); },
     async upsertUser(idn) {
       const u = newUser(idn);

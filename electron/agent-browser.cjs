@@ -48,6 +48,12 @@ function ensureWin(key, title) {
   const k = key || "default";
   let w = wins.get(k);
   if (w && !w.isDestroyed()) return w;
+  // Default ON: agents drive this window unattended, and the user wants to minimize it
+  // out of the way. Chromium normally throttles hidden/minimized renderers (paused
+  // timers, deprioritized JS), which stalls SPA pages the agent is mid-task on — so keep
+  // it running at full speed when minimized. Admins can opt out via the Agent Browser settings.
+  let fullSpeed = true;
+  try { fullSpeed = (require("./settings.cjs").load().agentBrowser || {}).fullSpeedMinimized !== false; } catch {}
   w = new BrowserWindow({
     width: 1080, height: 780,
     x: 80 + (wins.size % 5) * 36, y: 60 + (wins.size % 5) * 36, // cascade, don't stack
@@ -58,6 +64,7 @@ function ensureWin(key, title) {
       contextIsolation: true,
       sandbox: true,
       partition: "persist:agent-browser", // shared session: one login serves all agent windows
+      backgroundThrottling: !fullSpeed, // keep working at full speed while minimized (default ON)
     },
   });
   wins.set(k, w);

@@ -46,6 +46,8 @@ function CodeBlock({ lang, code }) {
 
 // In-chat office files: an ```officedoc spec becomes a real downloadable file card.
 // The document is built ON THIS DEVICE when clicked (dynamic import keeps libs lazy).
+// Two-channel build flag: public builds without Office render the spec as a plain code block.
+const FEAT_OFFICE = import.meta.env.VITE_FEAT_OFFICE !== "0";
 const OFFICE_LABEL = { xlsx: "Excel spreadsheet", docx: "Word document", pptx: "PowerPoint deck", pdf: "PDF document" };
 function OfficeCard({ code }) {
   const [state, setState] = useState(""); // "" | building | done | error:<msg>
@@ -88,7 +90,7 @@ export default function Markdown({ text }) {
       const buf = []; i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
-      if (fence[1] === "officedoc") blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
+      if (fence[1] === "officedoc" && FEAT_OFFICE) blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
       else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
       continue;
     }

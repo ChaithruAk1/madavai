@@ -134,8 +134,11 @@ const estTokens = (x) => {
   if (typeof x === "string") return Math.ceil(x.length / 4);
   try { return Math.ceil(JSON.stringify(x).length / 4); } catch { return 0; }
 };
-// Heuristic window when no catalog data is at hand. Conservative on purpose.
-function ctxWindowFor(model) {
+// Prefer an EXACT window (e.g. from the OpenRouter catalog) when the caller has one;
+// otherwise fall back to the heuristic below. Conservative on purpose.
+function ctxWindowFor(model, exact) {
+  // A real catalog value beats every guess — but only trust sane numbers.
+  if (typeof exact === "number" && Number.isFinite(exact) && exact >= 4096) return exact;
   const m = String(model || "").toLowerCase();
   const tag = /(\d{2,4})k/.exec(m); // explicit "...-32k", "...-128k"
   if (tag) return Number(tag[1]) * 1000;

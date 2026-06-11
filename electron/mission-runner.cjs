@@ -34,8 +34,9 @@ function findTeam(cfg, id) {
 // Agent Browser for headless runs (the visible window doubles as a progress view).
 function browserFor(agent) {
   if (!agent || !agent.tools || !agent.tools.browser) return null;
+  if (!require("./features.cjs").builtIn("browser")) return null; // not in this build
   try {
-    const ab = require("./agent-browser.cjs");
+    const ab = require("./agent-browser.cjs"); // may be physically absent in public builds
     if (!ab.isEnabled()) return null; // admin master switch is off
     // Per-agent identity → per-agent window, so parallel headless runs don't collide.
     return ab.forAllowlist(agent.browserAllow || "", { id: agent.id, name: agent.name });
@@ -105,6 +106,10 @@ async function runAgentHeadless({ agent, prompt, cwd = null, source = "schedule"
         // Handoffs inherit webhook provenance so the no-shell guard can't be escaped via call_agent.
         callAgent: depth === 0 ? (name, task) => callAgentByName(name, task, { cwd, source: source === "webhook" ? "webhook" : "handoff", depth: depth + 1, signal }) : null,
         browser: browserFor(agent),
+        // DELIBERATE: no `desktop` binding on headless runs. Unattended native-app
+        // control (bypass permissions + UI Automation typing into any window) is the
+        // riskiest combination in the product — desktop control is interactive-only,
+        // where every focus/click/type goes through the permission prompt.
         // Harness toggles (thorough / reviewer / economy model / text protocol) apply
         // headless too — same quality bar whether a human is watching or not.
         agentOpts: {

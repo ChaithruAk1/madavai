@@ -46,4 +46,20 @@ async function getCatalog({ force = false } = {}) {
   }
 }
 
-module.exports = { getCatalog };
+// Exact context window for a model from the CACHED catalog only — never a network call
+// (callers use this on hot paths like compaction). The cache stores ctx in thousands
+// (see fetchAll), so multiply back to tokens. Returns null when the model isn't cached
+// or has no usable context value, so the caller can fall back to its heuristic.
+function contextWindowOf(modelId) {
+  if (!modelId) return null;
+  try {
+    const c = JSON.parse(fs.readFileSync(FILE(), "utf8"));
+    const map = (c && c.map) || c || {};
+    const entry = map[modelId];
+    const ctxK = entry && entry.ctx;
+    if (typeof ctxK === "number" && ctxK > 0) return ctxK * 1000;
+  } catch {}
+  return null;
+}
+
+module.exports = { getCatalog, contextWindowOf };

@@ -17,6 +17,34 @@
 const pkg = require("./package.json");
 const build = { ...pkg.build, win: { ...pkg.build.win } };
 
+// ---- Two-channel installers (see scripts/build-features.mjs) ----
+// The manifest decides the channel: ADMIN ships everything; PUBLIC physically
+// excludes the module files of features the owner switched off in Settings → Extras.
+// Every excluded module is lazily required behind a try/catch in the engine
+// (electron/features.cjs builtIn() + guarded requires), so exclusion can never crash.
+let feat = null;
+try { feat = require("./electron/build-features.json"); } catch {}
+const channel = (feat && feat.channel) || "admin";
+if (channel === "public" && feat) {
+  // Feature → leaf module files safe to drop from the installer. Shared plumbing
+  // (task-runner/store, webhook-server, user-memory, office spec) is NEVER excluded —
+  // those features are disabled by gates instead, so nothing else can break.
+  const EXCLUDABLE = {
+    imagegen: ["!electron/imagegen.cjs"],
+    voice: ["!electron/voice.cjs", "!electron/win-speech.cjs"],
+    browser: ["!electron/agent-browser.cjs"],
+    viamobile: ["!electron/telegram-bot.cjs"],
+    terminal: ["!electron/terminal.cjs"],
+    desktop: ["!electron/desktop-driver.cjs"],
+    research: ["!electron/research.cjs"],
+  };
+  build.files = [...build.files];
+  for (const [k, files] of Object.entries(EXCLUDABLE)) if (feat[k] === false) build.files.push(...files);
+}
+// Channel-stamped artifacts so the two installers can never be confused:
+build.artifactName = `BrainEdge-${channel}-\${version}-setup.\${ext}`;
+build.portable = { ...(build.portable || {}), artifactName: `BrainEdge-${channel}-portable-\${version}.\${ext}` };
+
 if (process.env.AZURE_SIGNING === "1") {
   build.win.azureSignOptions = {
     endpoint: process.env.AZURE_SIGNING_ENDPOINT || "https://eus.codesigning.azure.net",

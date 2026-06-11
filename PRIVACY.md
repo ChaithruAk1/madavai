@@ -24,6 +24,22 @@ why. Contact: **[support@yourdomain.com]**.
   **directly from your device** — your keys and the content you send to models do **not** pass through
   our servers.
 
+## Content you choose to share or post
+
+Some features publish content to the BrainEdge server **by your explicit action**:
+
+- **Shared conversation links** — when you create a share link, the conversation snapshot you selected
+  (its title and messages) is **copied from your device to our server** and served at a public,
+  unguessable URL so anyone with the link can read it. Shares are stored until you delete them or they
+  **expire automatically after 30 days**.
+- **Product requests & community forum** — feature requests, votes, forum threads, and replies you
+  submit are stored on our server and shown to other signed‑in users. A shortened display name (never
+  your full email) is attached to what you post. This content remains until you or an administrator
+  delete it.
+
+This content leaves your device only when you take one of these actions. Until then, the usual rule
+below still applies: your API keys and ordinary prompts/conversations never reach our servers.
+
 ## How we use it
 
 To provide and secure the service, manage your trial/subscription, prevent abuse, and (if enabled)

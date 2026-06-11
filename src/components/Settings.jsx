@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput, Palette, Sparkles, Server, Globe, Brain, Pencil } from "lucide-react";
+import { Plus, Trash2, Check, RefreshCw, Plug, User, ShieldCheck, Cpu, LogOut, Save, Send, FolderInput, Palette, Sparkles, Server, Globe, Brain, Pencil, MessagesSquare, Lightbulb } from "lucide-react";
+import Community from "./Community.jsx";
+import ProductRequests from "./ProductRequests.jsx";
 import ModelPicker from "./ModelPicker.jsx";
 import AccountCard from "../auth/AccountCard.jsx";
 import AdminPanel from "../auth/AdminPanel.jsx";
 import CliAccess from "./CliAccess.jsx";
 import { bridge } from "../bridge/index.js";
-import { EXTRAS, extraOn, setExtra } from "../extras.js";
+import { EXTRAS, extraOn, setExtra, FEAT_BUILT } from "../extras.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 const SECTIONS = [
@@ -90,6 +92,8 @@ export default function Settings({ onChanged }) {
         {SECTIONS.map((sec) => { const I = sec.icon; return (
           <button key={sec.id} className={`nav-item ${section === sec.id ? "active" : ""}`} onClick={() => setSection(sec.id)}><I size={15} /> {sec.label}</button>
         ); })}
+        <button className={`nav-item ${section === "community" ? "active" : ""}`} onClick={() => setSection("community")}><MessagesSquare size={15} /> Community</button>
+        <button className={`nav-item ${section === "requests" ? "active" : ""}`} onClick={() => setSection("requests")}><Lightbulb size={15} /> Product requests</button>
         {extrasOk && (
           <button className={`nav-item ${section === "extras" ? "active" : ""}`} onClick={() => setSection("extras")}><Sparkles size={15} /> Extras</button>
         )}
@@ -169,24 +173,26 @@ export default function Settings({ onChanged }) {
               Only Creator and Complimentary accounts see this page.
             </p>
             {EXTRAS.map((f) => {
-              const on = extraOn(s, f.key);
+              const inBuild = FEAT_BUILT[f.key] !== false;
+              const on = inBuild && extraOn(s, f.key);
               return (
-                <div key={f.key} className="prof-card" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div key={f.key} className="prof-card" style={{ display: "flex", alignItems: "center", gap: 12, opacity: inBuild ? 1 : 0.55 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 13.5 }}>
                       {f.label}
                       {f.map && <span className="mo-sub" style={{ marginLeft: 8, fontSize: 11 }}>master switch</span>}
+                      {!inBuild && <span className="mo-sub" style={{ marginLeft: 8, fontSize: 11 }}>not in this build</span>}
                     </div>
                     <div className="mo-sub" style={{ fontSize: 12, marginTop: 2 }}>{f.desc}</div>
                   </div>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    <input type="checkbox" checked={on} onChange={async (e) => {
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: inBuild ? "pointer" : "not-allowed", whiteSpace: "nowrap" }}>
+                    <input type="checkbox" checked={on} disabled={!inBuild} onChange={async (e) => {
                       const want = e.target.checked;
                       const cur = await bridge.getSettings(); // re-read from disk first — never clobber another writer
                       const next = setExtra(cur, f.key, want);
                       setS(next); await bridge.saveSettings(next); onChanged?.(next);
                     }} />
-                    <span style={{ fontSize: 12.5, color: on ? "var(--accent)" : "var(--text-2)", minWidth: 24 }}>{on ? "On" : "Off"}</span>
+                    <span style={{ fontSize: 12.5, color: on ? "var(--accent)" : "var(--text-2)", minWidth: 24 }}>{inBuild ? (on ? "On" : "Off") : "—"}</span>
                   </label>
                 </div>
               );
@@ -197,6 +203,8 @@ export default function Settings({ onChanged }) {
             </div>
           </div>
         )}
+        {section === "community" && <Community isAdmin={isAdmin} />}
+        {section === "requests" && <ProductRequests isAdmin={isAdmin} />}
         {section === "agentbrowser" && isAdmin && (
           <AgentBrowserSettings s={s} setField={setField} />
         )}
@@ -301,6 +309,11 @@ function AgentBrowserSettings({ s, setField }) {
         onText="⚠ DANGEROUS — agents can now type into password, card, CVV, OTP and SSN fields."
         offText="✓ Recommended — those fields are human-only; the agent hands the window to you.">
         Off by default for good reason: an agent auto-typing credentials or card details into a web form is high-risk, especially if a page tries to trick it. The visible browser lets you fill these yourself. Enable only for trusted, supervised automation on sites you control.
+      </Row>
+      <Row k="fullSpeedMinimized" disabled={!featureOn} title="Full speed while minimized" on={ab.fullSpeedMinimized !== false}
+        onText="✓ The browser keeps running at full speed even when minimized out of the way."
+        offText="⚠ Off — minimized windows are throttled by Chromium, which can stall pages mid-task.">
+        The agent's browser window keeps working at full speed when minimized (no background throttling).
       </Row>
       <div className="ag-hint" style={{ marginTop: 6 }}>
         Changes apply to the next browser action. Per-agent allowlists are set on each agent in the Studio (Browser capability).

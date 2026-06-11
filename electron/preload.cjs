@@ -144,6 +144,7 @@ contextBridge.exposeInMainWorld("brainedge", {
   adminUsers: (adminKey) => ipcRenderer.invoke("brainedge:adminUsers", adminKey),
   adminAction: (id, action, adminKey) => ipcRenderer.invoke("brainedge:adminAction", id, action, adminKey),
   scoreQuiz: (batch) => ipcRenderer.invoke("brainedge:scoreQuiz", batch),
+  apiCall: (method, path, body) => ipcRenderer.invoke("brainedge:apiCall", method, path, body),
   enableCli: () => ipcRenderer.invoke("brainedge:enableCli"),
   cliStatus: () => ipcRenderer.invoke("brainedge:cliStatus"),
   disableCli: () => ipcRenderer.invoke("brainedge:disableCli"),

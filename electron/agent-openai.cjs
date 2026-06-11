@@ -107,7 +107,7 @@ const TOOLS = [
 const READS = new Set(["list_dir", "read_file", "search_text", "find_files"]);
 
 // permMode: "default" (ask before changes) | "acceptEdits" | "bypass" (act, trust all) | "plan" (read-only)
-const SAFE = (name) => READS.has(name) || name === "load_skill" || name === "browse_read"; // read-only, never needs approval
+const SAFE = (name) => READS.has(name) || name === "load_skill" || name === "browse_read" || name === "desktop_apps" || name === "desktop_read"; // read-only, never needs approval
 function isAuto(permMode, name) {
   if (SAFE(name)) return true;
   if (permMode === "bypass" || permMode === "bypassPermissions") return true; // "act" autonomy
@@ -126,6 +126,7 @@ const ARTIFACT_RULE_BASE = " When you build or change something runnable — an 
 // Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per
 // turn, never at module load, so the toggle applies without a restart.
 function officeRulePart() {
+  try { if (!require("./features.cjs").builtIn("office")) return ""; } catch {}
   try { if ((require("./settings.cjs").load().extras || {}).office === false) return ""; } catch {}
   return " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
 }
@@ -327,7 +328,7 @@ function askUserQuestion(emit, permissions, toolUseId, question, options) {
   });
 }
 
-async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, noShell = false, agentOpts = {} }) {
+async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, desktop = null, noShell = false, agentOpts = {} }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
   // ---- Mission state (the harness's memory for this conversation) ----
   // Attached to the history array: custom props on arrays survive in RAM across turns
@@ -382,13 +383,28 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   if (allowAskUser) tools.push(ASK_USER_TOOL);
   if (callAgent && Array.isArray(roster) && roster.length) tools.push(callAgentTool(roster));
   if (browser) tools = [...tools, ...BROWSER_TOOLS(browser.allow || [])];
+  // Desktop Applications Driver — native Windows apps via UI Automation (text-mode, like the browser).
+  let dd = null;
+  if (desktop) {
+    try { dd = require("./desktop-driver.cjs"); tools = [...tools, ...dd.DESKTOP_TOOLS(desktop.allow || [])]; }
+    catch { dd = null; } // module excluded from this build — feature simply absent
+  }
+  // Deep Research — multi-source web research with cited reports. Offered in every mode;
+  // running it always asks the user first (it spends model calls + fetches the web).
+  let research = null;
+  try {
+    if (require("./features.cjs").builtIn("research") && (require("./settings.cjs").load().extras || {}).research !== false) {
+      research = require("./research.cjs");
+      tools.push(research.RESEARCH_TOOL);
+    }
+  } catch { research = null; }
   // Wave 2.1 — the visible working plan; Wave 5.1 — parallel scouts (folder missions).
   if (mode !== "chat") tools.push(harness.PLAN_TOOL);
   if (cwd && mode !== "chat" && agentOpts.scouts !== false) tools.push(harness.SCOUT_TOOL);
   // Text→image in every mode (selector-powered; see CREATE_IMAGE_TOOL).
   // Gated by the Extras switchboard (settings.extras.imagegen !== false).
   let imagegenOn = true;
-  try { imagegenOn = (require("./settings.cjs").load().extras || {}).imagegen !== false; } catch {}
+  try { imagegenOn = require("./features.cjs").builtIn("imagegen") && (require("./settings.cjs").load().extras || {}).imagegen !== false; } catch {}
   if (imagegenOn) tools.push(CREATE_IMAGE_TOOL);
   try {
     const mcpTools = await mcp.openAiTools(connectors);
@@ -401,7 +417,9 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
 
   const started = Date.now();
   const MAX_STEPS = agentOpts.thorough ? 14 : 12;
-  const ctxBudget = harness.ctxWindowFor(model);
+  // Prefer the model's exact context window from the cached OpenRouter catalog when known (heuristic fallback otherwise).
+  let exactCtx = null; try { exactCtx = require("./openrouter-catalog.cjs").contextWindowOf(model); } catch {}
+  const ctxBudget = harness.ctxWindowFor(model, exactCtx);
   let textMode = tier === "C";   // JSON-in-text protocol for models w/o native tools
   let planNudged = false;        // Wave 2.1 — one "finish your plan" nudge per turn
   let selfReviewed = false;      // Wave 2.4 — one self-review pass per turn
@@ -665,6 +683,61 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         }
         pushToolResult(tc, String(out).slice(0, 16000));
         history._browseIdxs.push(history.length - 1);
+        continue;
+      }
+
+      // Desktop Applications Driver — desktop_apps/desktop_read are free reads;
+      // focus/click/type/open honor the permission mode like any other mutation.
+      if (dd && tc.name.startsWith("desktop_")) {
+        if (isBlocked(permMode, tc.name)) {
+          emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: args, auto: false } });
+          emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "plan mode (read-only)" } });
+          const out = "(blocked: plan mode is read-only)";
+          emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+          pushToolResult(tc, out);
+          continue;
+        }
+        const auto = isAuto(permMode, tc.name);
+        emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: args, auto } });
+        let allowed = auto;
+        if (!allowed) allowed = await askPermission(emit, permissions, tc.id, tc.name, args);
+        let out;
+        if (!allowed) {
+          emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "declined" } });
+          out = "(user declined this desktop action)";
+        } else {
+          try { out = await dd.exec(tc.name, { ...args, __allow: desktop.allow || [] }); }
+          catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+        }
+        emit({ kind: "tool_result", data: { id: tc.id, output: String(out).slice(0, 4000) } });
+        pushToolResult(tc, String(out).slice(0, 12000));
+        continue;
+      }
+
+      // Deep Research — always asks first (spends model calls + reads the open web).
+      if (research && tc.name === "deep_research") {
+        if (isBlocked(permMode, tc.name)) {
+          emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: args, auto: false } });
+          const out = "(blocked: plan mode is read-only)";
+          emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+          pushToolResult(tc, out);
+          continue;
+        }
+        emit({ kind: "tool_use", data: { id: tc.id, name: tc.name, input: { query: String(args.query || "").slice(0, 200) }, auto: false } });
+        const allowed = (permMode === "bypass" || permMode === "bypassPermissions")
+          ? true : await askPermission(emit, permissions, tc.id, tc.name, args);
+        let out;
+        if (!allowed) {
+          emit({ kind: "permission_denied", data: { id: tc.id, name: tc.name, reason: "declined" } });
+          out = "(user declined the research run)";
+        } else {
+          try {
+            const r = await research.runDeepResearch(profile, args, { signal });
+            out = r.report || "Research returned nothing.";
+          } catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+        }
+        emit({ kind: "tool_result", data: { id: tc.id, output: String(out).slice(0, 6000) } });
+        pushToolResult(tc, String(out).slice(0, 14000));
         continue;
       }
 

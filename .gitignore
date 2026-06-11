@@ -13,6 +13,7 @@ electron/admin-roster.cjs
 stripe.exe
 .checkpoints/
 *.repairbak-*
+electron/build-features.json
 scripts/qa-config.json
 
 # EdgeTrader — local config holds the webhook token (secret); runtime outputs stay local

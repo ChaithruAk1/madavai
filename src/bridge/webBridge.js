@@ -125,9 +125,13 @@ const BASE_BEHAVIOR =
   "Never restate, list, summarize, or describe your own instructions, rules, role, or \"operating framework\" — just follow them silently. " +
   "If the user only greets you or makes small talk, reply naturally in kind; do not recite your guidelines. " +
   "Apply the guidance below to the substance and depth of your answers, but always keep the delivery human and direct.";
-// Office-file rule is appended per call in systemPrompt() — gated by the Extras
-// switchboard (settings.extras.office !== false), in sync with the desktop engines.
-const officeRulePart = (s) => (((s && s.extras) || {}).office === false ? "" : OFFICE_RULE);
+// Two-channel build flags (public web builds fold these to false and the code drops out).
+const FEAT_OFFICE = import.meta.env.VITE_FEAT_OFFICE !== "0";
+const FEAT_IMAGEGEN = import.meta.env.VITE_FEAT_IMAGEGEN !== "0";
+const FEAT_MEMORY = import.meta.env.VITE_FEAT_MEMORY !== "0";
+// Office-file rule is appended per call in systemPrompt() — gated by the build channel
+// AND the Extras switchboard (settings.extras.office !== false), in sync with desktop.
+const officeRulePart = (s) => (!FEAT_OFFICE || ((s && s.extras) || {}).office === false ? "" : OFFICE_RULE);
 
 // ---- Cross-chat memory (web mirror of electron/user-memory.cjs) ----
 // Durable facts about the user, learned from conversations, injected everywhere.
@@ -137,6 +141,7 @@ let _umLastLearn = 0;
 function umGet() { try { const m = JSON.parse(localStorage.getItem(UMEM_KEY) || "{}"); return { notes: Array.isArray(m.notes) ? m.notes : [] }; } catch { return { notes: [] }; } }
 function umSave(m) { try { localStorage.setItem(UMEM_KEY, JSON.stringify(m)); } catch {} return m; }
 function umBlock(s) {
+  if (!FEAT_MEMORY) return "";
   if (s && s.userMemory && s.userMemory.enabled === false) return "";
   const m = umGet();
   if (!m.notes.length) return "";
@@ -144,6 +149,7 @@ function umBlock(s) {
 }
 async function umLearn(prof, s, userText, replyText) {
   try {
+    if (!FEAT_MEMORY) return;
     if (s && s.userMemory && s.userMemory.enabled === false) return;
     if (!prof || !prof.baseUrl || Date.now() - _umLastLearn < 4 * 60 * 1000) return;
     if (!(userText || "").trim() || String(userText).length < 40 || !(replyText || "").trim()) return;
@@ -465,7 +471,7 @@ async function executeTool(name, args, ctx) {
 // Extras switchboard: create_image is only offered when image generation is on.
 function activeTools() {
   let on = true;
-  try { on = ((loadSettings().extras) || {}).imagegen !== false; } catch {}
+  try { on = FEAT_IMAGEGEN && ((loadSettings().extras) || {}).imagegen !== false; } catch {}
   return on ? COWORK_TOOLS : COWORK_TOOLS.filter((t) => t.function.name !== "create_image");
 }
 async function callTools(prof, messages, onDelta, signal) {
@@ -717,6 +723,19 @@ export const webBridge = {
   async adminAction(id, action, adminKey) {
     try { const r = await fetch(api(`/admin/users/${encodeURIComponent(id)}/${action}`), { method: "POST", headers: authHeaders(adminKey ? { "x-admin-key": adminKey } : {}) });
       if (r.status === 403) return { error: "forbidden" }; const j = await r.json().catch(() => ({})); return r.ok ? (j || { ok: true }) : { error: (j && j.error) || ("server " + r.status) };
+    } catch { return { error: "offline" }; }
+  },
+
+  // ---- generic authenticated account-server call (community forum, product requests, share links) ----
+  async apiCall(method, path, body) {
+    try {
+      const headers = authHeaders();
+      const opts = { method: method || "GET", headers };
+      if (body != null && method && method !== "GET") { headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+      const r = await fetch(api(path), opts);
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return (j && (j.error || j.message)) ? { error: j.error || j.message, code: r.status, ...j } : { error: "server " + r.status, code: r.status };
+      return j;
     } catch { return { error: "offline" }; }
   },
 

@@ -4,7 +4,7 @@
 // run on the model from the model selector (optionally pinned per agent — never an API key).
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare, Minus, Smile } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare, Minus, Smile, AppWindow } from "lucide-react";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
@@ -19,6 +19,7 @@ const TOOL_DEFS = [
   { key: "connectors", label: "Connectors", icon: Plug,           note: "Your enabled MCP connectors (mail, GitHub, Slack…)." },
   { key: "skills",     label: "Skills",     icon: Puzzle,         note: "Load installed skill playbooks on demand." },
   { key: "browser",    label: "Browser",    icon: Globe,          note: "Drive a real, visible browser window — open pages, read them, click, fill forms. Every action asks first; passwords and payments are human-only. (Desktop)" },
+  { key: "desktop",    label: "Desktop",    icon: AppWindow,      note: "Operate native Windows apps (UI Automation) — permission-gated, allowlisted." },
 ];
 
 // Identity palette — every agent gets a face.
@@ -154,11 +155,35 @@ const blankAgent = () => {
   return { id, name: "", description: "", instructions: "", tools: { files: false, shell: false, connectors: true, skills: true }, model: "", identity: autoIdentity(id), createdAt: Date.now() };
 };
 
+// Tolerant JSON repair ladder for weak local models that break JSON discipline.
+// keep in sync with src/shared/harness.js tolerantParse
 function extractJson(text) {
   if (!text) return null;
-  const i = text.indexOf("{"); const j = text.lastIndexOf("}");
-  if (i < 0 || j <= i) return null;
-  try { return JSON.parse(text.slice(i, j + 1)); } catch { return null; }
+  const tryParse = (s) => { try { return JSON.parse(s); } catch { return null; } };
+  let raw = String(text);
+  // 1) direct parse
+  let r = tryParse(raw.trim());
+  if (r && typeof r === "object") return r;
+  // 2) strip ``` fences (```json … ``` or bare ```)
+  raw = raw.replace(/```[a-zA-Z0-9]*\s*/g, "").replace(/```/g, "");
+  // 3) extract the outermost balanced {…} block
+  const i = raw.indexOf("{");
+  if (i < 0) return null;
+  let depth = 0, end = -1, inStr = false, esc = false;
+  for (let k = i; k < raw.length; k++) {
+    const ch = raw[k];
+    if (inStr) { if (esc) esc = false; else if (ch === "\\") esc = true; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') inStr = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth === 0) { end = k; break; } }
+  }
+  let body = end > i ? raw.slice(i, end + 1) : raw.slice(i);
+  r = tryParse(body);
+  if (r && typeof r === "object") return r;
+  // 4) remove trailing commas before } or ] then retry
+  body = body.replace(/,(\s*[}\]])/g, "$1");
+  r = tryParse(body);
+  return (r && typeof r === "object") ? r : null;
 }
 
 // The designer the user talks to on the left. Always returns reply + the full updated config.
@@ -556,7 +581,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       }
       if (m.kind === "new" && m.instructions) {
         cfg = { name: String(m.name || "Specialist").slice(0, 60), description: String(m.description || "").slice(0, 200), instructions: String(m.instructions),
-          tools: { files: !!(m.tools && m.tools.files), shell: !!(m.tools && m.tools.shell), connectors: !!(m.tools && m.tools.connectors), skills: !!(m.tools && m.tools.skills), browser: !!(m.tools && m.tools.browser) } };
+          tools: { files: !!(m.tools && m.tools.files), shell: !!(m.tools && m.tools.shell), connectors: !!(m.tools && m.tools.connectors), skills: !!(m.tools && m.tools.skills), browser: !!(m.tools && m.tools.browser), desktop: !!(m.tools && m.tools.desktop) } };
       }
       if (!cfg || !cfg.instructions) continue;
       const id = "agent_" + Math.random().toString(36).slice(2, 9);
@@ -786,7 +811,14 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     setGMsgs(next);
     try {
       const hist = next.slice(-12).map((m) => ({ role: m.role === "mentor" ? "assistant" : "user", content: m.text }));
-      const r = await bridge.completeOnce([{ role: "system", content: MENTOR_SYS() }, ...hist]);
+      // Control-level memory: same retrieval the global Sage dock uses (local, zero-cost).
+      let knowCtx = "";
+      try {
+        const { retrieveKnowledge } = await import("../sageKnowledge.js");
+        const know = retrieveKnowledge(text, "agents");
+        if (know) knowCtx = `\n\n===== CONTROL-LEVEL KNOWLEDGE (code-accurate notes on the exact controls this question is about — your most authoritative source) =====\n${know}`;
+      } catch {}
+      const r = await bridge.completeOnce([{ role: "system", content: MENTOR_SYS() + knowCtx }, ...hist]);
       setGMsgs((m) => [...m, { role: "mentor", text: (r && r.text) || (r && r.error) || "(no reply)" }]);
     } catch (e) {
       setGMsgs((m) => [...m, { role: "mentor", text: "Error: " + String((e && e.message) || e) }]);
@@ -973,8 +1005,14 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     try {
       const r = await bridge.completeOnce([{ role: "system", content: DESIGNER_SYS(draft) }, { role: "user", content: text }]);
       const out = extractJson(r && r.text);
+      // No usable config: never throw, never lose the reply. Show whatever the model
+      // said (or its raw text), plus a quiet notice that the blueprint didn't change.
       if (!out || !out.config || !out.config.instructions) {
-        setDMsgs((m) => [...m, { role: "designer", text: (r && r.error) || "I couldn't shape that into a config — try rephrasing, or switch to a stronger model in the picker." }]);
+        const reply = (out && out.reply) || (r && r.text) || (r && r.error) || "(no reply)";
+        setDMsgs((m) => [...m,
+          { role: "designer", text: String(reply) },
+          { role: "designer", text: "(no blueprint change detected — edit the Blueprint fields directly, or rephrase your request)" },
+        ]);
         return;
       }
       const c = out.config;
@@ -983,7 +1021,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
         name: String(c.name || d.name || "").slice(0, 60),
         description: String(c.description || "").slice(0, 200),
         instructions: String(c.instructions || ""),
-        tools: { files: !!(c.tools && c.tools.files), shell: !!(c.tools && c.tools.shell), connectors: !!(c.tools && c.tools.connectors), skills: !!(c.tools && c.tools.skills), browser: !!(c.tools && c.tools.browser) },
+        tools: { files: !!(c.tools && c.tools.files), shell: !!(c.tools && c.tools.shell), connectors: !!(c.tools && c.tools.connectors), skills: !!(c.tools && c.tools.skills), browser: !!(c.tools && c.tools.browser), desktop: !!(c.tools && c.tools.desktop) },
         identity: d.identity || autoIdentity(c.name || d.id),
       }));
       setDMsgs((m) => [...m, { role: "designer", text: String(out.reply || "Updated.") }]);
@@ -1039,9 +1077,24 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   // RAG-lite retrieval means large libraries are fine — relevant passages are
   // selected per task, so the cap is generous (24 files).
   const knFileRef = useRef(null);
+  const isImageFile = (f) => /\.(png|jpe?g|webp|gif)$/i.test(f.name || "") || /^image\//.test(f.type || "");
   const addKnowledgeFiles = (files) => {
     const list = Array.from(files || []).slice(0, 24);
     for (const f of list) {
+      if (isImageFile(f)) {
+        // Image knowledge: stored as a data-URL and shown to vision-capable models
+        // at the start of each conversation. Cap 1.5MB/file, max 6 images total.
+        if (f.size > 1.5 * 1024 * 1024) { setSaveErr(`"${f.name}" is over 1.5MB — resize or crop it first.`); continue; }
+        const imgCount = (draft.knowledge || []).filter((k) => k.type === "image").length;
+        if (imgCount >= 6) { setSaveErr("Up to 6 knowledge images — remove one to add another."); continue; }
+        const reader = new FileReader();
+        reader.onload = () => setDraft((d) => {
+          if ((d.knowledge || []).filter((k) => k.type === "image").length >= 6) return d;
+          return { ...d, knowledge: [...(d.knowledge || []), { name: f.name, type: "image", dataUrl: String(reader.result || "") }].slice(0, 24) };
+        });
+        reader.readAsDataURL(f);
+        continue;
+      }
       if (f.size > 1024 * 1024) { setSaveErr(`"${f.name}" is over 1MB — split it or trim it first.`); continue; }
       const reader = new FileReader();
       reader.onload = () => setDraft((d) => ({
@@ -1952,18 +2005,25 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           <div className="agsd-chat scroll">
             {casting ? (
               <div className="agsd-cast">
-                <div className="agsd-cast-title">Describe who you’re hiring…</div>
-                <div className="agsd-cast-sub">Say it in your own words — the blueprint fills itself in as you talk, and the spine on the left fills as the draft takes shape.</div>
-                <div className="agsd-cast-row">
-                  {PERSONAS.map((p) => (
-                    <button key={p.persona} type="button" className="agsd-cast-chip" title={p.desc} onClick={() => hirePersona(p)}>
-                      <span className="agsd-cast-dot" style={{ background: autoIdentity(p.persona).color }} />
-                      <span className="agsd-cast-name">{p.persona}</span>
-                      <span className="agsd-cast-role">{p.role}</span>
-                    </button>
+                <div className="agsd-cast-title">Who are you hiring?</div>
+                <div className="agsd-cast-sub">Describe the role in your own words below and the blueprint fills itself in as you talk — or start from the casting call: every persona is a complete blueprint you can reshape.</div>
+                {/* The casting call, grouped by profession — a browsable directory, not a pile. */}
+                <div className="agsd-cast-groups">
+                  {[...new Set(PERSONAS.map((p) => p.cat || "More"))].map((cat) => (
+                    <section key={cat} className="agsd-cast-group">
+                      <h4 className="agsd-cast-cat">{cat}</h4>
+                      <div className="agsd-cast-row">
+                        {PERSONAS.filter((p) => (p.cat || "More") === cat).map((p) => (
+                          <button key={p.persona} type="button" className="agsd-cast-chip" title={p.desc} onClick={() => hirePersona(p)}>
+                            <span className="agsd-cast-dot" style={{ background: autoIdentity(p.persona).color }} />
+                            <span className="agsd-cast-name">{p.persona}</span>
+                            <span className="agsd-cast-role">{p.role}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
-                <div className="agsd-cast-hint">…or pull someone from the casting call — every persona is a full blueprint you can reshape.</div>
               </div>
             ) : (
               <>
@@ -2032,6 +2092,14 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                   <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Navigation, clicks and form-fills ask your permission; passwords and payment fields are always refused.</div>
                 </>
               )}
+              {draft.tools.desktop && (
+                <>
+                  <label>Allowed apps <span>— optional; window-title or process names the agent may touch</span></label>
+                  <input value={draft.desktopAllow || ""} placeholder="e.g. notepad, excel, spotify — empty = any app"
+                    onChange={(e) => setDraft({ ...draft, desktopAllow: e.target.value })} />
+                  <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Focusing, clicks and typing ask your permission; password/credential fields are always refused. Windows only.</div>
+                </>
+              )}
               <label>Autonomy <span>— how it handles risky actions (files, terminal, browser)</span></label>
               <div className="ags-bp-tools">
                 {[
@@ -2048,16 +2116,25 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               <label>Knowledge <span>— {(draft.knowledge || []).length}/24 files it always knows</span></label>
               <div className="ags-kn">
                 {(draft.knowledge || []).map((k, i) => (
-                  <span key={i} className="ag-pill" title={`${Math.round((k.content || "").length / 1000)}k chars`}>
-                    {k.name}
-                    <button className="agent-chip-x" aria-label={`Remove ${k.name}`} onClick={() => removeKnowledge(i)}><Trash2 size={10} /></button>
-                  </span>
+                  k.type === "image" ? (
+                    <span key={i} className="ag-pill" title={k.name}>
+                      <img src={k.dataUrl} alt={k.name} style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, marginRight: 4, verticalAlign: "middle" }} />
+                      {k.name}
+                      <button className="agent-chip-x" aria-label={`Remove ${k.name}`} onClick={() => removeKnowledge(i)}><Trash2 size={10} /></button>
+                    </span>
+                  ) : (
+                    <span key={i} className="ag-pill" title={`${Math.round((k.content || "").length / 1000)}k chars`}>
+                      {k.name}
+                      <button className="agent-chip-x" aria-label={`Remove ${k.name}`} onClick={() => removeKnowledge(i)}><Trash2 size={10} /></button>
+                    </span>
+                  )
                 ))}
                 <button className="ag-pill ags-bp-tool" onClick={() => knFileRef.current && knFileRef.current.click()}><Plus size={11} /> Add file</button>
-                <input ref={knFileRef} type="file" multiple accept=".txt,.md,.markdown,.csv,.json,.log,.yml,.yaml,.html,.xml,.js,.ts,.py" style={{ display: "none" }}
+                <input ref={knFileRef} type="file" multiple accept=".txt,.md,.markdown,.csv,.json,.log,.yml,.yaml,.html,.xml,.js,.ts,.py,.png,.jpg,.jpeg,.webp,.gif" style={{ display: "none" }}
                   onChange={(e) => { addKnowledgeFiles(e.target.files); e.target.value = ""; }} />
               </div>
               <div className="ag-hint" style={{ margin: 0 }}>Text files (md, txt, csv, json…). Large libraries are retrieved per task — only the relevant passages are injected. For PDFs, add them to a Project instead — Projects parse PDF/Word.</div>
+              <div className="ag-hint" style={{ margin: "2px 0 0" }}>Images (screenshots, diagrams) are shown to vision-capable models at the start of each conversation.</div>
               <label>Pinned model <span>— overrides the live selector for this agent</span></label>
               <div className="ag-model-row">
                 <ModelPicker value={draft.model || undefined} groups={groups} onChange={(v) => setDraft({ ...draft, model: v })} onRefresh={onRefresh} agenticOnly />

@@ -12,8 +12,19 @@ function dateLine() {
 }
 
 // Knowledge block with RAG-lite retrieval (whole docs when small, top passages when large).
+// Image-type knowledge entries are skipped here — they can't live in a text system prompt;
+// they're surfaced separately via knowledgeImages() and inlined into the first user turn.
 function knowledgeBlock(agent, taskText) {
-  return retrieval.knowledgeBlock((agent && agent.knowledge) || [], taskText || "");
+  const docs = ((agent && agent.knowledge) || []).filter((k) => k && k.type !== "image");
+  return retrieval.knowledgeBlock(docs, taskText || "");
+}
+
+// Image knowledge entries for an agent: [{ name, dataUrl }] (empty array when none).
+// Consumed by session-manager to inline them into the first user turn for vision models.
+function knowledgeImages(agent) {
+  return ((agent && agent.knowledge) || [])
+    .filter((k) => k && k.type === "image" && k.dataUrl)
+    .map((k) => ({ name: k.name || "image", dataUrl: k.dataUrl }));
 }
 
 // System prompt for a solo custom agent.
@@ -36,4 +47,4 @@ function memberSystem(member, taskText) {
     `\n\nYou receive a task (possibly with work from teammates). Do YOUR part thoroughly and reply with your complete work product as plain text — a teammate or coordinator consumes it next, so be complete and self-contained.`;
 }
 
-module.exports = { agentSystem, memberSystem, knowledgeBlock, dateLine };
+module.exports = { agentSystem, memberSystem, knowledgeBlock, knowledgeImages, dateLine };

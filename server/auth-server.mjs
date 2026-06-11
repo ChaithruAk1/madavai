@@ -170,7 +170,7 @@ function baseHeaders(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, x-admin-key");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   }
 }
 
@@ -293,6 +293,27 @@ function rateLimited(req, bucket, max, windowMs) {
   rec.n++; return rec.n > max;
 }
 const tooMany = (res, retryAfterSec) => { res.setHeader("Retry-After", String(retryAfterSec)); return json(res, 429, { error: "rate limited" }); };
+
+// ---- shared helpers for sharing / requests / community (Phase 3) ----
+// HTML-escape every piece of user-supplied content rendered into a server page (XSS guard).
+const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+// Strip control characters (keep \t \n \r) from stored text — community/request content is returned as JSON.
+const clean = (s) => String(s == null ? "" : s).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
+// (removed legacy clean impl) // [ --]/g, "");
+const newId = () => crypto.randomBytes(16).toString("hex"); // 32-hex random id
+// Resolve the Bearer session to a live user (or null). Centralises the verify(bearer(req)) + getUser dance.
+async function authUser(req) { const pl = verify(bearer(req)); if (!pl) return null; return (await store.getUser(pl.sub)) || null; }
+// "Paid" = an active subscription or comped/free-email account (statusOf -> "active"). Trial users are NOT paid.
+const isPaid = (u) => !!u && statusOf(u).status === "active";
+// Public author label — never leak a full email to other users. Prefer name; else email local-part, truncated.
+function authorLabel(u) {
+  const name = (u && u.name && String(u.name).trim()) || "";
+  if (name) return clean(name).slice(0, 40);
+  const local = (u && u.email ? String(u.email).split("@")[0] : "") || "user";
+  return clean(local).length > 6 ? clean(local).slice(0, 5) + "…" : clean(local);
+}
+const REQ_STATUSES = ["requested", "approved", "rejected", "building", "deployed"];
+const THREAD_CATEGORIES = ["ideas", "help", "showcase", "general"];
 
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, BASE);
@@ -658,6 +679,222 @@ const server = http.createServer(async (req, res) => {
 
   if (p === "/billing/done") return html(res, "<div><h2>Subscription active 🎉</h2><p>You can close this window and return to BrainEdge — it unlocks automatically.</p></div>");
   if (p === "/billing/cancel") return html(res, "<div><h2>Checkout canceled</h2><p>No charge was made. You can close this window.</p></div>");
+
+  // ===================== FEATURE A — Shareable conversation links =====================
+  const SHARE_TTL_MS = 30 * 864e5; // 30 days
+  // POST /share (Bearer) — store a read-only snapshot of a conversation, return its public URL.
+  if (p === "/share" && req.method === "POST") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    if (rateLimited(req, "share-create", 10, 60 * 60000)) return tooMany(res, 3600); // ~10/hour/user (per IP)
+    const raw = await rawBody(req, res, 200 * 1024); if (raw === null) return; // 200KB cap
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const title = clean(String(b.title || "Shared conversation")).slice(0, 200);
+    const msgs = Array.isArray(b.messages) ? b.messages.slice(0, 1000).map((m) => ({
+      role: clean(String((m && m.role) || "")).slice(0, 40),
+      content: clean(String((m && m.content) || "")).slice(0, 100000),
+    })) : [];
+    if (!msgs.length) return json(res, 400, { error: "messages required" });
+    const now = Date.now();
+    const doc = { id: newId(), userId: user.id, title, messages: msgs, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + SHARE_TTL_MS).toISOString() };
+    await store.col("shares").insert(doc);
+    return json(res, 200, { id: doc.id, url: BASE + "/s/" + doc.id });
+  }
+
+  // GET /s/:id — server-rendered, script-free, read-only HTML view of a shared conversation.
+  let sm = p.match(/^\/s\/([0-9a-f]{32})$/);
+  if (sm && req.method === "GET") {
+    const share = await store.col("shares").get(sm[1]);
+    const expired = share && Date.parse(share.expiresAt) < Date.now();
+    if (expired) { await store.col("shares").remove(share.id).catch(() => {}); } // lazy prune
+    if (!share || expired) {
+      res.setHeader("Content-Security-Policy", HTML_CSP);
+      res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+      return res.end(`<!doctype html><meta charset=utf-8><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;display:grid;place-items:center;height:100vh;text-align:center"><div><h2>Share not found</h2><p style="color:#9aa3b2">This link is invalid or has expired.</p></div></body>`);
+    }
+    const blocks = share.messages.map((m) => {
+      const role = esc(m.role || "message");
+      return `<div style="margin:0 0 16px;border:1px solid #1e2533;border-radius:10px;overflow:hidden"><div style="padding:6px 12px;background:#141a26;color:#7c89a0;font-size:12px;text-transform:uppercase;letter-spacing:.05em">${role}</div><div style="padding:12px;white-space:pre-wrap;word-break:break-word">${esc(m.content)}</div></div>`;
+    }).join("");
+    const expDate = esc(new Date(share.expiresAt).toISOString().slice(0, 10));
+    res.setHeader("Content-Security-Policy", HTML_CSP);
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    return res.end(`<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${esc(share.title)} — BrainEdge</title><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;margin:0"><div style="max-width:760px;margin:0 auto;padding:32px 20px"><h1 style="font-size:22px;margin:0 0 24px">${esc(share.title)}</h1>${blocks}<footer style="margin-top:28px;padding-top:16px;border-top:1px solid #1e2533;color:#7c89a0;font-size:13px">Shared from BrainEdge · expires ${expDate}</footer></div></body>`);
+  }
+
+  // DELETE /share/:id — owner only.
+  sm = p.match(/^\/share\/([0-9a-f]{32})$/);
+  if (sm && req.method === "DELETE") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const share = await store.col("shares").get(sm[1]);
+    if (!share) return json(res, 404, { error: "not found" });
+    if (share.userId !== user.id) return json(res, 403, { error: "forbidden" });
+    await store.col("shares").remove(share.id);
+    return json(res, 200, { ok: true });
+  }
+
+  // ===================== FEATURE B — Product Requests (voting board) =====================
+  // GET /requests (Bearer) — list all with vote counts, whether the caller voted, and canVote.
+  if (p === "/requests" && req.method === "GET") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    if (rateLimited(req, "requests-read", 120, 60000)) return json(res, 429, { error: "rate limited" });
+    const canVote = isPaid(user);
+    const all = await store.col("requests").all();
+    const list = all.map((r) => ({
+      id: r.id, authorName: r.authorName, title: r.title, detail: r.detail, status: r.status,
+      voteCount: Array.isArray(r.votes) ? r.votes.length : 0,
+      voted: Array.isArray(r.votes) && r.votes.includes(user.id),
+      mine: r.userId === user.id, createdAt: r.createdAt, statusAt: r.statusAt, adminNote: r.adminNote || null,
+    }));
+    return json(res, 200, { canVote, requests: list });
+  }
+
+  // POST /requests (Bearer) — create a feature request.
+  if (p === "/requests" && req.method === "POST") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    if (rateLimited(req, "requests-create", 5, 24 * 60 * 60000)) return tooMany(res, 86400); // 5/day/user (per IP)
+    const raw = await rawBody(req, res, 64 * 1024); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const title = clean(String(b.title || "")).trim().slice(0, 120);
+    const detail = clean(String(b.detail || "")).trim().slice(0, 2000);
+    if (!title) return json(res, 400, { error: "title required" });
+    const doc = { id: newId(), userId: user.id, authorName: authorLabel(user), title, detail, status: "requested", votes: [], createdAt: new Date().toISOString(), statusAt: null, adminNote: null };
+    await store.col("requests").insert(doc);
+    return json(res, 200, { id: doc.id });
+  }
+
+  // POST /requests/:id/vote (Bearer) — toggle a vote; subscribed/comped users only.
+  let rm = p.match(/^\/requests\/([0-9a-f]{32})\/vote$/);
+  if (rm && req.method === "POST") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    if (rateLimited(req, "requests-vote", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    if (!isPaid(user)) return json(res, 403, { error: "Voting is for subscribed users — trial accounts can follow along" });
+    const r = await store.col("requests").get(rm[1]);
+    if (!r) return json(res, 404, { error: "not found" });
+    const votes = Array.isArray(r.votes) ? r.votes.slice() : [];
+    const i = votes.indexOf(user.id);
+    if (i >= 0) votes.splice(i, 1); else votes.push(user.id);
+    await store.col("requests").update(r.id, { votes });
+    return json(res, 200, { voted: i < 0, voteCount: votes.length });
+  }
+
+  // POST /requests/:id/status (ADMIN) — set status + optional admin note.
+  rm = p.match(/^\/requests\/([0-9a-f]{32})\/status$/);
+  if (rm && req.method === "POST") {
+    if (!(await adminOk(req))) return json(res, 403, { error: "forbidden" });
+    const raw = await rawBody(req, res, 8 * 1024); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    if (!REQ_STATUSES.includes(b.status)) return json(res, 400, { error: "invalid status" });
+    const r = await store.col("requests").get(rm[1]);
+    if (!r) return json(res, 404, { error: "not found" });
+    const patch = { status: b.status, statusAt: new Date().toISOString() };
+    if (b.adminNote != null) patch.adminNote = clean(String(b.adminNote)).slice(0, 2000);
+    await store.col("requests").update(r.id, patch);
+    return json(res, 200, { ok: true, status: b.status });
+  }
+
+  // DELETE /requests/:id — author (only while "requested") or admin.
+  rm = p.match(/^\/requests\/([0-9a-f]{32})$/);
+  if (rm && req.method === "DELETE") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const r = await store.col("requests").get(rm[1]);
+    if (!r) return json(res, 404, { error: "not found" });
+    const admin = await adminOk(req);
+    const ownerCanDelete = r.userId === user.id && r.status === "requested";
+    if (!admin && !ownerCanDelete) return json(res, 403, { error: "forbidden" });
+    await store.col("requests").remove(r.id);
+    return json(res, 200, { ok: true });
+  }
+
+  // ===================== FEATURE C — Community forum (threads + posts) =====================
+  // GET /community/threads?category= (Bearer) — list (pinned first, then lastAt desc), cap 100.
+  if (p === "/community/threads" && req.method === "GET") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    if (rateLimited(req, "community-read", 120, 60000)) return json(res, 429, { error: "rate limited" });
+    const cat = u.searchParams.get("category");
+    const allPosts = await store.col("posts").all();
+    const counts = {}; for (const po of allPosts) counts[po.threadId] = (counts[po.threadId] || 0) + 1;
+    let threads = await store.col("threads").all();
+    if (cat && THREAD_CATEGORIES.includes(cat)) threads = threads.filter((t) => t.category === cat);
+    threads.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || Date.parse(b.lastAt || b.createdAt) - Date.parse(a.lastAt || a.createdAt));
+    const list = threads.slice(0, 100).map((t) => ({
+      id: t.id, authorName: t.authorName, title: t.title, category: t.category,
+      createdAt: t.createdAt, lastAt: t.lastAt, locked: !!t.locked, pinned: !!t.pinned, postCount: counts[t.id] || 0,
+    }));
+    return json(res, 200, { threads: list });
+  }
+
+  // POST /community/threads (Bearer) — create a thread plus its first post.
+  if (p === "/community/threads" && req.method === "POST") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    if (rateLimited(req, "community-thread", 10, 24 * 60 * 60000)) return tooMany(res, 86400); // 10/day/user (per IP)
+    const raw = await rawBody(req, res, 16 * 1024); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const title = clean(String(b.title || "")).trim().slice(0, 120);
+    const category = THREAD_CATEGORIES.includes(b.category) ? b.category : "general";
+    const body = clean(String(b.body || "")).trim().slice(0, 4000);
+    if (!title || !body) return json(res, 400, { error: "title and body required" });
+    const now = new Date().toISOString();
+    const name = authorLabel(user);
+    const thread = { id: newId(), userId: user.id, authorName: name, title, category, createdAt: now, lastAt: now, locked: false, pinned: false };
+    await store.col("threads").insert(thread);
+    const post = { id: newId(), threadId: thread.id, userId: user.id, authorName: name, body, createdAt: now };
+    await store.col("posts").insert(post);
+    return json(res, 200, { id: thread.id });
+  }
+
+  // GET /community/threads/:id (Bearer) — a thread plus its posts (cap 200, oldest first).
+  let tm = p.match(/^\/community\/threads\/([0-9a-f]{32})$/);
+  if (tm && req.method === "GET") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    if (rateLimited(req, "community-read", 120, 60000)) return json(res, 429, { error: "rate limited" });
+    const t = await store.col("threads").get(tm[1]);
+    if (!t) return json(res, 404, { error: "not found" });
+    const posts = (await store.col("posts").all())
+      .filter((po) => po.threadId === t.id)
+      .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+      .slice(0, 200)
+      .map((po) => ({ id: po.id, authorName: po.authorName, body: po.body, createdAt: po.createdAt }));
+    return json(res, 200, { thread: { id: t.id, authorName: t.authorName, title: t.title, category: t.category, createdAt: t.createdAt, lastAt: t.lastAt, locked: !!t.locked, pinned: !!t.pinned }, posts });
+  }
+
+  // POST /community/threads/:id/posts (Bearer) — reply; rejected when the thread is locked.
+  tm = p.match(/^\/community\/threads\/([0-9a-f]{32})\/posts$/);
+  if (tm && req.method === "POST") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    if (rateLimited(req, "community-post", 30, 24 * 60 * 60000)) return tooMany(res, 86400); // 30/day/user (per IP)
+    const t = await store.col("threads").get(tm[1]);
+    if (!t) return json(res, 404, { error: "not found" });
+    if (t.locked) return json(res, 403, { error: "thread is locked" });
+    const raw = await rawBody(req, res, 16 * 1024); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const body = clean(String(b.body || "")).trim().slice(0, 4000);
+    if (!body) return json(res, 400, { error: "body required" });
+    const now = new Date().toISOString();
+    const post = { id: newId(), threadId: t.id, userId: user.id, authorName: authorLabel(user), body, createdAt: now };
+    await store.col("posts").insert(post);
+    await store.col("threads").update(t.id, { lastAt: now });
+    return json(res, 200, { id: post.id });
+  }
+
+  // POST /community/threads/:id/mod (ADMIN) — { pin?, lock?, delete? }.
+  tm = p.match(/^\/community\/threads\/([0-9a-f]{32})\/mod$/);
+  if (tm && req.method === "POST") {
+    if (!(await adminOk(req))) return json(res, 403, { error: "forbidden" });
+    const t = await store.col("threads").get(tm[1]);
+    if (!t) return json(res, 404, { error: "not found" });
+    const raw = await rawBody(req, res, 8 * 1024); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    if (b.delete) {
+      for (const po of (await store.col("posts").all()).filter((x) => x.threadId === t.id)) await store.col("posts").remove(po.id);
+      await store.col("threads").remove(t.id);
+      return json(res, 200, { ok: true, deleted: true });
+    }
+    const patch = {};
+    if (typeof b.pin === "boolean") patch.pinned = b.pin;
+    if (typeof b.lock === "boolean") patch.locked = b.lock;
+    if (Object.keys(patch).length) await store.col("threads").update(t.id, patch);
+    return json(res, 200, { ok: true, pinned: patch.pinned ?? !!t.pinned, locked: patch.locked ?? !!t.locked });
+  }
 
   if (p === "/health") return json(res, 200, { ok: true });
 

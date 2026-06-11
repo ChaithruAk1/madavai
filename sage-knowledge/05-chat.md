@@ -1,0 +1,200 @@
+# Sage knowledge · Chat, Collaborate & Build surfaces
+<!-- generated from source 2026-06-11 — regenerate per SAGE-KNOWLEDGE-PROCESS.md -->
+
+### Top bar · Let's Chat / Let's Collaborate / Let's Build
+aliases: mode switch, chat vs build, work surfaces
+What: The three primary work modes in the top navigation.
+Why: Each surface points BrainEdge at a different kind of work.
+Behavior: "Let's Chat" (Conversation) is plain talk — no folder. "Let's Collaborate" (Work on a folder) and "Let's Build" (Code in a repo) are agent modes: they add a folder bar, a permission picker and an environment picker, and can read/edit files and run commands. A running turn keeps running when you switch tabs; each mode remembers its own conversation, restored when you return.
+
+### Hero · Greeting
+aliases: home screen, empty state, good morning
+What: The greeting shown above the composer before any message exists.
+Why: A calm starting point that adapts to who and what you're working as.
+Behavior: A plain session greets you by first name and time of day ("Good morning, Sam"). When a custom agent is attached you instead see that agent's name, glyph and description; a team shows stacked member faces, the team name and its mode; a project-scoped Collaborate task shows the project name with "instructions & knowledge are applied."
+
+### Composer · Message box
+aliases: text area, input, prompt box, type here
+What: The main place you type your message.
+Why: It's how you talk to BrainEdge.
+Behavior: Enter sends; Shift+Enter makes a new line. The box grows as you type up to ~200px then scrolls. Placeholder hints change by mode and note "/ commands · @ files". Typing "/" at the start opens commands+skills; typing "@" opens the file/connector mention menu. Ctrl/Cmd+U opens the file picker; Backspace on an empty box with an attached skill removes the skill.
+
+### Composer · Send button
+aliases: arrow up, submit, send arrow
+What: The up-arrow button that sends your message.
+Why: Sends what you've typed plus any attachments.
+Behavior: Enabled only when there's text, an attachment, or an attached skill. While a turn is running it becomes a Stop (square) button that interrupts the agent. Clicking Send packages attached text files inline, images as vision data, and any skill instruction, then clears the composer.
+
+### Composer · Stop button
+aliases: square, interrupt, halt
+What: Replaces Send while BrainEdge is working.
+Why: Lets you cut a turn short.
+Behavior: Shown only while busy. Clicking it interrupts the live session and clears the busy state. The turn keeps running if you merely navigate away — only Stop actually halts it.
+
+### Composer · Voice input (mic)
+aliases: microphone, dictate, speech to text, push to talk
+What: The mic button that turns speech into text in the box.
+Why: Talk instead of type.
+Behavior: Click to record, click again to stop (push-to-talk). On desktop it transcribes through your own OpenAI or Groq (Whisper) key; if no key is found it switches that machine permanently to the built-in Windows voice engine (no key needed) — tap once more and speak. On the web it falls back to Chrome's browser speech. The mic only appears when Voice is on in Settings → Extras.
+
+### Composer · "+" Add menu
+aliases: plus button, attach menu, add
+What: The "+" button opening the attach/insert menu.
+Why: One place for files, mentions, GitHub, skills, projects and connectors.
+Behavior: Opens a menu with: Add files or photos, Mention file / connector, Add from GitHub, Skills (submenu), Add to project, and Connectors. Closes when you click outside.
+
+### Add menu · Add files or photos
+aliases: attach file, upload, paperclip, Ctrl+U
+What: Opens your system file picker to attach files.
+Why: Give BrainEdge documents or images to work with.
+Behavior: Shortcut Ctrl/Cmd+U. Images attach as thumbnails for vision. Spreadsheets (.xlsx/.xls) are parsed to CSV per sheet; Word .docx is extracted to text; plain text is inlined. You can also paste or drag files straight in. Each attachment shows as a removable chip.
+
+### Add menu · Mention file / connector
+aliases: @ mention, reference file, @ menu
+What: Inserts an "@" to mention a file in the working folder or a connector.
+Why: Point BrainEdge at a specific file or connected service without attaching it.
+Behavior: Same as typing "@". Connectors you've enabled and files from the linked folder appear; arrow keys navigate, Enter/Tab inserts. Names with spaces are quoted (@"My File"). With no folder or connectors it prompts you to link one first.
+
+### Add menu · Add from GitHub
+aliases: GitHub content, import from repo
+What: Opens a dialog to pull content in from GitHub.
+Why: Attach files straight from a GitHub repository.
+Behavior: Opens the "Add content from GitHub" modal; chosen items are added to the composer as attachments. (Distinct from "Connect a GitHub repo," which clones a whole repo as your Build workspace.)
+
+### Add menu · Skills
+aliases: skills submenu, attach skill, puzzle
+What: A submenu listing your installed skills.
+Why: Hand a request to a specialized skill.
+Behavior: Expands to your enabled skills; picking one attaches it as a chip so your next message runs through it. "Manage / add skills" jumps to the Skills screen. Empty until you install skills.
+
+### Add menu · Add to project / Connectors
+aliases: project, connectors menu items
+What: Shortcuts from the "+" menu to the Projects and Connectors screens.
+Why: Quick navigation to manage saved workspaces or connected services.
+Behavior: "Add to project" opens the Projects screen; "Connectors" opens the Connectors screen.
+
+### Composer · "/" Slash commands
+aliases: slash menu, commands, quick actions
+What: Type "/" at the line start for inline commands and skills.
+Why: Fast in-place actions without leaving the box.
+Behavior: Commands run in place — /add-files opens the picker, /new starts a fresh chat/task/session (label varies by mode), /folder chooses a working folder. Below the commands, your skills appear; choosing one attaches it. Arrow keys move, Enter/Tab confirms, Escape closes. No match offers "Manage skills →".
+
+### Composer · "@" Mentions
+aliases: at mention, file picker inline, connectors inline
+What: Type "@" to mention connectors and folder files.
+Why: Reference a file or service precisely inside your message.
+Behavior: Connectors list first, then up to 40 matching files from the linked folder. Folders show a slash. Multi-word names are auto-quoted. Requires a linked folder for files and enabled connectors for services.
+
+### Composer · Attachments (file parsing)
+aliases: xlsx, docx, pdf, binary files, what files work
+What: How attached files are turned into something BrainEdge can read.
+Why: Different file types need different handling.
+Behavior: Spreadsheets become CSV (first 8 sheets); .docx becomes plain text; images go in as vision. A PDF attaches with a note that chat can't extract PDF text — add it to a Project's knowledge instead, since Projects parse PDFs. True binaries (zip, exe, media, fonts, etc.) attach with a note that their contents weren't included, so they never dump garbage into the chat.
+
+### Composer · "Choose folder" chip
+aliases: change folder, working directory, folder bar
+What: The button in the folder bar that picks the working folder.
+Why: Agent modes need a folder to read and edit.
+Behavior: In Collaborate/Build it reads "Choose folder" (or "Change folder" once set) and the bar shows the current path or "No folder selected." On the web, folders work only in Chrome or Edge (a notice says so) and edits are file-only — running npm/git/tests needs the desktop app. Picking a folder starts a fresh conversation.
+
+### Folder bar · Continue on phone
+aliases: on phone, Telegram, mobile link, smartphone
+What: Links the current Collaborate session to your Telegram bot.
+Why: Carry on the task from your phone, with replies appearing here on return.
+Behavior: In Collaborate, when auto-continue is on (default) the phone icon auto-links whichever Cowork session is active while the bot is online; turn auto off in Via Mobile to pin a session manually with "Continue on phone" / "On phone · Unlink." If the bot is offline you're told to enable it in Via Mobile first.
+
+### Controls row · Model picker
+aliases: choose model, switch model, provider
+What: The model selector in the composer controls row.
+Why: Pick which model and provider runs your turn.
+Behavior: Lists every configured provider grouped by name and local/cloud, showing live models when available. Choosing one sets both the active provider and that provider's model. A refresh action re-queries each provider's model list. On launch the active model snaps to your saved Default Model.
+
+### Controls row · Permission picker
+aliases: permission mode, ask first, accept edits, act freely, plan mode
+What: Sets how freely BrainEdge may act in agent modes.
+Why: Trade speed for control over edits and commands.
+Behavior: Four modes — "Ask before changes" (default: approve each edit/command), "Auto-accept edits" (apply file edits, still ask for commands), "Act — trust all" (run everything without asking), and "Read-only" (inspect only, never modify). Reads are always free in every mode. Appears only in Collaborate and Build; changing it updates the live session immediately.
+
+### Controls row · Spoken replies
+aliases: read aloud, voice output, volume button
+What: The speaker toggle that reads answers aloud.
+Why: Hear replies instead of reading them.
+Behavior: When on, the final answer is spoken via your OS speech synthesis (code blocks are skipped). The setting persists; turning it off also stops any reply mid-sentence. Lit in the accent color when active.
+
+### Message · Copy / Edit / Retry
+aliases: message actions, copy reply, redo, change my message
+What: The small actions under each message.
+Why: Reuse, fix or regenerate a turn.
+Behavior: Copy (on any non-empty message) copies the raw text, briefly showing a check. Edit (your messages only) opens an inline editor — Ctrl/Cmd+Enter saves and re-sends, dropping everything after it. Retry (assistant messages only) re-runs from the previous user message as a fresh turn. Edit/Retry are hidden while a turn is running.
+
+### Message · Rendering & file cards
+aliases: markdown, formatting, artifact pill, office docs
+What: How replies and produced files are displayed.
+Why: Readable formatting plus one-click access to generated artifacts.
+Behavior: Assistant replies render as Markdown (a leading junk-JSON blob from weak models is stripped); user images show as thumbnails. When a reply contains a self-contained artifact (a page, diagram, doc or component) an "Open …" pill appears that opens it in the side panel.
+
+### Tool card · Worked step
+aliases: tool step, what did it do, activity row, human verbs
+What: A collapsed card describing one action the agent took.
+Why: Shows the work in plain English instead of raw tool names.
+Behavior: Each card is a human sentence with an icon — "Read file.js," "Created folder ABC," "Searched …," "Git: commit." Click to expand: shell steps show the literal "$ command," other tools show their inputs, and outputs render (diffs are color-coded). A spinner marks running steps; "declined" marks denied ones.
+
+### Work strip · "✓ Worked — N steps"
+aliases: collapsed steps, worked summary, expand work
+What: One quiet line standing in for a burst of routine tool steps.
+Why: Keeps the chat a conversation — your words and the agent's words — while the busywork folds away.
+Behavior: Consecutive routine steps collapse into a single strip showing "Working" with a spinner while live, then "Worked — N steps." Click to expand every step; click again to collapse. Images and questions always stand alone, never folded in. The live side panels still show each step as it happens.
+
+### Permission modal · Allow / Decline
+aliases: permission prompt, approve change, allow once, allow for session
+What: The dialog asking before BrainEdge changes your folder.
+Why: A safety check before edits and commands when you're in "Ask before changes."
+Behavior: Names the action ("Run a command?", "Edit file?") and shows the literal command or path. "Allow once" permits just this step; "Allow for session" switches you to trust-all for the rest of the session; "Decline" (or Escape / clicking outside) refuses it. Parallel team members queue — one modal shows at a time. Reads never trigger this.
+
+### Mid-mission question modal
+aliases: agent needs input, ask the human, answer & resume, skip
+What: A modal where a paused agent asks you something mid-task.
+Why: The agent hit a decision only you can make; answering resumes it.
+Behavior: Shows the question with any suggested-answer chips you can click. Type a custom answer and press Enter or "Answer & resume." "Skip — let it decide" hands control back with your best-judgment note. This decision-question is distinct from the permission prompt: it's about choices, not about granting access. Queued if several members ask at once.
+
+### Resume mission banner
+aliases: mission interrupted, continue team mission, checkpoint
+What: A banner offering to resume an interrupted team mission.
+Why: Long team missions checkpoint, so you don't lose finished work.
+Behavior: Appears on a team conversation with an unfinished checkpoint while idle, noting how many steps were already done. "Resume mission" continues from the checkpoint; the × dismisses the banner.
+
+### Agent / team / project bars
+aliases: detach agent, back to agents, project task, × button
+What: Context bars above the chat when an agent, team or project is attached.
+Why: Show what's driving the session and let you step back or detach.
+Behavior: "← Agents" / "← Projects" chips return to those screens (keeping the conversation saved). The × detaches the agent or team and clears the session. A project-scoped Collaborate task shows "← <project>" back to that project's page and uses the project's folder, instructions and knowledge.
+
+### Artifact panel · Preview / Code / Edit tabs
+aliases: artifact tabs, view code, live preview, canvas
+What: The three views of an open artifact.
+Why: See it rendered, read its source, or edit it live.
+Behavior: Preview renders previewable artifacts (HTML/SVG/etc.) in a sandboxed frame; Code shows raw source; Edit is a live canvas you can type into directly. Preview is the default when available, otherwise Code. A "· edited" badge appears once you change the content.
+
+### Artifact panel · AI revise bar
+aliases: ask AI to revise, targeted edit, sparkles bar
+What: The revise input in the Edit tab.
+Why: Change the artifact with a natural-language instruction.
+Behavior: Type an instruction and Revise (or Enter). Select a region first for a targeted edit that touches only that selection; leave it unselected to revise the whole thing. Each AI revision and manual typing pushes onto a 10-step undo stack (Undo button). Errors show inline.
+
+### Artifact panel · Version dropdown
+aliases: version history, v1 v2, iterations
+What: A dropdown to flip between artifacts of the same type.
+Why: The conversation may have iterated on one page/diagram/component.
+Behavior: Appears when more than one version exists. "latest" is the one you clicked; older versions are v1, v2 … with the last marked "(newest)." Switching versions resets any in-progress edits and undo history for the new base.
+
+### Artifact panel · Copy / Download / Open in tab / Refresh
+aliases: export artifact, save artifact, new tab, reload preview
+What: The action icons in the artifact header.
+Why: Take the artifact out of the panel or refresh its preview.
+Behavior: Copy copies the current (edited) code; Download saves it with a type-appropriate extension (.html, .svg, .md, .jsx…). "Open in new tab" opens previewable artifacts in a sandboxed wrapper page (never same-origin, for security). Refresh reloads the preview frame. The × closes the panel.
+
+### Sidebar · Recents row actions
+aliases: chat history, export markdown, share link, delete chat
+What: The per-conversation actions in the Recents list.
+Why: Reopen, save, share or remove a past conversation.
+Behavior: Clicking a row opens it. The download icon exports it as Markdown (readable anywhere, prints to PDF). The share icon posts it to the community and copies the returned link ("Link copied ✓"). The trash icon deletes it. The search box filters titles, and 3+ characters search message content everywhere with snippets. Agent/team conversations live on the Agents screen, not here.

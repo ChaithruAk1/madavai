@@ -4,6 +4,7 @@ import { MODELS, CATEGORIES, freeInfo } from "../data/modelCatalog.js";
 import { classifyProvider, isModelFree } from "../data/providerRules.js";
 import { benchFor, AGENTIC_RANK, agenticTone, thinkingTone } from "../data/benchmarks.js";
 import { classify } from "./ModelPicker.jsx";
+import { localCaps } from "../data/localModels.js";
 import { bridge } from "../bridge/index.js";
 
 // Provider → domain, for real logos (served as site favicons). Unknown makers fall back to a monogram.
@@ -336,6 +337,18 @@ export default function ModelsOverview({ activeModel }) {
           if (orm.reasoning) entry.thinking = true;
           if (orm.created) entry.created = orm.created;
           if (orm.ctx && !entry.ctx) entry.ctx = orm.ctx;
+        }
+        // Local providers publish no capability metadata — OR-in the curated family
+        // registry (localModels.js) so local models get their real coding/reasoning/
+        // vision/agentic columns. Only ever ADDS capabilities, never removes.
+        if (isLocal) {
+          const lc = localCaps(id);
+          if (lc) {
+            if (lc.tools) entry.tools = true;       // capAgentic reads m.tools
+            if (lc.coding) entry.coding = true;     // capCoding reads m.coding
+            if (lc.vision) entry.vision = true;
+            if (lc.reasoning && !entry.thinking) entry.thinking = true; // keep "toggle" if set
+          }
         }
         const thisFree = isModelFree({ profile: p, modelId: id, orFree: orm ? !!orm.free : null });
         const nkey = norm(entry.name);

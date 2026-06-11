@@ -64,6 +64,7 @@ const DEFAULTS = {
   missionTokenBudget: 0, // global per-mission token cap for teams (estimated; 0 = off). Teams can override per-team.
   // Agent Browser guardrails (admin-controllable; secure defaults). Relaxing any of
   // these widens what a browsing agent can do on hostile web pages — change with care.
+  desktopDriver: { enabled: true }, // Desktop Applications Driver master switch (agents on native Windows apps)
   agentBrowser: {
     enabled: true,            // MASTER switch — off disables the Agent Browser feature for ALL agents
     enforceAllowlist: true,   // confine agents to each agent's allowed sites (off = any site, redirects unchecked)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen, Share2 } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 const TOP = [
@@ -28,6 +28,7 @@ const ADMIN_ITEM = { id: "testcenter", label: "Test Center", icon: FlaskConical 
 export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, extras = {} }) {
   const [recents, setRecents] = useState([]);
   const [q, setQ] = useState("");
+  const [shareState, setShareState] = useState({}); // { [id]: "sharing" | "copied" | "error" }
   const [ifaceOpen, setIfaceOpen] = useState(false);
   const [modelsOpen, setModelsOpen] = useState(false);
   // Extras switchboard (Settings → Extras): an entry whose feature is switched off
@@ -153,6 +154,21 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     } catch {}
   };
 
+  // Share a conversation to the community: post {title, messages} → copy the returned link.
+  const shareConv = async (id, title) => {
+    const flash = (state) => { setShareState((s) => ({ ...s, [id]: state })); setTimeout(() => setShareState((s) => { const n = { ...s }; delete n[id]; return n; }), 2200); };
+    setShareState((s) => ({ ...s, [id]: "sharing" }));
+    try {
+      const conv = await bridge.getSession(id);
+      if (!conv) return flash("error");
+      const r = await (bridge.apiCall ? bridge.apiCall("POST", "/share", { title: title || conv.title || "Shared chat", messages: conv.messages || [] }) : { error: "offline" });
+      if (r && r.url) {
+        try { await navigator.clipboard.writeText(r.url); } catch {}
+        flash("copied");
+      } else flash("error");
+    } catch { flash("error"); }
+  };
+
   return (
     <aside className="sidebar glass">
       <button className="sb-new" onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
@@ -204,6 +220,13 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
                 {deep !== null && it.snippet && it.snippet !== it.title && <span className="sb-rec-snip">…{it.snippet}…</span>}
               </span>
               <button className="sb-rec-del" title="Export as Markdown" onClick={(e) => { e.stopPropagation(); exportConv(it.id, it.title); }}><Download size={12} /></button>
+              {shareState[it.id] === "copied" ? (
+                <span className="sb-rec-share-msg ok" title="Link copied">Link copied ✓</span>
+              ) : shareState[it.id] === "error" ? (
+                <span className="sb-rec-share-msg err" title="Couldn't share">Couldn't share</span>
+              ) : (
+                <button className="sb-rec-del" title="Share to community" disabled={shareState[it.id] === "sharing"} onClick={(e) => { e.stopPropagation(); shareConv(it.id, it.title); }}><Share2 size={12} /></button>
+              )}
               <button className="sb-rec-del" title="Delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(it.id); }}><Trash2 size={12} /></button>
             </div>
           ))}

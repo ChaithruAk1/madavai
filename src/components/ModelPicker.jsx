@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronDown, Check, Search, RefreshCw } from "lucide-react";
 import { MODELS } from "../bridge/contract.js";
 import { bridge } from "../bridge/index.js";
+import { localCaps } from "../data/localModels.js";
 
 // Best-guess of a model's core purpose from its name (no universal API exposes this).
 export function classify(id) {
@@ -57,15 +58,17 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const isFree = (it, groupName) => /local/i.test(it.prov || groupName || "") || /:free\b/.test((it.name || "").toLowerCase());
   const makerOf = (it, group) => ((it.name || "").includes("/") ? it.name.split("/")[0] : (it.prov || group || "")).toLowerCase().trim();
   const ormOf = (it) => { if (!orCat) return null; const id = it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name; return orCat[id] || null; };
+  // Local models have no catalog metadata — fall back to the curated family registry (localModels.js).
+  const lcOf = (it, group) => (/local/i.test(it.prov || group || "") ? localCaps((it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name) || it.name) : null);
   // Agentic = real tool-calling capability from the catalog. Don't assume it from "coder" etc.
-  const agenticOf = (it) => { const o = ormOf(it); if (o) return !!o.tools; return /\bagent/i.test(it.name || ""); };
+  const agenticOf = (it, group) => { const o = ormOf(it); if (o) return !!o.tools; const l = lcOf(it, group); if (l) return !!l.tools; return /\bagent/i.test(it.name || ""); };
   // Each capability is detected INDEPENDENTLY — a model can be several at once (e.g. coding AND agentic).
   const CAPS = {
-    coding: (it) => /cod(er|e)\b|coder|codestral|devstral/i.test(it.name || ""),
-    reasoning: (it) => { const o = ormOf(it); return (o && o.reasoning) || /reason|\br1\b|\bo1\b|\bo3\b|qwq|think/i.test(it.name || ""); },
-    vision: (it) => { const o = ormOf(it); return (o && o.image) || /vision|multimodal|\bvl\b|llava/i.test(it.name || ""); },
+    coding: (it, group) => /cod(er|e)\b|coder|codestral|devstral/i.test(it.name || "") || !!lcOf(it, group)?.coding,
+    reasoning: (it, group) => { const o = ormOf(it); return (o && o.reasoning) || /reason|\br1\b|\bo1\b|\bo3\b|qwq|think/i.test(it.name || "") || !!lcOf(it, group)?.reasoning; },
+    vision: (it, group) => { const o = ormOf(it); return (o && o.image) || /vision|multimodal|\bvl\b|llava/i.test(it.name || "") || !!lcOf(it, group)?.vision; },
     fast: (it) => /flash|mini|lite|haiku|tiny|small|turbo|nano/i.test(it.name || ""),
-    agentic: (it) => agenticOf(it),
+    agentic: (it, group) => agenticOf(it, group),
   };
 
   useEffect(() => {
@@ -97,12 +100,12 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const groups = source
     .map((g) => ({ ...g, items: g.items.filter((it) => {
       if (!(it.name + it.id).toLowerCase().includes(q.toLowerCase())) return false;
-      if (agOnly && !CAPS.agentic(it)) return false; // only when the user opts in
+      if (agOnly && !CAPS.agentic(it, g.group)) return false; // only when the user opts in
       if (maker !== "all" && makerOf(it, g.group) !== maker) return false;
       const free = isFree(it, g.group);
       if (cost === "free" && !free) return false;
       if (cost === "paid" && free) return false;
-      for (const k of caps) { if (CAPS[k] && !CAPS[k](it)) return false; } // multi-select, AND-combined
+      for (const k of caps) { if (CAPS[k] && !CAPS[k](it, g.group)) return false; } // multi-select, AND-combined
       return true;
     }) }))
     .filter((g) => g.items.length);
@@ -176,10 +179,10 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
                 const isLocal = /local/i.test(it.prov || g.group || "");
                 const free = isFree(it, g.group);
                 const tags = [];
-                if (CAPS.coding(it)) tags.push("coding");
-                if (CAPS.reasoning(it)) tags.push("reasoning");
-                if (CAPS.vision(it)) tags.push("vision");
-                if (CAPS.agentic(it)) tags.push("agentic");
+                if (CAPS.coding(it, g.group)) tags.push("coding");
+                if (CAPS.reasoning(it, g.group)) tags.push("reasoning");
+                if (CAPS.vision(it, g.group)) tags.push("vision");
+                if (CAPS.agentic(it, g.group)) tags.push("agentic");
                 if (!tags.length && CAPS.fast(it)) tags.push("fast");
                 const hostLabel = isLocal ? "Local" : free ? "Free" : "Cloud";
                 const hostColor = isLocal ? "var(--ok)" : free ? "#7ee787" : "var(--accent)";
