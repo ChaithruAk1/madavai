@@ -2734,3 +2734,12 @@ svg.lucide { color: var(--accent); }
 .model-dock .perm-picker, .model-dock .env-picker { position: relative; }
 .model-dock .mp-menu { left: 50%; right: auto; margin-left: calc(min(94vw, 720px) / -2); }
 .model-dock .perm-picker .model-menu { left: 0; right: auto; }
+
+/* Skills list: hard viewport bound + always-visible scrollbar.
+   (Appended via the sandbox — host-tool edits TRUNCATE this large file; see memory.) */
+.skills2 { height: calc(100vh - 64px); overflow: hidden; }
+.sk-items { scrollbar-gutter: stable; padding-right: 2px; }
+.sk-items::-webkit-scrollbar { width: 9px; }
+.sk-items::-webkit-scrollbar-track { background: transparent; }
+.sk-items::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+.sk-items::-webkit-scrollbar-thumb:hover { background: var(--line-2); background-clip: padding-box; }
