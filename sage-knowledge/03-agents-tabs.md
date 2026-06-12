@@ -89,7 +89,7 @@ Behavior: Removes it from the roster immediately. Teams that included it simply 
 aliases: edgetrader folder, edge trader group, et agents folder
 What: A folder the EdgeTrader pack's six workers are filed into automatically.
 Why: Keeps the pack's relay crew grouped and recognizable instead of scattered through the roster.
-Behavior: Created automatically while the EdgeTrader pack is active (Settings → Extras) for any pack worker without a folder. You can drag a worker to another folder and it stays there; deleting the folder just refiles loose pack workers back on the next visit. Pack workers can't be deleted while the pack is active.
+Behavior: Created automatically while the EdgeTrader pack is active (Settings → Extras) for any pack worker without a folder — all nine (the six relay stations plus the three optional lenses) file here. You can drag a worker to another folder and it stays there; deleting the folder just refiles loose pack workers back on the next visit. Pack workers AND the EdgeTrader team can't be deleted while the pack is active; turn the pack off in Settings → Extras to manage them.
 
 ### Agents · Agent card · Export .agent
 aliases: download, share agent, .agent file, export

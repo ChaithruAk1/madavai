@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Plug, RefreshCw, Check, Mail, Cloud, HardDrive, Github, MessageSquare, FolderOpen, Globe, Search } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+import { iconUrlFor } from "../connectorIcons.js";
 
 const BLANK = (id) => ({ id, name: "New connector", command: "npx", args: [], env: {}, enabled: true });
 
@@ -140,7 +141,7 @@ export default function Connectors() {
           {list.length === 0 && <div style={{ color: "var(--text-2)", fontSize: 13, padding: "6px 2px" }}>None yet — add one above.</div>}
           {list.map((c) => (
             <button key={c.id} className="mc-pcard" onClick={() => { setSelId(c.id); setTools(null); setStatus(""); }}>
-              <span className="mc-pchip" style={{ color: c.enabled ? "var(--accent)" : "var(--text-2)" }}><Plug size={18} /></span>
+              <ConnectorIcon item={{ title: c.name, name: c.name }} color="rgba(var(--accent-rgb),0.25)" />
               <span className="mc-pmain">
                 <b>{c.name}</b>
                 <small>{[c.command, ...(c.args || [])].join(" ").slice(0, 46) || "not configured"}</small>
@@ -217,27 +218,18 @@ function iconDomain(item) {
 }
 
 function ConnectorIcon({ item, color }) {
-  // Brand favicons are fetched live and FAIL intermittently (rate limits, offline) —
-  // so the letter chip renders immediately and the image only replaces it once it has
-  // ACTUALLY loaded. On failure we try a second icon service before settling on the letter.
-  const [srcIdx, setSrcIdx] = useState(0);
-  const [loaded, setLoaded] = useState(false);
-  const domain = iconDomain(item);
-  const sources = domain ? [
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
-  ] : [];
-  const src = sources[srcIdx];
-  return (
-    <span className={`cdir-ico ${loaded ? "cdir-ico-img" : ""}`} style={loaded ? undefined : { background: color }}>
-      {!loaded && (item.title || "?").slice(0, 1).toUpperCase()}
-      {src && (
-        <img src={src} alt="" loading="lazy" style={loaded ? undefined : { display: "none" }}
-          onLoad={() => setLoaded(true)}
-          onError={() => { setLoaded(false); setSrcIdx((i) => i + 1); }} />
-      )}
-    </span>
-  );
+  // Anthropic-connectors approach: brand icons are BUNDLED with the app and sit on a
+  // light tile — zero network, so they can never flicker or disappear. Services without
+  // a bundled icon get a deliberate colored monogram tile (not a flaky fetch).
+  const url = iconUrlFor(`${item.title || ""} ${item.name || ""} ${iconDomain(item) || ""}`);
+  if (url) {
+    return (
+      <span className="cdir-ico" style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)" }}>
+        <img src={url} alt="" style={{ width: 18, height: 18 }} />
+      </span>
+    );
+  }
+  return <span className="cdir-ico" style={{ background: color }}>{(item.title || "?").slice(0, 1).toUpperCase()}</span>;
 }
 
 function Field({ label, children }) {

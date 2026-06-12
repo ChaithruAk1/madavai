@@ -1000,7 +1000,14 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     setTErr(""); setView("team");
   };
   const editTeam = (t) => { setTdraft({ ...t, members: [...t.members] }); setTErr(""); setView("team"); };
-  const removeTeam = async (id) => { await persistTeams(teams.filter((t) => t.id !== id)); };
+  const removeTeam = async (id) => {
+    // The EdgeTrader team is pack-managed, like its agents (Extras gate to remove).
+    if (etLocked && id === "team_edgetrader") {
+      alert("The EdgeTrader team belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
+      return;
+    }
+    await persistTeams(teams.filter((t) => t.id !== id));
+  };
   const saveTeam = async (closeAfter) => {
     if (!tdraft.members.length) { setTErr("Add at least one agent to the team."); return false; }
     setTErr("");
@@ -1632,7 +1639,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                     <div className="ag-card-actions">
                       <button className="btn primary" disabled={!members.length} onClick={() => launchTeam(t)}><Rocket size={13} /> Brief the team</button>
                       <button className="btn ghost" onClick={() => editTeam(t)}><Pencil size={13} /> Edit</button>
-                      <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>
+                      {!(etLocked && t.id === "team_edgetrader") && <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>}
                     </div>
                   </div>
                 );
@@ -1660,7 +1667,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                     <div className="ags-list-acts">
                       <button className="btn primary" disabled={!members.length} onClick={() => launchTeam(t)}><Rocket size={13} /> Brief the team</button>
                       <button className="btn ghost" title="Edit" onClick={() => editTeam(t)}><Pencil size={13} /></button>
-                      <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>
+                      {!(etLocked && t.id === "team_edgetrader") && <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>}
                     </div>
                   </div>
                 );
