@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { Plus, Trash2, Check, RefreshCw, Plug, Save, Download, Upload } from "lucide-react";
 import ModelPicker from "./ModelPicker.jsx";
 import { bridge, isWeb } from "../bridge/index.js";
+import { madavAlert, madavConfirm } from "../dialogs.jsx";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 
@@ -126,7 +127,7 @@ export default function ModelConfig({ onChanged }) {
         for (const k of RESTORE_KEYS) if (k in j.settings) incoming[k] = j.settings[k];
         // authBaseUrl controls which server receives the auth token — never accept it silently.
         if (incoming.authBaseUrl) {
-          const keep = window.confirm(`This backup wants to change the account server URL to "${incoming.authBaseUrl}" — keep it?\n\n(Cancel restores everything else but leaves your account server unchanged.)`);
+          const keep = await madavConfirm(`This backup wants to change the account server URL to "${incoming.authBaseUrl}" — keep it?\n\n(Cancel restores everything else but leaves your account server unchanged.)`, { okLabel: "Keep it" });
           if (!keep) delete incoming.authBaseUrl;
         }
         // Every provider must point at an http(s) URL — anything else gets dropped, not restored.
@@ -137,10 +138,10 @@ export default function ModelConfig({ onChanged }) {
           else badProfiles.push((p && p.name) || pid);
         }
         incoming.profiles = cleanProfiles;
-        if (badProfiles.length) alert(`These providers were skipped — their server URL must start with http:// or https://:\n\n${badProfiles.join("\n")}`);
+        if (badProfiles.length) madavAlert(`These providers were skipped — their server URL must start with http:// or https://:\n\n${badProfiles.join("\n")}`);
         if (!Object.keys(incoming.profiles).length) { setStatus("No valid providers in that backup — nothing restored."); return; }
         if (!incoming.profiles[incoming.activeProfileId]) incoming.activeProfileId = Object.keys(incoming.profiles)[0];
-        if (!window.confirm("Restore this backup? Your current providers, agents, teams and preferences will be REPLACED.")) return;
+        if (!(await madavConfirm("Restore this backup? Your current providers, agents, teams and preferences will be REPLACED.", { okLabel: "Restore" }))) return;
         await persist(incoming);
         setSelId(incoming.activeProfileId || Object.keys(incoming.profiles)[0]);
         setStatus("Backup restored.");

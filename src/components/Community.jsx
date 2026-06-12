@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 import { Pin, Lock, Trash2, ArrowLeft, Plus, MessageSquare } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+import { madavConfirm } from "../dialogs.jsx";
 
 const CATEGORIES = [
   { id: "general", label: "General" },
@@ -172,7 +173,7 @@ function ThreadView({ id, isAdmin, onBack }) {
   };
 
   const mod = async (patch) => {
-    if (patch.delete && !window.confirm("Delete this thread permanently?")) return;
+    if (patch.delete && !(await madavConfirm("Delete this thread permanently?", { okLabel: "Delete" }))) return;
     const r = await (bridge.apiCall ? bridge.apiCall("POST", `/community/threads/${encodeURIComponent(id)}/mod`, patch) : { error: "offline" });
     if (r && !r.error) {
       if (patch.delete) return onBack();

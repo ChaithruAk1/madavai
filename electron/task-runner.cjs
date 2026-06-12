@@ -103,6 +103,20 @@ async function runTask(task) {
     if (target.type === "project") {
       const project = store.getProject(target.projectId);
       if (!project) return { status: "error", output: "Project not found." };
+      // Workrooms combo: a project target may name a crew agent — the agent runs the
+      // task headless inside the room (its instructions+knowledge prepended, the room's
+      // folder as cwd, the run tagged with projectId for the room's track record).
+      if (target.agentId) {
+        const mission = require("./mission-runner.cjs");
+        const agent = mission.findAgent(cfg, target.agentId);
+        if (!agent) return { status: "error", output: "Agent not found — it may have been removed from the roster." };
+        const roomPrompt = `${store.projectSystem(project)}\n\n----- TASK -----\n${task.prompt || ""}`;
+        const r = await mission.runAgentHeadless({
+          agent, prompt: roomPrompt, cwd: project.folder || null, source,
+          profile: task.model ? profile : null, projectId: project.id,
+        });
+        return { status: r.ok ? "success" : "error", output: r.text.slice(0, 20000) };
+      }
       const sys = store.projectSystem(project) + (project.folder ? `\n\nLinked folder: ${project.folder}` : "");
       if (profile.kind === "anthropic") {
         const r = await streamChat(profile, [{ role: "system", content: sys }, ...history, { role: "user", content: task.prompt }], { onDelta: () => {} });

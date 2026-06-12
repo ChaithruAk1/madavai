@@ -1,6 +1,7 @@
 import { useEffect, useState, createElement } from "react";
 import { FolderPlus, FolderUp, Upload, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
 import { bridge, isWeb } from "../bridge/index.js";
+import { madavConfirm } from "../dialogs.jsx";
 
 // --- tiny markdown renderer (headings, bold, inline code, bullets, fenced code) ---
 function inline(t, k0 = 0) {
@@ -88,7 +89,7 @@ export default function Skills() {
 
   const toggleSkill = async (s) => { await bridge.setSkillEnabled(s.dir, s.enabled === false); await refresh(); };
   const deleteSkill = async (s) => {
-    if (!window.confirm(`Delete skill "${s.name}"?\n${s.dir}`)) return;
+    if (!(await madavConfirm(`Delete skill "${s.name}"?\n${s.dir}`, { okLabel: "Delete" }))) return;
     const r = await bridge.deleteSkill(s.dir);
     setStatus(r?.error || `Deleted ${s.name}`);
     const l = await refresh(); setSel(null); setDetail(null); if (l && l[0]) select(l[0]);

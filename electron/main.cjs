@@ -516,6 +516,11 @@ ipcMain.handle("madav:getProject", (_e, id) => store.getProject(id));
 ipcMain.handle("madav:createProject", (_e, name) => store.createProject(name));
 ipcMain.handle("madav:updateProject", (_e, { id, patch }) => store.updateProject(id, patch));
 ipcMain.handle("madav:deleteProject", (_e, id) => store.deleteProject(id));
+// Workrooms crew: assign/unassign agents to a room (project.agentIds[]).
+ipcMain.handle("madav:assignProjectAgent", (_e, { projectId, agentId }) => store.assignAgent(projectId, agentId));
+ipcMain.handle("madav:unassignProjectAgent", (_e, { projectId, agentId }) => store.unassignAgent(projectId, agentId));
+// Per-room agent track record: agent-history events filtered by projectId.
+ipcMain.handle("madav:getProjectAgentHistory", (_e, projectId) => require("./agent-history.cjs").listForProject(projectId, 100));
 
 ipcMain.handle("madav:addKnowledgeText", (_e, { projectId, name, content }) => store.addKnowledge(projectId, { name, type: "text", content }));
 // Knowledge import — now also parses PDF and Word (.docx) into text via lazy-loaded

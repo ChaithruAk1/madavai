@@ -53,6 +53,13 @@ export default function Scheduler() {
   const [keepAwake, setKeepAwake] = useState(false);
   const [editing, setEditing] = useState(null);   // draft task in modal, or null
   const [busyRun, setBusyRun] = useState(null);    // task id running now
+  const [runsFor, setRunsFor] = useState(null);    // { task, runs } — the Run history modal
+
+  // Run history: the engine keeps each task's last 20 runs (status + full output).
+  const openRuns = async (t) => {
+    const runs = (bridge.getRuns ? await bridge.getRuns(t.id) : []) || [];
+    setRunsFor({ task: t, runs });
+  };
 
   const load = async () => setTasks(await bridge.listTasks());
   useEffect(() => {
@@ -90,7 +97,14 @@ export default function Scheduler() {
     closeModal(); load();
   };
   const del = async (id) => { await bridge.deleteTask(id); load(); };
-  const runNow = async (id) => { setBusyRun(id); try { await bridge.runTaskNow(id); load(); } finally { setBusyRun(null); } };
+  const runNow = async (id) => {
+    setBusyRun(id);
+    try {
+      await bridge.runTaskNow(id); load();
+      const t = tasks.find((x) => x.id === id);
+      if (t) openRuns(t); // surface the fresh output immediately — no hunting for it
+    } finally { setBusyRun(null); }
+  };
 
   const shown = tasks
     .filter((t) => !q || (t.name + " " + (t.description || "")).toLowerCase().includes(q.toLowerCase()))
@@ -150,6 +164,7 @@ export default function Scheduler() {
             </div>
             <span className="sched-freq">{scheduleText(t.schedule)}</span>
             <span className="mo-sub" style={{ width: 90, textAlign: "right" }}>{rel(t.lastRun)}</span>
+            <button className="btn" title="Run history & output" onClick={(e) => { e.stopPropagation(); openRuns(t); }} style={{ padding: "5px 9px" }}><ListChecks size={13} /></button>
             <button className="btn" onClick={(e) => { e.stopPropagation(); runNow(t.id); }} disabled={busyRun === t.id} style={{ padding: "5px 9px" }}>
               {busyRun === t.id ? <Loader2 size={13} className="spin" /> : <Play size={13} />}
             </button>
@@ -163,8 +178,31 @@ export default function Scheduler() {
         <WebhooksCard agents={agents} teams={teams} tasks={tasks} />
       </div>
 
+      {runsFor && (
+        <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setRunsFor(null); }}>
+          <div className="pj-create" style={{ width: 680 }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <h2 style={{ flex: 1, margin: 0, fontSize: 18 }}>Run history — {runsFor.task.name}</h2>
+              <button className="icon-btn" onClick={() => setRunsFor(null)}><X size={16} /></button>
+            </div>
+            {runsFor.runs.length === 0 ? (
+              <div className="mo-sub" style={{ margin: "14px 0" }}>No runs yet — press ▶ on the task to run it now.</div>
+            ) : runsFor.runs.map((r, i) => (
+              <div key={i} style={{ border: "1px solid var(--line)", borderRadius: 12, padding: "10px 12px", margin: "10px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 99, background: r.status === "success" ? "var(--ok)" : "var(--danger)", flex: "none" }} />
+                  <span style={{ fontSize: 12.5, fontWeight: 600 }}>{r.status === "success" ? "Success" : "Error"}</span>
+                  <span className="mo-sub">{rel(r.at)}</span>
+                </div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.5, whiteSpace: "pre-wrap", maxHeight: 240, overflow: "auto" }}>{r.output || "(no output)"}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {editing && (editing._wizard
-        ? <WizardModal draft={editing} setDraft={setEditing} projects={projects} onSave={saveTask} onClose={closeModal} />
+        ? <WizardModal draft={editing} setDraft={setEditing} projects={projects} agents={agents} onSave={saveTask} onClose={closeModal} />
         : <TaskModal draft={editing} setDraft={setEditing} projects={projects} agents={agents} teams={teams} modelGroups={modelGroups} onSave={saveTask} onClose={closeModal} />
       )}
     </div>
@@ -291,10 +329,24 @@ function TaskModal({ draft, setDraft, projects, agents = [], teams = [], modelGr
             <span className="ag-hint" style={{ margin: 0 }}>Summarizes recent conversations, agent work and today's schedules each run — set it daily at your morning time. The prompt field adds extra topics to cover.</span>
           )}
           {d.target?.type === "project" && (
-            <select className="model-search" style={{ marginBottom: 0, width: "auto", flex: 1 }} value={d.target?.projectId || ""} onChange={(e) => setTarget({ projectId: e.target.value })}>
-              <option value="">Select project…</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <>
+              <select className="model-search" style={{ marginBottom: 0, width: "auto", flex: 1 }} value={d.target?.projectId || ""} onChange={(e) => setTarget({ projectId: e.target.value })}>
+                <option value="">Select workroom…</option>
+                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              {/* Workrooms combo: optionally a crew agent runs the task inside the room
+                  (room brief + knowledge + folder; the run lands in the room's track record). */}
+              <select className="model-search" style={{ marginBottom: 0, width: "auto", flex: 1 }} value={d.target?.agentId || ""} onChange={(e) => setTarget({ agentId: e.target.value || undefined })}>
+                <option value="">Run as: the room itself</option>
+                {(() => {
+                  const crewIds = (projects.find((p) => p.id === d.target?.projectId)?.agentIds) || [];
+                  const crew = agents.filter((a) => crewIds.includes(a.id));
+                  const rest = agents.filter((a) => !crewIds.includes(a.id));
+                  return [...crew.map((a) => <option key={a.id} value={a.id}>{a.name || "Untitled agent"} · crew</option>),
+                          ...rest.map((a) => <option key={a.id} value={a.id}>{a.name || "Untitled agent"}</option>)];
+                })()}
+              </select>
+            </>
           )}
           {d.target?.type === "agent" && (
             <>
@@ -368,7 +420,7 @@ function Opt({ n, label, sub, active, onClick }) {
 }
 
 // Guided, conversational-style task builder (Madav's "Create with Madav").
-function WizardModal({ draft, setDraft, projects, onSave, onClose }) {
+function WizardModal({ draft, setDraft, projects, agents = [], onSave, onClose }) {
   const [step, setStep] = useState(0);
   const [adaptive, setAdaptive] = useState(true); // chat-driven setup is the default
   const d = draft;
@@ -465,10 +517,16 @@ function WizardModal({ draft, setDraft, projects, onSave, onClose }) {
               <Opt n="3" label="Let's Collaborate" sub="Cowork on a folder (file & shell access)" active={tg.type === "folder"} onClick={() => setTarget({ type: "folder" })} />
             </div>
             {tg.type === "project" && (
-              <select className="model-search" style={{ marginTop: 10 }} value={tg.projectId || ""} onChange={(e) => setTarget({ projectId: e.target.value })}>
-                <option value="">Select project…</option>
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              <>
+                <select className="model-search" style={{ marginTop: 10 }} value={tg.projectId || ""} onChange={(e) => setTarget({ projectId: e.target.value })}>
+                  <option value="">Select workroom…</option>
+                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <select className="model-search" style={{ marginTop: 8 }} value={tg.agentId || ""} onChange={(e) => setTarget({ agentId: e.target.value || undefined })}>
+                  <option value="">Run as: the room itself</option>
+                  {agents.map((a) => <option key={a.id} value={a.id}>{a.name || "Untitled agent"}</option>)}
+                </select>
+              </>
             )}
             {tg.type === "folder" && (
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
@@ -488,7 +546,7 @@ function WizardModal({ draft, setDraft, projects, onSave, onClose }) {
             <input className="model-search" value={d.description} placeholder="Short summary" onChange={(e) => set({ description: e.target.value })} />
             <div className="wiz-summary">
               <div><b>Runs:</b> {scheduleText(d.schedule)}</div>
-              <div><b>Where:</b> {tg.type === "folder" ? `Cowork · ${tg.folder || "(choose a folder)"}` : tg.type === "project" ? "Project" : "Plain chat"}</div>
+              <div><b>Where:</b> {tg.type === "folder" ? `Cowork · ${tg.folder || "(choose a folder)"}` : tg.type === "project" ? `Workroom${tg.agentId ? " · run by a crew agent" : ""}` : "Plain chat"}</div>
               <div style={{ color: "var(--text-2)", marginTop: 4, whiteSpace: "pre-wrap" }}>{d.prompt}</div>
             </div>
           </>

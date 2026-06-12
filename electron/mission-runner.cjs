@@ -69,7 +69,7 @@ function guardWebhookRun(agent, prompt) {
   return { agent: safeAgent, prompt: WEBHOOK_UNTRUSTED_MARKER + "\n\n" + (prompt || "") };
 }
 
-async function runAgentHeadless({ agent, prompt, cwd = null, source = "schedule", depth = 0, profile = null, signal = null, learn = true }) {
+async function runAgentHeadless({ agent, prompt, cwd = null, source = "schedule", depth = 0, profile = null, signal = null, learn = true, projectId = null }) {
   if (source === "webhook") ({ agent, prompt } = guardWebhookRun(agent, prompt));
   const cfg = settings.load();
   const prof = profile || profileFor(agent.model, cfg);
@@ -126,7 +126,7 @@ async function runAgentHeadless({ agent, prompt, cwd = null, source = "schedule"
     text = "ERROR: " + String((e && e.message) || e).slice(0, 2000);
   }
   if (!text.trim()) { ok = false; text = text || "(no output)"; }
-  history.record({ agentId: agent.id, name: agent.name, ok, ms: Date.now() - started, tokens: Math.round(((prompt || "").length + text.length) / 4), source, summary: text.slice(0, 200) });
+  history.record({ agentId: agent.id, name: agent.name, ok, ms: Date.now() - started, tokens: Math.round(((prompt || "").length + text.length) / 4), source, projectId: projectId || undefined, summary: text.slice(0, 200) });
   if (learn && ok) memory.learnFromMission(prof, agent, prompt, text); // fire-and-forget
   return { ok, text };
 }

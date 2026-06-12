@@ -35,6 +35,11 @@ function list(agentId, limit = 50) {
   return readAll().filter((e) => e.agentId === agentId).slice(-limit).reverse();
 }
 
+// Workrooms: newest-first run list for one room (events recorded with a projectId).
+function listForProject(projectId, limit = 100) {
+  return readAll().filter((e) => e.projectId === projectId).slice(-limit).reverse();
+}
+
 // One stats object per agent: { missions, clean, cleanPct, tokens, ms, lastAt }.
 function stats() {
   const out = {};
@@ -53,4 +58,4 @@ function stats() {
   return out;
 }
 
-module.exports = { record, list, stats };
+module.exports = { record, list, listForProject, stats };

@@ -28,10 +28,16 @@ runs. Manage providers and keys in Settings → Model configuration.
 **Ask first** (default — approve each change), **Accept edits** (auto file edits, ask for
 commands), **Bypass** (act, trust everything), **Plan** (read-only). Reads are always free.
 
-## Projects
-Knowledge-grounded workspaces: custom instructions + knowledge files (text, and PDF/Word
-which Projects parse) + persisted conversations that survive restarts. A project can link
-a local folder or a GitHub repo so its conversations get file tools over that code.
+## Workrooms (formerly Projects)
+Rooms staffed by agent crews. Each room has an identity (auto color + glyph), a brief
+(standing instructions), a knowledge shelf (text, and PDF/Word which the desktop parses),
+an optional linked folder or GitHub repo, and a crew of assigned agents. The landing shelf
+shows wide room banners with a pulse line (runs today / last activity), the crew's faces,
+and a knowledge meter. Inside, three zones: the brief (left), a unified work feed of every
+chat and task run the room produced — filterable by agent (center), and the crew (right),
+where "Put to work" launches an agent with the room's brief + knowledge + folder. Runs
+launched from a room are tagged to it, building each agent's per-room track record; the
+Scheduler can target a room alone or a room + agent combo.
 
 ## Agents (the workforce)
 Build named specialist agents by talking to a Designer, test them on a live Bench, then

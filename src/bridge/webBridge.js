@@ -72,6 +72,19 @@ const rid = (p) => {
   catch { return p + Math.random().toString(36).slice(2, 10); }
 };
 
+// Workrooms identity — deterministic {color, glyph} per room. KEEP IN SYNC with
+// electron/projects-store.cjs and autoIdentity in src/components/Agents.jsx.
+const WR_COLORS = ["#13c2d6", "#8b7cf6", "#f4a261", "#e76f81", "#5fb573", "#d6a313", "#5e9bf2", "#c77dba"];
+const WR_GLYPHS = ["🜁", "✦", "◆", "⌘", "♟", "✺", "☄", "❖", "⚙", "🜃", "♜", "✤"];
+const wrHash = (s) => { let h = 0; for (let i = 0; i < (s || "").length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+const wrAutoIdentity = (seed) => ({ color: WR_COLORS[wrHash(seed) % WR_COLORS.length], glyph: WR_GLYPHS[wrHash(seed + "g") % WR_GLYPHS.length] });
+const wrNormalizeProject = (p) => {
+  if (!p) return p;
+  if (!p.identity || !p.identity.color) p.identity = wrAutoIdentity(p.id || p.name || "room");
+  if (!Array.isArray(p.agentIds)) p.agentIds = [];
+  return p;
+};
+
 // ---- IndexedDB for chat history (large capacity, so it can't crowd out settings/keys in localStorage) ----
 const IDB_NAME = "madav", IDB_STORE = "sessions";
 const LEGACY_IDB_NAME = "brain" + "edge"; // pre-rename DB; best-effort one-time copy below.
@@ -888,9 +901,24 @@ export const webBridge = {
   async removeSaved(id) { const all = LS.get("be.saved", {}); delete all[id]; LS.set("be.saved", all); return true; },
 
   // ---- projects (localStorage) ----
-  async listProjects() { return Object.values(LS.get("be.projects", {})).sort((a, b) => b.createdAt - a.createdAt); },
-  async getProject(id) { return LS.get("be.projects", {})[id] || null; },
-  async createProject(name) { const all = LS.get("be.projects", {}); const p = { id: rid("prj_"), name: name || "Untitled", instructions: "", knowledge: [], createdAt: Date.now() }; all[p.id] = p; LS.set("be.projects", all); return p; },
+  // Workrooms: identity {color,glyph} + agentIds[] crew — KEEP IN SYNC with
+  // electron/projects-store.cjs (normalize + autoIdentity, same palette as Agents.jsx).
+  async listProjects() {
+    const convs = Object.values(LS.get("be.convs", {}));
+    return Object.values(LS.get("be.projects", {})).map(wrNormalizeProject).map((p) => {
+      const mine = convs.filter((c) => c.projectId === p.id);
+      return { ...p,
+        knowledgeCount: (p.knowledge || []).length,
+        knowledgeBytes: (p.knowledge || []).reduce((n, k) => n + String(k.content || "").length, 0),
+        convCount: mine.length, lastConvAt: mine.reduce((m, c) => Math.max(m, c.updatedAt || 0), 0),
+      };
+    }).sort((a, b) => b.createdAt - a.createdAt);
+  },
+  async getProject(id) { return wrNormalizeProject(LS.get("be.projects", {})[id] || null); },
+  async createProject(name) { const all = LS.get("be.projects", {}); const id = rid("prj_"); const p = { id, name: name || "Untitled", instructions: "", knowledge: [], agentIds: [], identity: wrAutoIdentity(id), createdAt: Date.now() }; all[p.id] = p; LS.set("be.projects", all); return p; },
+  async assignProjectAgent(projectId, agentId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p || !agentId) return null; if (!p.agentIds.includes(agentId)) p.agentIds.push(agentId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
+  async unassignProjectAgent(projectId, agentId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p) return null; p.agentIds = p.agentIds.filter((x) => x !== agentId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
+  async getProjectAgentHistory() { return []; }, // web: agent runs aren't recorded per-room (desktop feature)
   async updateProject(id, patch) { const all = LS.get("be.projects", {}); all[id] = { ...all[id], ...patch }; LS.set("be.projects", all); return all[id]; },
   async deleteProject(id) { const all = LS.get("be.projects", {}); delete all[id]; LS.set("be.projects", all); return true; },
   async addKnowledgeText(projectId, name, content) { const all = LS.get("be.projects", {}); const p = all[projectId]; p.knowledge = p.knowledge || []; p.knowledge.push({ id: rid("kn_"), name, type: "text", content }); LS.set("be.projects", all); return p; },

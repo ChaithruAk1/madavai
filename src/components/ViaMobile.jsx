@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Smartphone, Trash2, RefreshCw, FolderInput, ChevronDown, ChevronRight, HelpCircle, ExternalLink } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+import { madavConfirm } from "../dialogs.jsx";
 
 // Hide the bot's @username in status text (privacy).
 const maskBot = (t) => String(t || "").replace(/@\w+/g, "@•••••");
@@ -51,7 +52,7 @@ export default function ViaMobile({ onSettingsChanged } = {}) {
     return () => clearInterval(iv);
   }, []);
 
-  const clear = async () => { if (window.confirm("Delete the entire Via Mobile request history? This cannot be undone.")) { await bridge.clearViaMobile(); load(); } };
+  const clear = async () => { if (await madavConfirm("Delete the entire Via Mobile request history? This cannot be undone.", { okLabel: "Delete all" })) { await bridge.clearViaMobile(); load(); } };
   const removeOne = async (id) => { await bridge.removeViaMobile(id); load(); };
   const online = status && status.running;
 

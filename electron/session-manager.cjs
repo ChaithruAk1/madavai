@@ -130,6 +130,7 @@ class SessionManager {
         ms: (data && data.duration_ms) || 0,
         tokens: Math.round(((t.promptChars || 0) + (t.replyChars || 0)) / 4),
         source: "chat",
+        projectId: s.projectId || undefined, // Workrooms: per-room track record
         summary: (ok ? (t.replyText || "") : ("error: " + ((data && data.message) || ""))).slice(0, 200),
       });
     } catch {}
@@ -309,6 +310,15 @@ class SessionManager {
     if (s.team) return this._teamTurn(sessionId, userText, profile);
     if (s.mode === "project") return this._projectTurn(sessionId, userText, profile, images);
     if (AGENT_MODES.has(s.mode)) return this._agentTurn(sessionId, userText, profile, images);
+
+    // Workrooms: a CHAT run launched from a room (e.g. a crew agent without file tools)
+    // carries the room's projectId — inject the room's instructions + knowledge once,
+    // up front. Same one-shot pattern as the cowork injection in _agentTurn.
+    if (s.projectId && !s._projInjected) {
+      const roomProject = store.getProject(s.projectId);
+      if (roomProject) userText = `${store.projectSystem(roomProject)}\n\n----- TASK -----\n${userText}`;
+      s._projInjected = true;
+    }
 
     // Chat: if skills/connectors are configured and the model speaks OpenAI tools,
     // run the lightweight tool loop (skills + connectors, no file/shell). Else plain chat.

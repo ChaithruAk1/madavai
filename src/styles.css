@@ -2794,3 +2794,99 @@ textarea.model-search { border-radius: 14px; }
 :root[data-theme="light"] .composer::before { display: none; }
 :root[data-theme="light"] .composer { border-color: var(--accent); box-shadow: inset 0 0 0 0.5px var(--accent); background: #fff; }
 :root[data-theme="light"] .composer:focus-within { box-shadow: inset 0 0 0 0.5px var(--accent), 0 0 0 3px var(--accent-weak); }
+
+/* ================= WORKROOMS — projects as rooms staffed by agent crews ================= */
+/* Shelf: wide horizontal banners (identity spine + glyph, pulse, crew strip, knowledge meter) */
+.wr { height: 100%; overflow-y: auto; padding: 24px; }
+.wr-shelf { display: flex; flex-direction: column; gap: 12px; max-width: 1100px; margin: 18px auto 0; }
+.wr-banner { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 0 18px 0 0; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(90deg, color-mix(in srgb, var(--wr) 10%, var(--bg-1)), var(--bg-1) 45%); cursor: pointer; min-height: 84px; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; overflow: hidden; }
+.wr-banner:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--wr) 55%, var(--line)); box-shadow: 0 6px 18px color-mix(in srgb, var(--wr) 12%, transparent); }
+.wr-spine { align-self: stretch; width: 54px; flex: none; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, color-mix(in srgb, var(--wr) 38%, transparent), color-mix(in srgb, var(--wr) 14%, transparent)); border-right: 2px solid color-mix(in srgb, var(--wr) 50%, transparent); }
+.wr-glyph { font-size: 22px; color: var(--wr); }
+.wr-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 14px 0; }
+.wr-name { font-size: 19px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wr-pulse { font-size: 12px; color: var(--text-2); }
+.wr-crewstrip { display: flex; align-items: center; flex: none; }
+.wr-face { display: inline-flex; border-radius: 10px; margin-left: -8px; }
+.wr-face:first-child { margin-left: 0; }
+.wr-more, .wr-nocrew { font-size: 11px; color: var(--text-2); margin-left: 6px; white-space: nowrap; }
+.wr-meterwrap { flex: none; width: 110px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.wr-meter { width: 100%; height: 5px; border-radius: 99px; background: color-mix(in srgb, var(--wr) 12%, var(--line)); overflow: hidden; }
+.wr-meterfill { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--wr), color-mix(in srgb, var(--wr) 55%, #ffffff)); }
+.wr-meterlabel { font-size: 10.5px; color: var(--text-2); }
+
+/* Room interior: header spine + 3 zones (brief / work feed / crew) */
+.wr-roomwrap { height: 100%; overflow-y: auto; padding: 24px; }
+.wr-roomhead { display: flex; align-items: center; gap: 14px; max-width: 1280px; margin: 10px auto 16px; padding: 16px 18px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--wr) 30%, var(--line)); background: linear-gradient(90deg, color-mix(in srgb, var(--wr) 16%, var(--bg-1)), var(--bg-1) 60%); }
+.wr-roomglyph { width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--wr); border-radius: 12px; background: color-mix(in srgb, var(--wr) 14%, transparent); border: 1px solid color-mix(in srgb, var(--wr) 40%, transparent); }
+.wr-roomtitle { flex: 1; min-width: 0; }
+.wr-roomname { margin: 0; font-size: 24px; font-weight: 750; }
+.wr-zones { display: grid; grid-template-columns: 290px minmax(0, 1fr) 300px; gap: 16px; max-width: 1280px; margin: 0 auto; align-items: start; }
+.wr-brief, .wr-crewzone { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.wr-sec { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--bg-1); }
+.wr-sechead { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin-bottom: 8px; }
+
+/* knowledge as book-spine rows */
+.wr-shelfrows { display: flex; flex-direction: column; gap: 6px; }
+.wr-book { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; }
+.wr-bookspine { width: 4px; align-self: stretch; border-radius: 99px; background: linear-gradient(180deg, var(--wr), color-mix(in srgb, var(--wr) 40%, transparent)); flex: none; }
+.wr-booktitle { flex: 1; min-width: 0; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* unified work feed */
+.wr-feed { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.wr-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.wr-chips .chip { cursor: pointer; }
+.wr-chips .chip.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.wr-feedlist { display: flex; flex-direction: column; gap: 6px; }
+.wr-feeditem { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; transition: border-color .12s ease, background .12s ease; }
+.wr-feeditem:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.wr-feedtitle { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wr-feedagent { font-size: 10.5px; padding: 1px 7px; }
+
+/* the crew zone */
+.wr-crewcard { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-1); }
+.wr-crewinfo { flex: 1; min-width: 0; }
+.wr-crewname { font-size: 13.5px; font-weight: 650; }
+.wr-crewrecord { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+.wr-crewbtns { display: flex; flex-direction: column; gap: 5px; align-items: stretch; flex: none; }
+.wr-recruit { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); padding: 4px 2px; }
+
+@media (max-width: 1100px) { .wr-zones { grid-template-columns: 1fr; } }
+
+/* Composer speaker (spoken replies) — accent tint while on; muted = plain bare icon */
+.composer-pill .icon-btn.bare.speak-on { color: var(--accent); }
+
+/* Session-context chips (room / agent / project) — pinned to the hero's TOP LEFT so they
+   live in one consistent place, instead of floating centered under the composer. */
+.hero { position: relative; }
+.hero-ctx { position: absolute; top: 14px; left: 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; z-index: 5; }
+.hero-ctx .hero-opts { margin: 0; justify-content: flex-start; }
+
+/* Workroom brief/knowledge cards — user-resizable (drag the bottom-right corner).
+   Content scrolls inside, so a long shelf never overlaps the section header. */
+.wr-sec.wr-resizable { resize: vertical; overflow: auto; min-height: 150px; max-height: 75vh; }
+
+/* ============ RESIZABLE MODALS — app-wide fundamental (user mandate 2026-06-12) ============
+   Every dialog card (.pj-create: task editor, wizards, create dialogs, agent questions,
+   themed alerts) can be resized by dragging its bottom-right corner. Inner inputs,
+   textareas and rows are fluid (width: 100% of the card), so everything grows with the
+   window — full details on big screens, scroll appears only when content can't fit. */
+.pj-create { resize: both; overflow: auto; min-width: 340px; min-height: 180px; max-width: 96vw; max-height: 92vh; }
+.pj-create textarea.model-search, .pj-create input.model-search { width: 100%; box-sizing: border-box; }
+.pj-create textarea { min-height: 70px; }
+/* Selects keep their natural size but never overflow a narrow card */
+.pj-create select.model-search { max-width: 100%; }
+
+/* Knowledge book-spines open on click (viewer/editor modal) */
+.wr-book { cursor: pointer; transition: border-color .12s ease, background .12s ease; }
+.wr-book:hover { border-color: color-mix(in srgb, var(--wr) 45%, var(--line)); background: color-mix(in srgb, var(--wr) 6%, transparent); }
+
+/* Crew staffing panel — multi-select with living portraits (replaces the plain dropdown) */
+.wr-assign { margin-top: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 10px; background: var(--bg-1); }
+.wr-assignlist { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+.wr-assignrow { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid transparent; border-radius: 10px; background: none; cursor: pointer; text-align: left; width: 100%; color: inherit; }
+.wr-assignrow:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.wr-assignrow.on { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.wr-assignname { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wr-assigncheck { width: 20px; height: 20px; border-radius: 7px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; flex: none; }
+.wr-assigncheck.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }

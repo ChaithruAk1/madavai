@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare, Minus, Smile, AppWindow } from "lucide-react";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
+import { madavAlert } from "../dialogs.jsx";
 import ModelPicker from "./ModelPicker.jsx";
 import "../studio-designer.css";
 // The mentor's knowledge = the real Agent Guide, bundled at build time. The guide is
@@ -520,7 +521,7 @@ const rel = (ts) => {
 };
 const SOURCE_LABEL = { chat: "chat", team: "team", schedule: "scheduled", webhook: "webhook", handoff: "handoff", swarm: "swarm" };
 
-export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, activeValue, onSelectModel, onRefresh }) {
+export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, activeValue, onSelectModel, onRefresh, openAgentId, onOpenedAgent }) {
   const [agents, setAgents] = useState([]);
   const [teams, setTeams] = useState([]);
   const [recentRuns, setRecentRuns] = useState([]); // past agent/team conversations (scoped to this screen)
@@ -947,7 +948,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const removeAgent = async (id) => {
     const a = agents.find((x) => x.id === id);
     if (a && !canDelete(a)) {
-      alert("This worker belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
+      madavAlert("This worker belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
       return;
     }
     await persist(agents.filter((x) => x.id !== id));
@@ -980,7 +981,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     if (!bridge.importAgent) return;
     const r = await bridge.importAgent();
     if (r && r.agent) { await persist([...agents, { ...r.agent, identity: r.agent.identity || autoIdentity(r.agent.id) }]); }
-    else if (r && r.error) alert(r.error);
+    else if (r && r.error) madavAlert(r.error);
   };
   const exportAgentFile = async (agent) => {
     if (!bridge.exportAgent) return;
@@ -1003,7 +1004,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const removeTeam = async (id) => {
     // The EdgeTrader team is pack-managed, like its agents (Extras gate to remove).
     if (etLocked && id === "team_edgetrader") {
-      alert("The EdgeTrader team belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
+      madavAlert("The EdgeTrader team belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
       return;
     }
     await persistTeams(teams.filter((t) => t.id !== id));
@@ -1036,6 +1037,15 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   });
 
   const hasModel = !!(activeValue && activeValue.split("::")[1]);
+
+  // Deep-link from elsewhere in the app (e.g. the attached-agent chip in a chat):
+  // open straight into THIS agent's Studio editor instead of the list.
+  useEffect(() => {
+    if (!openAgentId || !agents.length) return;
+    const a = agents.find((x) => x.id === openAgentId);
+    if (a) openStudio(a);
+    onOpenedAgent && onOpenedAgent();
+  }, [openAgentId, agents.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openStudio = (agent) => {
     if (!hasModel) { setNeedModel(true); setView("list"); return; } // agents run on a model — pick one first

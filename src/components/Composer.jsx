@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder } from "lucide-react";
+import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder, Volume2, VolumeX } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+import { madavAlert } from "../dialogs.jsx";
 // Two-channel build flag: public builds without Voice fold this to false and the mic code drops out.
 const FEAT_VOICE = import.meta.env.VITE_FEAT_VOICE !== "0";
 import GithubContent from "./GithubContent.jsx";
@@ -39,8 +40,24 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   }, []);
 
   const loadSkills = () => { bridge.listSkills && bridge.listSkills().then((l) => setSkills((l || []).filter((s) => s.enabled !== false))).catch(() => {}); };
-  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || []).filter((c) => c.enabled !== false)); setVoiceOn(FEAT_VOICE && ((s && s.extras) || {}).voice !== false); }).catch(() => {}); };
+  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || []).filter((c) => c.enabled !== false)); setVoiceOn(FEAT_VOICE && ((s && s.extras) || {}).voice !== false); setSpeakOn(!!(s && s.voiceSpeak)); }).catch(() => {}); };
   const [voiceOn, setVoiceOn] = useState(FEAT_VOICE); // Extras switchboard: hide the mic when voice input is off
+  // Spoken replies (agent voice): speaker button next to the mic toggles settings.voiceSpeak.
+  // Muting also silences any reply currently being read aloud. Both composer instances and
+  // App stay in sync via the "madav:voicespeak" window event.
+  const [speakOn, setSpeakOn] = useState(false);
+  const toggleSpeaker = async () => {
+    const next = !speakOn;
+    setSpeakOn(next);
+    if (!next && window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch {} } // mute = stop talking NOW
+    try { const s = await bridge.getSettings(); await bridge.saveSettings({ ...s, voiceSpeak: next }); } catch {}
+    try { window.dispatchEvent(new CustomEvent("madav:voicespeak", { detail: next })); } catch {}
+  };
+  useEffect(() => {
+    const sync = (e) => setSpeakOn(!!e.detail);
+    window.addEventListener("madav:voicespeak", sync);
+    return () => window.removeEventListener("madav:voicespeak", sync);
+  }, []);
   useEffect(() => { loadSkills(); loadConnectors(); }, []);
   useEffect(() => { if (cwd && bridge.listDir) bridge.listDir(cwd).then((l) => setDirFiles(l || [])).catch(() => setDirFiles([])); else setDirFiles([]); }, [cwd]);
 
@@ -223,7 +240,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
       try {
         const r = await bridge.winSpeech({ timeoutSec: 12 });
         if (r && r.text) setText((p) => (p ? p + " " : "") + r.text);
-        else if (r && r.error) alert(r.error);
+        else if (r && r.error) madavAlert(r.error);
       } catch {}
       setListening(false);
       ref.current && ref.current.focus();
@@ -253,21 +270,21 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
               // No Whisper key → switch this machine to the built-in Windows voice
               // engine permanently (no key needed). One more tap and it just works.
               try { localStorage.setItem("be.voice.engine", "win"); } catch {}
-              alert("No speech key found — switched to the built-in Windows voice engine. Tap the mic again and speak.");
+              madavAlert("No speech key found — switched to the built-in Windows voice engine. Tap the mic again and speak.");
             }
-            else if (r && r.error) alert(r.error);
-          } catch (e) { alert("Transcription failed: " + String((e && e.message) || e)); }
+            else if (r && r.error) madavAlert(r.error);
+          } catch (e) { madavAlert("Transcription failed: " + String((e && e.message) || e)); }
           ref.current && ref.current.focus();
         };
         rec.start();
         setListening(true);
         recRef.current = rec;
         return;
-      } catch { setListening(false); alert("Microphone access was blocked — allow it in your system settings and try again."); return; }
+      } catch { setListening(false); madavAlert("Microphone access was blocked — allow it in your system settings and try again."); return; }
     }
     // Web fallback: browser-native speech recognition where available.
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert("Voice input needs the desktop app (with an OpenAI or Groq key for Whisper), or Chrome on the web."); return; }
+    if (!SR) { madavAlert("Voice input needs the desktop app (with an OpenAI or Groq key for Whisper), or Chrome on the web."); return; }
     try {
       const rec = new SR();
       rec.lang = "en-US"; rec.interimResults = false; rec.continuous = false;
@@ -379,7 +396,14 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
           <textarea ref={ref} rows={1} value={text} placeholder={placeholder} onChange={grow} onKeyDown={onKey} onPaste={onPaste} />
 
           {/* Gemini contract: the mic is always there; the round theme-colored send
-              button slides in beside it the moment there's something to send. */}
+              button slides in beside it the moment there's something to send.
+              The speaker beside it toggles spoken replies (mute stops speech instantly). */}
+          {voiceOn && (
+            <button className={`icon-btn bare ${speakOn ? "speak-on" : ""}`} onClick={toggleSpeaker}
+              title={speakOn ? "Spoken replies: on — click to mute" : "Spoken replies: muted — click to have answers read aloud"}>
+              {speakOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
+          )}
           {voiceOn && <button className={`icon-btn bare ${listening ? "rec" : ""}`} onClick={toggleMic} title="Voice input"><Mic size={18} /></button>}
           {busy ? (
             <button className="send pop" onClick={onStop} title="Stop" style={{ background: "var(--bg-3)" }}><Square size={14} /></button>

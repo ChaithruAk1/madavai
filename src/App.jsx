@@ -10,7 +10,7 @@ import Settings from "./components/Settings.jsx";
 import Connectors from "./components/Connectors.jsx";
 import Skills from "./components/Skills.jsx";
 import Plugins from "./components/Plugins.jsx";
-import ProjectsBrowser from "./components/ProjectsBrowser.jsx";
+import Workrooms from "./components/Workrooms.jsx";
 import Consumption from "./components/Consumption.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
@@ -52,6 +52,7 @@ import MadavMark from "./components/MadavMark.jsx";
 import { PermissionPicker } from "./components/Topbar.jsx";
 import { bridge, isWeb } from "./bridge/index.js";
 import { extractArtifacts } from "./artifacts.js";
+import DialogHost, { madavAlert } from "./dialogs.jsx";
 
 // On the web, local-folder access uses the File System Access API (Chrome/Edge only).
 const folderInChromeEdge = isWeb && !(typeof window !== "undefined" && typeof window.showDirectoryPicker === "function");
@@ -299,8 +300,15 @@ export default function App() {
   }, []);
   useEffect(() => { settingsRef.current = settings; }, [settings]);
 
-  // Spoken replies: the composer toggle was removed (Gemini-clean bar) — the
-  // settings.voiceSpeak flag still drives read-aloud for users who had it on.
+  // Spoken replies: the composer's speaker button (next to the mic) toggles
+  // settings.voiceSpeak. It saves to settings directly, so keep App's in-memory
+  // copy fresh via the window event — otherwise settingsRef would go stale and
+  // read-aloud wouldn't react until a reload.
+  useEffect(() => {
+    const sync = (e) => setSettings((s) => (s ? { ...s, voiceSpeak: !!e.detail } : s));
+    window.addEventListener("madav:voicespeak", sync);
+    return () => window.removeEventListener("madav:voicespeak", sync);
+  }, []);
 
   const isAgentMode = mode === "cowork" || mode === "code";
 
@@ -345,7 +353,11 @@ export default function App() {
       if (!sessionRef.current) {
         const req = projectCtx
           ? { mode: "project", prompt: text, projectId: projectCtx.projectId, conversationId: projectCtx.conversationId, images }
-          : { mode, prompt: text, cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined, team: tm || undefined, resumeMission: opts.resumeMission || undefined };
+          : { mode, prompt: text, cwd: opts.cwd || cwd, permissionMode, conversationId: activeConvId, images, agent: ag || undefined, team: tm || undefined, resumeMission: opts.resumeMission || undefined,
+              // Workrooms: any run launched from a room (chat, cowork, agent) is tagged with
+              // the room's projectId — it lists in the room's work feed and gets the room's
+              // instructions + knowledge injected by the engine.
+              projectId: opts.projectId || (coworkProj ? coworkProj.id : undefined) };
         const { sessionId, conversationId } = await bridge.start(req);
         sessionRef.current = sessionId;
         if (!projectCtx && conversationId) setActiveConvId(conversationId);
@@ -433,11 +445,11 @@ export default function App() {
     }
   }, [autoContinue, mode, activeConvId, botRunning, cwd]); // eslint-disable-line
   const linkThisToPhone = async () => {
-    if (!activeConvId) { alert("Send a message first so this session is saved, then link it to your phone."); return; }
+    if (!activeConvId) { madavAlert("Send a message first so this session is saved, then link it to your phone."); return; }
     const title = (timeline.find((t) => t.role === "user")?.text || "Cowork session").slice(0, 60);
     const link = await bridge.setMobileLink({ sessionId: activeConvId, title, cwd: cwd || "" });
     setMobileLink(link);
-    if (!botRunning) alert("Linked ✓\n\nOpen Via Mobile and enable your Telegram bot. Then message the bot — it continues this session and replies appear here when you return.");
+    if (!botRunning) madavAlert("Linked ✓\n\nOpen Via Mobile and enable your Telegram bot. Then message the bot — it continues this session and replies appear here when you return.");
   };
   const unlinkPhone = async () => { await bridge.clearMobileLink(); setMobileLink(null); };
 
@@ -479,7 +491,7 @@ export default function App() {
   // Start a Cowork task scoped to a project: uses the project's linked folder as the
   // working dir and injects its instructions + knowledge as context.
   const startProjectCowork = async (project, text) => {
-    if (!project.folder) { alert("Link a folder to this project first (Files & sources) to start work in Let's Collaborate."); return; }
+    if (!project.folder) { madavAlert("Link a folder to this room first (Brief \u2192 Linked folder & repo) to start work in Let's Collaborate."); return; }
     setMode("cowork"); setChatMode("cowork");
     setProjectCtx(null); setCoworkProj({ id: project.id, name: project.name });
     setCwd(project.folder);
@@ -506,7 +518,7 @@ export default function App() {
   const pickFolder = async () => {
     const dir = await bridge.chooseFolder();
     if (typeof dir === "string" && dir) { setCwd(dir); sessionRef.current = null; setTimeline([]); setActiveConvId(null); }
-    else if (dir && dir.error) { alert(dir.error); } // e.g. web: folder access is desktop-only
+    else if (dir && dir.error) { madavAlert(dir.error); } // e.g. web: folder access is desktop-only
   };
   // Connect a GitHub repo: clone it (desktop) and use it as the working folder for Build.
   // window.prompt() is disabled in Electron, so we use an in-app input modal.
@@ -655,10 +667,34 @@ export default function App() {
     if (seed && mode === seed.target) {
       agentSeed.current = null;
       setAgentCtx(seed.agent);
-      if (seed.prompt) send(seed.prompt, [], seed.agent);
+      // Workrooms launch: re-attach the room scope (switchMode cleared it) so the run
+      // is tagged with the room's projectId and uses the room's folder.
+      if (seed.room) { setCoworkProj(seed.room); if (seed.cwd) setCwd(seed.cwd); }
+      if (seed.prompt) send(seed.prompt, [], seed.agent, null, seed.room ? { projectId: seed.room.id, cwd: seed.cwd || undefined } : {});
     }
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const clearAgent = () => { setAgentCtx(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
+  // Deep-link: clicking the attached agent's NAME opens that agent's editor directly
+  // (not the Agents list). Agents.jsx consumes openAgentId and calls back to clear it.
+  const [agentsOpenId, setAgentsOpenId] = useState(null);
+  const openAgentPage = (id) => { setAgentsOpenId(id); switchMode("agents"); };
+
+  // Workrooms: put a crew agent to work INSIDE a room — the run gets the agent's
+  // instructions + the room's knowledge (engine injects both), uses the room's linked
+  // folder when the agent has file tools, and is tagged with the room's projectId
+  // (work feed + per-room track record).
+  const startRoomAgent = (project, agent, prompt) => {
+    if (agent.model) selectModel(agent.model);
+    const wantsFolder = !!(agent.tools && (agent.tools.files || agent.tools.shell));
+    if (wantsFolder && !project.folder) {
+      madavAlert("Link a folder to this room first (Brief \u2192 Linked folder & repo) so this agent can use its file tools here.");
+      return;
+    }
+    const target = wantsFolder ? "cowork" : "chat";
+    agentSeed.current = { agent, prompt: prompt || null, target, room: { id: project.id, name: project.name }, cwd: wantsFolder ? project.folder : null };
+    modeCacheRef.current[target] = { convId: null, timeline: [] }; // fresh conversation per room mission
+    switchMode(target);
+  };
   // Return to the Agent Studio screen, keeping the conversation saved in history.
   const backToAgents = () => { switchMode("agents"); };
 
@@ -754,7 +790,7 @@ export default function App() {
             ? <Suspense fallback={<div className="skel-page"><div className="skel" style={{ width: 240, height: 26 }} /><div className="skel" style={{ height: 200 }} /></div>}><TestCenter onNavigate={switchMode} /></Suspense>
             : <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">Testing tools are excluded from distributed builds of Madav.</div></div></div>
         ) : isAgents ? (
-          <Agents onLaunch={startAgentSession} onLaunchTeam={startTeamSession} onOpenSession={openSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
+          <Agents onLaunch={startAgentSession} onLaunchTeam={startTeamSession} onOpenSession={openSession} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} openAgentId={agentsOpenId} onOpenedAgent={() => setAgentsOpenId(null)} />
         ) : isStudio ? (
           StudioLauncher ? <Suspense fallback={null}><StudioLauncher onStart={startStudio} /></Suspense> : <NotInBuild />
         ) : isTerminal ? (
@@ -763,12 +799,42 @@ export default function App() {
           <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
             tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : "models")} />
         ) : (mode === "project" && !projectCtx) ? (
-          <ProjectsBrowser onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} openId={projOpenId} />
+          <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} openId={projOpenId} />
         ) : (
           <div className="work-split">
             <div className="work-main">
               {timeline.length === 0 ? (
                 <div className="hero scroll">
+                  {/* Session context — pinned top-left for a consistent home across modes
+                      (was centered under the composer; user request 2026-06-12). */}
+                  {(projectCtx || coworkProj || agentCtx || teamCtx) && (
+                    <div className="hero-ctx">
+                      {projectCtx && (
+                        <div className="hero-opts">
+                          <button className="chip" onClick={backToProjects}>← Projects</button>
+                          <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
+                        </div>
+                      )}
+                      {coworkProj && !projectCtx && (
+                        <div className="hero-opts">
+                          <button className="chip" onClick={backToProject} title="Back to this project's page">← {coworkProj.name}</button>
+                          <span className="chip">Workroom task</span>
+                        </div>
+                      )}
+                      {(agentCtx || teamCtx) && (
+                        <div className="hero-opts">
+                          <button className="chip" onClick={backToAgents} title="Back to the Agents screen">← Agents</button>
+                          {agentCtx && (
+                            <span className="chip agent-chip" style={agentCtx.identity ? { color: agentCtx.identity.color, borderColor: `${agentCtx.identity.color}66`, background: `${agentCtx.identity.color}1f` } : undefined}>
+                              {agentCtx.identity ? <span>{agentCtx.identity.glyph}</span> : <Bot size={13} />}
+                              <span style={{ cursor: "pointer" }} title="Open this agent" onClick={() => openAgentPage(agentCtx.id)}>{agentCtx.name}</span>
+                              <button className="agent-chip-x" title="Detach agent" onClick={clearAgent}><X size={12} /></button>
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="hero-inner">
                     {teamCtx ? (
                       <div className="hero-greet hero-agent">
@@ -807,29 +873,6 @@ export default function App() {
                     )}
                     <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {modelRow}
-                    {projectCtx && (
-                      <div className="hero-opts">
-                        <button className="chip" onClick={backToProjects}>← Projects</button>
-                        <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
-                      </div>
-                    )}
-                    {coworkProj && !projectCtx && (
-                      <div className="hero-opts">
-                        <button className="chip" onClick={backToProject} title="Back to this project's page">← {coworkProj.name}</button>
-                        <span className="chip">Let's Collaborate · project task</span>
-                      </div>
-                    )}
-                    {(agentCtx || teamCtx) && (
-                      <div className="hero-opts">
-                        <button className="chip" onClick={backToAgents} title="Back to the Agents screen">← Agents</button>
-                        {agentCtx && (
-                          <span className="chip agent-chip" style={agentCtx.identity ? { color: agentCtx.identity.color, borderColor: `${agentCtx.identity.color}66`, background: `${agentCtx.identity.color}1f` } : undefined}>
-                            {agentCtx.identity ? <span>{agentCtx.identity.glyph}</span> : <Bot size={13} />} {agentCtx.name}
-                            <button className="agent-chip-x" title="Detach agent" onClick={clearAgent}><X size={12} /></button>
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               ) : (
@@ -878,14 +921,14 @@ export default function App() {
                       <button className="btn ghost" onClick={backToProject} style={{ padding: "4px 8px" }} title="Back to this project's page">← {coworkProj.name}</button>
                       <FolderKanban size={14} />
                       <span className="path">{coworkProj.name}</span>
-                      <span style={{ color: "var(--text-2)" }}>· Let's Collaborate task</span>
+                      <span style={{ color: "var(--text-2)" }}>· workroom task</span>
                     </div>
                   )}
                   {agentCtx && (
                     <div className="folder-bar agent-bar">
                       <button className="btn ghost" style={{ padding: "3px 9px" }} title="Back to the Agents screen" onClick={backToAgents}>← Agents</button>
                       {agentCtx.identity ? <span style={{ color: agentCtx.identity.color }}>{agentCtx.identity.glyph}</span> : <Bot size={14} />}
-                      <span className="path">{agentCtx.name}</span>
+                      <span className="path" style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 3 }} title="Open this agent" onClick={() => openAgentPage(agentCtx.id)}>{agentCtx.name}</span>
                       <span style={{ color: "var(--text-2)" }}>· custom agent</span>
                       <button className="btn ghost" style={{ padding: "3px 7px", marginLeft: "auto" }} title="Detach agent" onClick={clearAgent}><X size={12} /></button>
                     </div>
@@ -960,6 +1003,9 @@ export default function App() {
         onDeny={() => resolve("deny")}
       />
 
+      {/* Madav-themed alert/confirm host — STANDING RULE: no native white dialogs */}
+      <DialogHost />
+
       {/* Mid-mission question — an agent paused and is waiting on your answer */}
       {ask && (
         <div className="scrim">
@@ -979,6 +1025,15 @@ export default function App() {
             <input className="model-search" autoFocus value={askText} placeholder="Type your answer…"
               onChange={(e) => setAskText(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && askText.trim()) answerQuestion(askText.trim()); }} />
+            {/* Path-shaped question → offer the native folder picker instead of hand-typing
+                (e.g. "Which directory do you want me to list the files from?"). */}
+            {/(folder|directory|path|location)/i.test(ask.question || "") && bridge.chooseFolder && (
+              <button className="btn" style={{ marginTop: 8, alignSelf: "flex-start" }} onClick={async () => {
+                const dir = await bridge.chooseFolder();
+                if (typeof dir === "string" && dir) setAskText(dir);
+                else if (dir && dir.error) madavAlert(dir.error);
+              }}><FolderOpen size={14} /> Browse for a folder…</button>
+            )}
             <div className="pj-create-btns">
               <button className="btn" onClick={() => answerQuestion("")}>Skip — let it decide</button>
               <span style={{ flex: 1 }} />
