@@ -2752,3 +2752,11 @@ svg.lucide { color: var(--accent); }
 .ags-list-pills { flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .ags-list-pills .ag-pill-model { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ags-list-acts { flex: none; }
+
+/* Viewport lock: the WINDOW never scrolls — pages scroll inside .main. This pins the
+   body's ambient gradients (no more "page background ends mid-list") and keeps every
+   list inside the frame. Pages with their own scrollers fit .main exactly and are
+   unaffected. (Appended via sandbox — host edits truncate this large file.) */
+html, body { height: 100%; overflow: hidden; }
+.app-v { height: 100vh; }
+.main { overflow-y: auto; overflow-x: hidden; }
