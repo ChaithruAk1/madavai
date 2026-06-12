@@ -35653,3 +35653,104 @@ The session did not end at the error-translation round. Subsequent work (detail 
 - **Q&A (no build):** Agent Browser reaches any allowed site; Gmail works (login once, session persists) but the Gmail CONNECTOR is better than browser automation; agents never control the desktop (files/terminal/browser/connectors only); background-vs-foreground browser — visibility doesn't affect speed (reads DOM not pixels), hiding can THROTTLE SPA rendering; offered a minimize-but-full-speed toggle.
 - Memory-to-server question answered: technically trivial; recommended Option A (sync distilled insights, user benefit, low risk) over Option B (telemetry — opt-in + aggregate only); refused silent raw-log upload (GDPR/trust).
 - Gates unchanged: npm install (done) → npm run build → FULL restart → commit. All of the above since the harness commit is ONE diff.
+
+====================================================================
+SESSION RECORD — 2026-06-11 → 2026-06-12 (the launch marathon)
+Appended via sandbox (host writes truncate large files — see MEMORY ⛔ rule).
+====================================================================
+
+## LAUNCH — madav.ai IS LIVE (private beta)
+- Hosting completed per HOSTING-MADAV.md: Supabase Postgres (pooler URI — direct host is IPv6-only and Render can't reach it; ENETUNREACH fixed), Render web service (Blueprint, render.yaml), Namecheap DNS (A @→216.24.57.1, CNAME www→madav.onrender.com), TLS issued, custom domains verified.
+- OAuth: fresh Google client (Google Auth Platform console; Audience=External), secret rotation; "Token exchange failed" debugged via added server-side error logging (cause chain: stale env → stale deploys → repo move broke Render's repo link). prompt=select_account added (account chooser always shows). Desktop sign-in default switched to https://madav.ai (local dev server had the deleted client → 401 deleted_client).
+- PRIVATE_BETA gate verified: ADMIN_EMAILS=chaithru@gmail.com + chaithru@madav.ai (admins, status "Creator", never trial — /me fix), FREE_EMAILS=chaithrodaya.sukruth@gmail.com (Complimentary). Everyone else: static beta page, no token.
+- Repo moved: chaithruak/brainedge → chaithruak/madav → ChaithruAk1/madav; Render reconnected; index.lock + corrupted .git/index incidents resolved (user-side Remove-Item + git reset).
+
+## MAJOR FEATURES BUILT THIS SESSION
+- MADAV STARTER: zero-setup free models via house OpenRouter key (server-only env STARTER_OPENROUTER_KEY); /starter/v1/* routes (session-token bearer, :free allowlist, STARTER_DAILY=50/user, admins unlimited); p_starter profile seeded web+desktop via resolveProfile() token injection (rule: every profile-resolution site calls resolveProfile). First-run onboarding RETIRED.
+- LANDING PAGE (Aurora Noir): landing/index.html at /, app at /app; aurora glows, glass nav, hero w/ real logo+tagline, three-
+
+================================================================================
+SESSION LOG — 2026-06-11 → 2026-06-12 (Fable) — "Launch marathon"
+Appended via sandbox (host tools must never write this large file).
+================================================================================
+
+PRE-BUILD VERIFICATION
+- Sandbox down at session start → 5 parallel static-review agents swept the entire
+  uncompiled mega-diff (rename + review fixes + queue): no build breakers found.
+- Fixed latent crash: skip-autonomy agents passed a bare function as `permissions`;
+  now a Map-compatible auto-deny shim.
+
+HOSTING MADAV.AI (private beta: admin + complimentary only)
+- render.yaml launch config; Supabase Postgres (fixed ENETUNREACH: direct host is
+  IPv6-only → Transaction pooler URI); Render custom domains + Namecheap DNS
+  (A @ → 216.24.57.1, CNAME www); OAuth rotated (new Google client in new Auth
+  Platform console; secret re-issued); ADMIN_EMAILS=chaithru@gmail.com,chaithru@madav.ai,
+  FREE_EMAILS=chaithrodaya.sukruth@gmail.com; PRIVATE_BETA verified end-to-end.
+- Token-exchange failures debugged via new server-side error detail logging; root
+  causes: stale deploys (Render still bound to old repo after move) + env values.
+- /me: admins are "Creator" — never trial, no Upgrade nag.
+- Google sign-in now always shows the account chooser (prompt=select_account).
+- Desktop sign-in default account server → https://madav.ai (was local dev server
+  carrying the deleted OAuth client → Error 401 deleted_client).
+
+REPO MOVED to https://github.com/ChaithruAk1/madav.git; Render reconnected.
+Git incidents survived: stale index.lock (sandbox git writes — now forbidden),
+corrupt .git/index (Remove-Item .git\index + git reset).
+
+BRAND
+- Official logo files adopted untouched (madav-logo1.png → -tight crop; madav-m.png
+  M monogram crop). Top bar = wordmark + "Built to think with you" (
+centered tagline, gradient) per standing brand rule; sign-in card = animated wordmark;
+  hero = breathing M (original pixels, never redrawn); app/installer/extension icons =
+  M monogram; light default accent #00a7fa.
+
+LANDING PAGE (Aurora Noir) at madav.ai root; app moved to /app; aurora glows, glass,
+scroll reveals, pricing (desktop = subscribers), FAQ; tagline under every logo.
+
+MADAV STARTER — zero-setup free models via house key (server /starter/v1/*, session-token
+bearer, :free allowlist, STARTER_DAILY quota, admins unlimited; seeded p_starter profile
+web+desktop; onboarding screen retired).
+
+UI SYSTEM PASSES
+- Gemini composer: [+ | Ask Madav | mic] stadium pill, round send pops on type; model
+  selector centered below window; agent modes: [Select Folder | model | Permission];
+  Collaborate = local folders only (GitHub stays in Build).
+- Viewport lock (window never scrolls; .main scrolls) — fixed "page ends mid-list".
+- Naked icons at rest platform-wide; single-row inputs = stadium pills everywhere;
+  provider gallery (real brand icons, drill-in setup); connectors same pattern with
+  BUNDLED brand icons (Anthropic-style white tiles, zero network).
+- Light mode: composer glow removed → theme-color border.
+- styles.css SAGA: host Edit/Write TRUNCATE this ~250KB file (3 corruptions, "crumbled
+  UI"); permanent rule: sandbox-only writes + size/tail/balance verification.
+
+FEATURES BUILT
+- Sage: speaks (OS voices, Sara=female), home base below online chip + 5-min idle snap,
+  typo-tolerant knowledge retrieval + surface disambiguation, 25 unique avatar looks
+  (new ponytail/bob/buzz styles; American + Chinese).
+- Sage Librarian (Test Center tab): git drift scan → model rewrites knowledge area →
+  entry-level diff → admin approve/rollback.
+- EdgeTrader: skills bundled+shipped (always load, Extras gate), persona lenses
+  (Value/Contrarian/Growth), all 9 agents + team undeletable, Edge Trader folder.
+- webmd.cjs: LLM-ready web extraction (main content → markdown) for Deep Research +
+  web fetch (87% token cut measured).
+- Skill Forge (instinct→skill drafts w/ approval) + Flow Recorder (Electron window) —
+  verified from parallel session; EXTENDED with: Chrome-extension recorder (/hook/flow)
+  and DESKTOP recorder (UIA events via PowerShell → desktop_* skill drafts).
+- Chrome extension: M icons, "Madav (desktop)" provider — desktop app's full model
+  catalog + completions over the local link (/hook/models, /hook/chat; keys never
+  enter Chrome).
+- Account workspace sync: agents/teams/folders/instructions follow the login
+  (GET/PUT /workspace; last-write-wins; keys stay device-local).
+- Web bundled skills: packs ship in the web build, load_skill in web agent loop.
+- Skills defaults curated (Claude→Madav pass; git-workflow/market-research/
+  investor-materials/security-review restored; CC-bound cluster rejected).
+
+REPO STUDY: ECC, ai-hedge-fund, awesome-ai-agents-2026, firecrawl (+ Playwright by
+parallel session) → webmd + lenses built; embeddings retrieval + firecrawl leftovers queued.
+
+⚠ PARALLEL SESSION ran on this repo same day (its commits: ECC import, Playwright
+takeaways, Skill Forge, Flow Recorder) — caused write collisions; rule: ONE session per repo.
+
+NEXT SESSION TASK #1: Projects → "Workrooms" redesign + agent ecosystem (full spec in
+memory.md §14z6).
+================================================================================
