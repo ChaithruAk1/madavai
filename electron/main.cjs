@@ -746,7 +746,9 @@ ipcMain.handle("madav:clearViaMobile", () => viaMobileLog.clear());
 
 // ---- IPC: account auth + 7-day trial (see AUTH.md). Always-online; gates the whole UI. ----
 const auth = require("./auth.cjs");
-const authBase = () => (settings.load().authBaseUrl || "http://127.0.0.1:8787");
+// Production account server is the default since madav.ai went live (2026-06-12);
+// developers point authBaseUrl at http://127.0.0.1:8787 in Settings when testing locally.
+const authBase = () => (settings.load().authBaseUrl || "https://madav.ai");
 ipcMain.handle("madav:authSignIn", async (_e, provider) => {
   const r = await auth.signIn(provider === "github" ? "github" : provider === "dev" ? "dev" : "google", authBase());
   try { require("./workspace-sync.cjs").pull(); } catch {} // fresh sign-in → fetch the account workspace
