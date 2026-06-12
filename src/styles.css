@@ -2725,7 +2725,7 @@ svg.lucide { color: var(--accent); }
 
 /* Model selector dock — outside the chat window, centered beneath it.
    (NOT .model-row — that's the picker menu's per-model row class.) */
-.model-dock { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; position: relative; flex-wrap: wrap; }
+.model-dock { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 4px; position: relative; flex-wrap: wrap; }
 /* The MODEL dropdown centers under the CHAT WINDOW: its picker stops being the
    positioning parent (menu anchors to the full-width dock) and centering uses margin
    (NOT transform — the pop-in open animation overwrites transform and broke it).

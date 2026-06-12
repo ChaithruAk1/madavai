@@ -48,6 +48,11 @@ function Logo({ name, prov }) {
 export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh, agenticOnly = false, compact = false }) {
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false); // bottom half of the screen → the menu opens upward
+  const toggleOpen = () => {
+    try { const r = ref.current && ref.current.getBoundingClientRect(); setOpenUp(!!r && r.top > window.innerHeight * 0.55); } catch {}
+    setOpen((o) => !o);
+  };
   const [q, setQ] = useState("");
   const [cost, setCost] = useState("all");       // all | free | paid
   const [host, setHost] = useState("all");       // all | cloud | local (where the model runs)
@@ -130,16 +135,16 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   return (
     <div className="model-picker" ref={ref}>
       {compact ? (
-        <button className="model-btn compact" onClick={() => setOpen((o) => !o)} title={`${current.prov ? current.prov + " · " : ""}${current.name}`}>
+        <button className="model-btn compact" onClick={toggleOpen} title={`${current.prov ? current.prov + " · " : ""}${current.name}`}>
           {(() => { const s = String(current.name || "model").split("/").pop().replace(/:free$/, ""); return s.length > 22 ? s.slice(0, 20) + "…" : s; })()} <ChevronDown size={13} />
         </button>
       ) : (
-        <button className="model-btn" onClick={() => setOpen((o) => !o)}>
+        <button className="model-btn" onClick={toggleOpen}>
           {current.prov && <span className="prov">{current.prov}</span>} {current.name} <ChevronDown size={14} />
         </button>
       )}
       {open && (
-        <div className="model-menu mp-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: 560 }}>
+        <div className="model-menu mp-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: 560, ...(openUp ? { top: "auto", bottom: 46 } : {}) }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <div style={{ position: "relative", flex: 1 }}>
               <Search size={14} style={{ position: "absolute", left: 11, top: 10, color: "var(--text-2)" }} />
