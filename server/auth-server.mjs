@@ -549,7 +549,8 @@ const server = http.createServer(async (req, res) => {
     const raw = await rawBody(req, res, 8 * 1024 * 1024); if (raw === null) return; // vision payloads
     let b = {}; try { b = JSON.parse(raw || "{}"); } catch {}
     if (!/:free$/.test(String(b.model || ""))) return json(res, 400, { error: "Madav Starter serves free models only (ids ending in :free). Add your own API key in Settings → Model configuration for everything else." });
-    if (!starterQuota((pl.sub || pl.uid || pl.email || "anon") + "")) return json(res, 429, { error: `Daily Starter limit reached (${STARTER_DAILY} requests). For unlimited use, add your own API key in Settings → Model configuration — it takes two minutes.` });
+    // Admins ride without limits; everyone else gets the daily Starter quota.
+    if (!(await adminOk(req)) && !starterQuota((pl.sub || pl.uid || pl.email || "anon") + "")) return json(res, 429, { error: `Daily Starter limit reached (${STARTER_DAILY} requests). For unlimited use, add your own API key in Settings → Model configuration — it takes two minutes.` });
     try {
       const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
