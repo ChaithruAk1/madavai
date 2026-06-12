@@ -385,7 +385,13 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = new URLSearchParams({ client_id: prov.clientId, client_secret: prov.clientSecret, code, redirect_uri: `${BASE}/auth/${m[1]}/callback`, grant_type: "authorization_code" });
       const tr = await (await fetch(prov.token, { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" }, body })).json();
-      if (!tr.access_token) { res.writeHead(400); return res.end("Token exchange failed"); }
+      if (!tr.access_token) {
+        // Surface the provider's reason in the server log (never the secret): Google/GitHub
+        // always say WHY — invalid_client = secret/ID mismatch, redirect_uri_mismatch, etc.
+        console.error(`[auth-server] ${m[1]} token exchange failed:`, JSON.stringify({ error: tr.error, description: tr.error_description, redirect_uri: `${BASE}/auth/${m[1]}/callback`, clientIdTail: String(prov.clientId || "").slice(-20), secretSet: !!prov.clientSecret, secretLen: String(prov.clientSecret || "").length }));
+        res.writeHead(400);
+        return res.end(`Token exchange failed (${tr.error || "no detail"}) — the server log has specifics.`);
+      }
       const idn = await prov.userInfo(tr.access_token);
       const existed = await store.getUser(idn.sub);
       const user = await store.upsertUser(idn);
