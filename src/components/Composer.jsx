@@ -278,11 +278,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
     } catch { setListening(false); recRef.current = null; }
   };
 
-  const placeholder = skill
-    ? `Message for the ${skill.name} skill…`
-    : mode === "code" ? "Describe a coding task or ask a question…  ( / commands · @ files )"
-    : mode === "cowork" ? "Describe a task to work on together…  ( / commands · @ files )"
-    : "How can I help you today?  ( / commands · @ files )";
+  const placeholder = skill ? `Message for the ${skill.name} skill…` : "Ask Madav";
   const canSend = !!text.trim() || files.length > 0 || !!skill;
 
   return (
@@ -349,12 +345,11 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
             ))}
           </div>
         )}
-        <textarea ref={ref} rows={1} value={text} placeholder={placeholder} onChange={grow} onKeyDown={onKey} onPaste={onPaste} />
-        <div className="composer-row">
+        <div className="composer-pill">
           <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={onPick} />
 
           <div className="plus-wrap" ref={menuRef}>
-            <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} title="Add"><Plus size={17} /></button>
+            <button className="icon-btn bare" onClick={() => setMenuOpen((o) => !o)} title="Add"><Plus size={19} /></button>
             {menuOpen && (
               <div className="plus-menu">
                 <button className="plus-item" onClick={pickFiles}><Paperclip size={15} /> Add files or photos <span className="kbd">Ctrl+U</span></button>
@@ -381,17 +376,18 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
           </div>
           {ghOpen && <GithubContent onClose={() => setGhOpen(false)} onAttach={(items) => setFiles((f) => [...f, ...items])} />}
 
-          <span style={{ flex: 1 }} />
-          {controls && <div className="composer-controls">{controls}</div>}
-          <span style={{ flex: 1 }} />
+          <textarea ref={ref} rows={1} value={text} placeholder={placeholder} onChange={grow} onKeyDown={onKey} onPaste={onPaste} />
 
-          {voiceOn && <button className={`icon-btn ${listening ? "rec" : ""}`} onClick={toggleMic} title="Voice input"><Mic size={16} /></button>}
+          {/* Gemini contract: the mic is always there; the round theme-colored send
+              button slides in beside it the moment there's something to send. */}
+          {voiceOn && <button className={`icon-btn bare ${listening ? "rec" : ""}`} onClick={toggleMic} title="Voice input"><Mic size={18} /></button>}
           {busy ? (
-            <button className="send" onClick={onStop} title="Stop" style={{ background: "var(--bg-3)" }}><Square size={14} /></button>
-          ) : (
-            <button className="send" onClick={submit} disabled={!canSend} title="Send"><ArrowUp size={16} /></button>
-          )}
+            <button className="send pop" onClick={onStop} title="Stop" style={{ background: "var(--bg-3)" }}><Square size={14} /></button>
+          ) : canSend ? (
+            <button className="send pop" onClick={submit} title="Send"><ArrowUp size={17} /></button>
+          ) : null}
         </div>
+        {controls && <div className="composer-subrow">{controls}</div>}
       </div>
     </div>
   );

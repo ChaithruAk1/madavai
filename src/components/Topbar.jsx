@@ -21,9 +21,9 @@ export function PermissionPicker({ value, onChange }) {
   const cur = PERMS.find((p) => p.id === value) || PERMS[0];
   const Icon = cur.icon;
   return (
-    <div className="model-picker" ref={ref}>
-      <button className="model-btn" onClick={() => setOpen((o) => !o)} title="Permission mode">
-        <Icon size={13} /> {cur.label} <ChevronDown size={14} />
+    <div className="model-picker perm-picker" ref={ref}>
+      <button className="model-btn" onClick={() => setOpen((o) => !o)} title={`Permission mode — currently: ${cur.label} (${cur.desc})`}>
+        <Icon size={13} /> Permission <ChevronDown size={14} />
       </button>
       {open && (
         <div className="model-menu" style={{ width: 280 }}>

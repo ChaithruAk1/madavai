@@ -887,10 +887,30 @@ input, textarea, select { font-family: inherit; }
 .composer {
   position: relative;
   max-width: 975px; margin: 0 auto;
-  background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 11px 13px; display: flex; flex-direction: column; gap: 9px; transition: border-color .14s, box-shadow .14s;
+  background: var(--bg-1);
+  border: 1px solid var(--line-2); border-radius: 999px;
+  padding: 7px 12px; display: flex; flex-direction: column; gap: 6px; transition: border-color .14s, box-shadow .14s, border-radius .14s;
 }
+/* Wide ambient ACCENT GLOW spreading behind the window (the Gemini deep-blue field). */
+.composer::before { content: ""; position: absolute; inset: -110px -160px; z-index: -1; pointer-events: none;
+  background: radial-gradient(55% 65% at 50% 50%, rgba(var(--accent-rgb),0.20), rgba(var(--accent-rgb),0.07) 55%, transparent 75%);
+  filter: blur(14px); }
 .composer:focus-within { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-weak); }
+/* Attachment chips relax the full pill into a rounded card. */
+.composer:has(.composer-files) { border-radius: 26px; }
+/* Gemini pill: [+] [Ask Madav…] [mic · send] on a single row; the input grows downward. */
+.composer-pill { display: flex; align-items: flex-end; gap: 6px; }
+.composer-pill textarea { flex: 1; min-height: 24px !important; padding: 8px 4px; }
+.composer-pill .plus-wrap, .composer-pill .icon-btn, .composer-pill .send { margin-bottom: 1px; }
+/* Naked icons (no background box), exactly like Gemini's bar. */
+.composer-pill .icon-btn.bare { background: transparent; border: none; box-shadow: none; width: 36px; height: 36px; color: var(--text-1); }
+.composer-pill .icon-btn.bare:hover { background: rgba(255,255,255,0.06); border-radius: 50%; color: var(--text-0); }
+.composer-pill .icon-btn.bare.rec { color: var(--danger); }
+/* Round theme-colored send that pops in while typing. */
+.composer-pill .send { width: 38px; height: 38px; border-radius: 50%; margin-left: 2px; }
+.composer-pill .send.pop { animation: sendpop .18s ease-out; }
+@keyframes sendpop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.composer-subrow { display: flex; justify-content: center; }
 
 /* ---- slash-command (skills) menu ---- */
 .slash-menu { position: absolute; bottom: calc(100% + 10px); left: 0; right: 0; z-index: 50; max-height: 320px; overflow-y: auto; background: rgba(13,15,20,0.98); backdrop-filter: blur(16px); border: 1px solid var(--line-2); border-radius: 12px; padding: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
@@ -2692,9 +2712,12 @@ svg.lucide { color: var(--accent); }
 
 /* Model selector dock — outside the chat window, centered beneath it.
    (NOT .model-row — that's the picker menu's per-model row class.) */
-.model-dock { display: flex; justify-content: center; margin-top: 10px; position: relative; }
-/* The dropdown centers under the CHAT WINDOW: the dock spans the chat width, the
-   picker stops being the positioning parent, and centering uses margin (NOT
-   transform — the pop-in open animation overwrites transform and broke it). */
+.model-dock { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; position: relative; flex-wrap: wrap; }
+/* The MODEL dropdown centers under the CHAT WINDOW: its picker stops being the
+   positioning parent (menu anchors to the full-width dock) and centering uses margin
+   (NOT transform — the pop-in open animation overwrites transform and broke it).
+   The folder + Permission pickers keep anchoring their own small menus. */
 .model-dock .model-picker { position: static; }
-.model-dock .model-menu { left: 50%; right: auto; margin-left: calc(min(94vw, 720px) / -2); }
+.model-dock .perm-picker, .model-dock .env-picker { position: relative; }
+.model-dock .mp-menu { left: 50%; right: auto; margin-left: calc(min(94vw, 720px) / -2); }
+.model-dock .perm-picker .model-menu { left: 0; right: auto; }

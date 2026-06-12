@@ -1,6 +1,6 @@
 // © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 import { useEffect, useRef, useState, useCallback, useMemo, lazy, Suspense } from "react";
-import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestion, Volume2, VolumeX } from "lucide-react";
+import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestion } from "lucide-react";
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
@@ -47,8 +47,8 @@ const NotInBuild = () => (
   <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">This feature isn't included in this edition of Madav.</div></div></div>
 );
 import EnvPicker from "./components/EnvPicker.jsx";
-import MadavMark from "./components/MadavMark.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
+import MadavMark from "./components/MadavMark.jsx";
 import { PermissionPicker } from "./components/Topbar.jsx";
 import { bridge, isWeb } from "./bridge/index.js";
 import { extractArtifacts } from "./artifacts.js";
@@ -299,15 +299,8 @@ export default function App() {
   }, []);
   useEffect(() => { settingsRef.current = settings; }, [settings]);
 
-  // Spoken replies toggle (voice): persisted in settings; off also cancels current speech.
-  const voiceSpeak = !!(settings && settings.voiceSpeak);
-  const toggleSpeak = async () => {
-    const cur = await bridge.getSettings();
-    const next = { ...cur, voiceSpeak: !cur.voiceSpeak };
-    setSettings(next);
-    await bridge.saveSettings(next);
-    if (!next.voiceSpeak && window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch {} }
-  };
+  // Spoken replies: the composer toggle was removed (Gemini-clean bar) — the
+  // settings.voiceSpeak flag still drives read-aloud for users who had it on.
 
   const isAgentMode = mode === "cowork" || mode === "code";
 
@@ -689,21 +682,16 @@ export default function App() {
   const needsOnboarding = false;
 
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
-  const controlsRow = (
-    <div className="ctrl-row">
-      {isAgentMode && <EnvPicker cwd={cwd} onPickFolder={pickFolder} onUseFolder={useFolder} onAddRepoUrl={addRepo} />}
-      {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
-      <button className="icon-btn" onClick={toggleSpeak} title={voiceSpeak ? "Spoken replies: ON — answers are read aloud" : "Spoken replies: off"}
-        style={voiceSpeak ? { color: "var(--accent)" } : undefined}>
-        {voiceSpeak ? <Volume2 size={15} /> : <VolumeX size={15} />}
-      </button>
-    </div>
-  );
+  // Agent-mode controls live OUTSIDE the window on the model row:
+  // [Select Folder] [model selector] [Permission]. Chat keeps just the centered selector.
+  const controlsRow = null; // nothing under the pill — the bar stays Gemini-clean
   // Model selector lives OUTSIDE the chat window — centered on its own row below it.
-  // (Class is model-dock — NOT model-row, which is the picker menu's per-model row.)
+  // In agent modes the row becomes [Select Folder] [model] [Permission].
   const modelRow = (
     <div className="model-dock">
+      {isAgentMode && <EnvPicker cwd={cwd} onPickFolder={pickFolder} onUseFolder={useFolder} onAddRepoUrl={addRepo} github={mode !== "cowork"} />}
       <ModelPicker value={activeValue} groups={pickerGroups} onChange={selectModel} onRefresh={refreshModels} />
+      {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
     </div>
   );
 
@@ -817,7 +805,7 @@ export default function App() {
                     ) : (
                       <div className="hero-greet"><MadavMark size={44} /><h1 className="greeting">{greeting}</h1></div>
                     )}
-                    <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
+                    <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {modelRow}
                     {projectCtx && (
                       <div className="hero-opts">

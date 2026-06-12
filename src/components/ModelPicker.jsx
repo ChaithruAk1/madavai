@@ -45,7 +45,7 @@ function Logo({ name, prov }) {
 // `groups` are provider-derived: [{ group: providerName, items: [{id:"pid::model", name, prov, badge}] }]
 // `agenticOnly`: opt-in pre-filter to tool-calling-capable models (used by Agent Studio —
 // agents need function calling). The default global picker behavior is unchanged.
-export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh, agenticOnly = false }) {
+export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh, agenticOnly = false, compact = false }) {
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -129,11 +129,17 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
 
   return (
     <div className="model-picker" ref={ref}>
-      <button className="model-btn" onClick={() => setOpen((o) => !o)}>
-        {current.prov && <span className="prov">{current.prov}</span>} {current.name} <ChevronDown size={14} />
-      </button>
+      {compact ? (
+        <button className="model-btn compact" onClick={() => setOpen((o) => !o)} title={`${current.prov ? current.prov + " · " : ""}${current.name}`}>
+          {(() => { const s = String(current.name || "model").split("/").pop().replace(/:free$/, ""); return s.length > 22 ? s.slice(0, 20) + "…" : s; })()} <ChevronDown size={13} />
+        </button>
+      ) : (
+        <button className="model-btn" onClick={() => setOpen((o) => !o)}>
+          {current.prov && <span className="prov">{current.prov}</span>} {current.name} <ChevronDown size={14} />
+        </button>
+      )}
       {open && (
-        <div className="model-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: 560 }}>
+        <div className="model-menu mp-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: 560 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <div style={{ position: "relative", flex: 1 }}>
               <Search size={14} style={{ position: "absolute", left: 11, top: 10, color: "var(--text-2)" }} />

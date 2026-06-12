@@ -91,11 +91,11 @@ What: How attached files are turned into something Madav can read.
 Why: Different file types need different handling.
 Behavior: Spreadsheets become CSV (first 8 sheets); .docx becomes plain text; images go in as vision. A PDF attaches with a note that chat can't extract PDF text — add it to a Project's knowledge instead, since Projects parse PDFs. True binaries (zip, exe, media, fonts, etc.) attach with a note that their contents weren't included, so they never dump garbage into the chat.
 
-### Composer · "Choose folder" chip
-aliases: change folder, working directory, folder bar
-What: The button in the folder bar that picks the working folder.
+### Composer · "Select Folder" button
+aliases: choose folder, change folder, working directory, choose environment, select folder
+What: The button that picks the working folder, on the row BELOW the message bar (left of the model selector).
 Why: Agent modes need a folder to read and edit.
-Behavior: In Collaborate/Build it reads "Choose folder" (or "Change folder" once set) and the bar shows the current path or "No folder selected." On the web, folders work only in Chrome or Edge (a notice says so) and edits are file-only — running npm/git/tests needs the desktop app. Picking a folder starts a fresh conversation.
+Behavior: In Collaborate/Build it reads "Select Folder" (or the folder's name once set). In Build the menu also offers your GitHub repos (connect an account or add one by URL); in Collaborate it's local folders only — repos are a coding thing. On the web, folders work only in Chrome or Edge and edits are file-only — running npm/git/tests needs the desktop app. Picking a folder starts a fresh conversation.
 
 ### Folder bar · Continue on phone
 aliases: on phone, Telegram, mobile link, smartphone
@@ -103,23 +103,23 @@ What: Links the current Collaborate session to your Telegram bot.
 Why: Carry on the task from your phone, with replies appearing here on return.
 Behavior: In Collaborate, when auto-continue is on (default) the phone icon auto-links whichever Cowork session is active while the bot is online; turn auto off in Via Mobile to pin a session manually with "Continue on phone" / "On phone · Unlink." If the bot is offline you're told to enable it in Via Mobile first.
 
-### Controls row · Model picker
+### Model row · Model selector
 aliases: choose model, switch model, provider
-What: The model selector in the composer controls row.
+What: The model selector pill centered on its own row BELOW the message bar.
 Why: Pick which model and provider runs your turn.
-Behavior: Lists every configured provider grouped by name and local/cloud, showing live models when available. Choosing one sets both the active provider and that provider's model. A refresh action re-queries each provider's model list. On launch the active model snaps to your saved Default Model.
+Behavior: Opens a wide browser of every configured provider's models with search, a maker filter, and chips (All/Free/Paid · Cloud/Local · Coding/Reasoning/Vision/Fast/Agentic). Choosing one sets both the active provider and that provider's model. A refresh action re-queries each provider's model list. On launch the active model snaps to your saved Default Model.
 
-### Controls row · Permission picker
-aliases: permission mode, ask first, accept edits, act freely, plan mode
-What: Sets how freely Madav may act in agent modes.
+### Model row · "Permission" picker
+aliases: permission mode, ask first, accept edits, act freely, plan mode, ask before changes
+What: The "Permission" button right of the model selector — sets how freely Madav may act in agent modes.
 Why: Trade speed for control over edits and commands.
-Behavior: Four modes — "Ask before changes" (default: approve each edit/command), "Auto-accept edits" (apply file edits, still ask for commands), "Act — trust all" (run everything without asking), and "Read-only" (inspect only, never modify). Reads are always free in every mode. Appears only in Collaborate and Build; changing it updates the live session immediately.
+Behavior: Four modes — "Ask before changes" (default: approve each edit/command), "Auto-accept edits" (apply file edits, still ask for commands), "Act — trust all" (run everything without asking), and "Read-only" (inspect only, never modify). The button always reads "Permission"; the current mode shows in its tooltip and menu checkmark. Reads are always free in every mode. Appears only in Collaborate and Build; changing it updates the live session immediately.
 
-### Controls row · Spoken replies
-aliases: read aloud, voice output, volume button
-What: The speaker toggle that reads answers aloud.
-Why: Hear replies instead of reading them.
-Behavior: When on, the final answer is spoken via your OS speech synthesis (code blocks are skipped). The setting persists; turning it off also stops any reply mid-sentence. Lit in the accent color when active.
+### Composer · The "Ask Madav" bar
+aliases: message box, chat bar, input pill, composer
+What: The single rounded bar — "+" for attachments, the "Ask Madav" input, a mic, and a round theme-colored send button that appears while you type.
+Why: One clean place to talk to Madav on all three surfaces.
+Behavior: The mic is always present (when Voice is enabled in Extras); the send circle pops in the moment the box has content and becomes Stop while a reply streams. The bar grows as you type and a soft accent glow spreads behind it. The "+" menu holds files/photos, @-mentions, GitHub content, skills, projects and connectors.
 
 ### Message · Copy / Edit / Retry
 aliases: message actions, copy reply, redo, change my message

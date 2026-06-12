@@ -7,7 +7,9 @@ import { useEffect, useState } from "react";
 import { FolderOpen, Github, Plus, ChevronDown, Check, X, Trash2, Loader, Search, FolderGit2, Link2 } from "lucide-react";
 import { bridge, isWeb } from "../bridge/index.js";
 
-export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl }) {
+// `github` (default true): Build shows the full GitHub integration; Collaborate passes
+// false and gets a pure folder picker (user decision 2026-06-12 — repos are a coding thing).
+export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl, github = true }) {
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);   // [{ login, token }]
   const [recent, setRecent] = useState([]);        // [{ full, url, folder }]
@@ -75,8 +77,8 @@ export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl
 
   return (
     <div className="env-picker">
-      <button className="chip" onClick={() => setOpen((o) => !o)} title="Choose where to build">
-        <FolderGit2 size={13} /> {cwd ? cwd.split(/[\\/]/).pop() : "Choose environment"} <ChevronDown size={12} />
+      <button className="chip" onClick={() => setOpen((o) => !o)} title="Select the folder (or repo) to work in">
+        <FolderGit2 size={13} /> {cwd ? cwd.split(/[\\/]/).pop() : "Select Folder"} <ChevronDown size={12} />
       </button>
       {open && (
         <div className="env-menu">
@@ -95,6 +97,7 @@ export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl
             ))}
           </>}
 
+          {github && <>
           <div className="env-sec env-secrow">
             <span>GitHub{accounts.length ? "" : " — not connected"}</span>
             {accounts.length > 0 && <button className="env-add" onClick={() => { setConnecting(true); setErr(""); }} title="Connect another account"><Plus size={13} /></button>}
@@ -141,6 +144,7 @@ export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl
           <button className="env-row" onClick={() => { setOpen(false); onAddRepoUrl(); }}>
             <Link2 size={15} /> <span className="env-grow">Add a single repo by URL…</span>
           </button>
+          </>}
 
           {err && <div className="env-err">{err}</div>}
           {isWeb && <div className="env-muted">Listing works on the web; cloning a repo to work on needs the desktop app.</div>}
