@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { URL } from "node:url";
 import { makeStore } from "./store.mjs";
+import webmd from "../electron/webmd.cjs"; // LLM-ready web extraction (CJS — Node imports it fine)
 import { scoreQuiz, scoreBatch } from "./quiz.mjs";
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
@@ -659,11 +660,9 @@ const server = http.createServer(async (req, res) => {
       const ct = r.headers.get("content-type") || ""; const raw = (await r.text()).slice(0, 600000);
       let text = raw;
       if (/html/i.test(ct)) {
-        text = raw
-          .replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ")
-          .replace(/<\/(p|div|li|h[1-6]|tr|br)>/gi, "\n").replace(/<[^>]+>/g, " ")
-          .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;/g, "'").replace(/&quot;/g, '"')
-          .replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
+        // LLM-ready extraction: main content as MARKDOWN (electron/webmd.cjs — ESM imports
+        // the CJS module directly, one implementation for desktop + server).
+        text = webmd.extract(raw, r.url).markdown;
       }
       return json(res, 200, { url: r.url, status: r.status, contentType: ct, text: text.slice(0, 40000) });
     } catch (e) { return json(res, 502, { error: "fetch", detail: String((e && e.message) || e) }); }

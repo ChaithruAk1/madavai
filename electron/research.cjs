@@ -202,13 +202,16 @@ async function runDeepResearch(profile, args, opts = {}) {
     if (!sources.length) return { report: "Research failed: no search results (the search endpoint may be rate-limiting). Try again shortly.", sources: [] };
     if (aborted()) return { report: "Research failed: cancelled.", sources: [] };
 
-    // (c) READ — fetch all sources in parallel, strip to readable text, head+tail to ~6000 chars.
+    // (c) READ — fetch all sources in parallel, extract MAIN CONTENT as markdown
+    // (webmd: structure + links survive, boilerplate doesn't — far denser than tag-strip),
+    // head+tail to ~6000 chars. Falls back to the plain strip inside webmd on any surprise.
     let done = 0;
+    const webmd = require("./webmd.cjs");
     const reads = await Promise.allSettled(sources.map(async (s) => {
       const html = await fetchGuarded(s.url, signal);
       done++;
       emit("reading", done + "/" + sources.length);
-      return headTail(htmlToText(html), { headLines: 200, tailLines: 60, maxChars: 6000 });
+      return headTail(webmd.extract(html, s.url).markdown, { headLines: 200, tailLines: 60, maxChars: 6000 });
     }));
     if (aborted()) return { report: "Research failed: cancelled.", sources: [] };
 
