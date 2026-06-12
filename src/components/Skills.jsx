@@ -99,12 +99,12 @@ export default function Skills() {
 
   return (
     <div className="skills2">
-      {webNote && <div className="ag-hint" style={{ padding: "10px 14px 0", width: "100%", flexBasis: "100%" }}>🖥️ {webNote}</div>}
       <aside className="sk-list">
         <div className="sk-list-head">
           <span className="sk-list-title">Skills</span>
           <button className="icon-btn" title="Reload" onClick={() => refresh()}><RefreshCw size={14} /></button>
         </div>
+        {webNote && <div className="ag-hint" style={{ padding: "0 8px 8px", fontSize: 11.5 }}>🖥️ {webNote}</div>}
         {!isWeb && bridge.recordFlowStart && (
           <button className="btn" style={{ margin: "0 8px 8px", fontSize: 12.5 }}
             title="Show Madav a workflow once: a browser window opens, you do the task by hand, close the window — Madav drafts a skill from what it watched (you approve it below). Credential fields are never recorded."
