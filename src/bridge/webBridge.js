@@ -160,6 +160,54 @@ const loadSettings = () => {
   if (s.profiles && !s.profiles.p_starter) { s.profiles = { p_starter: defaultSettings().profiles.p_starter, ...s.profiles }; LS.set(SETTINGS_KEY, s); }
   return s;
 };
+
+// ---- Workspace sync (mirror of electron/workspace-sync.cjs — keep policies in sync) ----
+// Agents/teams/folders/instructions follow the ACCOUNT; keys stay in this browser.
+const WS_KEYS = ["agents", "teams", "agentGroups", "globalInstructions"];
+const wsSubset = (s) => ({ agents: s.agents || [], teams: s.teams || [], agentGroups: s.agentGroups || [], globalInstructions: s.globalInstructions || "" });
+const wsHash = (d) => { const str = JSON.stringify(d); let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return String(h) + ":" + str.length; };
+let _wsLast = "", _wsTimer = null;
+async function wsPull() {
+  try {
+    const s = loadSettings();
+    if (s.workspaceSync === false || !getToken()) return;
+    const r = await fetch(api("/workspace"), { headers: authHeaders() }).then((x) => x.json()).catch(() => null);
+    if (!r || r.error) return;
+    if (!r.data) {
+      // Account has no workspace yet — this device seeds it (if it has anything to offer).
+      const local = wsSubset(s);
+      if ((local.agents.length || local.teams.length) > 0) { _wsLast = ""; wsMaybePush(); }
+      else _wsLast = wsHash(local);
+      return;
+    }
+    if ((r.updatedAt || 0) <= (s.workspaceSyncedAt || 0)) { _wsLast = wsHash(wsSubset(s)); return; }
+    const next = { ...loadSettings() };
+    for (const k of WS_KEYS) if (k in r.data) next[k] = r.data[k];
+    next.workspaceSyncedAt = r.updatedAt;
+    _wsLast = wsHash(wsSubset(next));
+    LS.set(SETTINGS_KEY, next);
+  } catch {}
+}
+function wsMaybePush() {
+  try {
+    const s = loadSettings();
+    if (s.workspaceSync === false || !getToken()) return;
+    const h = wsHash(wsSubset(s));
+    if (h === _wsLast) return;
+    clearTimeout(_wsTimer);
+    _wsTimer = setTimeout(async () => {
+      try {
+        const s2 = loadSettings();
+        const data = wsSubset(s2);
+        const h2 = wsHash(data);
+        if (h2 === _wsLast) return;
+        const r = await fetch(api("/workspace"), { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(data) }).then((x) => x.json()).catch(() => null);
+        if (r && r.ok) { _wsLast = h2; LS.set(SETTINGS_KEY, { ...loadSettings(), workspaceSyncedAt: r.updatedAt }); }
+      } catch {}
+    }, 4000);
+  } catch {}
+}
+setTimeout(wsPull, 1500); // account workspace → this browser, shortly after load
 // Starter profiles authenticate with the user's SESSION TOKEN as the bearer (the server
 // swaps in the house key upstream). Injected here so it's always current, never persisted.
 const resolveProfile = (p) => (p && !p.apiKey && /\/starter\b/.test(p.baseUrl || "") ? { ...p, apiKey: getToken() || "" } : p);
@@ -728,7 +776,7 @@ export const webBridge = {
 
   // ---- settings / models ----
   async getSettings() { return loadSettings(); },
-  async saveSettings(next) { return LS.set(SETTINGS_KEY, next); },
+  async saveSettings(next) { const saved = LS.set(SETTINGS_KEY, next); wsMaybePush(); return saved; },
   async listModels(profileId) {
     const s = loadSettings(); const p = resolveProfile(profileId ? s.profiles[profileId] : activeProfile(s)); // Starter gets the session token
     let out = await provListModels(p);

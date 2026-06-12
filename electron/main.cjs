@@ -362,7 +362,11 @@ ipcMain.handle("madav:removeSaved", (_e, id) => {
 
 // ---- IPC: settings + models ----
 ipcMain.handle("madav:getSettings", () => settings.load());
-ipcMain.handle("madav:saveSettings", (_e, next) => settings.save(next));
+ipcMain.handle("madav:saveSettings", (_e, next) => {
+  const saved = settings.save(next);
+  try { require("./workspace-sync.cjs").maybePush(); } catch {} // agents/teams/folders follow the account
+  return saved;
+});
 ipcMain.handle("madav:listModels", async (_e, profileId) => {
   const s = settings.load();
   const p = settings.resolveProfile(profileId ? s.profiles[profileId] : settings.activeProfile(s)); // Starter gets the session token
@@ -738,7 +742,11 @@ ipcMain.handle("madav:clearViaMobile", () => viaMobileLog.clear());
 // ---- IPC: account auth + 7-day trial (see AUTH.md). Always-online; gates the whole UI. ----
 const auth = require("./auth.cjs");
 const authBase = () => (settings.load().authBaseUrl || "http://127.0.0.1:8787");
-ipcMain.handle("madav:authSignIn", (_e, provider) => auth.signIn(provider === "github" ? "github" : provider === "dev" ? "dev" : "google", authBase()));
+ipcMain.handle("madav:authSignIn", async (_e, provider) => {
+  const r = await auth.signIn(provider === "github" ? "github" : provider === "dev" ? "dev" : "google", authBase());
+  try { require("./workspace-sync.cjs").pull(); } catch {} // fresh sign-in → fetch the account workspace
+  return r;
+});
 const roster = require("./roster.cjs");
 ipcMain.handle("madav:authMe", async () => {
   const r = await auth.me(authBase());
@@ -963,6 +971,7 @@ app.whenReady().then(() => {
   if (features.builtIn("scheduler")) reconcileWebhooks();
   else console.log("[scheduler] not included in this build — webhook server not started.");
   setTimeout(autoEnableCli, 3000);
+  setTimeout(() => { try { require("./workspace-sync.cjs").pull(); } catch {} }, 2500); // account workspace → this device
 });
 app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

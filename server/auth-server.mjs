@@ -535,6 +535,34 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { score: scoreQuiz(b.answers || b) });
   }
 
+  // ---- Workspace sync — agents/teams/folders/instructions follow the ACCOUNT ----
+  // API keys and connector tokens are deliberately NOT synced (device-local by design).
+  // Last-write-wins via updatedAt; clients compare before applying.
+  if (p === "/workspace" && req.method === "GET") {
+    if (rateLimited(req, "workspace", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const rec = await store.col("workspaces").get(user.id);
+    return json(res, 200, rec ? { data: rec.data || {}, updatedAt: rec.updatedAt || 0 } : { data: null, updatedAt: 0 });
+  }
+  if (p === "/workspace" && req.method === "PUT") {
+    if (rateLimited(req, "workspace-w", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const raw = await rawBody(req, res, 1024 * 1024); if (raw === null) return; // 1MB cap
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    // Whitelist exactly what may sync — nothing secret can ride along.
+    const data = {
+      agents: Array.isArray(b.agents) ? b.agents.slice(0, 200) : [],
+      teams: Array.isArray(b.teams) ? b.teams.slice(0, 50) : [],
+      agentGroups: Array.isArray(b.agentGroups) ? b.agentGroups.slice(0, 50) : [],
+      globalInstructions: String(b.globalInstructions || "").slice(0, 8000),
+    };
+    const updatedAt = Date.now();
+    const existing = await store.col("workspaces").get(user.id);
+    if (existing) await store.col("workspaces").update(user.id, { data, updatedAt });
+    else await store.col("workspaces").insert({ id: user.id, data, updatedAt });
+    return json(res, 200, { ok: true, updatedAt });
+  }
+
   // ---- Madav Starter — zero-setup free models on the HOUSE key ----
   // The seeded "Madav Starter" profile points the standard OpenAI client here; the
   // bearer is the user's SESSION TOKEN (never an upstream key). The OpenRouter house
