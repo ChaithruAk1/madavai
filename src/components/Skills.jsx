@@ -105,6 +105,13 @@ export default function Skills() {
           <span className="sk-list-title">Skills</span>
           <button className="icon-btn" title="Reload" onClick={() => refresh()}><RefreshCw size={14} /></button>
         </div>
+        {!isWeb && bridge.recordFlowStart && (
+          <button className="btn" style={{ margin: "0 8px 8px", fontSize: 12.5 }}
+            title="Show Madav a workflow once: a browser window opens, you do the task by hand, close the window — Madav drafts a skill from what it watched (you approve it below). Credential fields are never recorded."
+            onClick={async () => { await bridge.recordFlowStart(); setStatus("Recording — do the workflow in the new window, then CLOSE it. A draft will appear below (give it ~30s after closing)."); }}>
+            ⏺ Record a workflow → skill
+          </button>
+        )}
         <div className="nav-label" style={{ paddingLeft: 8 }}>Personal skills</div>
         <div className="sk-items scroll">
           {skills.length === 0 && <div className="sk-empty" style={{ padding: "8px 10px" }}>No skills found.</div>}

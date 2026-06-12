@@ -118,6 +118,12 @@ What: A toggle for the built-in stock-analysis skill pack (equity analysis, adve
 Why: The pack ships inside the app so a settings wipe or reinstall can never lose it; this switch lets the owner hide it.
 Behavior: Default ON. When on, the app's bundled skills folder loads in every mode automatically — no Skills-folder setup needed. Turning it off removes those skills from the next message onward (the EdgeTrader agents will say the skill is missing). The pack produces information, not financial advice; trade execution stays separately gated and off by default.
 
+### Skills · Record a workflow → skill
+aliases: flow recorder, record workflow, teach by demonstration, watch me do it
+What: A button on the Skills screen (desktop only) that opens a browser window, watches you perform a task by hand, and drafts a reusable skill from it.
+Why: Show Madav once instead of writing instructions — the agent can repeat the workflow later with its browser tools.
+Behavior: Click it, do the task in the window that opens, then CLOSE the window — that's the stop signal. Madav's active model turns the recorded clicks, form fills and page visits into a skill draft that appears under "Learned drafts — your approval needed" (allow ~30 seconds). Passwords, card numbers and other credential fields are never recorded. Nothing becomes a live skill until you approve it.
+
 ### Settings → Extras · Skill Forge
 aliases: skill forge, learned skills, auto skills, instinct skills
 What: A toggle for Skill Forge — Madav notices tasks you repeat and drafts reusable skills from them.

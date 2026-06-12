@@ -321,6 +321,10 @@ ipcMain.handle("madav:librarianRollback", (_e, args) => librarian ? librarian.ro
 ipcMain.handle("madav:forgeList", () => { try { return require("./instincts.cjs").list(); } catch { return []; } });
 ipcMain.handle("madav:forgeApprove", (_e, name) => { try { return require("./instincts.cjs").approve(String(name || "")); } catch (e) { return { error: String((e && e.message) || e) }; } });
 ipcMain.handle("madav:forgeDiscard", (_e, name) => { try { return require("./instincts.cjs").discard(String(name || "")); } catch (e) { return { error: String((e && e.message) || e) }; } });
+// Flow Recorder — record a hand-demonstrated browser workflow into a skill draft.
+ipcMain.handle("madav:recordFlowStart", () => { try { return require("./flow-recorder.cjs").start(); } catch (e) { return { error: String((e && e.message) || e) }; } });
+ipcMain.handle("madav:recordFlowStop", () => { try { return require("./flow-recorder.cjs").stop(); } catch (e) { return { error: String((e && e.message) || e) }; } });
+ipcMain.handle("madav:recordFlowStatus", () => { try { return require("./flow-recorder.cjs").status(); } catch { return { recording: false }; } });
 
 // ---- IPC: Saved library (bookmarked responses) ----
 // Each save is written to a local JSON store AND mirrored into an auto-created

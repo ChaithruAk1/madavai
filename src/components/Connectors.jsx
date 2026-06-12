@@ -83,6 +83,14 @@ export default function Connectors() {
         Cloud apps then need a quick sign-in or token. Connected apps are available to the agent in Chat, Cowork, Code, and Projects.
       </p>
 
+      {/* Featured one-click connectors */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "0 0 12px" }}>
+        <button className="btn" title="Microsoft's official Playwright MCP — agents drive a real Chromium for JavaScript-heavy sites, with accessibility-snapshot reading. Needs Node; first run downloads the browser."
+          onClick={() => addFrom({ name: "Playwright Browser", command: "npx", args: ["-y", "@playwright/mcp@latest"] })}>
+          <Plus size={13} /> Playwright Browser — official Microsoft MCP for tough, JS-heavy sites
+        </button>
+      </div>
+
       <div className="cdir-search"><Search size={16} /><input value={dirQ} onChange={(e) => setDirQ(e.target.value)} placeholder="Search connectors…" /></div>
       <div className="cdir-bar">
         <span style={{ flex: 1 }} />

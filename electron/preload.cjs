@@ -61,6 +61,9 @@ contextBridge.exposeInMainWorld("madav", {
   forgeList: () => ipcRenderer.invoke("madav:forgeList"),
   forgeApprove: (name) => ipcRenderer.invoke("madav:forgeApprove", name),
   forgeDiscard: (name) => ipcRenderer.invoke("madav:forgeDiscard", name),
+  recordFlowStart: () => ipcRenderer.invoke("madav:recordFlowStart"),
+  recordFlowStop: () => ipcRenderer.invoke("madav:recordFlowStop"),
+  recordFlowStatus: () => ipcRenderer.invoke("madav:recordFlowStatus"),
   getSession: (id) => ipcRenderer.invoke("madav:getSession", id),
   deleteSession: (id) => ipcRenderer.invoke("madav:deleteSession", id),
 
