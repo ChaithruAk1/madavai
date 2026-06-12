@@ -236,11 +236,11 @@ What: A collapsed "N models failed" section under the results.
 Why: Failures are normal (missing keys, no credit, rate limits) and shouldn't bury the wins.
 Behavior: Expanding lists each failed model with a plain-language reason translated from the raw provider error — e.g. "Invalid or missing API key", "Out of credit", "Rate-limited / quota reached", "Model not available on this provider right now". Hover a reason for the raw error text.
 
-### Models → Providers · Add provider dropdown
-aliases: add provider, provider presets, new provider, connect openrouter, add ollama
-What: A "+ Add provider…" dropdown with prefilled templates for popular providers (OpenAI, Anthropic, OpenRouter, Google Gemini, NVIDIA NIM, DeepSeek, Mistral, xAI, Groq, Together AI, Fireworks AI, Perplexity, Cerebras, DeepInfra, Hyperbolic, Ollama/LM Studio/llama.cpp local) plus "Custom (blank)".
-Why: A preset fills the wire format and base URL — you only add your API key.
-Behavior: Picking a preset creates the profile and opens its editor immediately. All presets are OpenAI-compatible except Anthropic. Local presets point at localhost ports and need no key.
+### Models → Providers · Provider gallery (cards)
+aliases: add provider, provider presets, new provider, connect openrouter, add ollama, provider cards
+What: A grid of provider cards — your configured providers first (with a green "Connected" or an "Add key" hint), then one-click presets for popular providers (OpenAI, Anthropic, OpenRouter, Google Gemini, NVIDIA NIM, DeepSeek, Mistral, xAI, Groq, Together AI, Fireworks AI, Perplexity, Cerebras, DeepInfra, Hyperbolic, Ollama/LM Studio/llama.cpp local) marked "Connect", plus a "Custom provider" card.
+Why: See the state of every provider at a glance; a preset fills the wire format and base URL — you only add your API key.
+Behavior: Cards show REAL brand icons (letter fallback offline). Clicking any card goes INSIDE that provider's setup page (name, wire format, base URL, API key, "Save & load models"); "← All providers" returns to the gallery. Clicking a preset card creates that profile first. "Connected" means a key is saved, the provider is local (no key needed), or it's Madav Starter. Backup & restore lives at the bottom of the gallery view. All presets are OpenAI-compatible except Anthropic.
 
 ### Models → Providers · Provider profile editor
 aliases: provider settings, base url, api key field, wire format, kind, connection fields

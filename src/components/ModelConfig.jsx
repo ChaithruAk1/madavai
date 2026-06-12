@@ -29,6 +29,41 @@ const PROVIDER_PRESETS = [
   { name: "llama.cpp (local)", kind: "openai", baseUrl: "http://localhost:8080/v1" },
 ];
 
+// Provider chip — REAL brand icons via the Simple Icons CDN (brand-colored SVGs),
+// with the Madav M for Starter and a deterministic hue-letter fallback when a brand
+// has no icon or the machine is offline (img onError swaps the letter back in).
+const BRAND_SLUG = {
+  "OpenAI": "openai", "Anthropic": "anthropic", "OpenRouter": "openrouter",
+  "Google Gemini": "googlegemini", "NVIDIA NIM": "nvidia", "DeepSeek": "deepseek",
+  "Mistral": "mistralai", "xAI (Grok)": "x", "Groq": "groq", "Together AI": "togetherai",
+  "Fireworks AI": "fireworksai", "Perplexity": "perplexity", "Cerebras": "cerebras",
+  "Ollama (local)": "ollama", "LM Studio (local)": "lmstudio", "llama.cpp (local)": "llamacpp",
+};
+import mUrl from "../../madav-m.png";
+function PChip({ name }) {
+  const [broken, setBroken] = useState(false);
+  let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const hue = h % 360;
+  const starter = /madav starter/i.test(name);
+  const slug = BRAND_SLUG[name] || BRAND_SLUG[Object.keys(BRAND_SLUG).find((k) => name.startsWith(k.split(" ")[0])) || ""];
+  if (starter) return <span className="mc-pchip"><img src={mUrl} alt="" style={{ width: 22, height: 22 }} /></span>;
+  if (slug && !broken) {
+    // Dark theme: many brand marks are black (OpenAI, xAI…) and disappear — render them
+    // white there; light theme keeps the official brand colors. Never dimmed either way.
+    const light = typeof document !== "undefined" && document.documentElement.dataset.theme === "light";
+    return (
+      <span className="mc-pchip">
+        <img src={`https://cdn.simpleicons.org/${slug}${light ? "" : "/white"}`} alt="" style={{ width: 20, height: 20 }} onError={() => setBroken(true)} />
+      </span>
+    );
+  }
+  return (
+    <span className="mc-pchip" style={{ color: `hsl(${hue} 75% 70%)` }}>
+      {(name.replace(/^[^a-zA-Z+]+/, "")[0] || "?").toUpperCase()}
+    </span>
+  );
+}
+
 function Field({ label, children }) {
   return (
     <label style={{ display: "block", marginBottom: 12 }}>
@@ -41,6 +76,7 @@ function Field({ label, children }) {
 export default function ModelConfig({ onChanged }) {
   const [s, setS] = useState(null);
   const [selId, setSelId] = useState(null);
+  const [view, setView] = useState("grid"); // "grid" = provider gallery · "edit" = inside one provider's setup
   const [status, setStatus] = useState("");
   const restoreRef = useRef(null); // backup-restore file input (must sit above the early return — hooks rule)
 
@@ -114,18 +150,19 @@ export default function ModelConfig({ onChanged }) {
   };
   const patch = (field, val) => persist({ ...s, profiles: { ...s.profiles, [selId]: { ...sel, [field]: val } } });
   const setField = (k, v) => persist({ ...s, [k]: v });
-  const addProfile = () => { const id = "p_" + Math.random().toString(36).slice(2, 7); persist({ ...s, profiles: { ...s.profiles, [id]: BLANK(id) } }); setSelId(id); };
+  const addProfile = () => { const id = "p_" + Math.random().toString(36).slice(2, 7); persist({ ...s, profiles: { ...s.profiles, [id]: BLANK(id) } }); setSelId(id); setView("edit"); };
   const addPreset = (name) => {
     const id = "p_" + Math.random().toString(36).slice(2, 7);
     const pr = PROVIDER_PRESETS.find((x) => x.name === name);
     const prof = pr ? { id, name: pr.name, kind: pr.kind, baseUrl: pr.baseUrl, apiKey: "", model: "" } : BLANK(id);
-    persist({ ...s, profiles: { ...s.profiles, [id]: prof } }); setSelId(id);
+    persist({ ...s, profiles: { ...s.profiles, [id]: prof } }); setSelId(id); setView("edit");
   };
   const delProfile = () => {
     if (profiles.length <= 1) return;
     const rest = { ...s.profiles }; delete rest[selId];
     persist({ ...s, profiles: rest, activeProfileId: s.activeProfileId === selId ? Object.keys(rest)[0] : s.activeProfileId });
     setSelId(Object.keys(rest)[0]);
+    setView("grid");
   };
   const test = async () => { setStatus("Fetching models…"); const list = await bridge.listModels(selId); setStatus(list.length ? `${list.length} models found` : "No /v1/models — enter the model id manually"); };
   const saveProvider = async () => {
@@ -139,6 +176,7 @@ export default function ModelConfig({ onChanged }) {
   return (
     <div className="mo scroll">
       <div className="mc-wrap">
+      {view === "grid" && <>
       {/* top: default model + proxy as responsive side-by-side cards */}
       <div className="mc-top">
         <div className="mc-card">
@@ -164,20 +202,62 @@ export default function ModelConfig({ onChanged }) {
         <b style={{ color: "var(--text-1)" }}>Madav Starter (free)</b> works the moment you sign in — no API key needed, with a daily limit on free models.
         For long-term use we recommend adding your own provider key (OpenRouter is the easiest: one key, hundreds of models, pay only for what you use) — pick a provider below, paste the key, and every model unlocks with no daily cap.
       </p>
-      <div className="mc-providers">
-        <div className="mc-provlist">
-          {profiles.map((p) => (
-            <button key={p.id} className={`nav-item ${p.id === selId ? "active" : ""}`} onClick={() => setSelId(p.id)}>
-              <Plug size={15} /> {p.name}
+      {/* Provider gallery — every configured provider plus one-click presets, as cards. */}
+      <div className="mc-pgrid">
+        {profiles.map((p) => {
+          const local = /localhost|127\.0\.0\.1/i.test(p.baseUrl || "");
+          const starter = /\/starter\b/.test(p.baseUrl || "");
+          const ready = starter || local || !!(p.apiKey || "").trim();
+          return (
+            <button key={p.id} className={`mc-pcard ${p.id === selId ? "sel" : ""}`} onClick={() => { setSelId(p.id); setView("edit"); setStatus(""); }}>
+              <PChip name={p.name} />
+              <span className="mc-pmain">
+                <b>{p.name}</b>
+                <small>{starter ? "free · no key needed" : local ? "runs on this computer" : p.kind === "anthropic" ? "Anthropic API" : "OpenAI-compatible"}</small>
+              </span>
+              <span className={`mc-pact ${ready ? "ok" : ""}`}>{ready ? <><Check size={13} /> Connected</> : "Add key"}</span>
             </button>
-          ))}
-          <select className="model-search" style={{ marginTop: 6 }} value="" onChange={(e) => { if (e.target.value === "__custom") addProfile(); else if (e.target.value) addPreset(e.target.value); e.target.value = ""; }}>
-            <option value="">+ Add provider…</option>
-            {PROVIDER_PRESETS.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
-            <option value="__custom">Custom (blank)</option>
-          </select>
-        </div>
+          );
+        })}
+        {PROVIDER_PRESETS.filter((pr) => !profiles.some((x) => x.name === pr.name)).map((pr) => (
+          <button key={pr.name} className="mc-pcard" onClick={() => addPreset(pr.name)}>
+            <PChip name={pr.name} />
+            <span className="mc-pmain">
+              <b>{pr.name}</b>
+              <small>{/localhost/.test(pr.baseUrl) ? "runs on this computer" : pr.kind === "anthropic" ? "Anthropic API" : "OpenAI-compatible"}</small>
+            </span>
+            <span className="mc-pact">Connect</span>
+          </button>
+        ))}
+        <button className="mc-pcard" onClick={addProfile}>
+          <PChip name="+" />
+          <span className="mc-pmain">
+            <b>Custom provider</b>
+            <small>any OpenAI- or Anthropic-compatible endpoint</small>
+          </span>
+          <span className="mc-pact">Set up</span>
+        </button>
+      </div>
 
+      {/* Backup & restore — global, lives on the gallery view. */}
+      <div className="mc-card" style={{ marginTop: 18 }}>
+        <div className="nav-label" style={{ paddingLeft: 0 }}>Backup &amp; restore</div>
+        <p style={{ color: "var(--text-2)", fontSize: 12, margin: "6px 0 10px" }}>
+          One file holds your providers, agents, teams and preferences. ⚠ The backup contains your API keys in readable form — store it somewhere private.
+        </p>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button className="btn" onClick={backupAll}><Download size={14} /> Download backup</button>
+          <button className="btn" onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={14} /> Restore from backup</button>
+          <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
+        </div>
+      </div>
+      </>}
+
+      {view === "edit" && (
+      <div className="mc-providers">
+        <button className="btn ghost" style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6, width: "fit-content" }} onClick={() => { setView("grid"); setStatus(""); }}>
+          ← All providers
+        </button>
         <div className="mc-card mc-editor">
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
             <h3 style={{ margin: 0, fontSize: 16 }}>{sel.name}</h3>
@@ -214,21 +294,9 @@ export default function ModelConfig({ onChanged }) {
           <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 14 }}>
             Every provider is always available — the model you pick in the top-bar selector decides which one runs.
           </p>
-
-          {/* Backup & restore — settings + agents + teams in one file. */}
-          <div style={{ marginTop: 22, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
-            <div className="nav-label" style={{ paddingLeft: 0 }}>Backup &amp; restore</div>
-            <p style={{ color: "var(--text-2)", fontSize: 12, margin: "6px 0 10px" }}>
-              One file holds your providers, agents, teams and preferences. ⚠ The backup contains your API keys in readable form — store it somewhere private.
-            </p>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <button className="btn" onClick={backupAll}><Download size={14} /> Download backup</button>
-              <button className="btn" onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={14} /> Restore from backup</button>
-              <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
-            </div>
-          </div>
         </div>
       </div>
+      )}
       </div>
     </div>
   );
