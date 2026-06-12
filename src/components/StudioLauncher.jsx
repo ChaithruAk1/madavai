@@ -3,7 +3,7 @@
 // format "lens" and style, and Madav forges it into a live, runnable preview. Distinct
 // from a category-card picker: the prompt is the hero; formats are lenses, not gates.
 import { useEffect, useRef, useState } from "react";
-import { Globe, FileText, Gamepad2, Wrench, Palette, Workflow, ListChecks, Sparkles, Wand2, ArrowRight, CornerDownLeft, Shuffle } from "lucide-react";
+import { Globe, FileText, Gamepad2, Wrench, Palette, Workflow, ListChecks, Sparkles, Wand2, ArrowRight, ArrowUp, Shuffle } from "lucide-react";
 
 const STYLES = ["Minimalist", "Modern", "Bold & colorful", "Playful", "Professional", "Dark"];
 
@@ -93,12 +93,12 @@ export default function StudioLauncher({ onStart }) {
         <div className="stu2-console">
           <div className="stu2-spark"><Sparkles size={16} /></div>
           <textarea
-            ref={taRef} className="stu2-input" rows={2} value={desc} onKeyDown={onKey}
+            ref={taRef} className="stu2-input" rows={1} value={desc} onKeyDown={onKey}
             onChange={(e) => setDesc(e.target.value)}
             placeholder={`e.g. ${EXAMPLES[ph].text}`} />
-          <button className="stu2-go" disabled={!canCreate} onClick={create} title="Create (⌘/Ctrl+Enter)">
-            <Sparkles size={15} /> Create <CornerDownLeft size={13} className="stu2-go-kbd" />
-          </button>
+          {canCreate && (
+            <button className="send pop" onClick={create} title="Create (⌘/Ctrl+Enter)"><ArrowUp size={17} /></button>
+          )}
         </div>
 
         {/* format lenses */}

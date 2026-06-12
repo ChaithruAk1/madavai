@@ -2760,3 +2760,23 @@ svg.lucide { color: var(--accent); }
 html, body { height: 100%; overflow: hidden; }
 .app-v { height: 100vh; }
 .main { overflow-y: auto; overflow-x: hidden; }
+
+/* Studio console + connector search: same single-row stadium pill language as the
+   "Ask Madav" bar — neutral background (no accent wash), round arrow send pops in
+   while typing. (Appended via sandbox — host edits truncate this large file.) */
+.stu2-console { border-radius: 999px; padding: 7px 9px 7px 16px; align-items: center; background: var(--bg-1); box-shadow: none; }
+.stu2-console:focus-within { box-shadow: 0 0 0 3px var(--accent-weak); }
+.stu2-input { min-height: 24px; padding: 8px 0; }
+.stu2-console .send { width: 38px; height: 38px; border-radius: 50%; flex: none; margin-left: 2px; }
+.cdir-search { border-radius: 999px; padding: 10px 18px; }
+
+/* ===== NAKED ICONS AT REST (platform-wide, user directive) =====
+   Decorative icon chips lose their tile backgrounds; interactive icon buttons are
+   transparent at rest and only show a surface on hover. (Appended via sandbox.) */
+.icon-btn { background: transparent; border-color: transparent; }
+.icon-btn:hover { background: var(--bg-2); border-color: var(--line); color: var(--text-0); }
+.ags-util { background: transparent; border-color: transparent; }
+.ags-folder-ic, .ags-folder-ic.new { background: transparent; }
+.stu2-rail-ic { background: transparent; border: none; box-shadow: none; }
+.stu2-spark { background: transparent; }
+.qa-ov-ico, .cons-kpi-ico, .cons-hl-ico, .prof-ico { background: transparent; }
