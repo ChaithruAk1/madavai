@@ -2780,3 +2780,17 @@ html, body { height: 100%; overflow: hidden; }
 .stu2-rail-ic { background: transparent; border: none; box-shadow: none; }
 .stu2-spark { background: transparent; }
 .qa-ov-ico, .cons-kpi-ico, .cons-hl-ico, .prof-ico { background: transparent; }
+
+/* ===== SINGLE-ROW INPUTS = CHAT-PILL LANGUAGE (platform-wide, user directive) =====
+   Every one-line text/search input takes the stadium shape of the "Ask Madav" bar.
+   Multi-line textareas keep their soft corners. (Appended via sandbox.) */
+input.model-search, select.model-search { border-radius: 999px; padding-left: 16px; padding-right: 16px; }
+textarea.model-search { border-radius: 14px; }
+.sb-search, .pj-search, .env-search, .mo-search, .ug-search, .spx-search, .ag-tpl-search, .ags-searchwrap, .ags-search { border-radius: 999px; }
+.sk-create input.model-search { border-radius: 999px; }
+
+/* Light theme: no ambient accent glow behind the chat bar — the bar itself carries a
+   clean theme-color border instead. Dark theme keeps the glow. (Appended via sandbox.) */
+:root[data-theme="light"] .composer::before { display: none; }
+:root[data-theme="light"] .composer { border-color: var(--accent); box-shadow: inset 0 0 0 0.5px var(--accent); background: #fff; }
+:root[data-theme="light"] .composer:focus-within { box-shadow: inset 0 0 0 0.5px var(--accent), 0 0 0 3px var(--accent-weak); }
