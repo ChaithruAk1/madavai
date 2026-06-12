@@ -221,6 +221,19 @@ class SessionManager {
     return { permMode: fallbackMode || "default", permissions: this.permissions };
   }
 
+  // Workrooms: a room may pin specific connectors (project.connectorNames). Runs
+  // tagged with that room then see ONLY those; an empty/missing list = all enabled
+  // (back-compat). Agent-bound runs keep the agent's own connector gate.
+  _roomConnectors(cfg, projectId) {
+    const all = cfg.connectors || [];
+    if (!projectId) return all;
+    try {
+      const p = store.getProject(projectId);
+      if (p && Array.isArray(p.connectorNames) && p.connectorNames.length) return all.filter((c) => p.connectorNames.includes(c.name));
+    } catch {}
+    return all;
+  }
+
   // Agent Browser binding: only for agents with the Browser capability on, bound
   // to that agent's site allowlist. Desktop only (Electron window).
   _browserFor(agentLike) {
@@ -307,18 +320,19 @@ class SessionManager {
     // not only after the turn completes.
     if (s.chatConvId) { try { const c0 = sstore.getSession(s.chatConvId); if (c0) sstore.saveSession(c0); } catch {} }
 
-    if (s.team) return this._teamTurn(sessionId, userText, profile);
-    if (s.mode === "project") return this._projectTurn(sessionId, userText, profile, images);
-    if (AGENT_MODES.has(s.mode)) return this._agentTurn(sessionId, userText, profile, images);
-
-    // Workrooms: a CHAT run launched from a room (e.g. a crew agent without file tools)
-    // carries the room's projectId — inject the room's instructions + knowledge once,
-    // up front. Same one-shot pattern as the cowork injection in _agentTurn.
-    if (s.projectId && !s._projInjected) {
+    // Workrooms: a run launched from a room (crew agent chat, room-scoped TEAM, plain
+    // room chat) carries the room's projectId — inject the room's instructions +
+    // knowledge once, up front. Cowork keeps its own flag-guarded copy in _agentTurn;
+    // "project" mode has its own dedicated path below.
+    if (s.projectId && !s._projInjected && s.mode !== "project" && !AGENT_MODES.has(s.mode)) {
       const roomProject = store.getProject(s.projectId);
       if (roomProject) userText = `${store.projectSystem(roomProject)}\n\n----- TASK -----\n${userText}`;
       s._projInjected = true;
     }
+
+    if (s.team) return this._teamTurn(sessionId, userText, profile);
+    if (s.mode === "project") return this._projectTurn(sessionId, userText, profile, images);
+    if (AGENT_MODES.has(s.mode)) return this._agentTurn(sessionId, userText, profile, images);
 
     // Chat: if skills/connectors are configured and the model speaks OpenAI tools,
     // run the lightweight tool loop (skills + connectors, no file/shell). Else plain chat.
@@ -340,7 +354,7 @@ class SessionManager {
     s.controller = controller;
     const emit = (e) => this._send(sessionId, e.kind, e.data);
     userText = (userText || "") + materializeImages(images);
-    const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
+    const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: this._roomConnectors(cfg, s.projectId), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
     try {
       const ap = this._permsFor(s.agent, "default");
       await runOpenAIAgentTurn({
@@ -724,7 +738,7 @@ class SessionManager {
         await runOpenAIAgentTurn({
           prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-          connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
+          connectors: this._roomConnectors(cfg, s.projectId), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
           systemOverride: sys,
         });
       }
@@ -779,7 +793,7 @@ class SessionManager {
       s.controller = controller;
       try {
         const cfg = settings.load();
-        const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: cfg.connectors || [], skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
+        const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: this._roomConnectors(cfg, s.projectId), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
         // A custom agent keeps the mode's file-tool system prompt and appends its own
         // instructions (a full override would lose the tool-usage guidance).
         const agentSys = this._agentSys(s, userText);

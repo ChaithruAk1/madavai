@@ -519,6 +519,26 @@ ipcMain.handle("madav:deleteProject", (_e, id) => store.deleteProject(id));
 // Workrooms crew: assign/unassign agents to a room (project.agentIds[]).
 ipcMain.handle("madav:assignProjectAgent", (_e, { projectId, agentId }) => store.assignAgent(projectId, agentId));
 ipcMain.handle("madav:unassignProjectAgent", (_e, { projectId, agentId }) => store.unassignAgent(projectId, agentId));
+ipcMain.handle("madav:assignProjectTeam", (_e, { projectId, teamId }) => store.assignTeam(projectId, teamId));
+ipcMain.handle("madav:unassignProjectTeam", (_e, { projectId, teamId }) => store.unassignTeam(projectId, teamId));
+// Workrooms guide (Project Simulation): drop three small sample marketing files into a
+// user-chosen folder so the file-agent test has something real to read. Never overwrites.
+ipcMain.handle("madav:seedSampleFiles", (_e, dir) => {
+  try {
+    if (!dir || !fs.existsSync(dir)) return { error: "Folder not found." };
+    const files = {
+      "launch-plan.md": "# Launch Plan (sample)\n\nTagline: Built to think with you.\n\n## Phases\n1. Private beta\n2. Early-bird — pricing announced at launch\n3. Public launch\n\n## Audience\nIndie builders and small teams.\n",
+      "tweet-drafts.txt": "Tweet drafts (sample):\n1) Madav is live. One workspace where you chat, collaborate on files, and put agents to work. Built to think with you.\n2) Stop juggling tabs. Chat, file work, agent teams, schedules — one app.\n",
+      "faq-snippets.md": "# FAQ (sample)\n\n**What does it cost?** Early-bird pricing is announced at launch.\n\n**What are Workrooms?** Rooms with a brief, knowledge, and an agent crew.\n",
+    };
+    let added = 0;
+    for (const [name, content] of Object.entries(files)) {
+      const fp = path.join(dir, name);
+      if (!fs.existsSync(fp)) { fs.writeFileSync(fp, content); added++; }
+    }
+    return { added };
+  } catch (e) { return { error: String((e && e.message) || e).slice(0, 200) }; }
+});
 // Per-room agent track record: agent-history events filtered by projectId.
 ipcMain.handle("madav:getProjectAgentHistory", (_e, projectId) => require("./agent-history.cjs").listForProject(projectId, 100));
 

@@ -491,7 +491,7 @@ export default function App() {
   // Start a Cowork task scoped to a project: uses the project's linked folder as the
   // working dir and injects its instructions + knowledge as context.
   const startProjectCowork = async (project, text) => {
-    if (!project.folder) { madavAlert("Link a folder to this room first (Brief \u2192 Linked folder & repo) to start work in Let's Collaborate."); return; }
+    if (!project.folder) { madavAlert("Link a folder to this room first (Instructions \u2192 Linked folder & repo) to start work in Let's Collaborate."); return; }
     setMode("cowork"); setChatMode("cowork");
     setProjectCtx(null); setCoworkProj({ id: project.id, name: project.name });
     setCwd(project.folder);
@@ -687,7 +687,7 @@ export default function App() {
     if (agent.model) selectModel(agent.model);
     const wantsFolder = !!(agent.tools && (agent.tools.files || agent.tools.shell));
     if (wantsFolder && !project.folder) {
-      madavAlert("Link a folder to this room first (Brief \u2192 Linked folder & repo) so this agent can use its file tools here.");
+      madavAlert("Link a folder to this room first (Instructions \u2192 Linked folder & repo) so this agent can use its file tools here.");
       return;
     }
     const target = wantsFolder ? "cowork" : "chat";
@@ -700,14 +700,22 @@ export default function App() {
 
   // Launch a team: fresh chat session bound to the team; Mission Control opens alongside.
   const startTeamSession = (team) => {
-    teamSeed.current = team;
+    teamSeed.current = { team };
+    modeCacheRef.current.chat = { convId: null, timeline: [] };
+    switchMode("chat");
+  };
+  // Workrooms: put a staffed TEAM to work inside a room — the mission chat is tagged
+  // with the room's projectId, so the brief + knowledge inject and it lists in the feed.
+  const startRoomTeam = (project, team) => {
+    teamSeed.current = { team, room: { id: project.id, name: project.name } };
     modeCacheRef.current.chat = { convId: null, timeline: [] };
     switchMode("chat");
   };
   useEffect(() => {
     if (teamSeed.current && mode === "chat") {
-      const team = teamSeed.current; teamSeed.current = null;
-      setAgentCtx(null); setTeamCtx(team); setTeamRun(null);
+      const seed = teamSeed.current; teamSeed.current = null;
+      setAgentCtx(null); setTeamCtx(seed.team); setTeamRun(null);
+      if (seed.room) setCoworkProj(seed.room); // re-attach the room scope (switchMode cleared it)
     }
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const clearTeam = () => { setTeamCtx(null); setTeamRun(null); setMissionPending(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
@@ -799,7 +807,7 @@ export default function App() {
           <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
             tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : "models")} />
         ) : (mode === "project" && !projectCtx) ? (
-          <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} openId={projOpenId} />
+          <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} onPutTeamToWork={startRoomTeam} openId={projOpenId} />
         ) : (
           <div className="work-split">
             <div className="work-main">

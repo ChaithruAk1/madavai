@@ -2890,3 +2890,50 @@ textarea.model-search { border-radius: 14px; }
 .wr-assignname { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wr-assigncheck { width: 20px; height: 20px; border-radius: 7px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; flex: none; }
 .wr-assigncheck.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
+/* ===== Workrooms batch (user feedback 2026-06-12) ===== */
+/* NEVER black text in dark theme: shelf rows are <button>s — the UA stylesheet paints
+   button text black unless told otherwise. Inherit the app's text color everywhere. */
+.wr-banner, .wr-tile, .wr-roomglyph, .wr-glyphopt, .wr-assignrow { color: inherit; }
+
+/* Tile view for the shelf (list ⇄ tiles toggle in the header) */
+.wr-shelf.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.wr-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(160deg, color-mix(in srgb, var(--wr) 12%, var(--bg-1)), var(--bg-1) 55%); cursor: pointer; text-align: left; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; min-height: 130px; }
+.wr-tile:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--wr) 55%, var(--line)); box-shadow: 0 6px 18px color-mix(in srgb, var(--wr) 12%, transparent); }
+.wr-tileglyph { font-size: 24px; line-height: 1; margin-bottom: 4px; }
+
+/* Room glyph is now a button (opens the icon picker) */
+.wr-roomhead .wr-roomglyph { cursor: pointer; transition: transform .12s ease, border-color .12s ease; }
+.wr-roomhead .wr-roomglyph:hover { transform: scale(1.08); border-color: var(--wr); }
+
+/* Icon picker grid — glyphs + emojis */
+.wr-glyphgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; margin-top: 14px; max-height: 50vh; overflow-y: auto; }
+.wr-glyphopt { font-size: 20px; padding: 8px 0; border-radius: 10px; border: 1px solid transparent; background: none; cursor: pointer; transition: background .1s ease, border-color .1s ease, transform .1s ease; }
+.wr-glyphopt:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); transform: scale(1.12); }
+.wr-glyphopt.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
+/* Team cards in the crew zone */
+.wr-teamfaces { display: flex; align-items: center; flex: none; }
+
+/* Scheduler tile view */
+.sched-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.sched-tile { display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-1); cursor: pointer; text-align: left; color: inherit; transition: border-color .15s ease, transform .15s ease; }
+.sched-tile:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); transform: translateY(-1px); }
+.sched-tile-btns { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; }
+
+/* ===== LIGHT-MODE CHECKLIST (user mandate 2026-06-12) =====
+   1) NEVER accent-tinted backgrounds/washes in light mode — plain var(--bg-1) surfaces.
+   2) Icons NEVER get background boxes — bare icons only.
+   3) The chat composer must not sit inside a visible square panel. */
+:root[data-theme="light"] .composer-wrap { background: transparent; border-top: none; backdrop-filter: none; }
+:root[data-theme="light"] .wr-roomhead { background: var(--bg-1); }
+:root[data-theme="light"] .wr-banner, :root[data-theme="light"] .wr-tile { background: var(--bg-1); }
+:root[data-theme="light"] .wr-roomglyph { background: transparent; border-color: var(--line); }
+
+/* Model selector row — breathing room from the page bottom (was touching the edge) */
+.model-dock { margin-bottom: 16px; }
+
+/* LIGHT-MODE CHECKLIST cont'd: a SELECTED sidebar item keeps its accent-colored icon —
+   never flips to black. Selection is shown by weight, not by darkening. */
+:root[data-theme="light"] .nav-item.active { color: var(--accent); font-weight: 700; }
+:root[data-theme="light"] .nav-item.active svg { color: var(--accent); }

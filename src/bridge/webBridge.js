@@ -82,6 +82,7 @@ const wrNormalizeProject = (p) => {
   if (!p) return p;
   if (!p.identity || !p.identity.color) p.identity = wrAutoIdentity(p.id || p.name || "room");
   if (!Array.isArray(p.agentIds)) p.agentIds = [];
+  if (!Array.isArray(p.teamIds)) p.teamIds = [];
   return p;
 };
 
@@ -919,6 +920,9 @@ export const webBridge = {
   async assignProjectAgent(projectId, agentId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p || !agentId) return null; if (!p.agentIds.includes(agentId)) p.agentIds.push(agentId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
   async unassignProjectAgent(projectId, agentId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p) return null; p.agentIds = p.agentIds.filter((x) => x !== agentId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
   async getProjectAgentHistory() { return []; }, // web: agent runs aren't recorded per-room (desktop feature)
+  async seedSampleFiles() { return { error: "Creating sample files needs the desktop app." }; },
+  async assignProjectTeam(projectId, teamId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p || !teamId) return null; if (!p.teamIds.includes(teamId)) p.teamIds.push(teamId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
+  async unassignProjectTeam(projectId, teamId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p) return null; p.teamIds = p.teamIds.filter((x) => x !== teamId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
   async updateProject(id, patch) { const all = LS.get("be.projects", {}); all[id] = { ...all[id], ...patch }; LS.set("be.projects", all); return all[id]; },
   async deleteProject(id) { const all = LS.get("be.projects", {}); delete all[id]; LS.set("be.projects", all); return true; },
   async addKnowledgeText(projectId, name, content) { const all = LS.get("be.projects", {}); const p = all[projectId]; p.knowledge = p.knowledge || []; p.knowledge.push({ id: rid("kn_"), name, type: "text", content }); LS.set("be.projects", all); return p; },

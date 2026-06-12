@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer, Webhook, Copy, Check } from "lucide-react";
+import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer, Webhook, Copy, Check, LayoutGrid, List } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
 
@@ -54,6 +54,7 @@ export default function Scheduler() {
   const [editing, setEditing] = useState(null);   // draft task in modal, or null
   const [busyRun, setBusyRun] = useState(null);    // task id running now
   const [runsFor, setRunsFor] = useState(null);    // { task, runs } — the Run history modal
+  const [layout, setLayout] = useState((() => { try { return localStorage.getItem("be.sched.layout") || "rows"; } catch { return "rows"; } })()); // rows | tiles
 
   // Run history: the engine keeps each task's last 20 runs (status + full output).
   const openRuns = async (t) => {
@@ -119,6 +120,9 @@ export default function Scheduler() {
           <p style={{ color: "var(--text-2)", fontSize: 13, margin: "4px 0 0" }}>Run tasks on a schedule or whenever you need them.</p>
         </div>
         <div className="pj-actions">
+          <button className="icon-btn" title={layout === "rows" ? "Tile view" : "List view"} onClick={() => { const v = layout === "rows" ? "tiles" : "rows"; setLayout(v); try { localStorage.setItem("be.sched.layout", v); } catch {} }}>
+            {layout === "rows" ? <LayoutGrid size={15} /> : <List size={15} />}
+          </button>
           <button className="icon-btn" title={`Sort by ${sortBy === "name" ? "recent" : "name"}`} onClick={() => setSortBy((s) => s === "name" ? "recent" : "name")}><ArrowUpDown size={15} /></button>
           <div className="pj-search"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search tasks…" /></div>
           <div className="plus-wrap" style={{ position: "relative" }}>
@@ -155,6 +159,24 @@ export default function Scheduler() {
                 <ListChecks size={14} /> Weekly review
               </button>
             </div>
+          </div>
+        ) : layout === "tiles" ? (
+          <div className="sched-tiles">
+            {shown.map((t) => (
+              <div key={t.id} className="sched-tile" onClick={() => openEdit(t)}>
+                <div className="sched-name">{t.name}{t.schedule && t.schedule.mode !== "off" && <Clock size={12} style={{ marginLeft: 7, color: "var(--accent)", verticalAlign: "-1px" }} />}</div>
+                <div className="mo-sub" style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{t.description || t.prompt || "No description"}</div>
+                <div className="mo-sub">{scheduleText(t.schedule)} · {rel(t.lastRun)}</div>
+                <div className="sched-tile-btns">
+                  <button className="btn" title="Run history & output" onClick={(e) => { e.stopPropagation(); openRuns(t); }} style={{ padding: "4px 8px" }}><ListChecks size={13} /></button>
+                  <button className="btn" onClick={(e) => { e.stopPropagation(); runNow(t.id); }} disabled={busyRun === t.id} style={{ padding: "4px 8px" }}>
+                    {busyRun === t.id ? <Loader2 size={13} className="spin" /> : <Play size={13} />}
+                  </button>
+                  <span style={{ flex: 1 }} />
+                  <button className="btn ghost danger" onClick={(e) => { e.stopPropagation(); del(t.id); }} style={{ padding: "4px 7px" }}><Trash2 size={13} /></button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : shown.map((t) => (
           <div key={t.id} className="sched-row" onClick={() => openEdit(t)}>

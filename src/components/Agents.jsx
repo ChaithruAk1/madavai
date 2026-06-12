@@ -944,9 +944,15 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     finally { setSaveBusy(false); }
   };
 
-  const canDelete = (a) => !(etLocked && isEtAgent(a)); // EdgeTrader workers are pack-managed
+  // Project Simulation agents (the Workrooms guide crew) are built-in — never deletable.
+  const isSimAgent = (a) => (((a && a.id) || "")).startsWith("agent_sim_");
+  const canDelete = (a) => !(etLocked && isEtAgent(a)) && !isSimAgent(a);
   const removeAgent = async (id) => {
     const a = agents.find((x) => x.id === id);
+    if (a && isSimAgent(a)) {
+      madavAlert("This agent is part of Madav's built-in Project Simulation (the Workrooms guide) and can't be deleted.");
+      return;
+    }
     if (a && !canDelete(a)) {
       madavAlert("This worker belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
       return;

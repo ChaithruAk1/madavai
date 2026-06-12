@@ -23,6 +23,7 @@ function normalize(p) {
   if (!p) return p;
   if (!p.identity || !p.identity.color) p.identity = autoIdentity(p.id || p.name || "room");
   if (!Array.isArray(p.agentIds)) p.agentIds = [];
+  if (!Array.isArray(p.teamIds)) p.teamIds = []; // teams staffed in the room (crew's big sibling)
   return p;
 }
 
@@ -41,14 +42,15 @@ function listProjects() {
     id: p.id, name: p.name, instructions: p.instructions, createdAt: p.createdAt, updatedAt: p.updatedAt,
     knowledgeCount: (p.knowledge || []).length,
     knowledgeBytes: (p.knowledge || []).reduce((n, k) => n + String(k.content || "").length, 0),
-    identity: p.identity, agentIds: p.agentIds, folder: p.folder || "", githubUrl: p.githubUrl || "",
+    identity: p.identity, agentIds: p.agentIds, teamIds: p.teamIds, folder: p.folder || "", githubUrl: p.githubUrl || "",
+    sim: !!p.sim, // built-in Project Simulation room (Workrooms guide) — delete-protected in the UI
     convCount: (convMeta[p.id] || {}).count || 0, lastConvAt: (convMeta[p.id] || {}).lastAt || 0,
   }));
 }
 function getProject(id) { return loadProjects().find((p) => p.id === id) || null; }
 function createProject(name) {
   const id = rand("prj_");
-  const p = { id, name: name || "Untitled project", instructions: "", knowledge: [], agentIds: [], identity: autoIdentity(id), createdAt: Date.now() };
+  const p = { id, name: name || "Untitled project", instructions: "", knowledge: [], agentIds: [], teamIds: [], identity: autoIdentity(id), createdAt: Date.now() };
   const arr = loadProjects(); arr.unshift(p); saveProjects(arr); return p;
 }
 function updateProject(id, patch) {
@@ -72,6 +74,17 @@ function assignAgent(projectId, agentId) {
 function unassignAgent(projectId, agentId) {
   const arr = loadProjects(); const p = arr.find((x) => x.id === projectId); if (!p) return null;
   p.agentIds = p.agentIds.filter((id) => id !== agentId);
+  p.updatedAt = Date.now(); saveProjects(arr); return p;
+}
+function assignTeam(projectId, teamId) {
+  if (!teamId) return null;
+  const arr = loadProjects(); const p = arr.find((x) => x.id === projectId); if (!p) return null;
+  if (!p.teamIds.includes(teamId)) p.teamIds.push(teamId);
+  p.updatedAt = Date.now(); saveProjects(arr); return p;
+}
+function unassignTeam(projectId, teamId) {
+  const arr = loadProjects(); const p = arr.find((x) => x.id === projectId); if (!p) return null;
+  p.teamIds = p.teamIds.filter((id) => id !== teamId);
   p.updatedAt = Date.now(); saveProjects(arr); return p;
 }
 
@@ -122,7 +135,7 @@ function deleteConversation(id) { try { fs.unlinkSync(convFile(id)); } catch {} 
 
 module.exports = {
   listProjects, getProject, createProject, updateProject, deleteProject,
-  assignAgent, unassignAgent,
+  assignAgent, unassignAgent, assignTeam, unassignTeam,
   addKnowledge, removeKnowledge, projectSystem,
   listConversations, getConversation, createConversation, saveConversation, deleteConversation,
 };

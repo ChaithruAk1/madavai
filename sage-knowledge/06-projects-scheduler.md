@@ -32,9 +32,9 @@ What: The room's header — a soft gradient band in the room's identity color wi
 Why: Confirms which room you're in and how alive it is; the trash retires it.
 Behavior: The trash asks "Close workroom \"name\"? Its conversations are deleted too." — accepting deletes the room and its chat history and returns you to the shelf. There is no undo, so export anything you need first.
 
-### Workroom · Brief
-aliases: room instructions, project instructions, custom instructions, standing orders, brief box
-What: The "Brief" box in the left zone — standing instructions every chat and crew mission in this room follows.
+### Workroom · Instructions
+aliases: room instructions, brief, project instructions, custom instructions, standing orders
+What: The "Instructions" box in the left zone — standing instructions every chat and crew mission in this room follows.
 Why: Set goals, tone, rules, and context once instead of repeating them in every chat or mission.
 Behavior: Free-form text; saves automatically when you click away (on blur) — no Save button. The brief is injected into room chats, room-scoped Collaborate tasks, crew missions launched with "Put to work", and scheduled runs targeted at this room.
 Example: "You are reviewing legal contracts. Always flag liability clauses."
