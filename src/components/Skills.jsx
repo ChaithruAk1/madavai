@@ -43,7 +43,7 @@ export default function Skills() {
   const [drafts, setDrafts] = useState([]); // Skill Forge: learned drafts awaiting approval
 
   // Honest signposting on web: skill folders live on a real disk, which a browser can't manage.
-  const webNote = isWeb ? "Skill folders, import and creation need the desktop app — the browser can't manage files on your computer." : "";
+  const webNote = isWeb ? "Built-in skill packs work right here. Your own skill folders, import and creation need the desktop app — the browser can't manage files on your computer." : "";
 
   const refresh = async () => {
     const cfg = await bridge.getSettings();
@@ -175,14 +175,18 @@ export default function Skills() {
             <div className="sk-detail-head">
               <h2>{sel.name}</h2>
               <span style={{ flex: 1 }} />
-              <button className="btn ghost" title={on ? "Disable" : "Enable"} onClick={() => toggleSkill(sel)} style={{ color: on ? "var(--ok)" : "var(--text-2)" }}>
-                {on ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-              </button>
-              <button className="btn ghost danger" title="Delete" onClick={() => deleteSkill(sel)}><Trash2 size={15} /></button>
+              {sel.bundled ? (
+                <span className="badge" title="Ships with Madav — read-only here">built-in</span>
+              ) : (<>
+                <button className="btn ghost" title={on ? "Disable" : "Enable"} onClick={() => toggleSkill(sel)} style={{ color: on ? "var(--ok)" : "var(--text-2)" }}>
+                  {on ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                </button>
+                <button className="btn ghost danger" title="Delete" onClick={() => deleteSkill(sel)}><Trash2 size={15} /></button>
+              </>)}
             </div>
 
             <div className="sk-meta">
-              <div><label>Added by</label><span>You</span></div>
+              <div><label>Added by</label><span>{sel.bundled ? "Madav (built-in)" : "You"}</span></div>
               <div><label>Last updated</label><span>{updated}</span></div>
               <div><label>Trigger</label><span>{trigger} + auto</span></div>
             </div>

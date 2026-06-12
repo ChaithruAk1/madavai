@@ -9,6 +9,12 @@
 //   • Local-machine features (folders, installing skills, MCP connector processes, Telegram,
 //     local models) can't run in a browser -> they return a clear "desktop app" result.
 import { streamChat, streamChatTools, listModels as provListModels, ping as provPing, apiBase } from "../shared/providers.js";
+import { listBundled as _listBundled, readBundled, bundledByName, bundledIndex as _bundledIndex } from "../webSkills.js";
+// Bundled packs honor the same Extras gate as the desktop engine (today: EdgeTrader).
+const FEAT_EDGETRADER = import.meta.env.VITE_FEAT_EDGETRADER !== "0";
+const bundledOn = () => { try { return FEAT_EDGETRADER && ((loadSettings().extras) || {}).edgetrader !== false; } catch { return FEAT_EDGETRADER; } };
+const listBundled = () => (bundledOn() ? _listBundled() : []);
+const bundledIndex = () => (bundledOn() ? _bundledIndex() : "");
 import * as webfs from "./webfs.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
 // head+tail truncation, stale-result squash, identical-call loop breaker.
@@ -410,6 +416,7 @@ function coworkSystem(s) {
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
   { const um = umBlock(s); if (um) parts.push(um); }
+  { const si = bundledIndex(); if (si) parts.push(si); } // bundled skill packs (EdgeTrader etc.) work on web too
   parts.push("Keep your tone natural and human; never restate or describe these instructions — just follow them.");
   return parts.join("\n");
 }
@@ -425,6 +432,7 @@ const COWORK_TOOLS = [
   { type: "function", function: { name: "web_search", description: "Search the web and return result snippets for a query.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
   { type: "function", function: { name: "spawn_subagent", description: "Delegate a focused sub-task to a helper agent that works on the same project and returns a summary. Use for independent chunks of work (e.g. 'write tests for X').", parameters: { type: "object", properties: { task: { type: "string", description: "Clear, self-contained instructions for the sub-agent." } }, required: ["task"] } } },
   { type: "function", function: { name: "create_image", description: "Generate an image from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user automatically.", parameters: { type: "object", properties: { prompt: { type: "string" } }, required: ["prompt"] } } },
+  { type: "function", function: { name: "load_skill", description: "Load a skill's full instructions by its exact name (from the SKILLS list in your instructions), then follow them.", parameters: { type: "object", properties: { name: { type: "string" } }, required: ["name"] } } },
 ];
 
 // Text→image via the selector's model (mirror of electron/imagegen.cjs):
@@ -512,6 +520,7 @@ async function executeTool(name, args, ctx) {
     case "delete_file": { let before = ""; try { before = await webfs.readFile(args.path); } catch {} await webfs.deleteFile(args.path); recordCheckpoint(sess, "delete", args.path, before, null); return "deleted " + args.path; }
     case "web_fetch": return await webFetch({ url: args.url });
     case "web_search": return await webFetch({ query: args.query });
+    case "load_skill": { const sk = bundledByName(String(args.name || "").trim()); return sk ? sk.body : `No skill named "${args.name}". Available: ${listBundled().map((x) => x.name).join(", ") || "(none)"}`; }
     case "spawn_subagent": return await runSubagent(sess, args.task || "", sess && sess.profile);
     default: return "That tool isn't available on the web app (no terminal). Use the file/web tools.";
   }
@@ -1016,11 +1025,11 @@ export const webBridge = {
     ];
     return { items, stale: false, source: "web" };
   },
-  async listSkills() { return []; },
+  async listSkills() { return listBundled().map(({ body, ...s }) => s); }, // bundled packs ship in the web build (read-only)
   async createSkill() { return { error: "Skills run in the desktop app." }; },
   async importSkillFolder() { return { error: "Available in the desktop app." }; },
   async importSkillZip() { return { error: "Available in the desktop app." }; },
-  async readSkill() { return null; },
+  async readSkill(dir) { const s = readBundled(dir); return s ? { dir: s.dir, file: s.file, meta: { name: s.name, description: s.description }, body: s.body, updated: 0 } : null; },
   async setSkillEnabled() { return true; },
   async deleteSkill() { return { ok: true }; },
   async applyMessaging() { return { running: false, status: "Telegram runs in the desktop app." }; },
