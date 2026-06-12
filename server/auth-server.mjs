@@ -432,11 +432,13 @@ const server = http.createServer(async (req, res) => {
     if (Date.now() - seen > 5 * 60000) store.patchUser(user.id, { lastSeenAt: new Date().toISOString() }).catch(() => {});
     const st = statusOf(user);
     if (st.status === "suspended") return json(res, 403, { error: "suspended" });
+    // Admins are never "on trial": they own the install — full access, no Upgrade nags.
+    const admin = isAdminEmail(user.email);
     return json(res, 200, {
       user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, provider: user.provider },
-      admin: isAdminEmail(user.email),
-      status: st.status, trialEndsAt: user.trialEndsAt, daysLeft: st.daysLeft,
-      subscription: { active: !!user.subscriptionActive || !!user.freeAccess || isFreeEmail(user.email), plan: (user.freeAccess || isFreeEmail(user.email)) ? "Complimentary" : (user.plan || null) },
+      admin,
+      status: admin ? "active" : st.status, trialEndsAt: admin ? null : user.trialEndsAt, daysLeft: admin ? null : st.daysLeft,
+      subscription: { active: admin || !!user.subscriptionActive || !!user.freeAccess || isFreeEmail(user.email), plan: admin ? "Creator" : (user.freeAccess || isFreeEmail(user.email)) ? "Complimentary" : (user.plan || null) },
     });
   }
 

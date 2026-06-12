@@ -683,9 +683,10 @@ export default function App() {
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const clearTeam = () => { setTeamCtx(null); setTeamRun(null); setMissionPending(null); sessionRef.current = null; setTimeline([]); setActiveConvId(null); };
 
-  // First-run onboarding: show until the user has any key'd provider (or explicitly skips).
-  const [obDismissed, setObDismissed] = useState(() => { try { return !!localStorage.getItem("be.onboarded"); } catch { return true; } });
-  const needsOnboarding = !obDismissed && settings && !Object.values(settings.profiles || {}).some((p) => (p.apiKey || "").length > 0);
+  // First-run onboarding RETIRED (2026-06-12): Madav Starter gives every signed-in user
+  // working free models with zero setup, so the "pick a provider, paste a key" gate is
+  // no longer needed. Settings → Model configuration carries the add-your-own-key path.
+  const needsOnboarding = false;
 
   const statusDot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   const controlsRow = (
@@ -708,7 +709,7 @@ export default function App() {
 
   return (
     <div className={`app-v ${sidebarOpen ? "" : "sb-collapsed"}`}>
-      {needsOnboarding && <Onboarding onDone={async () => { setObDismissed(true); try { const s2 = await bridge.getSettings(); setSettings(s2); loadModelsFor(s2); } catch {} }} />}
+      {needsOnboarding && <Onboarding onDone={async () => { try { const s2 = await bridge.getSettings(); setSettings(s2); loadModelsFor(s2); } catch {} }} />}
       <TopNav
         mode={mode}
         onSelect={switchMode}
