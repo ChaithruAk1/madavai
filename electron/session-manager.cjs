@@ -101,6 +101,16 @@ class SessionManager {
         // Cross-chat memory: fire-and-forget extraction of durable user facts from
         // this completed turn (throttled inside user-memory; never blocks the UI).
         try { if (require("./features.cjs").builtIn("memory")) { const cfg = settings.load(); require("./user-memory.cjs").learnFromTurn(settings.activeProfile(cfg), cfg, t.userText, t.replyText); } } catch {}
+        // Skill Forge: observe recurring agent-mode tasks; occasionally draft a skill for
+        // user approval (instincts.cjs — throttled, fail-open, Extras "forge" gate).
+        try {
+          const cfg2 = settings.load();
+          if ((cfg2.extras || {}).forge !== false && (t.mode === "cowork" || t.mode === "code" || t.mode === "chat")) {
+            const inst = require("./instincts.cjs");
+            inst.observe(t.mode, t.userText);
+            inst.maybeForge(); // async, self-throttled to 1/hour
+          }
+        } catch {}
         this._turns.delete(sessionId);
       }
       else if (kind === "error") { this._recordAgentRun(sessionId, t, data, false); this._persistTurn(sessionId); this._turns.delete(sessionId); }

@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld("madav", {
   librarianApply: (areaFile) => ipcRenderer.invoke("madav:librarianApply", areaFile),
   librarianDiscard: (areaFile) => ipcRenderer.invoke("madav:librarianDiscard", areaFile),
   librarianRollback: (args) => ipcRenderer.invoke("madav:librarianRollback", args),
+  forgeList: () => ipcRenderer.invoke("madav:forgeList"),
+  forgeApprove: (name) => ipcRenderer.invoke("madav:forgeApprove", name),
+  forgeDiscard: (name) => ipcRenderer.invoke("madav:forgeDiscard", name),
   getSession: (id) => ipcRenderer.invoke("madav:getSession", id),
   deleteSession: (id) => ipcRenderer.invoke("madav:deleteSession", id),
 

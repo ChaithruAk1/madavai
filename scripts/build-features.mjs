@@ -20,7 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
-const KEYS = ["sage", "voice", "imagegen", "office", "browser", "memory", "desktop", "research", "studio", "terminal", "scheduler", "viamobile", "edgetrader"];
+const KEYS = ["sage", "voice", "imagegen", "office", "browser", "memory", "desktop", "research", "studio", "terminal", "scheduler", "viamobile", "edgetrader", "forge"];
 const all = process.argv.includes("--all");
 
 let extras = {};

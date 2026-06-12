@@ -118,6 +118,12 @@ What: A toggle for the built-in stock-analysis skill pack (equity analysis, adve
 Why: The pack ships inside the app so a settings wipe or reinstall can never lose it; this switch lets the owner hide it.
 Behavior: Default ON. When on, the app's bundled skills folder loads in every mode automatically — no Skills-folder setup needed. Turning it off removes those skills from the next message onward (the EdgeTrader agents will say the skill is missing). The pack produces information, not financial advice; trade execution stays separately gated and off by default.
 
+### Settings → Extras · Skill Forge
+aliases: skill forge, learned skills, auto skills, instinct skills
+What: A toggle for Skill Forge — Madav notices tasks you repeat and drafts reusable skills from them.
+Why: Turn repetition into automation without writing skills by hand.
+Behavior: Default ON. Madav records a short one-line signature of completed tasks (never full content); when at least three similar ones accumulate, the active model drafts a SKILL.md. Drafts appear in the Skills screen under "Learned drafts — your approval needed" — nothing becomes a live skill until you click Approve. Approved skills are written to a personal skills folder and load like any other skill. At most one draft is forged per hour and five can be pending.
+
 ### Settings → Extras · Sage helper
 aliases: sage, sara, in-app guide, help assistant, floating helper
 What: A toggle for the floating in-app guide (Sage/Sara) that answers questions about the app on every screen.

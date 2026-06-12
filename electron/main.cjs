@@ -317,6 +317,11 @@ ipcMain.handle("madav:librarianApply", async (_e, areaFile) => librarian ? await
 ipcMain.handle("madav:librarianDiscard", (_e, areaFile) => librarian ? librarian.discard(String(areaFile || "")) : LIB_MISSING);
 ipcMain.handle("madav:librarianRollback", (_e, args) => librarian ? librarian.rollback(String((args || {}).file || ""), String((args || {}).backup || "")) : LIB_MISSING);
 
+// ---- IPC: Skill Forge (learned skill drafts — approve/discard; approval is mandatory) ----
+ipcMain.handle("madav:forgeList", () => { try { return require("./instincts.cjs").list(); } catch { return []; } });
+ipcMain.handle("madav:forgeApprove", (_e, name) => { try { return require("./instincts.cjs").approve(String(name || "")); } catch (e) { return { error: String((e && e.message) || e) }; } });
+ipcMain.handle("madav:forgeDiscard", (_e, name) => { try { return require("./instincts.cjs").discard(String(name || "")); } catch (e) { return { error: String((e && e.message) || e) }; } });
+
 // ---- IPC: Saved library (bookmarked responses) ----
 // Each save is written to a local JSON store AND mirrored into an auto-created
 // "Saved History" project as a knowledge entry, so saved answers become reusable

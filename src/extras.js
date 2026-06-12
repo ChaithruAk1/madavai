@@ -22,6 +22,7 @@ export const EXTRAS = [
   { key: "scheduler", label: "Scheduler",            desc: "Scheduled tasks, agent triggers and webhooks screen." },
   { key: "viamobile", label: "Via Mobile",           desc: "Control Madav from your phone over Telegram." },
   { key: "edgetrader", label: "EdgeTrader analysis pack", desc: "The built-in stock-analysis skills (equity analysis, adversarial debate, verdict format) used by the EdgeTrader agent team. Information, not financial advice." },
+  { key: "forge", label: "Skill Forge", desc: "Madav notices tasks you repeat and drafts reusable skills from them — nothing activates until you approve a draft in the Skills screen." },
 ];
 
 // Which features exist in THIS build (two-channel installers: scripts/build-features.mjs
@@ -41,6 +42,7 @@ export const FEAT_BUILT = {
   scheduler: import.meta.env.VITE_FEAT_SCHEDULER !== "0",
   viamobile: import.meta.env.VITE_FEAT_VIAMOBILE !== "0",
   edgetrader: import.meta.env.VITE_FEAT_EDGETRADER !== "0",
+  forge: import.meta.env.VITE_FEAT_FORGE !== "0",
 };
 
 // Is a feature on? (absent/undefined = ON; only an explicit false turns it off)

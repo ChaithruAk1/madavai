@@ -40,6 +40,7 @@ export default function Skills() {
   const [newName, setNewName] = useState("");
   const [status, setStatus] = useState("");
   const [showFolders, setShowFolders] = useState(false);
+  const [drafts, setDrafts] = useState([]); // Skill Forge: learned drafts awaiting approval
 
   // Honest signposting on web: skill folders live on a real disk, which a browser can't manage.
   const webNote = isWeb ? "Skill folders, import and creation need the desktop app — the browser can't manage files on your computer." : "";
@@ -49,8 +50,15 @@ export default function Skills() {
     setDirs(cfg.skillsDirs || []);
     const list = await bridge.listSkills();
     setSkills(list);
+    try { setDrafts(bridge.forgeList ? (await bridge.forgeList()) || [] : []); } catch {}
     return list;
   };
+  const approveDraft = async (d) => {
+    const r = await bridge.forgeApprove(d.name);
+    setStatus(r?.error || `Skill "${d.name}" approved — it's live now`);
+    await refresh();
+  };
+  const discardDraft = async (d) => { await bridge.forgeDiscard(d.name); await refresh(); };
   useEffect(() => { refresh().then((l) => { if (l && l[0]) select(l[0]); }); }, []);
 
   const select = async (s) => {
@@ -106,6 +114,25 @@ export default function Skills() {
             </button>
           ))}
         </div>
+
+        {drafts.length > 0 && (
+          <>
+            <div className="nav-label" style={{ paddingLeft: 8 }}>Learned drafts — your approval needed</div>
+            <div className="sk-items">
+              {drafts.map((d) => (
+                <div key={d.name} className="sk-item" style={{ display: "block", cursor: "default" }} title={d.description}>
+                  <div style={{ fontWeight: 600 }}>{d.name}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-2)", margin: "2px 0 6px" }}>{d.description}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-2)", marginBottom: 6 }}>Madav noticed {d.evidence?.length || 0} similar tasks and drafted this.</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button className="btn primary" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => approveDraft(d)}>Approve</button>
+                    <button className="btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => discardDraft(d)}>Discard</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="sk-foot">
           <div className="sk-create">

@@ -71,10 +71,27 @@ const AGENTS = [
   },
 ];
 
+// OPTIONAL persona lenses (ai-hedge-fund-inspired): three investing "schools" that judge
+// the same ticker through different philosophies. Seeded as agents but NOT in the default
+// team — add them in Agent Studio (between Context Analyst and Bull) when you want the
+// ensemble; the 'edgetrader-persona-lenses' skill carries their full rules.
+const LENS = (id, name, glyph, color, school, brief) => ({
+  id, name, description: `EdgeTrader optional lens — ${school} school. ${brief}`,
+  tools: T({}), model: "", identity: { color, glyph }, autonomy: "ask", createdAt: now,
+  instructions: `You are the ${name}, an OPTIONAL EdgeTrader lens station. You receive the Quant and Context analyst reports for ONE ticker. Load the skill 'edgetrader-persona-lenses' and follow its Shared rules plus the ${school} section exactly: judge the ticker strictly through that school's philosophy, max 250 words, only numbers from the reports, and END with the mandatory 'LENS VERDICT:' line from the skill. You are a lens, not the decider.`,
+});
+const LENS_AGENTS = [
+  LENS("agent_et_lens_value", "ET Value Lens", "◉", "#d6a313", "Value lens (Buffett/Graham school)", "Moats, owner earnings, margin of safety."),
+  LENS("agent_et_lens_contra", "ET Contrarian Lens", "◎", "#e76f81", "Contrarian lens (Burry/deep-skeptic school)", "What is the consensus missing?"),
+  LENS("agent_et_lens_growth", "ET Growth Lens", "◈", "#5e9bf2", "Growth lens (Wood/Lynch school)", "Secular tailwinds and compounding runway."),
+];
+AGENTS.push(...LENS_AGENTS);
+
 const TEAM = {
   id: "team_edgetrader", name: "EdgeTrader",
   identity: { color: C.chief, glyph: "❖" }, mode: "relay",
-  members: AGENTS.map((a) => a.id), budgetTokens: 120000, createdAt: now,
+  // Default relay stays the lean 6 stations; the lens agents are available to add in Studio.
+  members: AGENTS.filter((a) => !a.id.startsWith("agent_et_lens_")).map((a) => a.id), budgetTokens: 120000, createdAt: now,
 };
 
 // ---------- run ----------
