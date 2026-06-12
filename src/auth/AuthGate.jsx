@@ -5,7 +5,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { LogIn, Wifi, ShieldX, RefreshCw, LogOut, Sparkles, CreditCard } from "lucide-react";
 import { bridge } from "../bridge/index.js";
-import ThinkLogo from "../components/ThinkLogo.jsx";
+import MadavMark from "../components/MadavMark.jsx";
 
 export default function AuthGate({ children }) {
   const [phase, setPhase] = useState("loading"); // loading|needLogin|offline|suspended|expired|ok
@@ -80,7 +80,7 @@ export default function AuthGate({ children }) {
   return (
     <div className="auth-screen">
       <div className="auth-card">
-        <div className="auth-brand"><ThinkLogo size={44} animated={false} /><div className="auth-word">Madav</div></div>
+        <div className="auth-brand"><MadavMark size={48} /><div className="auth-word">Madav</div></div>
 
         {phase === "loading" && <div className="auth-msg"><RefreshCw className="spin" size={18} /> Checking your account…</div>}
 
