@@ -30,6 +30,10 @@ services:
         value: chaithru@gmail.com
       - key: FREE_EMAILS           # comma-separated tester emails → Complimentary accounts
         sync: false
+      - key: STARTER_OPENROUTER_KEY # Madav Starter house key (free models; server-only, never ships to clients)
+        sync: false
+      - key: STARTER_DAILY         # per-user daily request cap for Starter
+        value: "50"
       # --- set these yourself in the Render dashboard (Environment tab) ---
       - key: GOOGLE_CLIENT_ID
         sync: false

@@ -229,6 +229,23 @@ function isAllowedProxyHost(urlString) {
   return PROXY_HOST_ALLOW.some((d) => h === d || h.endsWith("." + d));
 }
 
+// ---- Madav Starter config (see the /starter routes) ----
+// House key for zero-setup free models. SERVER-ONLY: set STARTER_OPENROUTER_KEY in the
+// host environment; unset = the Starter provider politely reports "not configured".
+const STARTER_KEY = process.env.STARTER_OPENROUTER_KEY || "";
+const STARTER_DAILY = Math.max(1, Number(process.env.STARTER_DAILY) || 50);
+const STARTER_HEADERS = { "HTTP-Referer": "https://madav.ai", "X-Title": "Madav" }; // OpenRouter app attribution
+const starterUsed = new Map(); // `${userId}:${yyyy-mm-dd}` → request count (in-memory)
+function starterQuota(uid) {
+  const today = new Date().toISOString().slice(0, 10);
+  const k = uid + ":" + today;
+  const n = (starterUsed.get(k) || 0) + 1;
+  starterUsed.set(k, n);
+  if (starterUsed.size > 20000) for (const key of starterUsed.keys()) if (!key.endsWith(today)) starterUsed.delete(key); // daily GC
+  return n <= STARTER_DAILY;
+}
+if (STARTER_KEY) console.log(`[auth-server] Madav Starter active — free models on the house key, ${STARTER_DAILY}/user/day.`);
+
 // Static serving for the WEB app: serves the built Vite bundle (dist/) so the web app and the API
 // share one origin (no CORS, OAuth redirects come back here). SPA fallback to index.html.
 const WEB_DIR = process.env.WEB_DIR || path.join(process.cwd(), "dist");
@@ -499,6 +516,44 @@ const server = http.createServer(async (req, res) => {
     let b = {}; try { b = JSON.parse(raw || "{}"); } catch {}
     if (b.batch) return json(res, 200, { scores: scoreBatch(b.batch) });
     return json(res, 200, { score: scoreQuiz(b.answers || b) });
+  }
+
+  // ---- Madav Starter — zero-setup free models on the HOUSE key ----
+  // The seeded "Madav Starter" profile points the standard OpenAI client here; the
+  // bearer is the user's SESSION TOKEN (never an upstream key). The OpenRouter house
+  // key lives ONLY in env STARTER_OPENROUTER_KEY — it never reaches any client.
+  // Guardrails: signed-in users only, ":free" models only, per-user daily quota
+  // (STARTER_DAILY, default 50; in-memory, resets on deploy — fine for the ceiling
+  // it is). Long-term users are nudged toward their own keys by the error copy.
+  if (p === "/starter/v1/models" && req.method === "GET") {
+    if (rateLimited(req, "starter", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "Sign in to Madav to use the Starter models." });
+    if (!STARTER_KEY) return json(res, 503, { error: "Starter models aren't configured on this server." });
+    try {
+      const r = await fetch("https://openrouter.ai/api/v1/models", { headers: { Authorization: "Bearer " + STARTER_KEY, ...STARTER_HEADERS } });
+      const j = await r.json().catch(() => ({}));
+      const data = Array.isArray(j.data) ? j.data.filter((m) => /:free$/.test(m.id || "")) : [];
+      return json(res, 200, { data });
+    } catch (e) { return json(res, 502, { error: "starter upstream", detail: String((e && e.message) || e) }); }
+  }
+  if (p === "/starter/v1/chat/completions" && req.method === "POST") {
+    if (rateLimited(req, "starter", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "Sign in to Madav to use the Starter models." });
+    if (!STARTER_KEY) return json(res, 503, { error: "Starter models aren't configured on this server." });
+    const raw = await rawBody(req, res, 8 * 1024 * 1024); if (raw === null) return; // vision payloads
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch {}
+    if (!/:free$/.test(String(b.model || ""))) return json(res, 400, { error: "Madav Starter serves free models only (ids ending in :free). Add your own API key in Settings → Model configuration for everything else." });
+    if (!starterQuota((pl.sub || pl.uid || pl.email || "anon") + "")) return json(res, 429, { error: `Daily Starter limit reached (${STARTER_DAILY} requests). For unlimited use, add your own API key in Settings → Model configuration — it takes two minutes.` });
+    try {
+      const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + STARTER_KEY, ...STARTER_HEADERS },
+        body: raw,
+      });
+      res.writeHead(upstream.status, { "Content-Type": upstream.headers.get("content-type") || "text/event-stream", "Cache-Control": "no-cache" });
+      if (upstream.body) { const reader = upstream.body.getReader(); while (true) { const { done, value } = await reader.read(); if (done) break; res.write(Buffer.from(value)); } }
+      return res.end();
+    } catch (e) { if (!res.headersSent) return json(res, 502, { error: "starter upstream", detail: String((e && e.message) || e) }); try { res.end(); } catch {} }
   }
 
   // POST /proxy/chat (Bearer) — forward a streaming chat to the user's provider. Lets the WEB app reach

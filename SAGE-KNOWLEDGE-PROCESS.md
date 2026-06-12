@@ -136,9 +136,35 @@ adding a new app mode). Raising k improves recall and costs tokens linearly.
 - Entry count grows with the app; at ~2,000+ entries revisit scoring (still fine
   computationally; alias quality matters more then).
 
-## 9 · Future (phase 2, not built): the Librarian
+## 9 · Phase 2 — the Librarian (BUILT, 2026-06-11)
 
-An in-app agent ("Sage Librarian", file access to the repo) that performs §6 steps 1-2
-on demand or on a schedule, presenting the diff for admin approval (Repair-Bay
-pattern: nothing lands without the human click). Only works on machines with the
-source tree; shipped installers update knowledge per release, which is correct anyway.
+The in-app agent that performs §6 steps 1-2 with admin approval. Lives in **Test
+Center → "Sage Librarian" tab** (admin-gated, desktop-only, excluded from all
+packaged installers like the QA tools — shipped builds carry release-time knowledge,
+which is correct).
+
+**Pieces:** `electron/librarian.cjs` (engine) + `src/components/LibrarianPanel.jsx`
+(approval UI) + `madav:librarian*` IPC (guarded require in main.cjs).
+
+**Flow (Repair-Bay pattern — nothing lands without the human click):**
+1. **Scan** — baseline = last sweep commit (persisted in userData
+   `librarian-state.json`; first run falls back to the last commit touching
+   sage-knowledge/). `git diff --name-only <base> -- src` against the WORKING TREE
+   (uncommitted drift counts), mapped through the §4 component→area table (mirrored
+   as `AREAS` in librarian.cjs — keep the two in sync when adding areas).
+2. **Generate** (per area, on demand) — the active model receives the current
+   knowledge file + the area's component sources (60k chars/file cap) and the §6
+   brief verbatim, and returns the COMPLETE updated file. Validations before the
+   admin ever sees it: fence-stripping, ≥3 entries, plausible size, and a refusal
+   if >50% of entries vanished (weak-model protection).
+3. **Review** — the panel shows an ENTRY-LEVEL diff (added / updated / removed
+   headings, counts, expandable full old/new text).
+4. **Apply** — writes the file only after the click; refuses if the file changed
+   on disk since generation; timestamped `.libbak-*` backup + one-click rollback.
+   When the last pending proposal is applied, the sweep baseline advances to HEAD.
+5. Changes reach Sage on the next build/dev reload and land in git like any other
+   edit — the commit diff is the second review.
+
+**Deliberately NOT scheduled:** approval is mandatory by design, so a scheduled run
+could only pre-generate proposals; the scan is a one-click 2-second operation on the
+machine where the admin already sits. Revisit only if drift outpaces the habit.

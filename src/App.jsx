@@ -47,7 +47,7 @@ const NotInBuild = () => (
   <div className="agents-page scroll"><div className="ag-empty"><div className="ag-empty-t">Not in this build</div><div className="ag-empty-s">This feature isn't included in this edition of Madav.</div></div></div>
 );
 import EnvPicker from "./components/EnvPicker.jsx";
-import ThinkLogo from "./components/ThinkLogo.jsx";
+import MadavMark from "./components/MadavMark.jsx";
 import ModelPicker from "./components/ModelPicker.jsx";
 import { PermissionPicker } from "./components/Topbar.jsx";
 import { bridge, isWeb } from "./bridge/index.js";
@@ -696,6 +696,12 @@ export default function App() {
         style={voiceSpeak ? { color: "var(--accent)" } : undefined}>
         {voiceSpeak ? <Volume2 size={15} /> : <VolumeX size={15} />}
       </button>
+    </div>
+  );
+  // Model selector lives OUTSIDE the chat window — centered on its own row below it.
+  // (Class is model-dock — NOT model-row, which is the picker menu's per-model row.)
+  const modelRow = (
+    <div className="model-dock">
       <ModelPicker value={activeValue} groups={pickerGroups} onChange={selectModel} onRefresh={refreshModels} />
     </div>
   );
@@ -808,9 +814,10 @@ export default function App() {
                         </div>
                       </div>
                     ) : (
-                      <div className="hero-greet"><ThinkLogo size={40} animated={false} /><h1 className="greeting">{greeting}</h1></div>
+                      <div className="hero-greet"><MadavMark size={44} /><h1 className="greeting">{greeting}</h1></div>
                     )}
                     <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} model={activeValue} groups={pickerGroups} onModel={selectModel} onRefresh={refreshModels} permissionMode={permissionMode} onPermissionChange={changePermission} />
+                    {modelRow}
                     {projectCtx && (
                       <div className="hero-opts">
                         <button className="chip" onClick={backToProjects}>← Projects</button>
@@ -942,6 +949,7 @@ export default function App() {
                     </div>
                   </div>
                   <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} />
+                  {modelRow}
                 </>
               )}
             </div>

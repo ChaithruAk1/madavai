@@ -4,9 +4,10 @@
 // (instruction-following, agent identity, team planning, markdown/JSON discipline), and
 // the auth server. Live progress board + issues list + run history for daily cycles.
 import { useEffect, useRef, useState } from "react";
-import { FlaskConical, Play, Check, X, Loader2, CircleDashed, SkipForward, History, ShieldAlert, Wrench, Undo2, MousePointerClick, ChevronUp, ChevronDown, Pencil } from "lucide-react";
+import { FlaskConical, Play, Check, X, Loader2, CircleDashed, SkipForward, History, ShieldAlert, Wrench, Undo2, MousePointerClick, ChevronUp, ChevronDown, Pencil, BookOpen } from "lucide-react";
 import { bridge, isWeb } from "../bridge/index.js";
 import { runFunctionalSweep, lastFunctionalReport, builtinList, getCustomScenarios, saveCustomScenarios, getDisabled, setDisabled, draftScenario, runScenario, STEP_DOCS } from "../qa/functional.js";
+import LibrarianPanel from "./LibrarianPanel.jsx";
 
 // ---- Plain-English error translator ----
 // Raw errors are for machines. Every failure gets: what it means, what to do,
@@ -257,6 +258,7 @@ export default function TestCenter({ onNavigate }) {
         <button className={`ags-tab ${tab === "sweep" ? "on" : ""}`} onClick={() => setTab("sweep")}><MousePointerClick size={13} /> UI sweep</button>
         <button className={`ags-tab ${tab === "library" ? "on" : ""}`} onClick={() => setTab("library")}><Wrench size={13} /> Scenario library</button>
         <button className={`ags-tab ${tab === "history" ? "on" : ""}`} onClick={() => setTab("history")}><History size={13} /> History & issues</button>
+        <button className={`ags-tab ${tab === "librarian" ? "on" : ""}`} onClick={() => setTab("librarian")}><BookOpen size={13} /> Sage Librarian</button>
       </div>
 
       {tab === "engine" && (<>
@@ -528,6 +530,9 @@ export default function TestCenter({ onNavigate }) {
         ) : <p className="ag-hint">No runs yet — history builds as you run daily cycles.</p>}
         <p className="ag-hint">Tip: run both testers every morning before you touch anything — a red row today that was green yesterday is a regression with a timestamp.</p>
       </>)}
+
+      {/* ===== Sage Librarian — knowledge drift sweep with admin approval ===== */}
+      {tab === "librarian" && <LibrarianPanel />}
     </div>
   );
 }

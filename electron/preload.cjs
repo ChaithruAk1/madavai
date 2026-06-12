@@ -51,6 +51,13 @@ contextBridge.exposeInMainWorld("madav", {
   qaApplyFix: (fix) => ipcRenderer.invoke("madav:qaApplyFix", fix),
   qaRollback: (args) => ipcRenderer.invoke("madav:qaRollback", args),
   onQaEvent: (cb) => { const h = (_e, m) => cb(m); ipcRenderer.on("madav:qa", h); return () => ipcRenderer.removeListener("madav:qa", h); },
+  librarianStatus: () => ipcRenderer.invoke("madav:librarianStatus"),
+  librarianScan: () => ipcRenderer.invoke("madav:librarianScan"),
+  librarianGenerate: (areaFile) => ipcRenderer.invoke("madav:librarianGenerate", areaFile),
+  librarianProposals: () => ipcRenderer.invoke("madav:librarianProposals"),
+  librarianApply: (areaFile) => ipcRenderer.invoke("madav:librarianApply", areaFile),
+  librarianDiscard: (areaFile) => ipcRenderer.invoke("madav:librarianDiscard", areaFile),
+  librarianRollback: (args) => ipcRenderer.invoke("madav:librarianRollback", args),
   getSession: (id) => ipcRenderer.invoke("madav:getSession", id),
   deleteSession: (id) => ipcRenderer.invoke("madav:deleteSession", id),
 

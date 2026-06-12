@@ -79,6 +79,17 @@ const DEFAULTS = {
     allowSecretFields: false, // let agents type into password/payment/OTP fields (off = human-only; ON is dangerous)
   },
   profiles: {
+    // Madav Starter — zero-setup free models through madav.ai's house key. The standard
+    // OpenAI client hits <baseUrl>/v1/...; the bearer is the user's SESSION TOKEN,
+    // injected at resolve time (resolveProfile below) — no upstream key ever ships.
+    p_starter: {
+      id: "p_starter",
+      name: "Madav Starter (free)",
+      kind: "openai",
+      baseUrl: "https://madav.ai/starter",
+      apiKey: "",
+      model: "meta-llama/llama-3.3-70b-instruct:free",
+    },
     p_local: {
       id: "p_local",
       name: "LM Studio (local)",
@@ -166,9 +177,19 @@ function save(settings) {
   return settings;
 }
 
-function activeProfile(settings) {
-  const s = settings || load();
-  return s.profiles[s.activeProfileId] || Object.values(s.profiles)[0];
+// Madav Starter profiles authenticate with the user's SESSION TOKEN as the bearer
+// (the server swaps in the house key upstream). Injected at resolve time so the
+// token is always current and never persisted into the settings file.
+function resolveProfile(p) {
+  if (p && !p.apiKey && /\/starter\b/.test(p.baseUrl || "")) {
+    try { const t = require("./auth.cjs").token(); if (t) return { ...p, apiKey: t }; } catch { /* signed out — server replies with a friendly 401 */ }
+  }
+  return p;
 }
 
-module.exports = { load, save, activeProfile, DEFAULTS };
+function activeProfile(settings) {
+  const s = settings || load();
+  return resolveProfile(s.profiles[s.activeProfileId] || Object.values(s.profiles)[0]);
+}
+
+module.exports = { load, save, activeProfile, resolveProfile, DEFAULTS };

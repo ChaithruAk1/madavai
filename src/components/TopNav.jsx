@@ -1,4 +1,4 @@
-import ThinkLogo from "./ThinkLogo.jsx";
+import MadavLogo from "./MadavLogo.jsx";
 import { MessageCircle, Users, Hammer, PanelLeft } from "lucide-react";
 import { MODES } from "../bridge/contract.js";
 
@@ -12,15 +12,12 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
     <header className="topnav glass">
       <div className="tn-left">
         <button className="tn-collapse" onClick={onToggleSidebar} title={(sidebarOpen ? "Collapse" : "Expand") + " sidebar (Ctrl+B)"}><PanelLeft size={18} /></button>
-        {sidebarOpen && (
-          <div className="tn-brand">
-            <ThinkLogo size={40} />
-            <div className="tn-brandtext">
-              <span className="tn-name">Madav</span>
-              <span className="tn-by">by Chaithrodaya Sukruth</span>
-            </div>
+        <div className="tn-brand">
+          <div className="tn-brandtext">
+            <MadavLogo height={32} />
+            <span className="tn-by">Built to think with you</span>
           </div>
-        )}
+        </div>
       </div>
 
       <nav className="tn-tabs">

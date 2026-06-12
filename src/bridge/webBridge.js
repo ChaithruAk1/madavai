@@ -136,16 +136,28 @@ async function idbDel(id) { try { const db = await idb(); await new Promise((res
 const SETTINGS_KEY = "be.settings";
 function defaultSettings() {
   return {
-    activeProfileId: "p_openrouter",
+    activeProfileId: "p_starter",
     profiles: {
+      // Madav Starter — zero-setup free models through the server's house key. The
+      // bearer is the user's session token, injected at resolve time (resolveProfile);
+      // same-origin "/starter" baseUrl works in prod, AUTH_BASE covers the dev server.
+      p_starter: { id: "p_starter", name: "Madav Starter (free)", kind: "openai", baseUrl: (AUTH_BASE || "") + "/starter", apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free", cachedModels: [] },
       p_openrouter: { id: "p_openrouter", name: "OpenRouter", kind: "openai", baseUrl: "https://openrouter.ai/api/v1", apiKey: "", model: "", cachedModels: [] },
     },
     theme: "dark", accent: "#13c2d6", globalInstructions: "", responseLanguage: "model", defaultModel: "", authBaseUrl: AUTH_BASE || "",
     account: { name: "", email: "", avatar: "" }, messaging: { autoContinue: true },
   };
 }
-const loadSettings = () => LS.get(SETTINGS_KEY, null) || LS.set(SETTINGS_KEY, defaultSettings());
-const activeProfile = (s) => (s.profiles && s.profiles[s.activeProfileId]) || Object.values(s.profiles || {})[0] || null;
+const loadSettings = () => {
+  const s = LS.get(SETTINGS_KEY, null) || LS.set(SETTINGS_KEY, defaultSettings());
+  // Existing installs predate the Starter profile — seed it once (never overwrite user edits).
+  if (s.profiles && !s.profiles.p_starter) { s.profiles = { p_starter: defaultSettings().profiles.p_starter, ...s.profiles }; LS.set(SETTINGS_KEY, s); }
+  return s;
+};
+// Starter profiles authenticate with the user's SESSION TOKEN as the bearer (the server
+// swaps in the house key upstream). Injected here so it's always current, never persisted.
+const resolveProfile = (p) => (p && !p.apiKey && /\/starter\b/.test(p.baseUrl || "") ? { ...p, apiKey: getToken() || "" } : p);
+const activeProfile = (s) => resolveProfile((s.profiles && s.profiles[s.activeProfileId]) || Object.values(s.profiles || {})[0] || null);
 
 // ================= event bus (chat streaming) =================
 let seq = 0;
@@ -256,7 +268,7 @@ async function runTeamTurn(sess, text) {
   const members = (team.members || []).slice(0, 6);
   const rid2 = () => rid("team_");
   const profFor = (m) => {
-    if (m.model && m.model.includes("::")) { const i = m.model.indexOf("::"); const p = s.profiles[m.model.slice(0, i)]; if (p) return { ...p, model: m.model.slice(i + 2) }; }
+    if (m.model && m.model.includes("::")) { const i = m.model.indexOf("::"); const p = s.profiles[m.model.slice(0, i)]; if (p) return resolveProfile({ ...p, model: m.model.slice(i + 2) }); }
     return prof;
   };
   sess.ac = new AbortController();
@@ -709,13 +721,13 @@ export const webBridge = {
   async getSettings() { return loadSettings(); },
   async saveSettings(next) { return LS.set(SETTINGS_KEY, next); },
   async listModels(profileId) {
-    const s = loadSettings(); const p = profileId ? s.profiles[profileId] : activeProfile(s);
+    const s = loadSettings(); const p = resolveProfile(profileId ? s.profiles[profileId] : activeProfile(s)); // Starter gets the session token
     let out = await provListModels(p);
     // If the browser blocked the provider's /models (CORS) and we're signed in, try via the proxy.
     if ((!out || !out.length) && p && p.baseUrl && getToken()) { try { out = await provListModels(p, { proxy: proxyCfg() }); } catch {} }
     return out;
   },
-  async pingProvider(profileId) { const s = loadSettings(); const p = profileId ? s.profiles[profileId] : activeProfile(s); return provPing(p); },
+  async pingProvider(profileId) { const s = loadSettings(); const p = resolveProfile(profileId ? s.profiles[profileId] : activeProfile(s)); return provPing(p); },
   async scoreQuiz(batch) {
     if (!getToken()) return {};
     try { const r = await fetch(api("/score-quiz"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ batch }) }); const j = await r.json().catch(() => ({})); return (j && j.scores) || {}; }
@@ -881,7 +893,7 @@ export const webBridge = {
     _lastSpeed = { at: startedAt, prompt, results };
     const one = async (t) => {
       if (_speedCancel) return;
-      const base = s.profiles[t.profileId];
+      const base = resolveProfile(s.profiles[t.profileId]); // Starter gets the session token
       let res;
       if (!base || !base.baseUrl) res = { label: t.label, model: t.modelId, provider: t.provider, ok: false, error: "provider not configured" };
       else {

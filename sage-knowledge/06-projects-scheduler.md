@@ -145,7 +145,7 @@ Behavior: Search matches the task name and description as you type. The sort but
 aliases: webhooks, POST hook, fire agent from outside, zapier trigger, curl example
 What: A desktop-only card letting external systems (Zapier, mail rules, CI, cron) fire an agent, team, or scheduled task via `POST http://127.0.0.1:<port>/hook/<agent|team|task>/<id>` with a JSON `{"prompt": …}` body.
 Why: Connect Madav to anything that can make an HTTP request.
-Behavior: Ticking "Enabled" generates a bearer token automatically and starts a listener (status shows "listening on :8765" or an error). You can change the Port, pick what to fire ("Agent" / "Team" / "Scheduled task" plus a target), and "Copy example" copies a ready curl command. It's token-protected and local-only by default (127.0.0.1) — anyone with the token can run your agents, so treat it like a password. Not available in the web build.
+Behavior: Ticking "Enabled" generates a bearer token automatically and starts a listener (status shows "listening on :8765" or an error). You can change the Port, pick what to fire ("Agent" / "Team" / "Scheduled task" plus a target), and "Copy example" copies a ready curl command; the raw command stays collapsed behind a "Show the raw command" reveal so the card reads clean. It's token-protected and local-only by default (127.0.0.1) — anyone with the token can run your agents, so treat it like a password. Not available in the web build.
 
 ### Via Mobile · Enable Telegram bot
 aliases: turn on bot, telegram remote, enable via mobile, bot on off

@@ -19,20 +19,32 @@ const FEAT_VOICE = import.meta.env.VITE_FEAT_VOICE !== "0";
 // Female looks switch the buddy's name to Sara; male/neutral looks stay Sage.
 // (Append-only: indices 0-7 predate the gallery expansion — saved picks stay valid.)
 const SAGE_LOOKS = [
-  { label: "Sage — classic",        skin: "#eab68c", hair: "#2b2018", style: 0, beard: true,  glasses: false },
-  { label: "Sage — European",       skin: "#f4cda6", hair: "#6e4a2a", style: 5, beard: false, glasses: true },
-  { label: "Sage — Indian",         skin: "#bd8458", hair: "#1a1a1a", style: 2, beard: true,  glasses: false },
-  { label: "Sage — Nordic",         skin: "#f4cda6", hair: "#c98a3a", style: 3, beard: false, glasses: false },
-  { label: "Sage — Indian",         skin: "#d99e6f", hair: "#2b2018", style: 6, beard: true,  glasses: true },
-  { label: "Sage — African",        skin: "#96603c", hair: "#101010", style: 1, beard: false, glasses: false },
-  { label: "Sage — European",       skin: "#f4cda6", hair: "#7a3b22", style: 4, beard: false, glasses: false },
-  { label: "Sage — silver",         skin: "#eab68c", hair: "#8d8d8d", style: 0, beard: true,  glasses: true },
-  { label: "Sara — Indian",         skin: "#bd8458", hair: "#1a1a1a", style: 7, beard: false, glasses: false, female: true },
-  { label: "Sara — East Asian",     skin: "#f4cda6", hair: "#101010", style: 8, beard: false, glasses: false, female: true },
-  { label: "Sara — European",       skin: "#f4cda6", hair: "#c98a3a", style: 7, beard: false, glasses: false, female: true },
-  { label: "Sara — African",        skin: "#96603c", hair: "#2b2018", style: 8, beard: false, glasses: false, female: true },
-  { label: "Sara — Latina",         skin: "#d99e6f", hair: "#4b3625", style: 7, beard: false, glasses: true,  female: true },
-  { label: "Sara — East Asian",     skin: "#eab68c", hair: "#1f2a3a", style: 8, beard: false, glasses: true,  female: true },
+  { label: "Sage — the classic",          skin: "#eab68c", hair: "#2b2018", style: 0, beard: true,  glasses: false },
+  { label: "Sage — European · specs",     skin: "#f4cda6", hair: "#6e4a2a", style: 5, beard: false, glasses: true },
+  { label: "Sage — Indian · curls",       skin: "#bd8458", hair: "#1a1a1a", style: 2, beard: true,  glasses: false },
+  { label: "Sage — Nordic · top-knot",    skin: "#f4cda6", hair: "#c98a3a", style: 3, beard: false, glasses: false },
+  { label: "Sage — Indian · flat-top",    skin: "#d99e6f", hair: "#2b2018", style: 6, beard: true,  glasses: true },
+  { label: "Sage — African",              skin: "#96603c", hair: "#101010", style: 1, beard: false, glasses: false },
+  { label: "Sage — European · auburn",    skin: "#f4cda6", hair: "#7a3b22", style: 4, beard: false, glasses: false },
+  { label: "Sage — silver mentor",        skin: "#eab68c", hair: "#8d8d8d", style: 0, beard: true,  glasses: true },
+  { label: "Sara — Indian",               skin: "#bd8458", hair: "#1a1a1a", style: 7, beard: false, glasses: false, female: true },
+  { label: "Sara — East Asian · bun",     skin: "#f4cda6", hair: "#101010", style: 8, beard: false, glasses: false, female: true },
+  { label: "Sara — European · golden",    skin: "#f4cda6", hair: "#c98a3a", style: 7, beard: false, glasses: false, female: true },
+  { label: "Sara — African",              skin: "#96603c", hair: "#2b2018", style: 8, beard: false, glasses: false, female: true },
+  { label: "Sara — Latina · specs",       skin: "#d99e6f", hair: "#4b3625", style: 7, beard: false, glasses: true,  female: true },
+  { label: "Sara — East Asian · navy",    skin: "#eab68c", hair: "#1f2a3a", style: 8, beard: false, glasses: true,  female: true },
+  // -- gallery expansion 2 (append-only: keep indices stable; every look visually unique) --
+  { label: "Sage — American · buzz",      skin: "#f4cda6", hair: "#3a2a1c", style: 11, beard: false, glasses: false },
+  { label: "Sage — American · blond",     skin: "#eab68c", hair: "#c98a3a", style: 4,  beard: true,  glasses: false },
+  { label: "Sage — American · specs",     skin: "#d99e6f", hair: "#101010", style: 6,  beard: false, glasses: true },
+  { label: "Sage — African-American",     skin: "#96603c", hair: "#1a1a1a", style: 11, beard: true,  glasses: false },
+  { label: "Sara — American · ponytail",  skin: "#f4cda6", hair: "#c98a3a", style: 9,  beard: false, glasses: false, female: true },
+  { label: "Sara — American · bob",       skin: "#eab68c", hair: "#7a3b22", style: 10, beard: false, glasses: false, female: true },
+  { label: "Sara — African-American",     skin: "#96603c", hair: "#101010", style: 9,  beard: false, glasses: true,  female: true },
+  { label: "Sage — Chinese",              skin: "#f0c194", hair: "#101010", style: 0,  beard: false, glasses: false },
+  { label: "Sage — Chinese · specs",      skin: "#f0c194", hair: "#1a1a1a", style: 11, beard: false, glasses: true },
+  { label: "Sara — Chinese · bob",        skin: "#f0c194", hair: "#101010", style: 10, beard: false, glasses: false, female: true },
+  { label: "Sara — Chinese · ponytail",   skin: "#f0c194", hair: "#1f2a3a", style: 9,  beard: false, glasses: false, female: true },
 ];
 const lookName = (l) => (l && l.female ? "Sara" : "Sage");
 function SageFace({ size, look = SAGE_LOOKS[0] }) {
@@ -65,6 +77,7 @@ GOTO: <key>   → shows a "Take me there" button (use when a screen is merely re
 GOTO! <key>   → navigates IMMEDIATELY (use when the user explicitly asks to open/go to/show a screen — "open settings", "take me to models").
 Keys: chat · collaborate · build · studio · projects · agents · models · connectors · scheduler · consumption · skills · terminal · settings · guide. ONE navigation line per reply, always the last line, only when a real screen fits.
 DISAMBIGUATION — TWO "STUDIOS" EXIST: the key "studio" is the Studio LAUNCHER (one-prompt web pages, documents, games, diagrams). The AGENT STUDIO — where agents are built and edited (Designer, Bench, Blueprint & capabilities, knowledge, teams, Recruiter, Floor) — lives on the AGENTS screen. For ANY question about agents or their fields, always use GOTO: agents, NEVER studio.
+DISAMBIGUATION — THE THREE WORK SURFACES ARE NOT THE AGENTS SCREEN: Let's Chat is plain conversation. Let's Collaborate is where Madav works on the user's OWN FOLDER — its flow is: pick a folder with the "Choose folder" chip → describe the task in the message box → set the permission picker in the composer's controls row ("Ask before changes" by default) → Send → steps appear as Worked cards / a "✓ Worked" strip → approve permission prompts as they pop up. Let's Build is the same loop tuned for coding. There is NO "Put to work" button, NO Mission Control, NO Designer and NO "End session" on these three surfaces — those belong ONLY to the Agents screen (agent missions). NEVER mix Agents-screen steps into a Let's Chat / Let's Collaborate / Let's Build walkthrough, even when the user misspells the surface name (e.g. "colloborate" = Let's Collaborate). When a walkthrough is about one surface, every step must be real on THAT surface.
 
 ===== APP GUIDE =====
 ${APP_GUIDE_RAW}
@@ -166,6 +179,22 @@ export default function SageDock({ mode, onNavigate }) {
     }, 40); // after layout settles
     return () => clearTimeout(t);
   }, [open, size, pos]);
+
+  // IDLE WATCH: any interaction (open, chat, typing, drag, voice, walkthrough) marks
+  // activity; after 5 quiet minutes Sage minimizes to the closed bubble and returns to
+  // his home base below the online chip (pos = null → the CSS default anchor).
+  const lastActRef = useRef(Date.now());
+  useEffect(() => { lastActRef.current = Date.now(); }, [open, msgs, input, pos, listening, walk, lookPick]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (Date.now() - lastActRef.current < 300000) return;
+      if (!open && !posRef.current) return; // already home and closed — nothing to do
+      setOpen(false); setLookPick(false);
+      posRef.current = null; setPos(null);
+      try { localStorage.removeItem("be.sage.pos"); } catch {}
+    }, 30000);
+    return () => clearInterval(id);
+  }, [open]);
 
   // Window shrank? Pull Sage back into view (and persist the corrected spot).
   useEffect(() => {
@@ -396,7 +425,8 @@ export default function SageDock({ mode, onNavigate }) {
     e.preventDefault();
   };
 
-  const aTop = pos ? pos.top : (typeof window !== "undefined" ? window.innerHeight - 74 : 700);
+  // Default anchor (pos = null) is the HOME BASE: top-right, just below the online chip.
+  const aTop = pos ? pos.top : 74;
   const aLeft = pos ? pos.left : (typeof window !== "undefined" ? window.innerWidth - 74 : 1200);
   const up = aTop > (typeof window !== "undefined" ? window.innerHeight : 800) * 0.45;
   const left = aLeft > (typeof window !== "undefined" ? window.innerWidth : 1400) * 0.5;

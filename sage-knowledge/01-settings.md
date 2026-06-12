@@ -112,6 +112,12 @@ What: The feature switchboard — a list of toggles turning this install's capab
 Why: Lets the install owner tailor which features are available without rebuilding the app.
 Behavior: Visible only to Creator, Complimentary, and admin accounts. Every feature defaults to ON (an absent flag means ON; only an explicit off disables). Each toggle re-reads settings from disk before saving, so it never clobbers another writer. Features marked "not in this build" are greyed out and can't be toggled. Interface features (Sage, Studio, Terminal, Scheduler, Via Mobile, voice) apply immediately; engine features (image generation, office files) apply from the next message — running missions keep the tools they started with.
 
+### Settings → Extras · EdgeTrader analysis pack
+aliases: edgetrader, edge trader, stock analysis skills, trading pack
+What: A toggle for the built-in stock-analysis skill pack (equity analysis, adversarial debate, verdict format) that the EdgeTrader agent team loads.
+Why: The pack ships inside the app so a settings wipe or reinstall can never lose it; this switch lets the owner hide it.
+Behavior: Default ON. When on, the app's bundled skills folder loads in every mode automatically — no Skills-folder setup needed. Turning it off removes those skills from the next message onward (the EdgeTrader agents will say the skill is missing). The pack produces information, not financial advice; trade execution stays separately gated and off by default.
+
 ### Settings → Extras · Sage helper
 aliases: sage, sara, in-app guide, help assistant, floating helper
 What: A toggle for the floating in-app guide (Sage/Sara) that answers questions about the app on every screen.

@@ -15,7 +15,7 @@ function profileFor(modelStr, cfg) {
   if (modelStr && modelStr.includes("::")) {
     const i = modelStr.indexOf("::");
     const p = c.profiles[modelStr.slice(0, i)];
-    if (p) return { ...p, model: modelStr.slice(i + 2) };
+    if (p) return settings.resolveProfile({ ...p, model: modelStr.slice(i + 2) }); // Starter pins get the session token
   }
   return settings.activeProfile(c);
 }

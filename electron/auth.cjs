@@ -164,4 +164,4 @@ async function apiCall(method, path, body, authBaseUrl) {
   } catch { return { error: "offline" }; }
 }
 
-module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction, scoreQuiz, cliToken, apiCall };
+module.exports = { signIn, me, signOut, billing, track, adminGet, adminAction, scoreQuiz, cliToken, apiCall, token: loadToken };

@@ -26,6 +26,18 @@ What: Three mutually exclusive chips — All, Free, Paid — at the top of the d
 Why: Quickly limit the list to models that won't cost anything (or the opposite).
 Behavior: Exactly one is active at a time. "Free" keeps local models and cloud models whose name carries a ":free" suffix; "Paid" keeps everything else. This is a name/provider heuristic, not live billing data — a free-tier model without the ":free" marker counts as paid here.
 
+### Model configuration · Madav Model Starter
+aliases: madav starter, model starter, starter, free models, no api key, default provider, try without key
+What: "Madav Model Starter" — the preconfigured provider that works the moment you sign in, no API key needed (shown as "Madav Starter (free)" in the provider list).
+Why: Lets new users try Madav instantly; getting provider API keys comes later.
+Behavior: Routes through madav.ai using your signed-in session (the server holds the key — it never reaches your device). Serves free models only (ids ending ":free") with a daily request limit per user; hitting the limit or a paid model shows a friendly message pointing to Settings → Model configuration. For long-term use, add your own provider key (OpenRouter recommended) — that removes the cap and unlocks every model. Requires being signed in; signed-out use shows "Sign in to Madav to use the Starter models."
+
+### Model picker · Host chips (Cloud / Local)
+aliases: local models filter, cloud filter, where the model runs, ollama filter, lm studio filter
+What: Two chips next to the cost chips that filter by where a model runs.
+Why: Jump straight to your on-machine models (Ollama / LM Studio) or hide them to browse hosted ones.
+Behavior: Click to activate, click again to clear (back to all). "Local" keeps providers whose name contains "local"; "Cloud" keeps the rest. Combines with the cost and capability chips.
+
 ### Model picker · Capability chips (Coding · Reasoning · Vision · Fast · Agentic)
 aliases: capability filter, coding filter, reasoning filter, vision filter, fast filter, agentic filter
 What: Five toggle chips that filter models by detected capability.

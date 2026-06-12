@@ -83,7 +83,13 @@ Behavior: Loads the agent into the Studio with its blueprint ready to change. Sa
 aliases: trash, remove agent, bin
 What: The trash button that permanently removes an agent.
 Why: To retire an agent you no longer need.
-Behavior: Removes it from the roster immediately. Teams that included it simply lose that member.
+Behavior: Removes it from the roster immediately. Teams that included it simply lose that member. Exception: EdgeTrader pack workers (ET Quant Analyst, ET Bull, etc.) show no trash button while the pack is active — turn off "EdgeTrader analysis pack" in Settings → Extras to manage them.
+
+### Agents · Organization · Edge Trader folder
+aliases: edgetrader folder, edge trader group, et agents folder
+What: A folder the EdgeTrader pack's six workers are filed into automatically.
+Why: Keeps the pack's relay crew grouped and recognizable instead of scattered through the roster.
+Behavior: Created automatically while the EdgeTrader pack is active (Settings → Extras) for any pack worker without a folder. You can drag a worker to another folder and it stays there; deleting the folder just refiles loose pack workers back on the next visit. Pack workers can't be deleted while the pack is active.
 
 ### Agents · Agent card · Export .agent
 aliases: download, share agent, .agent file, export

@@ -21,6 +21,7 @@ export const EXTRAS = [
   { key: "terminal",  label: "Terminal",             desc: "The in-app terminal panel." },
   { key: "scheduler", label: "Scheduler",            desc: "Scheduled tasks, agent triggers and webhooks screen." },
   { key: "viamobile", label: "Via Mobile",           desc: "Control Madav from your phone over Telegram." },
+  { key: "edgetrader", label: "EdgeTrader analysis pack", desc: "The built-in stock-analysis skills (equity analysis, adversarial debate, verdict format) used by the EdgeTrader agent team. Information, not financial advice." },
 ];
 
 // Which features exist in THIS build (two-channel installers: scripts/build-features.mjs
@@ -39,6 +40,7 @@ export const FEAT_BUILT = {
   terminal: import.meta.env.VITE_FEAT_TERMINAL !== "0",
   scheduler: import.meta.env.VITE_FEAT_SCHEDULER !== "0",
   viamobile: import.meta.env.VITE_FEAT_VIAMOBILE !== "0",
+  edgetrader: import.meta.env.VITE_FEAT_EDGETRADER !== "0",
 };
 
 // Is a feature on? (absent/undefined = ON; only an explicit false turns it off)

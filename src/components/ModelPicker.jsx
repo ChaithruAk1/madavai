@@ -50,6 +50,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [cost, setCost] = useState("all");       // all | free | paid
+  const [host, setHost] = useState("all");       // all | cloud | local (where the model runs)
   const [caps, setCaps] = useState(() => new Set()); // active capability filters (multi-select, AND-combined)
   const [refreshing, setRefreshing] = useState(false);
   const [orCat, setOrCat] = useState(null);
@@ -105,6 +106,9 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
       const free = isFree(it, g.group);
       if (cost === "free" && !free) return false;
       if (cost === "paid" && free) return false;
+      const local = /local/i.test(it.prov || g.group || "");
+      if (host === "cloud" && local) return false;
+      if (host === "local" && !local) return false;
       for (const k of caps) { if (CAPS[k] && !CAPS[k](it, g.group)) return false; } // multi-select, AND-combined
       return true;
     }) }))
@@ -129,7 +133,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
         {current.prov && <span className="prov">{current.prov}</span>} {current.name} <ChevronDown size={14} />
       </button>
       {open && (
-        <div className="model-menu scroll" style={{ width: 480, maxHeight: 560 }}>
+        <div className="model-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: 560 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <div style={{ position: "relative", flex: 1 }}>
               <Search size={14} style={{ position: "absolute", left: 11, top: 10, color: "var(--text-2)" }} />
@@ -151,6 +155,10 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
             {[["all", "All"], ["free", "Free"], ["paid", "Paid"]].map(([k, label]) => (
               <button key={k} onClick={() => setCost(k)} style={chipStyle(cost === k)}>{label}</button>
+            ))}
+            <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "2px 4px" }} />
+            {[["cloud", "Cloud"], ["local", "Local"]].map(([k, label]) => (
+              <button key={k} onClick={() => setHost((h) => (h === k ? "all" : k))} style={chipStyle(host === k)} title={k === "local" ? "Models running on this machine (Ollama / LM Studio)" : "Hosted models"}>{label}</button>
             ))}
             <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "2px 4px" }} />
             {[["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"], ["agentic", "Agentic"]].map(([k, label]) => (

@@ -160,6 +160,10 @@ export default function ModelConfig({ onChanged }) {
       </div>
 
       <div className="nav-label" style={{ paddingLeft: 0 }}>Providers &amp; models</div>
+      <p style={{ color: "var(--text-2)", fontSize: 12.5, margin: "2px 0 10px", maxWidth: 720 }}>
+        <b style={{ color: "var(--text-1)" }}>Madav Starter (free)</b> works the moment you sign in — no API key needed, with a daily limit on free models.
+        For long-term use we recommend adding your own provider key (OpenRouter is the easiest: one key, hundreds of models, pay only for what you use) — pick a provider below, paste the key, and every model unlocks with no daily cap.
+      </p>
       <div className="mc-providers">
         <div className="mc-provlist">
           {profiles.map((p) => (

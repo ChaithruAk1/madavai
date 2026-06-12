@@ -11,7 +11,7 @@ function profileFor(task) {
     const pid = task.model.slice(0, task.model.indexOf("::"));
     const mid = task.model.slice(task.model.indexOf("::") + 2);
     const p = cfg.profiles[pid];
-    if (p && mid) return { ...p, model: mid };
+    if (p && mid) return settings.resolveProfile({ ...p, model: mid }); // Starter pins get the session token
   }
   return settings.activeProfile();
 }

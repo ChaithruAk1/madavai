@@ -1,0 +1,37 @@
+<svg viewBox="60 4 800 268" width="800" height="268" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Madav">
+  <defs>
+    <linearGradient id="mdvg" x1="70" y1="0" x2="850" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#29d8f0"/>
+      <stop offset="45%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#mdvg)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <!-- M : stems + deep middle V, circuit stubs top and bottom -->
+    <path d="M 85 210 L 85 95 L 160 200 L 235 95 L 235 210"/>
+    <path d="M 85 95 L 85 62"/>
+    <path d="M 235 95 L 235 62"/>
+    <path d="M 85 210 L 85 233"/>
+    <path d="M 160 200 L 160 233"/>
+    <!-- a : squared bowl, flat right stem (single-storey a) -->
+    <path d="M 405 95 L 319 95 Q 285 95 285 129 L 285 176 Q 285 210 319 210 L 405 210"/>
+    <path d="M 405 95 L 405 210"/>
+    <!-- d : same bowl + tall ascender with node -->
+    <path d="M 545 95 L 459 95 Q 425 95 425 129 L 425 176 Q 425 210 459 210 L 545 210"/>
+    <path d="M 545 42 L 545 210"/>
+    <!-- a -->
+    <path d="M 685 95 L 599 95 Q 565 95 565 129 L 565 176 Q 565 210 599 210 L 685 210"/>
+    <path d="M 685 95 L 685 210"/>
+    <!-- v : node on the right tip -->
+    <path d="M 723 95 L 765 210 L 807 95"/>
+    <path d="M 807 95 L 807 64"/>
+  </g>
+  <g fill="none" stroke="url(#mdvg)" stroke-width="10">
+    <circle cx="85" cy="47" r="11"/>
+    <circle cx="235" cy="47" r="11"/>
+    <circle cx="85" cy="248" r="11"/>
+    <circle cx="160" cy="248" r="11"/>
+    <circle cx="545" cy="27" r="11"/>
+    <circle cx="807" cy="49" r="11"/>
+  </g>
+</svg>

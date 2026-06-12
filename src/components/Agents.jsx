@@ -220,19 +220,45 @@ Rules: 2-5 members. relay = a pipeline where work flows member to member in orde
 // approachable mentor), and a uniform that ALWAYS wears the app's accent so he blends
 // with whatever theme is active. Instantly recognizable on the bubble, panel and tab.
 // A gallery of Sage looks the user can choose from (mid-30s, stylish, varied).
+// KEEP IDENTICAL to SAGE_LOOKS in SageDock.jsx — both read the same saved index
+// (be.sage.look), so a drifted copy shows a different face on each surface.
+// Append-only: indices stay stable so saved picks remain valid.
 const SAGE_LOOKS = [
-  { skin: "#eab68c", hair: "#2b2018", style: 0, beard: true,  glasses: false }, // dark hair, neat beard
-  { skin: "#f4cda6", hair: "#6e4a2a", style: 5, beard: false, glasses: true },  // brown fringe, glasses, clean
-  { skin: "#bd8458", hair: "#1a1a1a", style: 2, beard: true,  glasses: false }, // curly, beard
-  { skin: "#f4cda6", hair: "#c98a3a", style: 3, beard: false, glasses: false }, // blond top-knot, clean
-  { skin: "#d99e6f", hair: "#2b2018", style: 6, beard: true,  glasses: true },  // flat-top, beard + glasses
-  { skin: "#96603c", hair: "#101010", style: 1, beard: false, glasses: false }, // deep skin, short, clean
-  { skin: "#f4cda6", hair: "#7a3b22", style: 4, beard: false, glasses: false }, // auburn longer hair
-  { skin: "#eab68c", hair: "#8d8d8d", style: 0, beard: true,  glasses: true },  // the wise greying mentor
+  { label: "Sage — the classic",          skin: "#eab68c", hair: "#2b2018", style: 0, beard: true,  glasses: false },
+  { label: "Sage — European · specs",     skin: "#f4cda6", hair: "#6e4a2a", style: 5, beard: false, glasses: true },
+  { label: "Sage — Indian · curls",       skin: "#bd8458", hair: "#1a1a1a", style: 2, beard: true,  glasses: false },
+  { label: "Sage — Nordic · top-knot",    skin: "#f4cda6", hair: "#c98a3a", style: 3, beard: false, glasses: false },
+  { label: "Sage — Indian · flat-top",    skin: "#d99e6f", hair: "#2b2018", style: 6, beard: true,  glasses: true },
+  { label: "Sage — African",              skin: "#96603c", hair: "#101010", style: 1, beard: false, glasses: false },
+  { label: "Sage — European · auburn",    skin: "#f4cda6", hair: "#7a3b22", style: 4, beard: false, glasses: false },
+  { label: "Sage — silver mentor",        skin: "#eab68c", hair: "#8d8d8d", style: 0, beard: true,  glasses: true },
+  { label: "Sara — Indian",               skin: "#bd8458", hair: "#1a1a1a", style: 7, beard: false, glasses: false, female: true },
+  { label: "Sara — East Asian · bun",     skin: "#f4cda6", hair: "#101010", style: 8, beard: false, glasses: false, female: true },
+  { label: "Sara — European · golden",    skin: "#f4cda6", hair: "#c98a3a", style: 7, beard: false, glasses: false, female: true },
+  { label: "Sara — African",              skin: "#96603c", hair: "#2b2018", style: 8, beard: false, glasses: false, female: true },
+  { label: "Sara — Latina · specs",       skin: "#d99e6f", hair: "#4b3625", style: 7, beard: false, glasses: true,  female: true },
+  { label: "Sara — East Asian · navy",    skin: "#eab68c", hair: "#1f2a3a", style: 8, beard: false, glasses: true,  female: true },
+  // -- gallery expansion 2 (append-only: keep indices stable; every look visually unique) --
+  { label: "Sage — American · buzz",      skin: "#f4cda6", hair: "#3a2a1c", style: 11, beard: false, glasses: false },
+  { label: "Sage — American · blond",     skin: "#eab68c", hair: "#c98a3a", style: 4,  beard: true,  glasses: false },
+  { label: "Sage — American · specs",     skin: "#d99e6f", hair: "#101010", style: 6,  beard: false, glasses: true },
+  { label: "Sage — African-American",     skin: "#96603c", hair: "#1a1a1a", style: 11, beard: true,  glasses: false },
+  { label: "Sara — American · ponytail",  skin: "#f4cda6", hair: "#c98a3a", style: 9,  beard: false, glasses: false, female: true },
+  { label: "Sara — American · bob",       skin: "#eab68c", hair: "#7a3b22", style: 10, beard: false, glasses: false, female: true },
+  { label: "Sara — African-American",     skin: "#96603c", hair: "#101010", style: 9,  beard: false, glasses: true,  female: true },
+  { label: "Sage — Chinese",              skin: "#f0c194", hair: "#101010", style: 0,  beard: false, glasses: false },
+  { label: "Sage — Chinese · specs",      skin: "#f0c194", hair: "#1a1a1a", style: 11, beard: false, glasses: true },
+  { label: "Sara — Chinese · bob",        skin: "#f0c194", hair: "#101010", style: 10, beard: false, glasses: false, female: true },
+  { label: "Sara — Chinese · ponytail",   skin: "#f0c194", hair: "#1f2a3a", style: 9,  beard: false, glasses: false, female: true },
 ];
+// EdgeTrader pack agents (seeded by scripts/install-edgetrader.mjs) — recognized by id.
+const isEtAgent = (a) => String((a && a.id) || "").startsWith("agent_et_");
+
 function SageFace({ size, look = SAGE_LOOKS[0] }) {
-  return <Portrait seed="Sage" color="var(--accent)" size={size} mood="hello" title="Sage"
-    skin={look.skin} hair={look.hair} beard={look.beard} glasses={look.glasses} style={look.style} />;
+  const name = look && look.female ? "Sara" : "Sage";
+  return <Portrait seed={name} color="var(--accent)" size={size} mood="hello" title={name}
+    skin={look.skin} hair={look.hair} beard={look.beard} glasses={look.glasses} style={look.style}
+    lashes={!!look.female} earring={!!look.female} />;
 }
 
 const MENTOR_STARTERS = [
@@ -520,6 +546,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   // User-defined groups (folders) for the roster — stored in settings.agentGroups;
   // each agent carries an optional `group` id. Engines ignore both fields.
   const [agentGroups, setAgentGroups] = useState([]);
+  // EdgeTrader pack active (Settings → Extras) → its agents are delete-protected.
+  const [etLocked, setEtLocked] = useState(false);
   const [grpEdit, setGrpEdit] = useState(null);  // { id: groupId | "new", name } — inline name editor
   const [dragOver, setDragOver] = useState(null); // section currently hovered by a dragged agent
   // Roster navigation: "folders" (default — browse by folder, scales to 100s of agents) or
@@ -827,9 +855,23 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 
   useEffect(() => {
     Promise.all([bridge.getSettings(), bridge.authMe ? bridge.authMe().catch(() => null) : null]).then(([s, me]) => {
-      setAgents((s && s.agents) || []);
+      let agentsArr = (s && s.agents) || [];
+      let groupsArr = (s && s.agentGroups) || [];
+      // EdgeTrader pack housekeeping (idempotent): while the pack is active (Extras),
+      // its agents are protected from deletion and any loose ET agent is filed into a
+      // default "Edge Trader" folder. One clobber-safe write, only when something moved.
+      const etOn = !s || !s.extras || s.extras.edgetrader !== false;
+      setEtLocked(etOn);
+      if (etOn && agentsArr.some((a) => isEtAgent(a) && !a.group)) {
+        if (!groupsArr.some((g) => g.id === "grp_edgetrader")) groupsArr = [...groupsArr, { id: "grp_edgetrader", name: "Edge Trader" }];
+        agentsArr = agentsArr.map((a) => (isEtAgent(a) && !a.group ? { ...a, group: "grp_edgetrader" } : a));
+        (async () => {
+          try { const cur = await bridge.getSettings(); await bridge.saveSettings({ ...cur, agentGroups: groupsArr, agents: agentsArr }); } catch {}
+        })();
+      }
+      setAgents(agentsArr);
       setTeams((s && s.teams) || []);
-      setAgentGroups((s && s.agentGroups) || []);
+      setAgentGroups(groupsArr);
       const admin = !!(me && me.admin) || !!(s && s.account && s.account.admin);
       // Admins always keep the Browser capability; others lose it when the master switch is off.
       setBrowserOn(admin || !s || !s.agentBrowser || s.agentBrowser.enabled !== false);
@@ -901,7 +943,15 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     finally { setSaveBusy(false); }
   };
 
-  const removeAgent = async (id) => { await persist(agents.filter((a) => a.id !== id)); };
+  const canDelete = (a) => !(etLocked && isEtAgent(a)); // EdgeTrader workers are pack-managed
+  const removeAgent = async (id) => {
+    const a = agents.find((x) => x.id === id);
+    if (a && !canDelete(a)) {
+      alert("This worker belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
+      return;
+    }
+    await persist(agents.filter((x) => x.id !== id));
+  };
 
   // ---- groups: create / rename / delete / move (clobber-safe writes, same as persist) ----
   const persistOrg = async (nextGroups, nextAgents) => {
@@ -1149,7 +1199,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
         <button className="btn ghost" onClick={() => openStudio(a)}><Pencil size={13} /> Open in Studio</button>
         {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
         {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
-        <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
+        {canDelete(a) && <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>}
       </div>
     </div>
   );
@@ -1175,7 +1225,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
         <button className="btn ghost" title="Open in Studio" onClick={() => openStudio(a)}><Pencil size={13} /></button>
         {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
         {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
-        <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>
+        {canDelete(a) && <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>}
       </div>
     </div>
   );

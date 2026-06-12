@@ -44,14 +44,14 @@
   --warn: #b45309;
   --danger: #dc2626;
 }
-/* Default accent in light = deep teal rgb(0,128,113); a custom user accent still wins. */
+/* Default accent in light = azure rgb(0,167,250); a custom user accent still wins. */
 :root[data-theme="light"][data-accent="default"] {
-  --accent: #008071;
-  --accent-rgb: 0,128,113;
-  --accent-2: #0a9a87;
-  --accent2-rgb: 10,154,135;
-  --accent-weak: rgba(0,128,113,0.12);
-  --accent-line: rgba(0,128,113,0.5);
+  --accent: #00a7fa;
+  --accent-rgb: 0,167,250;
+  --accent-2: #2eb8ff;
+  --accent2-rgb: 46,184,255;
+  --accent-weak: rgba(0,167,250,0.12);
+  --accent-line: rgba(0,167,250,0.5);
 }
 :root[data-theme="light"] body {
   /* one barely-there warm wash — no teal glow in light */
@@ -82,6 +82,8 @@
 :root[data-theme="light"] .tn-tab { background: var(--bg-1); border-color: var(--line); }
 :root[data-theme="light"] .tn-tab:hover { background: var(--bg-2); border-color: var(--line-2); box-shadow: none; }
 :root[data-theme="light"] .tn-tabicon { color: var(--accent); filter: none; } /* mode icons follow the default/custom accent */
+/* Selected mode tab: bold theme-color border (1px border + 1px inset ring = 2px look) so the active surface is unmistakable. */
+:root[data-theme="light"] .tn-tab.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 /* Primary actions carry the accent (terracotta by default) — never black. */
 :root[data-theme="light"] .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
 :root[data-theme="light"] .btn.primary:hover { background: var(--accent-2); }
@@ -844,7 +846,7 @@ input, textarea, select { font-family: inherit; }
 }
 .model-search:focus { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-weak); }
 .model-group { color: var(--text-2); font-size: 10.5px; padding: 9px 8px 4px; text-transform: uppercase; letter-spacing: 0.8px; }
-.model-row { display: flex; align-items: center; gap: 8px; padding: 9px 9px; border-radius: var(--radius-sm); color: var(--text-1); font-size: 13px; cursor: pointer; transition: background .12s ease, box-shadow .12s ease; }
+.model-row { display: flex; align-items: center; gap: 8px; padding: 5px 9px; border-radius: var(--radius-sm); color: var(--text-1); font-size: 13px; cursor: pointer; transition: background .12s ease, box-shadow .12s ease; }
 .model-row:hover { background: var(--bg-2); color: var(--text-0); }
 .model-row.sel { color: var(--text-0); background: color-mix(in srgb, var(--accent) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 38%, transparent); }
 .model-row.sel:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
@@ -1363,7 +1365,9 @@ textarea.model-search { line-height: 1.5; }
 /* Toggle + brand grouped on the far left. Brand hides when the sidebar is collapsed. */
 .tn-left { display: flex; align-items: center; gap: 10px; padding-left: 14px; flex: 0 0 auto; }
 /* When the sidebar is open, center the toggle + logo + wordmark as one unit within the 252px sidebar column. */
-.app-v:not(.sb-collapsed) .tn-left { width: 252px; justify-content: center; padding-left: 0; }
+.app-v:not(.sb-collapsed) .tn-left { position: relative; width: 252px; justify-content: flex-start; padding-left: 10px; } /* collapse button hugs the left edge */
+.app-v:not(.sb-collapsed) .tn-brand { position: absolute; left: 50%; transform: translateX(-50%); } /* logo + tagline dead-center over the sidebar */
+.tn-brandtext { align-items: center; } /* tagline centered under the wordmark */
 .tn-brand { display: flex; align-items: center; gap: 10px; }
 .tn-brand .mark.tea { width: 44px; height: 44px; border-radius: 12px; }
 .tn-brandtext { display: flex; flex-direction: column; line-height: 1.12; }
@@ -1385,6 +1389,7 @@ textarea.model-search { line-height: 1.5; }
   color: var(--accent); -webkit-text-fill-color: var(--accent); background: none;
 }
 .tn-by { font-size: 11px; font-weight: 500; color: var(--text-2); letter-spacing: .2px; margin-top: -1px; }
+.tn-brandtext img + .tn-by, .tn-brandtext svg + .tn-by { margin-top: 4px; font-size: 9px; letter-spacing: .3px; } /* tagline: smaller, tucked just below the wordmark */
 /* Light mode: wordmark carries the ACCENT (default teal or the user's custom pick), no shimmer. */
 :root[data-theme="light"] .tn-name { background: none; -webkit-text-fill-color: var(--accent); color: var(--accent); animation: none; }
 :root[data-theme="light"] .tn-by { background: none; -webkit-text-fill-color: var(--text-2); color: var(--text-2); animation: none; }
@@ -1402,7 +1407,7 @@ textarea.model-search { line-height: 1.5; }
 .tn-tab.active { animation: tnglow 4s ease-in-out infinite; }
 @keyframes tnglow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.14); } }
 .tn-tab:hover { background: var(--bg-2); border-color: var(--accent-line); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(var(--accent-rgb),0.16); }
-.tn-tab.active { color: #fff; background: radial-gradient(130% 160% at 50% 50%, rgba(var(--accent-rgb),0.22), rgba(var(--accent-rgb),0.06)); border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent), 0 0 14px rgba(var(--accent-rgb),0.6), 0 4px 18px rgba(var(--accent-rgb),0.4), inset 0 1px 0 rgba(255,255,255,0.14); }
+.tn-tab.active { color: #fff; font-weight: 700; background: radial-gradient(130% 160% at 50% 50%, rgba(var(--accent-rgb),0.22), rgba(var(--accent-rgb),0.06)); border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent), 0 0 14px rgba(var(--accent-rgb),0.6), 0 4px 18px rgba(var(--accent-rgb),0.4), inset 0 1px 0 rgba(255,255,255,0.14); }
 /* Vibrant per-tab icon colors so the inactive tabs still draw the eye. */
 .tn-tabicon { color: var(--accent); transition: color .15s, transform .15s, filter .15s; transform-origin: center; filter: drop-shadow(0 1px 0 rgba(0,0,0,0.45)) drop-shadow(0 -0.5px 0 rgba(255,255,255,0.30)); animation: tnfloat 3.2s ease-in-out infinite; }
 @keyframes tnfloat { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1.5px) scale(1.08); } }
@@ -1702,7 +1707,7 @@ textarea.model-search { line-height: 1.5; }
 .agg-wrap { display: grid; grid-template-columns: minmax(380px, 11fr) minmax(340px, 9fr); height: 100%; min-height: 0; }
 @media (max-width: 980px) { .agg-wrap { grid-template-columns: 1fr; overflow-y: auto; } }
 .agg-left { min-height: 0; padding: 30px 34px 26px; display: flex; flex-direction: column; }
-.agg-right { min-height: 0; padding: 30px 28px 26px; border-left: 1px solid var(--line); background: linear-gradient(180deg, var(--accent-weak), transparent 160px), var(--bg-1); }
+.agg-right { min-height: 0; padding: 30px 28px 26px; border-left: 1px solid var(--line); background: var(--bg-1); } /* accent wash removed (user request) */
 .agg-h1 { margin: 0 0 10px; font-size: 26px; color: var(--text-0); letter-spacing: -0.01em; }
 .agg-intro { margin: 0 0 20px; color: var(--text-1); font-size: 13.5px; line-height: 1.6; max-width: 560px; }
 .agg-intro b { color: var(--text-0); }
@@ -2028,7 +2033,7 @@ svg.lucide { color: var(--accent); }
 .aggc-goto { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 13px; font-size: 12.5px; }
 
 /* ===== Floating Sage — the quiet, draggable helper present on every agent screen ===== */
-.sage-dock { position: fixed; right: 22px; bottom: 22px; z-index: 50; }
+.sage-dock { position: fixed; right: 22px; top: 74px; bottom: auto; z-index: 50; } /* home base: just below the online chip; a user drag overrides until idle snaps him home */
 .sage-fab-wrap { position: relative; display: inline-flex; }
 /* tuck-away X — only on hover of the bubble */
 .sage-fab-hide { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text-2); cursor: pointer; opacity: 0; transition: opacity var(--dur-1,120ms) var(--ease,ease); }
@@ -2642,3 +2647,50 @@ svg.lucide { color: var(--accent); }
   .agsd-cast-role { display: none; }
   .agsd-cast { max-width: 100%; }
 }
+
+/* ===== Sage Librarian (Test Center tab) — drift scan + approval diffs ===== */
+.lib-panel { display: flex; flex-direction: column; gap: 10px; }
+.lib-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.lib-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 14.5px; }
+.lib-sub { color: var(--text-2); font-size: 12.5px; max-width: 760px; margin-top: 3px; }
+.lib-err { display: flex; align-items: center; gap: 6px; color: #f08a86; font-size: 12.5px; border: 1px solid rgba(240,138,134,0.35); border-radius: 9px; padding: 7px 10px; background: rgba(240,138,134,0.07); }
+.lib-scan { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: var(--bg-1); }
+.lib-scanline { font-size: 12.5px; color: var(--text-1); margin-bottom: 6px; }
+.lib-area { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.lib-area-main { font-size: 12.5px; }
+.lib-dim { color: var(--text-2); font-size: 11.5px; }
+.lib-section { font-weight: 600; font-size: 12.5px; color: var(--text-1); margin-top: 4px; }
+.lib-prop { border: 1px solid var(--line-2); border-radius: 11px; padding: 9px 12px; background: var(--bg-1); }
+.lib-prop-head { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13px; flex-wrap: wrap; }
+.lib-chips { display: inline-flex; gap: 5px; margin-left: auto; flex-wrap: wrap; }
+.lib-chip { font-size: 10.5px; border: 1px solid var(--line-2); border-radius: 999px; padding: 1px 8px; color: var(--text-2); }
+.lib-chip.add { color: var(--ok, #5fb573); border-color: color-mix(in srgb, var(--ok, #5fb573) 45%, transparent); }
+.lib-chip.chg { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.lib-chip.del { color: #f08a86; border-color: rgba(240,138,134,0.45); }
+.lib-prop-body { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.lib-difflist { display: flex; gap: 8px; align-items: baseline; font-size: 12px; color: var(--text-1); }
+.lib-raw summary { cursor: pointer; font-size: 12px; color: var(--text-2); }
+.lib-raw pre { max-height: 320px; overflow: auto; font-size: 11px; line-height: 1.45; background: var(--bg-0); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; }
+.lib-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.lib-ok { display: inline-flex; align-items: center; gap: 5px; color: var(--ok, #5fb573); font-size: 12.5px; }
+.lib-hint { color: var(--text-2); font-size: 12.5px; }
+
+/* ===== MadavMark — the M cropped from the original logo (hero greeting) ===== */
+/* The image itself is never redrawn — animation is a soft fade-in, then a gentle
+   breathing float with a faint glow swell. */
+.mm { opacity: 0; animation: mmin .4s ease-out forwards, mmbreathe 1.8s ease-in-out .45s infinite; will-change: transform; }
+@keyframes mmin { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+@keyframes mmbreathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.09); }
+}
+@media (prefers-reduced-motion: reduce) { .mm { animation: none; opacity: 1; } }
+
+/* Model selector dock — outside the chat window, centered beneath it.
+   (NOT .model-row — that's the picker menu's per-model row class.) */
+.model-dock { display: flex; justify-content: center; margin-top: 10px; position: relative; }
+/* The dropdown centers under the CHAT WINDOW: the dock spans the chat width, the
+   picker stops being the positioning parent, and centering uses margin (NOT
+   transform — the pop-in open animation overwrites transform and broke it). */
+.model-dock .model-picker { position: static; }
+.model-dock .model-menu { left: 50%; right: auto; margin-left: calc(min(94vw, 720px) / -2); }

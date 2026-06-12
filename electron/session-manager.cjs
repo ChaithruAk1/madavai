@@ -346,7 +346,7 @@ class SessionManager {
     if (member.model && member.model.includes("::")) {
       const i = member.model.indexOf("::");
       const p = settings.load().profiles[member.model.slice(0, i)];
-      if (p) return { ...p, model: member.model.slice(i + 2) };
+      if (p) return settings.resolveProfile({ ...p, model: member.model.slice(i + 2) }); // Starter pins get the session token
     }
     return fallback;
   }

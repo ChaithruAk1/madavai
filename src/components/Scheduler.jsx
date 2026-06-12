@@ -159,7 +159,7 @@ export default function Scheduler() {
       </div>
       </div>
 
-      <div style={{ maxWidth: 1000 }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
         <WebhooksCard agents={agents} teams={teams} tasks={tasks} />
       </div>
 
@@ -233,7 +233,10 @@ function WebhooksCard({ agents, teams, tasks }) {
             </select>
             <button className="btn" onClick={copy} style={{ marginLeft: "auto" }}>{copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copied" : "Copy example"}</button>
           </div>
-          <div className="mo-sub" style={{ marginTop: 8, fontFamily: "var(--mono)", fontSize: 11, wordBreak: "break-all", userSelect: "all" }}>{curl}</div>
+          <details style={{ marginTop: 8 }}>
+            <summary className="mo-sub" style={{ cursor: "pointer" }}>Show the raw command (for the technically inclined — "Copy example" gives you the same thing)</summary>
+            <div className="mo-sub" style={{ marginTop: 6, fontFamily: "var(--mono)", fontSize: 11, wordBreak: "break-all", userSelect: "all" }}>{curl}</div>
+          </details>
           <div className="mo-sub" style={{ marginTop: 6 }}>Token-protected, local-only by default (127.0.0.1). Anyone with the token can run your agents — treat it like a password.</div>
         </div>
       )}

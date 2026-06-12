@@ -21,8 +21,8 @@ export default function Portrait({ seed = "", color = "var(--accent)", size = 40
   lashes = false, earring: earringOv }) {
   const s = String(seed);
   // Looks are deterministic from the seed, but any trait can be pinned via a prop
-  // (used for fixed characters like Sage/Sara). Styles 7-8 (long hair, side bun)
-  // are reachable only via the style prop — random faces stay in 0-6.
+  // (used for fixed characters like Sage/Sara). Styles 7-11 (long hair, side bun,
+  // ponytail, bob, buzz) are reachable only via the style prop — random faces stay in 0-6.
   const skin = skinOv || SKINS[hashS(s + "skin") % SKINS.length];
   const hair = hairOv || HAIRC[hashS(s + "hairc") % HAIRC.length];
   const style = styleOv != null ? styleOv : hashS(s + "style") % 7;
@@ -99,6 +99,21 @@ export default function Portrait({ seed = "", color = "var(--accent)", size = 40
             <path d="M18.6 24.5 Q17.8 9.8 32 9.6 Q46.2 9.8 45.4 24.5 L43.5 24.5 Q44.2 13.5 31 13.6 Q24.5 14 21.8 18.5 Q19.5 21 19.4 24.5 Z" />
             <circle cx="46.6" cy="13.4" r="4.4" />
           </g>
+        )}
+        {/* style 9 — cap + side ponytail (explicit-only) */}
+        {style === 9 && (
+          <g fill={hair}>
+            <path d="M18.6 24 Q18 9.8 32 9.6 Q46 9.8 45.4 24 L43.4 24 Q44 13.5 32 13.4 Q20 13.5 18.6 24 Z" />
+            <path d="M44.5 13 Q51 16 50 25 Q49.4 32 45.8 37 Q47.6 29 46.2 22.5 Q45.4 17 43.2 13.8 Z" />
+          </g>
+        )}
+        {/* style 10 — chin-length bob framing the face (explicit-only) */}
+        {style === 10 && (
+          <path d="M17.8 32 Q16.4 9.6 32 9.4 Q47.6 9.6 46.2 32 Q46.6 36 44.6 38 L42.8 38 Q44.4 30 43.6 22 Q42 14.2 32 14 Q22 14.2 20.4 22 Q19.6 30 21.2 38 L19.4 38 Q17.4 36 17.8 32 Z" fill={hair} />
+        )}
+        {/* style 11 — short buzz cut (explicit-only) */}
+        {style === 11 && (
+          <path d="M19.4 20.5 Q20.4 10.6 32 10.4 Q43.6 10.6 44.6 20.5 Q41.8 14.2 32 14 Q22.2 14.2 19.4 20.5 Z" fill={hair} />
         )}
         {/* brows */}
         <g className="pt-brows" stroke={ink} strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.85">

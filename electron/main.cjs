@@ -303,6 +303,20 @@ ipcMain.handle("madav:qaDiagnose", async (_e, test) => { if (!qaFixer) return QA
 ipcMain.handle("madav:qaApplyFix", (_e, fix) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.applyFix(fix); } catch (err) { return { error: String(err.message || err) }; } });
 ipcMain.handle("madav:qaRollback", (_e, args) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.rollback(args); } catch (err) { return { error: String(err.message || err) }; } });
 
+// ---- IPC: Sage Librarian (knowledge drift sweep — dev machines with the source tree only) ----
+// Same Repair-Bay contract as QA: scanning + generating proposals is automatic;
+// WRITING a knowledge file always requires the admin's explicit approval click.
+let librarian = null;
+try { librarian = require("./librarian.cjs"); } catch { /* packaged build — Librarian not shipped */ }
+const LIB_MISSING = { error: "The Sage Librarian isn't included in this build of Madav.", available: false };
+ipcMain.handle("madav:librarianStatus", async () => librarian ? await librarian.status() : LIB_MISSING);
+ipcMain.handle("madav:librarianScan", async () => librarian ? await librarian.scan() : LIB_MISSING);
+ipcMain.handle("madav:librarianGenerate", async (_e, areaFile) => librarian ? await librarian.generate(String(areaFile || "")) : LIB_MISSING);
+ipcMain.handle("madav:librarianProposals", () => librarian ? librarian.proposals() : []);
+ipcMain.handle("madav:librarianApply", async (_e, areaFile) => librarian ? await librarian.apply(String(areaFile || "")) : LIB_MISSING);
+ipcMain.handle("madav:librarianDiscard", (_e, areaFile) => librarian ? librarian.discard(String(areaFile || "")) : LIB_MISSING);
+ipcMain.handle("madav:librarianRollback", (_e, args) => librarian ? librarian.rollback(String((args || {}).file || ""), String((args || {}).backup || "")) : LIB_MISSING);
+
 // ---- IPC: Saved library (bookmarked responses) ----
 // Each save is written to a local JSON store AND mirrored into an auto-created
 // "Saved History" project as a knowledge entry, so saved answers become reusable
@@ -342,12 +356,12 @@ ipcMain.handle("madav:getSettings", () => settings.load());
 ipcMain.handle("madav:saveSettings", (_e, next) => settings.save(next));
 ipcMain.handle("madav:listModels", async (_e, profileId) => {
   const s = settings.load();
-  const p = profileId ? s.profiles[profileId] : settings.activeProfile(s);
+  const p = settings.resolveProfile(profileId ? s.profiles[profileId] : settings.activeProfile(s)); // Starter gets the session token
   try { return await listModels(p); } catch { return []; }
 });
 ipcMain.handle("madav:pingProvider", async (_e, profileId) => {
   const s = settings.load();
-  const p = profileId ? s.profiles[profileId] : settings.activeProfile(s);
+  const p = settings.resolveProfile(profileId ? s.profiles[profileId] : settings.activeProfile(s));
   try { return await ping(p); } catch { return false; }
 });
 

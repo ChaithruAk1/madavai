@@ -272,3 +272,15 @@ aliases: testcenter, QA tools, admin testing
 What: An internal quality-assurance area for the Madav team.
 Why: Lets admins verify builds; it's not part of the everyday product.
 Behavior: The sidebar entry appears only when you're signed in as an admin AND the build includes the QA tools — end-user installers downloaded from the website never ship them, so most users will never see it. If you don't have it, nothing is missing from your install.
+
+### Test Center · Sage Librarian tab
+aliases: librarian, knowledge sweep, drift scan, sage knowledge update
+What: An admin maintenance tab that keeps Sage's control-level knowledge in sync with the source code.
+Why: Renamed or changed controls would otherwise make Sage confidently describe labels that no longer exist.
+Behavior: Admin-only, desktop-only, and only when Madav runs from the source tree (never in shipped installers). "Scan for drift" git-compares the code since the last sweep and lists stale knowledge areas; "Generate update" has the active model rewrite that area file from current source; the proposal shows an entry-level diff (new / updated / removed). Nothing is written until the admin clicks "Apply (writes the file)" — every apply keeps a backup with one-click roll back.
+
+### Sage Librarian · Apply (writes the file)
+aliases: apply proposal, approve knowledge update
+What: The approval button on a Librarian proposal — the only action that writes a knowledge file.
+Why: Wrong knowledge poisons Sage, so a human reviews every change before it lands.
+Behavior: Refuses if the file changed on disk after the proposal was generated (re-scan and regenerate). Writes a timestamped backup first; "Roll back" restores it instantly. When the last pending proposal is applied, the sweep baseline advances so the next scan starts from here. Changes reach Sage on the next build or dev reload.

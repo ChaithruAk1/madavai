@@ -49,9 +49,22 @@ function roots(dirs) {
   return dirs ? [dirs] : [];
 }
 
+// Built-in solution packs — the app's OWN skills/ folder (EdgeTrader equity analysis,
+// adversarial debate, verdict format, and any future packs) loads in EVERY mode without
+// needing a settings entry, so a settings wipe or reinstall can never silently lose them.
+// Two gates, both fail-OPEN (absent = ON): the Extras switch (Settings → Extras →
+// "EdgeTrader analysis pack") and the build manifest (public installers may exclude the
+// files entirely — then the folder simply isn't on disk and this returns []).
+function builtinSkillDirs() {
+  try { if ((require("./settings.cjs").load().extras || {}).edgetrader === false) return []; } catch { /* default ON */ }
+  try { if (!require("./features.cjs").builtIn("edgetrader")) return []; } catch { /* default ON */ }
+  const d = path.join(__dirname, "..", "skills");
+  try { return fs.existsSync(d) ? [d] : []; } catch { return []; }
+}
+
 function discover(dirs) {
   const acc = [];
-  for (const r of roots(dirs)) walk(r, MAX_DEPTH, acc);
+  for (const r of new Set([...builtinSkillDirs(), ...roots(dirs)])) walk(r, MAX_DEPTH, acc);
   const seen = new Set();
   const out = [];
   for (const s of acc) { if (seen.has(s.name)) continue; seen.add(s.name); out.push(s); }
