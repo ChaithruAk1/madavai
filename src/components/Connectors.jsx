@@ -83,6 +83,7 @@ export default function Connectors() {
         Cloud apps then need a quick sign-in or token. Connected apps are available to the agent in Chat, Cowork, Code, and Projects.
       </p>
 
+      {!sel && <>
       {/* Featured one-click connectors */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "0 0 12px" }}>
         <button className="btn" title="Microsoft's official Playwright MCP — agents drive a real Chromium for JavaScript-heavy sites, with accessibility-snapshot reading. Needs Node; first run downloads the browser."
@@ -131,23 +132,39 @@ export default function Connectors() {
         })}
       </div>
 
+      </>}
+
       <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>Your connectors</div>
-      <div style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 24 }}>
-        <div>
+      {!sel && (
+        <div className="mc-pgrid">
           {list.length === 0 && <div style={{ color: "var(--text-2)", fontSize: 13, padding: "6px 2px" }}>None yet — add one above.</div>}
           {list.map((c) => (
-            <button key={c.id} className={`nav-item ${c.id === selId ? "active" : ""}`} onClick={() => { setSelId(c.id); setTools(null); setStatus(""); }}>
-              <Plug size={15} /> {c.name}
-              <span style={{ marginLeft: "auto", width: 7, height: 7, borderRadius: 9, background: c.enabled ? "var(--ok)" : "var(--text-2)" }} />
+            <button key={c.id} className="mc-pcard" onClick={() => { setSelId(c.id); setTools(null); setStatus(""); }}>
+              <span className="mc-pchip" style={{ color: c.enabled ? "var(--accent)" : "var(--text-2)" }}><Plug size={18} /></span>
+              <span className="mc-pmain">
+                <b>{c.name}</b>
+                <small>{[c.command, ...(c.args || [])].join(" ").slice(0, 46) || "not configured"}</small>
+              </span>
+              <span className={`mc-pact ${c.enabled ? "ok" : ""}`}>{c.enabled ? "Enabled" : "Off"}</span>
             </button>
           ))}
-          <button className="nav-item" onClick={() => addFrom(null)} style={{ marginTop: 6 }}><Plus size={15} /> Custom MCP server</button>
+          <button className="mc-pcard" onClick={() => addFrom(null)}>
+            <span className="mc-pchip"><Plus size={18} /></span>
+            <span className="mc-pmain">
+              <b>Custom MCP server</b>
+              <small>any stdio MCP command</small>
+            </span>
+            <span className="mc-pact">Set up</span>
+          </button>
         </div>
+      )}
 
-        {!sel ? (
-          <div style={{ color: "var(--text-2)", fontSize: 13, paddingTop: 8 }}>Select a connector to configure credentials and test it.</div>
-        ) : (
-          <div style={{ maxWidth: 560 }}>
+      {sel && (
+        <div>
+          <button className="btn ghost" style={{ marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => { setSelId(null); setTools(null); setStatus(""); }}>
+            ← All connectors
+          </button>
+          <div style={{ maxWidth: 720 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: 16 }}>{sel.name}</h3>
               <label className="chip" style={{ cursor: "pointer" }}>
@@ -178,8 +195,8 @@ export default function Connectors() {
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -200,13 +217,27 @@ function iconDomain(item) {
 }
 
 function ConnectorIcon({ item, color }) {
-  const [err, setErr] = useState(false);
+  // Brand favicons are fetched live and FAIL intermittently (rate limits, offline) —
+  // so the letter chip renders immediately and the image only replaces it once it has
+  // ACTUALLY loaded. On failure we try a second icon service before settling on the letter.
+  const [srcIdx, setSrcIdx] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   const domain = iconDomain(item);
-  const src = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : null;
-  if (!src || err) {
-    return <span className="cdir-ico" style={{ background: color }}>{(item.title || "?").slice(0, 1).toUpperCase()}</span>;
-  }
-  return <span className="cdir-ico cdir-ico-img"><img src={src} alt="" loading="lazy" onError={() => setErr(true)} /></span>;
+  const sources = domain ? [
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+  ] : [];
+  const src = sources[srcIdx];
+  return (
+    <span className={`cdir-ico ${loaded ? "cdir-ico-img" : ""}`} style={loaded ? undefined : { background: color }}>
+      {!loaded && (item.title || "?").slice(0, 1).toUpperCase()}
+      {src && (
+        <img src={src} alt="" loading="lazy" style={loaded ? undefined : { display: "none" }}
+          onLoad={() => setLoaded(true)}
+          onError={() => { setLoaded(false); setSrcIdx((i) => i + 1); }} />
+      )}
+    </span>
+  );
 }
 
 function Field({ label, children }) {

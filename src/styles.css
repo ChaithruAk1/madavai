@@ -2743,3 +2743,12 @@ svg.lucide { color: var(--accent); }
 .sk-items::-webkit-scrollbar-track { background: transparent; }
 .sk-items::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
 .sk-items::-webkit-scrollbar-thumb:hover { background: var(--line-2); background-clip: padding-box; }
+
+/* Agents LIST layout: rows must never escape the page edge — the row clips itself,
+   the pill cluster may shrink/truncate (model pill capped), actions stay intact.
+   (Appended via sandbox — host edits truncate this large file; see memory rule.) */
+.ags-listwrap { max-width: 100%; min-width: 0; }
+.ags-listrow { max-width: 100%; overflow: hidden; }
+.ags-list-pills { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.ags-list-pills .ag-pill-model { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ags-list-acts { flex: none; }

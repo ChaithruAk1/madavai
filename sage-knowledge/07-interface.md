@@ -183,10 +183,10 @@ Why: Connect anything the gallery doesn't list — including your own servers.
 Behavior: Creates a blank connector named "New connector" (command "npx") and opens its editor so you can fill in the command, arguments, and tokens yourself. It appears in your connectors list immediately and saves as you type.
 
 ### Connectors · Connector editor (credentials & enabled)
-aliases: connector settings, tokens, env vars, enable connector
-What: Selecting a connector opens fields for Display name, Command, Arguments (space-separated), and "Environment / tokens (KEY=VALUE per line)", plus an "enabled" checkbox and a delete (trash) button.
+aliases: connector settings, tokens, env vars, enable connector, your connectors cards
+What: "Your connectors" shows each configured connector as a card (name, command summary, Enabled/Off). Clicking a card goes INSIDE its setup page — Display name, Command, Arguments (space-separated), "Environment / tokens (KEY=VALUE per line)", an "enabled" checkbox and a delete (trash) button; "← All connectors" returns to the cards.
 Why: Cloud apps need a token or sign-in; the checkbox lets you pause a connector without losing its setup.
-Behavior: Every edit saves immediately. Enabled connectors show a green dot in the list and are available to the agent in Chat, Cowork, Code, and Projects; unchecked ones stay configured but inactive. Trash removes the connector outright.
+Behavior: Every edit saves immediately. Enabled connectors show a green "Enabled" status and are available to the agent in Chat, Cowork, Code, and Projects; "Off" ones stay configured but inactive. Trash removes the connector outright. The registry gallery hides while you're inside a connector.
 Example: Paste `GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...` on its own line to authorize a GitHub connector.
 
 ### Connectors · Test connection
