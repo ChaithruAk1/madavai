@@ -70,7 +70,18 @@
       <button class="btn" id="addProv">+ Add</button>
       <button class="btn danger" id="delProv">Delete</button>
     </div>
+    <h4 style="margin-top:14px">Madav link (Flow Recorder)</h4>
+    <label>Webhook port</label>
+    <input id="mPort" placeholder="8765" />
+    <label>Webhook token (Madav → Scheduler → Webhook triggers)</label>
+    <input id="mToken" type="password" placeholder="paste the token" />
+    <button class="btn primary" id="saveMadav" style="margin-top:8px">Save link</button>
     <div class="status" id="status"></div>
+  </div>
+
+  <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center">
+    <button class="btn" id="recBtn" title="Record a workflow in this tab — do it by hand, then stop; Madav drafts a skill from it (you approve it in Madav → Skills).">⏺ Record workflow → Madav skill</button>
+    <span class="status" id="recStatus" style="margin:0"></span>
   </div>
 
   <div class="log" id="log">

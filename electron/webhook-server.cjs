@@ -87,6 +87,64 @@ function reconcile(deps) {
       const auth = (req.headers.authorization || "").replace(/^Bearer\s+/i, "") || u.searchParams.get("token") || "";
       if (u.pathname === "/hook/ping") return send(res, 200, { ok: true, app: "Madav" });
       if (!token || !tokenMatches(auth, token)) return send(res, 401, { ok: false, error: "bad or missing token" });
+      // POST /hook/flow — a workflow recorded in REAL Chrome (Madav extension) arrives
+      // here; the Flow Recorder's distiller turns it into a Skill Forge DRAFT (the
+      // user still approves it on the Skills screen — nothing activates by itself).
+      if (u.pathname === "/hook/flow" && req.method === "POST") {
+        readBody(req, async (body) => {
+          try {
+            const raw = Array.isArray(body.steps) ? body.steps.slice(-300) : [];
+            const steps = raw.map((s) => ({
+              t: s.t === "page" || s.t === "fill" ? s.t : "click",
+              url: String(s.url || "").slice(0, 300), title: String(s.title || "").slice(0, 120),
+              role: String(s.role || "").slice(0, 24), name: String(s.name || "").slice(0, 70),
+              field: String(s.field || "").slice(0, 70), value: String(s.value || "").slice(0, 80),
+              at: Number(s.at) || Date.now(),
+            }));
+            if (steps.length < 3) return send(res, 400, { ok: false, error: "need at least 3 recorded steps" });
+            await require("./flow-recorder.cjs").distill(steps);
+            return send(res, 200, { ok: true, note: "Draft created — approve it in Madav → Skills → Learned drafts (may take ~30s to appear)." });
+          } catch (e) { return send(res, 500, { ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
+        });
+        return;
+      }
+
+      // GET /hook/models — the desktop app's model catalog for trusted local companions
+      // (the Chrome extension). Names/ids only — API KEYS NEVER LEAVE THE APP.
+      if (u.pathname === "/hook/models" && req.method === "GET") {
+        const scfg = deps.settings.load();
+        const groups = Object.values(scfg.profiles || {}).map((p) => ({
+          id: p.id, name: p.name, kind: p.kind,
+          models: (p.cachedModels && p.cachedModels.length ? p.cachedModels : (p.model ? [p.model] : [])).slice(0, 400),
+        })).filter((g) => g.models.length);
+        return send(res, 200, { ok: true, active: scfg.activeProfileId, groups });
+      }
+      // POST /hook/chat { model?: "pid::model", messages } — run a completion ON the
+      // desktop app (its keys, its providers); companions get the answer, never the key.
+      if (u.pathname === "/hook/chat" && req.method === "POST") {
+        readBody(req, async (body) => {
+          try {
+            const scfg = deps.settings.load();
+            let prof = deps.settings.activeProfile(scfg);
+            const mm = String(body.model || "");
+            if (mm.includes("::")) {
+              const i = mm.indexOf("::");
+              const p = scfg.profiles[mm.slice(0, i)];
+              if (p) prof = deps.settings.resolveProfile({ ...p, model: mm.slice(i + 2) });
+            }
+            const msgs = Array.isArray(body.messages) ? body.messages.slice(-30).map((x) => ({ role: x.role === "system" ? "system" : x.role === "assistant" ? "assistant" : "user", content: String(x.content || "").slice(0, 30000) })) : [];
+            if (!msgs.length) return send(res, 400, { ok: false, error: "messages required" });
+            const { streamChat } = require("./providers.cjs");
+            const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 120000);
+            let text = "";
+            try { text = (await streamChat({ ...prof }, msgs, { signal: ac.signal, onDelta: () => {} })).text || ""; }
+            finally { clearTimeout(to); }
+            return send(res, 200, { ok: true, text, model: prof.model, provider: prof.name });
+          } catch (e) { return send(res, 500, { ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
+        });
+        return;
+      }
+
       const m = /^\/hook\/(agent|team|task)\/([\w.-]+)$/.exec(u.pathname);
       if (!m || req.method !== "POST") return send(res, 404, { ok: false, error: "unknown route" });
       const [, kind, id] = m;

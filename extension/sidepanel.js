@@ -7,8 +7,12 @@ let running = false;
 
 // ---- providers (chrome.storage.local) ----
 const DEFAULTS = {
-  activeId: "openrouter",
+  activeId: "madav",
   list: [
+    // "Madav (desktop)" = the SAME models as your desktop app, run BY the desktop app
+    // over the local link (⚙ → Madav link). Keys never enter Chrome. "Load models"
+    // pulls the desktop's full catalog; ids are "profileId::model".
+    { id: "madav", name: "Madav (desktop)", baseUrl: "http://127.0.0.1:8765", apiKey: "", model: "", models: [] },
     { id: "openrouter", name: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", apiKey: "", model: "openai/gpt-4o-mini", models: [] },
     { id: "nim", name: "NVIDIA NIM", baseUrl: "https://integrate.api.nvidia.com/v1", apiKey: "", model: "meta/llama-3.3-70b-instruct", models: [] },
     { id: "gemini", name: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", apiKey: "", model: "gemini-2.0-flash", models: [] },
@@ -125,10 +129,21 @@ $("loadModels").onclick = async () => {
   prov.baseUrl = $("pBase").value.trim(); prov.apiKey = $("pKey").value.trim();
   setStatus("Loading models…");
   try {
-    const res = await fetch(modelsUrl(prov.baseUrl), { headers: prov.apiKey ? { Authorization: "Bearer " + prov.apiKey } : {} });
-    if (!res.ok) throw new Error(res.status + " " + (await res.text()).slice(0, 120));
-    const data = await res.json();
-    const ids = (data.data || data.models || []).map((m) => m.id || m.name).filter(Boolean).sort();
+    let ids;
+    if (prov.id === "madav") {
+      // Pull the DESKTOP APP's whole catalog over the local link (ids: "profileId::model").
+      const link = await chrome.storage.local.get(["madavPort", "madavToken"]);
+      if (!link.madavToken) throw new Error("set the Madav webhook token below first");
+      const res = await fetch(`http://127.0.0.1:${link.madavPort || "8765"}/hook/models`, { headers: { Authorization: "Bearer " + link.madavToken } });
+      if (!res.ok) throw new Error(res.status + " from Madav — app running with webhooks on?");
+      const j = await res.json();
+      ids = (j.groups || []).flatMap((g) => g.models.map((m) => g.id + "::" + m));
+    } else {
+      const res = await fetch(modelsUrl(prov.baseUrl), { headers: prov.apiKey ? { Authorization: "Bearer " + prov.apiKey } : {} });
+      if (!res.ok) throw new Error(res.status + " " + (await res.text()).slice(0, 120));
+      const data = await res.json();
+      ids = (data.data || data.models || []).map((m) => m.id || m.name).filter(Boolean).sort();
+    }
     if (!ids.length) throw new Error("no models returned");
     prov.models = ids;
     if (!prov.model || !ids.includes(prov.model)) prov.model = ids[0];
@@ -163,6 +178,19 @@ function stripReasoning(s) {
 async function askLLM(messages) {
   const p = await getStore();
   const c = activeOf(p);
+  // "Madav (desktop)" provider: the desktop app runs the completion with ITS providers
+  // and keys (which never enter Chrome). Model ids look like "pid::model".
+  if (c.id === "madav") {
+    const link = await chrome.storage.local.get(["madavPort", "madavToken"]);
+    if (!link.madavToken) throw new Error("Set the Madav webhook token in ⚙ (Madav → Scheduler → Webhook triggers).");
+    const r = await fetch(`http://127.0.0.1:${link.madavPort || "8765"}/hook/chat`, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + link.madavToken },
+      body: JSON.stringify({ model: c.model, messages }),
+    }).catch(() => { throw new Error("Couldn't reach the Madav desktop app — is it running with webhooks enabled?"); });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) throw new Error(j.error || ("Madav said " + r.status));
+    return stripReasoning(j.text || "");
+  }
   if (!c.apiKey && !/localhost|127\.0\.0\.1/.test(c.baseUrl)) throw new Error("No API key for " + c.name + " — open ⚙ and add one.");
   const url = chatUrl(c.baseUrl);
   let res;
@@ -242,4 +270,37 @@ async function start() {
 $("run").onclick = start;
 $("goal").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); start(); } });
 
+// ---- Flow Recorder: record THIS tab's workflow → Madav drafts a skill from it ----
+async function refreshRec() {
+  const st = await chrome.runtime.sendMessage({ type: "rec-status" }).catch(() => null);
+  const on = st && st.recording;
+  $("recBtn").textContent = on ? `■ Stop — send to Madav (${st.steps} steps)` : "⏺ Record workflow → Madav skill";
+  return on;
+}
+$("recBtn").onclick = async () => {
+  const on = await refreshRec();
+  if (!on) {
+    const r = await chrome.runtime.sendMessage({ type: "rec-start" }).catch(() => null);
+    $("recStatus").textContent = r && r.ok ? "Recording this tab — do the workflow, then Stop." : (r && r.error) || "couldn't start";
+  } else {
+    $("recStatus").textContent = "Sending to Madav…";
+    const r = await chrome.runtime.sendMessage({ type: "rec-stop" }).catch(() => null);
+    $("recStatus").textContent = (r && (r.note || r.error)) || "no reply";
+  }
+  refreshRec();
+};
+setInterval(refreshRec, 2500);
+
+// Madav link settings (port + webhook token for /hook/flow)
+(async () => {
+  const c = await chrome.storage.local.get(["madavPort", "madavToken"]);
+  if ($("mPort")) $("mPort").value = c.madavPort || "8765";
+  if ($("mToken")) $("mToken").value = c.madavToken || "";
+})();
+if ($("saveMadav")) $("saveMadav").onclick = async () => {
+  await chrome.storage.local.set({ madavPort: ($("mPort").value || "8765").trim(), madavToken: ($("mToken").value || "").trim() });
+  $("status").textContent = "Madav link saved.";
+};
+
 renderModelSelect();
+refreshRec();

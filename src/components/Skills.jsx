@@ -39,6 +39,7 @@ export default function Skills() {
   const [detail, setDetail] = useState(null);
   const [newName, setNewName] = useState("");
   const [status, setStatus] = useState("");
+  const [deskRec, setDeskRec] = useState(false); // desktop Flow Recorder live?
   const [showFolders, setShowFolders] = useState(false);
   const [drafts, setDrafts] = useState([]); // Skill Forge: learned drafts awaiting approval
 
@@ -109,7 +110,17 @@ export default function Skills() {
           <button className="btn" style={{ margin: "0 8px 8px", fontSize: 12.5 }}
             title="Show Madav a workflow once: a browser window opens, you do the task by hand, close the window — Madav drafts a skill from what it watched (you approve it below). Credential fields are never recorded."
             onClick={async () => { await bridge.recordFlowStart(); setStatus("Recording — do the workflow in the new window, then CLOSE it. A draft will appear below (give it ~30s after closing)."); }}>
-            ⏺ Record a workflow → skill
+            ⏺ Record a web workflow → skill
+          </button>
+        )}
+        {!isWeb && bridge.recordDesktopStart && (
+          <button className={`btn ${deskRec ? "primary" : ""}`} style={{ margin: "0 8px 8px", fontSize: 12.5 }}
+            title="Show Madav a workflow in your real Windows apps: start, do the task by hand in any application, then stop — Madav drafts a skill from the buttons you clicked and fields you filled (credential fields are never recorded). Replays need the Desktop capability."
+            onClick={async () => {
+              if (!deskRec) { const r = await bridge.recordDesktopStart(); setDeskRec(!!(r && r.recording)); setStatus(r && r.error ? r.error : "Recording your desktop — do the workflow in any app, then press Stop here."); }
+              else { setStatus("Distilling what you showed…"); const r = await bridge.recordDesktopStop(); setDeskRec(false); setStatus((r && (r.note || r.error)) || "stopped"); setTimeout(refresh, 4000); }
+            }}>
+            {deskRec ? "■ Stop desktop recording" : "⏺ Record a desktop workflow → skill"}
           </button>
         )}
         <div className="nav-label" style={{ paddingLeft: 8 }}>Personal skills</div>

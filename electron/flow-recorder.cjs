@@ -122,4 +122,4 @@ description: <one sentence: when Madav should use this workflow>
   try { fs.writeFileSync(dataFile, JSON.stringify(st, null, 2)); } catch {}
 }
 
-module.exports = { start, stop, status };
+module.exports = { start, stop, status, distill }; // distill is reused by /hook/flow (Chrome-extension recordings)

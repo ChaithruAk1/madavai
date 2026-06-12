@@ -5,7 +5,7 @@ description: >
   whenever the user requests anything visual — presentations (.pptx), dashboards, HTML pages,
   reports, PDFs, spreadsheets, data visualizations, landing pages, UI mockups, or any artifact
   where aesthetics and layout matter. Trigger even for casual requests like "make a dashboard"
-  or "create a deck" — especially then. The skill makes Claude think like a design director
+  or "create a deck" — especially then. The skill makes Madav think like a design director
   who interrogates every visual choice before delivery, drawing from references like Stripe,
   Linear, Apple, Bauhaus, and Swiss typography. The user sees only the polished result unless
   they explicitly ask to see the design process. Always use this skill before writing any visual

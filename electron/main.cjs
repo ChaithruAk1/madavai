@@ -303,6 +303,11 @@ ipcMain.handle("madav:qaDiagnose", async (_e, test) => { if (!qaFixer) return QA
 ipcMain.handle("madav:qaApplyFix", (_e, fix) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.applyFix(fix); } catch (err) { return { error: String(err.message || err) }; } });
 ipcMain.handle("madav:qaRollback", (_e, args) => { if (!qaFixer) return QA_MISSING; try { return qaFixer.rollback(args); } catch (err) { return { error: String(err.message || err) }; } });
 
+// ---- IPC: Desktop Flow Recorder (UIA-event recording of native-app workflows) ----
+ipcMain.handle("madav:recordDesktopStart", () => { try { return require("./desktop-recorder.cjs").start(); } catch (e) { return { error: String((e && e.message) || e) }; } });
+ipcMain.handle("madav:recordDesktopStop", async () => { try { return await require("./desktop-recorder.cjs").stop(); } catch (e) { return { error: String((e && e.message) || e) }; } });
+ipcMain.handle("madav:recordDesktopStatus", () => { try { return require("./desktop-recorder.cjs").status(); } catch { return { recording: false }; } });
+
 // ---- IPC: Sage Librarian (knowledge drift sweep — dev machines with the source tree only) ----
 // Same Repair-Bay contract as QA: scanning + generating proposals is automatic;
 // WRITING a knowledge file always requires the admin's explicit approval click.
