@@ -38,7 +38,7 @@ export default function Plugins({ onNavigate }) {
           return (
             <div key={p.name} className="cdir-card" style={{ cursor: p.go ? "pointer" : "default" }} onClick={() => p.go && onNavigate && onNavigate(p.go)}>
               <div className="cdir-cardhead">
-                <span className="cdir-ico" style={{ background: "var(--accent-weak)", color: "var(--accent)" }}><I size={18} /></span>
+                <span className="cdir-ico" style={{ color: "var(--accent)" }}><I size={18} /></span>
                 <div className="cdir-titles">
                   <div className="cdir-name">{p.name}</div>
                   {p.go && <div className="cdir-id">Open {p.name} →</div>}
