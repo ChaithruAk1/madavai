@@ -5,7 +5,7 @@
 // a running session (he talks through a separate one-shot call). Draggable, minimizable,
 // with a chooseable face. Shares the persisted thread with the in-Agents "Ask Sage" tab.
 import { useEffect, useRef, useState } from "react";
-import { X, Plus, Minus, Smile, ArrowUp, ArrowRight, Loader2, Mic } from "lucide-react";
+import { X, Plus, Minus, Smile, ArrowUp, ArrowRight, Loader2, Mic, Volume2, VolumeX } from "lucide-react";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
 import { recordScreen, recordQuestion, recordEvent, memoryBlock, maybeDistill } from "../sageMemory.js";
@@ -125,6 +125,17 @@ export default function SageDock({ mode, onNavigate }) {
   const [tip, setTip] = useState(null);
   const [listening, setListening] = useState(false);
   const [voiceOn, setVoiceOn] = useState(FEAT_VOICE); // Extras switchboard: hide the mic when voice input is off
+  // Sage speaks: replies read aloud via the OS speech engine (same engine as chat's
+  // "Spoken replies"). Off by default; persisted; Sara looks get a female voice.
+  const [speakOn, setSpeakOn] = useState(() => { try { return localStorage.getItem("be.sage.speak") === "1"; } catch { return false; } });
+  const toggleSpeak = () => {
+    setSpeakOn((v) => {
+      const n = !v;
+      try { localStorage.setItem("be.sage.speak", n ? "1" : "0"); } catch {}
+      if (!n) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {} }
+      return n;
+    });
+  };
   useEffect(() => { bridge.getSettings().then((c) => setVoiceOn(FEAT_VOICE && ((c && c.extras) || {}).voice !== false)).catch(() => {}); }, [open]);
   const [size, setSize] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.size") || "null"); } catch { return null; } });
   // Active walkthrough: Sage's numbered steps become a live guide that follows the
@@ -251,6 +262,29 @@ export default function SageDock({ mode, onNavigate }) {
   const show = () => { setHidden(false); try { localStorage.removeItem("be.sage.hidden"); } catch {} };
   const chooseLook = (i) => { setLook(i); setLookPick(false); try { localStorage.setItem("be.sage.look", String(i)); } catch {} };
 
+  // Read a reply aloud (free OS voices, offline). Cancels anything still talking,
+  // skips while the mic listens (no feedback loop), caps length so long walkthroughs
+  // don't lecture for minutes, and matches the voice to the chosen look (Sara = female).
+  const speakReply = (raw) => {
+    if (!speakOn || !voiceOn || listening) return;
+    try {
+      if (!window.speechSynthesis) return;
+      const t = clean(raw).replace(/\s+/g, " ").trim().slice(0, 600);
+      if (!t) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(t);
+      const vs = window.speechSynthesis.getVoices() || [];
+      const female = !!(lookObj && lookObj.female);
+      const namePat = female ? /female|zira|aria|jenny|sonia|samantha|susan|eva|emma/i : /\bmale|david|guy|mark|daniel|george|ryan/i;
+      const pick = vs.find((v) => /^en/i.test(v.lang) && namePat.test(v.name)) || vs.find((v) => /^en/i.test(v.lang));
+      if (pick) u.voice = pick;
+      u.rate = 1.04;
+      window.speechSynthesis.speak(u);
+    } catch { /* never let speech break the chat */ }
+  };
+  useEffect(() => { if (listening || !open) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {} } }, [listening, open]);
+  useEffect(() => () => { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {} }, []);
+
   const ask = async (preset) => {
     const text = (typeof preset === "string" ? preset : input).trim();
     if (!text || busy) return;
@@ -278,6 +312,7 @@ export default function SageDock({ mode, onNavigate }) {
           : "Hmm, that didn't go through: " + String(err).slice(0, 160);
       }
       setMsgs((m) => [...m, { role: "mentor", text: reply }]);
+      speakReply(reply);
       // Instant navigation: "GOTO! <key>" means the user explicitly asked to go there.
       // DEFECT GUARD: models (especially weaker ones) overuse GOTO! even when the user
       // only asked a question, yanking them out of Sage mid-conversation. Auto-navigate
@@ -443,6 +478,12 @@ export default function SageDock({ mode, onNavigate }) {
             <SageFace size={36} look={lookObj} />
             <div className="sage-panel-id"><b>{name}</b><span>your Madav buddy</span></div>
             <button className={`sage-ico ${lookPick ? "on" : ""}`} title={`Change ${name}'s look`} onClick={() => setLookPick((p) => !p)}><Smile size={15} /></button>
+            {voiceOn && (
+              <button className={`sage-ico ${speakOn ? "on" : ""}`} title={speakOn ? `${name} speaks replies aloud — click to mute` : `Hear ${name} speak replies`} onClick={toggleSpeak}
+                style={speakOn ? { color: "var(--accent)" } : undefined}>
+                {speakOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
+              </button>
+            )}
             {msgs.length > 0 && <button className="sage-ico" title="New conversation" onClick={newThread}><Plus size={14} /></button>}
             <button className="sage-ico" title="Tuck away to the corner" onClick={hide}><Minus size={15} /></button>
             <button className="sage-ico" title="Minimize" onClick={() => setOpen(false)}><X size={15} /></button>

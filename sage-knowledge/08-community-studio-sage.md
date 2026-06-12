@@ -195,9 +195,15 @@ Behavior: Tucking away persists across restarts. The tab ("Show Sage") stays at 
 
 ### Sage · Look gallery (smiley button)
 aliases: change sage's face, choose avatar, Sara, pick a look
-What: The smiley icon in the panel header ("Change Sage's look") opening a gallery of 14 portraits — eight Sage looks (classic, European, Indian, Nordic, African, silver…) and six female looks.
+What: The smiley icon in the panel header ("Change Sage's look") opening a gallery of 25 portraits — Sage looks (classic, European, Indian, Nordic, African, American, Chinese, silver…) and female looks (Sara).
 Why: Pick a buddy who feels like yours.
 Behavior: The gallery's own label says it: "Pick a look — female looks answer as Sara". Choosing any female portrait renames the helper to Sara everywhere — greeting, tooltips, replies; male/neutral looks stay Sage. Your pick is saved permanently.
+
+### Sage · Speaker button (hear replies)
+aliases: sage speaks, sage voice, read aloud, talk to me, mute sage
+What: A speaker icon in the panel header that makes Sage read every reply aloud.
+Why: Hands-free help — listen while you work the steps.
+Behavior: Off by default; click to turn on (icon turns accent-colored), click again to mute mid-sentence. Uses your computer's built-in voices (no internet, no API) — quality depends on the OS. Sara looks get a female voice, Sage looks a male one, when your system has them. Speech pauses while the mic is listening and stops when the panel closes. Hidden entirely when Voice input is switched off in Settings → Extras.
 
 ### Sage · New conversation (+)
 aliases: clear sage chat, reset thread, start over with sage
