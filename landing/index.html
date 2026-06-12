@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Madav — Your AI workforce. Any model. Built to think with you.</title>
+<meta name="description" content="Madav is one app for AI chat, file collaboration and agent teams — on any model you choose, with free models the minute you sign in." />
+<meta property="og:title" content="Madav — Your AI workforce. Any model." />
+<meta property="og:description" content="Chat, collaborate on your files, and run agent teams — free models included from minute one." />
+<meta property="og:image" content="https://madav.ai/landing/logo.png" />
+<meta property="og:url" content="https://madav.ai" />
+<link rel="icon" href="/landing/m.png" />
+<style>
+  :root {
+    --bg: #06070b;
+    --bg-1: #0b0d14;
+    --glass: rgba(255,255,255,0.04);
+    --glass-2: rgba(255,255,255,0.07);
+    --line: rgba(255,255,255,0.09);
+    --line-2: rgba(255,255,255,0.16);
+    --text: #eef1f7;
+    --text-1: #b9c0cd;
+    --text-2: #7e8696;
+    --cyan: #29d8f0;
+    --blue: #3b82f6;
+    --violet: #8b5cf6;
+    --grad: linear-gradient(92deg, var(--cyan), var(--blue) 52%, var(--violet));
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  ::selection { background: rgba(59,130,246,0.4); }
+
+  /* ---- aurora field (fixed, behind everything, gently drifting) ---- */
+  .aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .aurora span { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .5; will-change: transform; }
+  .a1 { width: 56vw; height: 56vw; left: -14vw; top: -22vw; background: radial-gradient(closest-side, rgba(41,216,240,0.32), transparent 70%); animation: drift1 26s ease-in-out infinite alternate; }
+  .a2 { width: 60vw; height: 60vw; right: -18vw; top: -14vw; background: radial-gradient(closest-side, rgba(139,92,246,0.30), transparent 70%); animation: drift2 32s ease-in-out infinite alternate; }
+  .a3 { width: 52vw; height: 52vw; left: 24vw; top: 46vh; background: radial-gradient(closest-side, rgba(59,130,246,0.16), transparent 70%); animation: drift1 40s ease-in-out infinite alternate-reverse; }
+  @keyframes drift1 { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(6vw,4vh,0) scale(1.12); } }
+  @keyframes drift2 { from { transform: translate3d(0,0,0) scale(1.08); } to { transform: translate3d(-5vw,6vh,0) scale(1); } }
+  .stars { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,0.20) 1px, transparent 1.4px);
+    background-size: 130px 130px; opacity: .35; }
+
+  main { position: relative; z-index: 1; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---- nav ---- */
+  nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    background: rgba(6,7,11,0.55); border-bottom: 1px solid var(--line); }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; height: 66px; }
+  .nav-logo img { height: 26px; display: block; margin: 0 auto; }
+  .tagline { display: block; letter-spacing: .04em; text-align: center; line-height: 1.3;
+    background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-links { display: flex; align-items: center; gap: 26px; }
+  .nav-links a { color: var(--text-1); text-decoration: none; font-size: 14px; transition: color .18s; }
+  .nav-links a:hover { color: var(--text); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; text-decoration: none;
+    font-size: 14.5px; font-weight: 600; padding: 11px 22px; transition: transform .18s, box-shadow .18s, background .18s; cursor: pointer; border: 0; }
+  .btn:active { transform: scale(.97); }
+  .btn-grad { background: var(--grad); color: #051018; box-shadow: 0 4px 24px rgba(59,130,246,0.35); }
+  .btn-grad:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(59,130,246,0.5); }
+  .btn-ghost { background: var(--glass); color: var(--text); border: 1px solid var(--line-2); backdrop-filter: blur(8px); }
+  .btn-ghost:hover { background: var(--glass-2); border-color: rgba(255,255,255,0.28); }
+  .nav .btn { padding: 9px 18px; font-size: 13.5px; }
+
+  /* ---- hero ---- */
+  .hero { text-align: center; padding: 96px 0 40px; }
+  .hero img.wordmark { height: 64px; margin-bottom: 28px; }
+  .hero h1 { font-size: clamp(38px, 6vw, 64px); line-height: 1.08; letter-spacing: -0.02em; font-weight: 800; }
+  .hero h1 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p.sub { color: var(--text-1); font-size: clamp(16px, 2vw, 19px); max-width: 640px; margin: 22px auto 0; }
+  .hero .ctas { display: flex; gap: 14px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
+  .hero .note { color: var(--text-2); font-size: 13px; margin-top: 16px; }
+
+  /* ---- app window mock ---- */
+  .stage { perspective: 1100px; margin: 64px auto 0; max-width: 920px; }
+  .window { background: rgba(12,14,21,0.85); border: 1px solid rgba(120,140,255,0.22); border-radius: 16px;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.55), 0 0 90px rgba(59,130,246,0.12);
+    transform: rotateX(7deg); transform-origin: top center; overflow: hidden; backdrop-filter: blur(10px); }
+  .win-bar { display: flex; align-items: center; gap: 7px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .win-bar i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.10); }
+  .win-bar .ttl { margin-left: 10px; font-size: 12px; color: var(--text-2); }
+  .win-body { display: grid; grid-template-columns: 180px 1fr; min-height: 340px; }
+  .win-side { border-right: 1px solid var(--line); padding: 16px 14px; display: flex; flex-direction: column; gap: 11px; }
+  .sk { height: 10px; border-radius: 6px; background: rgba(255,255,255,0.07); }
+  .sk.bright { background: linear-gradient(90deg, rgba(41,216,240,0.35), rgba(139,92,246,0.35)); }
+  .win-main { padding: 22px 26px; }
+  .bubble { max-width: 75%; border-radius: 14px; padding: 12px 16px; font-size: 13.5px; margin-bottom: 14px; }
+  .bubble.user { margin-left: auto; background: rgba(59,130,246,0.16); border: 1px solid rgba(59,130,246,0.3); color: var(--text); }
+  .bubble.ai { background: var(--glass); border: 1px solid var(--line); color: var(--text-1); }
+  .toolcard { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-1);
+    border: 1px solid var(--line); border-radius: 10px; padding: 9px 13px; margin: 0 0 14px; width: fit-content; background: rgba(255,255,255,0.03); }
+  .dotok { width: 8px; height: 8px; border-radius: 50%; background: #43d9a3; box-shadow: 0 0 8px rgba(67,217,163,0.8); }
+
+  /* ---- sections ---- */
+  section { padding: 96px 0 0; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--cyan); background: rgba(41,216,240,0.08); border: 1px solid rgba(41,216,240,0.25);
+    padding: 6px 14px; border-radius: 999px; }
+  h2.title { font-size: clamp(28px, 4vw, 42px); letter-spacing: -0.015em; line-height: 1.15; margin-top: 18px; font-weight: 800; }
+  p.lead { color: var(--text-1); max-width: 620px; margin-top: 14px; font-size: 16.5px; }
+
+  .band { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; margin-top: 56px; }
+  .band:nth-of-type(even) .b-art { order: -1; }
+  .b-art { background: var(--glass); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px;
+    backdrop-filter: blur(10px); box-shadow: 0 24px 80px rgba(0,0,0,0.35); }
+  .b-copy h3 { font-size: 24px; letter-spacing: -0.01em; margin-bottom: 10px; font-weight: 700; }
+  .b-copy h3 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .b-copy p { color: var(--text-1); font-size: 15.5px; }
+  .b-copy ul { margin: 14px 0 0; padding: 0; list-style: none; }
+  .b-copy li { color: var(--text-1); font-size: 14.5px; padding: 5px 0 5px 26px; position: relative; }
+  .b-copy li::before { content: ""; position: absolute; left: 2px; top: 12px; width: 14px; height: 8px;
+    border-left: 2px solid var(--cyan); border-bottom: 2px solid var(--cyan); transform: rotate(-45deg) translateY(-2px); }
+
+  /* agents relay mock */
+  .relay { display: flex; flex-direction: column; gap: 12px; }
+  .station { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.03);
+    border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; font-size: 13.5px; color: var(--text-1); }
+  .face { width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center;
+    font-size: 13px; font-weight: 700; color: #051018; }
+  .station .st { margin-left: auto; font-size: 11.5px; color: var(--text-2); }
+  .station.done .st { color: #43d9a3; }
+  .station.live { border-color: rgba(41,216,240,0.45); box-shadow: 0 0 24px rgba(41,216,240,0.12); }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); animation: pul 1.6s ease-in-out infinite; }
+  @keyframes pul { 0%,100% { box-shadow: 0 0 0 0 rgba(41,216,240,0.6);} 50% { box-shadow: 0 0 0 7px rgba(41,216,240,0);} }
+
+  /* models marquee */
+  .marquee { overflow: hidden; margin-top: 44px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+  .mq-track { display: flex; gap: 14px; width: max-content; animation: mq 36s linear infinite; }
+  .chip { white-space: nowrap; border: 1px solid var(--line); background: var(--glass); color: var(--text-1);
+    font-size: 13.5px; border-radius: 999px; padding: 9px 18px; backdrop-filter: blur(6px); }
+  .chip b { color: var(--text); font-weight: 600; }
+  @keyframes mq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* power grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 48px; }
+  .cell { background: var(--glass); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 22px;
+    transition: transform .25s, border-color .25s, background .25s; backdrop-filter: blur(8px); }
+  .cell:hover { transform: translateY(-4px); border-color: rgba(120,140,255,0.35); background: var(--glass-2); }
+  .cell .ic { font-size: 22px; margin-bottom: 12px; display: block; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; font-style: normal; font-weight: 800; }
+  .cell h4 { font-size: 16px; margin-bottom: 6px; font-weight: 700; }
+  .cell p { color: var(--text-2); font-size: 13.5px; }
+
+  /* pricing */
+  .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 48px; max-width: 880px; }
+  .plan { background: var(--glass); border: 1px solid var(--line); border-radius: 22px; padding: 32px 28px; position: relative; backdrop-filter: blur(10px); }
+  .plan.hot { border: 1px solid transparent; background:
+    linear-gradient(var(--bg-1), var(--bg-1)) padding-box,
+    var(--grad) border-box; box-shadow: 0 24px 80px rgba(59,130,246,0.18); }
+  .plan .tag { position: absolute; top: -13px; left: 26px; background: var(--grad); color: #051018; font-size: 11.5px; font-weight: 700; padding: 4px 14px; border-radius: 999px; }
+  .plan h3 { font-size: 19px; font-weight: 700; }
+  .plan .price { font-size: 34px; font-weight: 800; margin: 14px 0 2px; letter-spacing: -0.02em; }
+  .plan .per { color: var(--text-2); font-size: 13px; }
+  .plan ul { list-style: none; margin: 20px 0 26px; padding: 0; }
+  .plan li { color: var(--text-1); font-size: 14px; padding: 6px 0 6px 26px; position: relative; }
+  .plan li::before { content: ""; position: absolute; left: 2px; top: 13px; width: 13px; height: 7px;
+    border-left: 2px solid var(--cyan); border-bottom: 2px solid var(--cyan); transform: rotate(-45deg) translateY(-2px); }
+  .plan li.dim { color: var(--text-2); }
+  .plan .btn { width: 100%; justify-content: center; }
+
+  /* faq */
+  .faq { max-width: 760px; margin-top: 44px; }
+  details { border: 1px solid var(--line); border-radius: 14px; background: var(--glass); margin-bottom: 12px; overflow: hidden; }
+  summary { cursor: pointer; padding: 18px 22px; font-size: 15.5px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--text-2); font-size: 20px; font-weight: 400; transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { padding: 0 22px 18px; color: var(--text-1); font-size: 14.5px; }
+
+  /* final cta + footer */
+  .final { text-align: center; padding: 110px 0 90px; }
+  .final img { height: 72px; margin-bottom: 24px; }
+  footer { border-top: 1px solid var(--line); padding: 30px 0 40px; color: var(--text-2); font-size: 13px; }
+  .foot-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer a { color: var(--text-1); text-decoration: none; }
+
+  /* reveal on scroll */
+  .rv { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+  .rv.in { opacity: 1; transform: none; }
+
+  @media (max-width: 880px) {
+    .band { grid-template-columns: 1fr; gap: 28px; }
+    .band:nth-of-type(even) .b-art { order: 0; }
+    .nav-links a.lnk { display: none; }
+    .win-body { grid-template-columns: 1fr; } .win-side { display: none; }
+    .hero { padding-top: 64px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .aurora span, .mq-track, .pulse, .rv { animation: none !important; transition: none !important; }
+    .rv { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+<div class="stars" aria-hidden="true"></div>
+
+<main>
+<nav>
+  <div class="wrap nav-in">
+    <a class="nav-logo" href="/" style="text-decoration:none;text-align:center;">
+      <img src="/landing/logo.png" alt="Madav" />
+      <span class="tagline" style="font-size:8.5px;">Built to think with you</span>
+    </a>
+    <div class="nav-links">
+      <a class="lnk" href="#surfaces">Features</a>
+      <a class="lnk" href="#workforce">Agents</a>
+      <a class="lnk" href="#models">Models</a>
+      <a class="lnk" href="#pricing">Pricing</a>
+      <a class="btn btn-grad" id="cta-nav" href="/app">Try Madav free</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <div class="rv in" style="display:inline-block;text-align:center;">
+    <img class="wordmark" src="/landing/logo.png" alt="Madav" style="margin-bottom:6px;" />
+    <div class="tagline" style="font-size:13px;margin-bottom:28px;">Built to think with you</div>
+  </div>
+  <h1 class="rv in">Your AI workforce.<br /><span class="grad">Any model.</span></h1>
+  <p class="sub rv in">One beautiful app for chat, working on your files, and running teams of AI agents — on the model <em>you</em> choose. Free models are ready the minute you sign in.</p>
+  <div class="ctas rv in">
+    <a class="btn btn-grad" id="cta-hero" href="/app">Try Madav free — in your browser</a>
+    <a class="btn btn-ghost" href="#pricing">Get the desktop app</a>
+  </div>
+  <div class="note rv in">No API keys needed to start · 7-day free trial · No credit card</div>
+
+  <div class="stage rv">
+    <div class="window">
+      <div class="win-bar"><i></i><i></i><i></i><span class="ttl">Madav — Let's Collaborate</span></div>
+      <div class="win-body">
+        <div class="win-side">
+          <div class="sk bright" style="width:80%"></div>
+          <div class="sk" style="width:65%"></div>
+          <div class="sk" style="width:72%"></div>
+          <div class="sk" style="width:58%"></div>
+          <div class="sk" style="width:70%"></div>
+          <div class="sk" style="width:50%"></div>
+        </div>
+        <div class="win-main">
+          <div class="bubble user">Read my sales folder and tell me what changed this quarter.</div>
+          <div class="toolcard"><span class="dotok"></span> Read 14 files in /sales · Built the comparison</div>
+          <div class="bubble ai">Revenue is up 18% — driven almost entirely by the March subscription push. Two accounts churned; both flagged support delays. Full breakdown ready — want it as a spreadsheet?</div>
+          <div class="toolcard"><span class="pulse"></span> Building Q2-summary.xlsx…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="surfaces" class="wrap">
+  <span class="kicker rv">One app · three ways to work</span>
+  <h2 class="title rv">Talk to it. Hand it your files.<br />Or hand it the whole job.</h2>
+
+  <div class="band">
+    <div class="b-copy rv">
+      <h3><span class="grad">Let's Chat</span> — answers, instantly</h3>
+      <p>A fast, beautiful chat with any AI model — cloud or running on your own machine. Attach spreadsheets and documents, get real artifacts back, never paste an API key to begin.</p>
+      <ul><li>Free starter models from minute one</li><li>Live web research with cited sources</li><li>Creates real Excel, Word, PowerPoint and PDF files</li></ul>
+    </div>
+    <div class="b-art rv">
+      <div class="bubble user" style="max-width:88%">Summarize this 40-page contract — what should worry me?</div>
+      <div class="bubble ai" style="max-width:92%">Three clauses deserve attention: auto-renewal (§4), the unlimited liability carve-out (§9.2)…</div>
+      <div class="toolcard"><span class="dotok"></span> contract.pdf read · 3 risks flagged</div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="b-copy rv">
+      <h3><span class="grad">Let's Collaborate</span> — it works in your folders</h3>
+      <p>Point Madav at a folder and describe the task. It reads, organizes, edits and builds — showing you every step as a card, asking permission before it changes anything.</p>
+      <ul><li>You approve every file change — or let it run</li><li>Watch the work happen, step by step</li><li>Your files never need to leave your machine</li></ul>
+    </div>
+    <div class="b-art rv">
+      <div class="toolcard"><span class="dotok"></span> Created folder /reports</div>
+      <div class="toolcard"><span class="dotok"></span> Renamed 32 photos by date</div>
+      <div class="toolcard"><span class="dotok"></span> Built expense-summary.xlsx</div>
+      <div class="toolcard"><span class="pulse"></span> Drafting cover-note.docx…</div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="b-copy rv">
+      <h3><span class="grad">Let's Build</span> — a coding partner</h3>
+      <p>The same loop, tuned for code: it explores your repository, makes surgical edits, runs the build, and reports back like a careful senior engineer.</p>
+      <ul><li>Explores before it edits — no blind rewrites</li><li>Runs builds and tests, fixes what turns red</li><li>Works with your local models for full privacy</li></ul>
+    </div>
+    <div class="b-art rv">
+      <div class="toolcard"><span class="dotok"></span> Searched 214 files · found the bug in auth.js</div>
+      <div class="toolcard"><span class="dotok"></span> Edited 2 files · 14 lines</div>
+      <div class="toolcard"><span class="dotok"></span> npm run build · clean ✓</div>
+    </div>
+  </div>
+</section>
+
+<section id="workforce" class="wrap">
+  <span class="kicker rv">The part nobody else has</span>
+  <h2 class="title rv">Hire agents. Build teams.<br />Watch your workforce run.</h2>
+  <p class="lead rv">Design AI workers with their own instructions, knowledge and tools. Chain them into relay teams — researcher hands to writer hands to editor — and watch the mission move through Mission Control, station by station.</p>
+
+  <div class="band">
+    <div class="b-copy rv">
+      <h3>From one hire to a whole operation</h3>
+      <p>A built-in Designer interviews you and drafts the agent. The Recruiter suggests your next hire. Flight School teaches the whole system with an 11-chapter story you run for real. Agents learn from every mission and get measurably better.</p>
+      <ul><li>Solo agents, relay lines, or managed teams</li><li>Schedule them: daily sweeps, weekly reviews, webhooks</li><li>Every risky action stays permission-gated</li></ul>
+    </div>
+    <div class="b-art rv">
+      <div class="relay">
+        <div class="station done"><span class="face" style="background:#29d8f0">Q</span> Quant — reads the numbers <span class="st">✓ done</span></div>
+        <div class="station done"><span class="face" style="background:#5e9bf2">C</span> Context — fundamentals &amp; news <span class="st">✓ done</span></div>
+        <div class="station done"><span class="face" style="background:#43d9a3">B</span> Bull — strongest case for <span class="st">✓ done</span></div>
+        <div class="station done"><span class="face" style="background:#f08a86">R</span> Bear — dismantles it <span class="st">✓ done</span></div>
+        <div class="station live"><span class="face" style="background:#8b5cf6">S</span> Strategist — final verdict <span class="st"><span class="pulse" style="display:inline-block"></span> working…</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="models" class="wrap">
+  <span class="kicker rv">Bring any brain</span>
+  <h2 class="title rv">Your choice of model.<br />Always.</h2>
+  <p class="lead rv">Start free on Madav's built-in starter models — no key, no setup. Then plug in your own provider for hundreds more, or run models entirely on your own computer. Madav is the app; the intelligence is yours to pick.</p>
+  <div class="marquee rv" aria-hidden="true">
+    <div class="mq-track">
+      <span class="chip"><b>Madav Starter</b> · free, zero setup</span>
+      <span class="chip"><b>OpenRouter</b> · 400+ models, one key</span>
+      <span class="chip"><b>Anthropic</b> · Claude</span>
+      <span class="chip"><b>OpenAI</b> · GPT</span>
+      <span class="chip"><b>Google</b> · Gemini</span>
+      <span class="chip"><b>NVIDIA NIM</b></span>
+      <span class="chip"><b>DeepSeek</b></span>
+      <span class="chip"><b>Ollama</b> · runs on your PC</span>
+      <span class="chip"><b>LM Studio</b> · local &amp; private</span>
+      <span class="chip"><b>Madav Starter</b> · free, zero setup</span>
+      <span class="chip"><b>OpenRouter</b> · 400+ models, one key</span>
+      <span class="chip"><b>Anthropic</b> · Claude</span>
+      <span class="chip"><b>OpenAI</b> · GPT</span>
+      <span class="chip"><b>Google</b> · Gemini</span>
+      <span class="chip"><b>NVIDIA NIM</b></span>
+      <span class="chip"><b>DeepSeek</b></span>
+      <span class="chip"><b>Ollama</b> · runs on your PC</span>
+      <span class="chip"><b>LM Studio</b> · local &amp; private</span>
+    </div>
+  </div>
+</section>
+
+<section id="power" class="wrap">
+  <span class="kicker rv">Quietly powerful</span>
+  <h2 class="title rv">Everything else you'd hope for.<br />Already inside.</h2>
+  <div class="grid">
+    <div class="cell rv"><i class="ic">◆</i><h4>Skills</h4><p>Teach Madav repeatable playbooks — it loads the right one exactly when a task matches.</p></div>
+    <div class="cell rv"><i class="ic">◇</i><h4>Connectors</h4><p>Gmail, GitHub, Slack, Drive and any MCP server — your agents reach your real tools.</p></div>
+    <div class="cell rv"><i class="ic">◷</i><h4>Scheduler</h4><p>Daily briefs, weekly reviews, webhook triggers — work that happens while you sleep.</p></div>
+    <div class="cell rv"><i class="ic">✦</i><h4>Sage, your guide</h4><p>A built-in helper who knows every screen and button, and walks you through any flow live.</p></div>
+    <div class="cell rv"><i class="ic">▦</i><h4>Real documents</h4><p>Spreadsheets, decks, Word files and PDFs created in-chat, built on your device.</p></div>
+    <div class="cell rv"><i class="ic">◈</i><h4>EdgeTrader pack</h4><p>A six-agent stock-analysis relay with adversarial debate — information, not financial advice.</p></div>
+  </div>
+</section>
+
+<section id="pricing" class="wrap">
+  <span class="kicker rv">Simple, honest pricing</span>
+  <h2 class="title rv">Try free today.<br />Go further when you're ready.</h2>
+  <div class="plans">
+    <div class="plan rv">
+      <h3>Web — free trial</h3>
+      <div class="price">$0</div>
+      <div class="per">7 days · no credit card</div>
+      <ul>
+        <li>Full web app at madav.ai</li>
+        <li>Free starter models included — zero setup</li>
+        <li>Bring your own API keys anytime</li>
+        <li>Agents, teams, skills &amp; scheduler</li>
+      </ul>
+      <a class="btn btn-ghost" href="/app">Start free in your browser</a>
+    </div>
+    <div class="plan hot rv">
+      <span class="tag">Includes the desktop app</span>
+      <h3>Subscription</h3>
+      <div class="price">Early-bird</div>
+      <div class="per">pricing announced at launch</div>
+      <ul>
+        <li>Everything in the web app</li>
+        <li><b>Madav Desktop for Windows</b> — exclusive to subscribers</li>
+        <li>Terminal, local models, full file system &amp; Via Mobile</li>
+        <li>Priority access to new features</li>
+      </ul>
+      <a class="btn btn-grad" href="/app" id="cta-sub">Sign in to subscribe</a>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="wrap">
+  <span class="kicker rv">Questions, answered</span>
+  <h2 class="title rv">Fair questions.</h2>
+  <div class="faq rv">
+    <details><summary>Do I need an API key to try Madav?</summary><p>No. The moment you sign in, Madav Starter gives you free models with zero setup. When you want more power or no daily cap, add your own key — OpenRouter is the easiest: one key unlocks hundreds of models.</p></details>
+    <details><summary>Where do my files and keys live?</summary><p>Your API keys are stored on your device, and calls go directly from your app to your chosen provider. In Collaborate, your files are read locally — Madav is not a cloud drive and never uploads your folders.</p></details>
+    <details><summary>What's different about the desktop app?</summary><p>The desktop app adds the things a browser can't do: a real terminal, local models, full file-system access, native automation and phone control via Telegram. It's included with a subscription.</p></details>
+    <details><summary>Can it really run models on my own computer?</summary><p>Yes — point it at Ollama, LM Studio or llama.cpp and everything runs locally, completely private. The same app, your hardware, no cloud.</p></details>
+    <details><summary>Is the agent stuff safe?</summary><p>Every risky action — editing files, running commands, browsing — asks your permission first, unless you explicitly grant more autonomy. You watch every step happen as it runs.</p></details>
+  </div>
+</section>
+
+<div class="final wrap">
+  <img class="rv" src="/landing/m.png" alt="" />
+  <h2 class="title rv">Built to think with you.</h2>
+  <p class="lead rv" style="margin-left:auto;margin-right:auto;text-align:center">Be working with your first AI teammate two minutes from now.</p>
+  <div class="ctas rv" style="display:flex;gap:14px;justify-content:center;margin-top:30px;flex-wrap:wrap">
+    <a class="btn btn-grad" id="cta-final" href="/app">Try Madav free</a>
+    <a class="btn btn-ghost" href="#pricing">See pricing</a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-in">
+    <span>© 2026 Madav · Proprietary</span>
+    <span><a href="mailto:chaithru@gmail.com">Contact</a> · <a href="/.well-known/security.txt">Security</a></span>
+  </div>
+</footer>
+</main>
+
+<script>
+  (function () {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".rv").forEach(function (el) { io.observe(el); });
+
+    try {
+      if (localStorage.getItem("be.token")) {
+        ["cta-nav", "cta-hero", "cta-final"].forEach(function (id) {
+          var el = document.getElementById(id); if (el) el.textContent = "Open Madav";
+        });
+      }
+    } catch (e) {}
+  })();
+</script>
+</body>
+</html>

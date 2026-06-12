@@ -250,10 +250,18 @@ if (STARTER_KEY) console.log(`[auth-server] Madav Starter active — free models
 // share one origin (no CORS, OAuth redirects come back here). SPA fallback to index.html.
 const WEB_DIR = process.env.WEB_DIR || path.join(process.cwd(), "dist");
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".ico": "image/x-icon", ".webp": "image/webp", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".map": "application/json" };
+// Marketing landing page: a self-contained static site in landing/ that owns the ROOT
+// URL; the app itself lives at /app. Fail-open: no landing folder deployed → the SPA
+// serves at / exactly as before this feature existed.
+const LANDING_DIR = process.env.LANDING_DIR || path.join(process.cwd(), "landing");
 function serveStatic(res, p) {
   let rel = decodeURIComponent(p).replace(/^\/+/, "") || "index.html";
-  const root = path.resolve(WEB_DIR);
-  const file = path.resolve(WEB_DIR, rel);
+  let dir = WEB_DIR;
+  if ((p === "/" || p === "/index.html") && fs.existsSync(path.join(LANDING_DIR, "index.html"))) { dir = LANDING_DIR; rel = "index.html"; }
+  else if (rel === "landing" || rel.startsWith("landing/")) { dir = LANDING_DIR; rel = rel.replace(/^landing\/?/, "") || "index.html"; }
+  else if (rel === "app" || rel.startsWith("app/")) rel = "index.html"; // the SPA shell (assets use absolute /assets/* paths)
+  const root = path.resolve(dir);
+  const file = path.resolve(dir, rel);
   if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403); return res.end(); } // path-traversal guard (boundary-aware)
   fs.readFile(file, (err, buf) => {
     if (err) {
