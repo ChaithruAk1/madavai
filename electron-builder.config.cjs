@@ -37,7 +37,7 @@ if (channel === "public" && feat) {
     terminal: ["!electron/terminal.cjs"],
     desktop: ["!electron/desktop-driver.cjs"],
     research: ["!electron/research.cjs"],
-    edgetrader: ["!skills/**"], // the bundled solution-pack skills folder (EdgeTrader today)
+    edgetrader: ["!skills/edgetrader-*/**"], // only the EdgeTrader skills — the general bundled library always ships
   };
   build.files = [...build.files];
   for (const [k, files] of Object.entries(EXCLUDABLE)) if (feat[k] === false) build.files.push(...files);
