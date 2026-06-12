@@ -381,6 +381,7 @@ const server = http.createServer(async (req, res) => {
     a.searchParams.set("response_type", "code");
     a.searchParams.set("scope", prov.scope);
     a.searchParams.set("state", state);
+    if (m[1] === "google") a.searchParams.set("prompt", "select_account"); // always show the account chooser
     res.writeHead(302, { Location: a.toString() }); return res.end();
   }
 
