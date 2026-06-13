@@ -162,17 +162,17 @@ const PG_FEATURES = [
     use: "Find anything the room ever made — by type or by which agent made it.",
     how: ["Open the room — the feed is the center column", "Filter with All · Chats · Tasks · per-agent chips", "Click a row to reopen it; trash removes just that item"],
     eg: "Click the \"Pitchwright\" chip → only Pitchwright's runs remain." },
-  { icon: Plug, t: "Connected apps", d: "Pin specific connectors to the room — its chats and missions then pull ONLY from those.",
-    use: "A finance room that sees finance-data and nothing else; a support room wired to Gmail only.",
-    how: ["Linked folder & repo → Connected apps → +", "Pick from your enabled connectors", "Remove with the × on a chip; empty = all enabled connectors"],
-    eg: "Add only finance-data → room missions can query it but never touch your other connectors." },
+  { icon: Plug, t: "Connectors in rooms", d: "Room chats can pull from every enabled connector — @-mention one in the composer to point at it.",
+    use: "Ask a room to check Gmail, a drive, a repo, or any connected app — with the room's instructions and knowledge still applied.",
+    how: ["Enable connectors in the Connectors screen", "In any room chat, type @ — your connectors appear in the mention menu", "Pick one and ask; approve the tool call when it appears"],
+    eg: "In the launch room: \"@finance-data what changed today?\" — the answer uses the connector AND the room's context." },
   { icon: Share2, t: "Share & import", d: "One .madavroom.json carries the room AND its crew; importing recreates both.",
     use: "Hand a colleague a ready-to-work room — no rebuild, no agent setup on their side.",
     how: ["Room header → share button → send the file", "They click Import on the Workrooms shelf", "Missing agents are created (ask-permission mode, default model); existing ones are reused"],
     eg: "Export \"Launch Marketing\" → a teammate imports it and Pitchwright appears on their roster, staffed in the room." },
 ];
 const PG_MATRIX = [
-  ["Room chat (composer)", "Instructions + knowledge injected every turn; connected apps respected."],
+  ["Room chat (composer)", "Instructions + knowledge injected every turn; @-mention connectors work here too."],
   ["Put to work (crew)", "Agent instructions + room context combined; runs tagged to the room."],
   ["Work in the room's folder", "Collaborate session in the linked folder; room context injected once up front."],
   ["Scheduled room + agent combo", "Headless: room context + agent + folder; results in run history + per-room record."],
@@ -206,14 +206,12 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
   const [rooms, setRooms] = useState([]);
   const [agents, setAgents] = useState([]);      // full roster from settings
   const [teams, setTeams] = useState([]);        // saved teams from settings
-  const [connectors, setConnectors] = useState([]); // enabled connectors (room chats can pull from them)
   const [layout, setLayout] = useState(lsGet("be.wr.layout", "rows")); // rows | tiles
   const [briefOpen, setBriefOpen] = useState(false);   // brief in a big resizable editor
   const [glyphOpen, setGlyphOpen] = useState(false);   // room icon picker
   const [guideTab, setGuideTab] = useState("tour");    // Projects guide: tour | reference
   const [chapter, setChapter] = useState(0);            // Projects guide chapter rail
   const [openFeat, setOpenFeat] = useState(0);          // Projects guide reference accordion
-  const [connPick, setConnPick] = useState(false);     // "+" picker for connecting apps to the room
   const [sessions, setSessions] = useState([]);  // all task runs (chat/cowork/build) for pulse + feed
   const [view, setView] = useState("list");      // list | room
   const [creating, setCreating] = useState(false);
@@ -243,7 +241,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
   const loadList = async () => setRooms(await bridge.listProjects());
   useEffect(() => {
     loadList(); loadSessions();
-    bridge.getSettings().then((s) => { setAgents(s.agents || []); setTeams(s.teams || []); setConnectors(((s.connectors || [])).filter((c) => c.enabled !== false)); }).catch(() => {});
+    bridge.getSettings().then((s) => { setAgents(s.agents || []); setTeams(s.teams || []); }).catch(() => {});
   }, []);
   // Returning from a room-scoped run: land straight back inside that room.
   useEffect(() => { if (openId) open(openId); }, []); // eslint-disable-line
@@ -474,11 +472,6 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
   const benchedTeams = useMemo(() => teams.filter((t) => !room || !(room.teamIds || []).includes(t.id)), [room, teams]);
   const assignTeam = async (teamId) => { if (!teamId) return; await bridge.assignProjectTeam(selId, teamId); refreshRoom(); };
   const unassignTeam = async (teamId) => { await bridge.unassignProjectTeam(selId, teamId); refreshRoom(); };
-  // Connected apps — the room's own connector list (project.connectorNames). The
-  // engine restricts room runs to these; empty list = all enabled (back-compat).
-  const roomConns = (room && Array.isArray(room.connectorNames)) ? room.connectorNames : [];
-  const addConn = async (name) => { await bridge.updateProject(selId, { connectorNames: [...roomConns, name] }); setConnPick(false); refreshRoom(); };
-  const removeConn = async (name) => { await bridge.updateProject(selId, { connectorNames: roomConns.filter((n) => n !== name) }); refreshRoom(); };
   const setGlyph = async (glyph) => {
     await bridge.updateProject(selId, { identity: { ...(room.identity || {}), glyph } });
     setGlyphOpen(false); refreshRoom(); loadList();
@@ -552,6 +545,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
       return (
         <div className="agg-ref scroll">
           <div className="agg-ref-inner">
+            <button className="pj-back" style={{ marginBottom: 6 }} onClick={() => setView("list")}><ArrowLeft size={15} /> Workrooms</button>
             <div className="agg-subnav">
               <button onClick={() => setGuideTab("tour")}><Compass size={14} /> Tour &amp; practice</button>
               <button className="on"><BookIcon size={14} /> Do's &amp; don'ts</button>
@@ -615,6 +609,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
       <div className="agg-wrap">
         {/* LEFT — the story, one chapter at a time */}
         <div className="agg-left scroll">
+          <button className="pj-back" style={{ marginBottom: 6 }} onClick={() => setView("list")}><ArrowLeft size={15} /> Workrooms</button>
           <div className="agg-tophead">
             <div className="agg-kicker"><BookIcon size={13} className="agg-book" /> A 3-minute guide</div>
             <button className="btn primary" onClick={() => { setView("list"); setCreating(true); }}><Plus size={14} /> Open your first workroom</button>
@@ -646,7 +641,8 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
             <div className="agg-note">{ch.note}</div>
           </div>
           <div className="agg-pager">
-            <button className="btn ghost" disabled={chapter === 0} onClick={() => setChapter((c) => c - 1)}>← Back</button>
+            {/* On the first chapter, Back EXITS to Workrooms — never a dead button */}
+            <button className="btn ghost" onClick={() => (chapter === 0 ? setView("list") : setChapter((c) => c - 1))}>← {chapter === 0 ? "Workrooms" : "Back"}</button>
             <span className="agg-pager-dots">{PG_CHAPTERS.map((_, i) => <span key={i} className={chapter === i ? "on" : ""} />)}</span>
             {chapter < PG_CHAPTERS.length - 1
               ? <button className="btn primary" onClick={() => setChapter((c) => c + 1)}>Next <ArrowRight size={13} /></button>
@@ -766,42 +762,6 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
                 </>
               )}
               {src && <div style={{ color: src.startsWith("Error") ? "var(--danger)" : "var(--text-2)", fontSize: 11.5, marginTop: 8 }}>{src}</div>}
-              {connectors.length > 0 && (
-                <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
-                  <div className="wr-sechead" style={{ marginBottom: 6 }}><Plug size={12} /> Connected apps
-                    <span style={{ flex: 1 }} />
-                    <button className="icon-btn" title="Connect an app to this room" style={{ width: 22, height: 22 }} onClick={() => setConnPick((v) => !v)}><Plus size={12} /></button>
-                  </div>
-                  {roomConns.length > 0 && (
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {roomConns.map((n) => (
-                        <span key={n} className="chip" title="Connected to this room — chats here can pull from it">
-                          {n}
-                          <button className="agent-chip-x" title="Disconnect from this room" onClick={() => removeConn(n)}><X size={11} /></button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {connPick && (
-                    <div className="wr-assign" style={{ marginTop: 8, padding: 8 }}>
-                      {connectors.filter((c) => !roomConns.includes(c.name)).length === 0 ? (
-                        <div className="mo-sub">Every enabled connector is already connected here. Enable more in Connectors.</div>
-                      ) : connectors.filter((c) => !roomConns.includes(c.name)).map((c) => (
-                        <button key={c.name} className="wr-assignrow" onClick={() => addConn(c.name)} title={c.description || c.name}>
-                          <Plug size={14} style={{ color: "var(--accent)", flex: "none" }} />
-                          <span className="wr-assignname">{c.name}</span>
-                          <span className="wr-assigncheck">+</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mo-sub" style={{ marginTop: 6 }}>
-                    {roomConns.length
-                      ? "Chats and missions in this room pull ONLY from these apps."
-                      : "None connected yet — click + to pick. (Until you pick, room chats can use all enabled connectors.)"}
-                  </div>
-                </div>
-              )}
             </div>
           </aside>
 
@@ -1010,8 +970,8 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
           </button>
           <button className="icon-btn" title={`Sort by ${sortBy === "date" ? "name" : "date"}`} onClick={() => setSortBy((s) => s === "date" ? "name" : "date")}><ArrowUpDown size={15} /></button>
           <div className="pj-search"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search workrooms…" /></div>
-          <button className="btn" title="Projects Guide — tour, do's & don'ts, and runnable simulations" onClick={() => { setGuideTab("tour"); setChapter(0); setView("guide"); }}><BookIcon size={15} /> Projects Guide</button>
-          <button className="btn" title="Import a shared .madavroom.json — recreates the room and its crew agents" onClick={() => importRef.current && importRef.current.click()}><Upload size={15} /> Import</button>
+          <button className="btn ghost" title="Projects Guide — tour, do's & don'ts, and runnable simulations" onClick={() => { setGuideTab("tour"); setChapter(0); setView("guide"); }}><BookIcon size={15} /> Projects Guide</button>
+          <button className="btn ghost" title="Import a shared .madavroom.json — recreates the room and its crew agents" onClick={() => importRef.current && importRef.current.click()}><Upload size={15} /> Import</button>
           <input ref={importRef} type="file" accept=".json,.madavroom" style={{ display: "none" }} onChange={onImportRoom} />
           <button className="btn primary" onClick={() => { setDraft({ name: "", desc: "" }); setCreating(true); }}><Plus size={15} /> New workroom</button>
         </div>

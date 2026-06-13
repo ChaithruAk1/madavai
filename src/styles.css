@@ -2937,3 +2937,17 @@ textarea.model-search { border-radius: 14px; }
    never flips to black. Selection is shown by weight, not by darkening. */
 :root[data-theme="light"] .nav-item.active { color: var(--accent); font-weight: 700; }
 :root[data-theme="light"] .nav-item.active svg { color: var(--accent); }
+
+/* Header action rows (Workrooms, Scheduler, …) — every control matches the search
+   pill: same 36px height, stadium radius, one line. Never square boxes. */
+.pj-actions .btn { border-radius: 999px; height: 36px; padding: 0 16px; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; }
+.pj-actions .icon-btn { border-radius: 999px; }
+.pj-search { height: 36px; border-radius: 999px; }
+
+/* Scheduler declutter — slim toolbar, source tags, one-line descriptions */
+.sched-toolbar { max-width: 1000px; display: flex; align-items: center; gap: 8px; margin: 2px 0 14px; flex-wrap: wrap; }
+.sched-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.sched-chips .chip { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+.sched-chips .chip.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.sched-src { display: inline-flex; align-items: center; margin-left: 10px; padding: 1px 9px; border-radius: 99px; border: 1px solid var(--line); font-size: 11px; font-weight: 500; color: var(--text-2); vertical-align: 1px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sched-desc { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

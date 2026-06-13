@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer, Webhook, Copy, Check, LayoutGrid, List } from "lucide-react";
+import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer, Webhook, Copy, Check, LayoutGrid, List, Folder, FolderPlus } from "lucide-react";
+import { madavConfirm } from "../dialogs.jsx";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
 
@@ -55,6 +56,27 @@ export default function Scheduler() {
   const [busyRun, setBusyRun] = useState(null);    // task id running now
   const [runsFor, setRunsFor] = useState(null);    // { task, runs } — the Run history modal
   const [layout, setLayout] = useState((() => { try { return localStorage.getItem("be.sched.layout") || "rows"; } catch { return "rows"; } })()); // rows | tiles
+  const [filt, setFilt] = useState("all");        // all | scheduled | manual | project | agent | team | chat | folder | brief
+  const [whOpen, setWhOpen] = useState(false);    // webhook triggers popup
+  const [taskGroups, setTaskGroups] = useState([]); // user folders for tasks (settings.taskGroups)
+  const [moveFor, setMoveFor] = useState(null);     // task being moved to a folder, or null
+  const [newGrp, setNewGrp] = useState("");          // new-folder name in the move dialog
+  const [grpOpen, setGrpOpen] = useState(false);     // standalone "New folder" dialog
+
+  // Where a schedule COMES FROM — its target, resolved to a human tag. This is what
+  // keeps 1000 tasks navigable: filter by source, read the tag on every row.
+  const SRC_META = { project: "Workroom", agent: "Agent", team: "Team", folder: "Folder", brief: "Brief", chat: "Chat" };
+  const srcOf = (t) => (t.target && t.target.type) || "chat";
+  const srcLabel = (t) => {
+    const tg = t.target || {};
+    if (tg.type === "project") { const pr = projects.find((p) => p.id === tg.projectId); return (pr ? pr.name : "Workroom") + (tg.agentId ? " · " + ((agents.find((a) => a.id === tg.agentId) || {}).name || "agent") : ""); }
+    if (tg.type === "agent") return (agents.find((a) => a.id === tg.agentId) || {}).name || "Agent";
+    if (tg.type === "team") return (teams.find((x) => x.id === tg.teamId) || {}).name || "Team";
+    if (tg.type === "folder") return (tg.folder || "Folder").split(/[\\/]/).filter(Boolean).pop() || "Folder";
+    if (tg.type === "brief") return "Daily brief";
+    return "Chat";
+  };
+  const isScheduled = (t) => t.schedule && t.schedule.mode && t.schedule.mode !== "off";
 
   // Run history: the engine keeps each task's last 20 runs (status + full output).
   const openRuns = async (t) => {
@@ -69,6 +91,7 @@ export default function Scheduler() {
     bridge.getSettings().then((s) => {
       setAgents(s.agents || []);
       setTeams(s.teams || []);
+      setTaskGroups(s.taskGroups || []);
       const groups = [{ group: "Default", items: [{ id: DEFAULT_MODEL, name: "Default model", prov: "" }] }];
       for (const p of Object.values(s.profiles || {})) {
         const ids = (p.cachedModels && p.cachedModels.length) ? p.cachedModels : (p.model ? [p.model] : []);
@@ -98,6 +121,26 @@ export default function Scheduler() {
     closeModal(); load();
   };
   const del = async (id) => { await bridge.deleteTask(id); load(); };
+
+  // ---- user folders (settings.taskGroups + task.group) — organize like the Agents screen ----
+  const persistGroups = async (next) => { const cur = await bridge.getSettings(); await bridge.saveSettings({ ...cur, taskGroups: next }); setTaskGroups(next); };
+  const moveTask = async (t, gid) => { await bridge.updateTask(t.id, { group: gid || "" }); setMoveFor(null); load(); };
+  const createGroupAndMove = async () => {
+    const name = newGrp.trim(); if (!name) return;
+    const g = { id: "tgrp_" + Date.now().toString(36), name: name.slice(0, 40) };
+    await persistGroups([...taskGroups, g]);
+    setNewGrp("");
+    if (moveFor) await moveTask(moveFor, g.id);
+  };
+  const deleteGroup = async (gid) => {
+    const g = taskGroups.find((x) => x.id === gid);
+    if (!(await madavConfirm(`Delete folder "${(g || {}).name}"? Its tasks are kept — they just become unfiled.`, { okLabel: "Delete folder" }))) return;
+    for (const t of tasks.filter((x) => x.group === gid)) await bridge.updateTask(t.id, { group: "" });
+    await persistGroups(taskGroups.filter((x) => x.id !== gid));
+    if (filt === "grp:" + gid) setFilt("all");
+    load();
+  };
+  const groupName = (gid) => (taskGroups.find((g) => g.id === gid) || {}).name;
   const runNow = async (id) => {
     setBusyRun(id);
     try {
@@ -109,6 +152,7 @@ export default function Scheduler() {
 
   const shown = tasks
     .filter((t) => !q || (t.name + " " + (t.description || "")).toLowerCase().includes(q.toLowerCase()))
+    .filter((t) => filt === "all" ? true : filt === "scheduled" ? isScheduled(t) : filt === "manual" ? !isScheduled(t) : filt.startsWith("grp:") ? t.group === filt.slice(4) : srcOf(t) === filt)
     .sort((a, b) => sortBy === "recent" ? ((b.lastRun || 0) - (a.lastRun || 0)) : (a.name || "").localeCompare(b.name || ""));
 
   return (
@@ -137,11 +181,27 @@ export default function Scheduler() {
         </div>
       </div>
 
-      <div className="acc-card" style={{ maxWidth: 1000, display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", marginBottom: 16 }}>
-        <Clock size={15} style={{ color: "var(--text-2)" }} />
-        <span style={{ fontSize: 13 }}>Scheduled tasks only run while your computer is awake.</span>
+      {/* Slim toolbar: source filters keep big lists navigable; webhooks live in a popup. */}
+      <div className="sched-toolbar">
+        <div className="sched-chips">
+          <button className={`chip ${filt === "all" ? "on" : ""}`} onClick={() => setFilt("all")}>All · {tasks.length}</button>
+          <button className={`chip ${filt === "scheduled" ? "on" : ""}`} onClick={() => setFilt("scheduled")} title="Runs on a timer"><Clock size={11} /> Scheduled · {tasks.filter(isScheduled).length}</button>
+          <button className={`chip ${filt === "manual" ? "on" : ""}`} onClick={() => setFilt("manual")} title="Run on demand only">Manual · {tasks.filter((t) => !isScheduled(t)).length}</button>
+          {Object.entries(SRC_META).map(([k, lbl]) => {
+            const n = tasks.filter((t) => srcOf(t) === k).length;
+            return n > 0 && <button key={k} className={`chip ${filt === k ? "on" : ""}`} onClick={() => setFilt(filt === k ? "all" : k)}>{lbl} · {n}</button>;
+          })}
+          {taskGroups.map((g) => (
+            <button key={g.id} className={`chip ${filt === "grp:" + g.id ? "on" : ""}`} title="Your folder — filter to it; manage folders from any task's folder button"
+              onClick={() => setFilt(filt === "grp:" + g.id ? "all" : "grp:" + g.id)}>
+              <Folder size={11} /> {g.name} · {tasks.filter((t) => t.group === g.id).length}
+            </button>
+          ))}
+        </div>
         <span style={{ flex: 1 }} />
-        <label className="chip" style={{ cursor: "pointer" }}>
+        <button className="btn ghost" title="Create a folder to organize tasks — then use the folder button on any row to file it" onClick={() => { setNewGrp(""); setGrpOpen(true); }}><FolderPlus size={14} /> New folder</button>
+        <button className="btn ghost" title="Webhook triggers — let external systems fire your agents" onClick={() => setWhOpen(true)}><Webhook size={14} /> Webhooks</button>
+        <label className="chip" style={{ cursor: "pointer" }} title="Tasks only run while the computer is awake — this prevents sleep">
           <input type="checkbox" checked={keepAwake} onChange={toggleKeepAwake} style={{ marginRight: 6 }} /> Keep awake
         </label>
       </div>
@@ -164,10 +224,12 @@ export default function Scheduler() {
           <div className="sched-tiles">
             {shown.map((t) => (
               <div key={t.id} className="sched-tile" onClick={() => openEdit(t)}>
-                <div className="sched-name">{t.name}{t.schedule && t.schedule.mode !== "off" && <Clock size={12} style={{ marginLeft: 7, color: "var(--accent)", verticalAlign: "-1px" }} />}</div>
+                <div className="sched-name">{t.name}{isScheduled(t) && <Clock size={12} style={{ marginLeft: 7, color: "var(--accent)", verticalAlign: "-1px" }} />}</div>
+                <span className="sched-src" style={{ marginLeft: 0 }}>{srcLabel(t)}</span>
                 <div className="mo-sub" style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{t.description || t.prompt || "No description"}</div>
                 <div className="mo-sub">{scheduleText(t.schedule)} · {rel(t.lastRun)}</div>
                 <div className="sched-tile-btns">
+                  <button className="btn" title="Move to a folder…" onClick={(e) => { e.stopPropagation(); setNewGrp(""); setMoveFor(t); }} style={{ padding: "4px 8px" }}><FolderPlus size={13} /></button>
                   <button className="btn" title="Run history & output" onClick={(e) => { e.stopPropagation(); openRuns(t); }} style={{ padding: "4px 8px" }}><ListChecks size={13} /></button>
                   <button className="btn" onClick={(e) => { e.stopPropagation(); runNow(t.id); }} disabled={busyRun === t.id} style={{ padding: "4px 8px" }}>
                     {busyRun === t.id ? <Loader2 size={13} className="spin" /> : <Play size={13} />}
@@ -181,11 +243,15 @@ export default function Scheduler() {
         ) : shown.map((t) => (
           <div key={t.id} className="sched-row" onClick={() => openEdit(t)}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="sched-name">{t.name}{t.schedule && t.schedule.mode !== "off" && <Clock size={12} style={{ marginLeft: 7, color: "var(--accent)", verticalAlign: "-1px" }} />}</div>
-              <div className="mo-sub" style={{ marginTop: 2 }}>{t.description || t.prompt || "No description"}</div>
+              <div className="sched-name">{t.name}{isScheduled(t) && <Clock size={12} style={{ marginLeft: 7, color: "var(--accent)", verticalAlign: "-1px" }} />}
+                <span className="sched-src" title={`Source: ${SRC_META[srcOf(t)]}`}>{srcLabel(t)}</span>
+                {t.group && groupName(t.group) && <span className="sched-src" title="Your folder"><Folder size={10} style={{ marginRight: 4 }} />{groupName(t.group)}</span>}
+              </div>
+              <div className="mo-sub sched-desc">{t.description || t.prompt || "No description"}</div>
             </div>
             <span className="sched-freq">{scheduleText(t.schedule)}</span>
             <span className="mo-sub" style={{ width: 90, textAlign: "right" }}>{rel(t.lastRun)}</span>
+            <button className="btn" title="Move to a folder…" onClick={(e) => { e.stopPropagation(); setNewGrp(""); setMoveFor(t); }} style={{ padding: "5px 9px" }}><FolderPlus size={13} /></button>
             <button className="btn" title="Run history & output" onClick={(e) => { e.stopPropagation(); openRuns(t); }} style={{ padding: "5px 9px" }}><ListChecks size={13} /></button>
             <button className="btn" onClick={(e) => { e.stopPropagation(); runNow(t.id); }} disabled={busyRun === t.id} style={{ padding: "5px 9px" }}>
               {busyRun === t.id ? <Loader2 size={13} className="spin" /> : <Play size={13} />}
@@ -196,9 +262,69 @@ export default function Scheduler() {
       </div>
       </div>
 
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-        <WebhooksCard agents={agents} teams={teams} tasks={tasks} />
-      </div>
+      {grpOpen && (
+        <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setGrpOpen(false); }}>
+          <div className="pj-create" style={{ width: 420 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <FolderPlus size={16} style={{ color: "var(--accent)" }} />
+              <h2 style={{ flex: 1, margin: 0, fontSize: 17 }}>New task folder</h2>
+              <button className="icon-btn" onClick={() => setGrpOpen(false)}><X size={16} /></button>
+            </div>
+            <p className="mo-sub" style={{ margin: "10px 0 4px" }}>The folder appears as a 📁 chip in the toolbar. File tasks into it with the folder button on any task row.</p>
+            <input className="model-search" autoFocus style={{ width: "100%" }} placeholder="Folder name…" value={newGrp}
+              onChange={(e) => setNewGrp(e.target.value)}
+              onKeyDown={async (e) => { if (e.key === "Enter" && newGrp.trim()) { await persistGroups([...taskGroups, { id: "tgrp_" + Date.now().toString(36), name: newGrp.trim().slice(0, 40) }]); setNewGrp(""); setGrpOpen(false); } }} />
+            <div className="pj-create-btns">
+              <button className="btn" onClick={() => setGrpOpen(false)}>Cancel</button>
+              <span style={{ flex: 1 }} />
+              <button className="btn primary" disabled={!newGrp.trim()} onClick={async () => { await persistGroups([...taskGroups, { id: "tgrp_" + Date.now().toString(36), name: newGrp.trim().slice(0, 40) }]); setNewGrp(""); setGrpOpen(false); }}>Create folder</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {moveFor && (
+        <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setMoveFor(null); }}>
+          <div className="pj-create" style={{ width: 440 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Folder size={16} style={{ color: "var(--accent)" }} />
+              <h2 style={{ flex: 1, margin: 0, fontSize: 17 }}>Move "{moveFor.name}" to…</h2>
+              <button className="icon-btn" onClick={() => setMoveFor(null)}><X size={16} /></button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, margin: "12px 0 4px" }}>
+              <button className="plus-item" onClick={() => moveTask(moveFor, "")}>
+                <X size={14} /> No folder (unfiled){!moveFor.group && <Check size={13} style={{ marginLeft: "auto", color: "var(--accent)" }} />}
+              </button>
+              {taskGroups.map((g) => (
+                <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <button className="plus-item" style={{ flex: 1 }} onClick={() => moveTask(moveFor, g.id)}>
+                    <Folder size={14} /> {g.name}{moveFor.group === g.id && <Check size={13} style={{ marginLeft: "auto", color: "var(--accent)" }} />}
+                  </button>
+                  <button className="icon-btn" title="Delete this folder (tasks are kept, unfiled)" onClick={() => deleteGroup(g.id)}><Trash2 size={13} /></button>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <input className="model-search" style={{ flex: 1, marginBottom: 0 }} placeholder="New folder name…" value={newGrp}
+                onChange={(e) => setNewGrp(e.target.value)} onKeyDown={(e) => e.key === "Enter" && createGroupAndMove()} />
+              <button className="btn primary" disabled={!newGrp.trim()} onClick={createGroupAndMove}><FolderPlus size={14} /> Create &amp; move</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {whOpen && (
+        <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setWhOpen(false); }}>
+          <div className="pj-create" style={{ width: 760 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Webhook size={17} style={{ color: "var(--accent)" }} />
+              <h2 style={{ flex: 1, margin: 0, fontSize: 18 }}>Webhook triggers</h2>
+              <button className="icon-btn" onClick={() => setWhOpen(false)}><X size={16} /></button>
+            </div>
+            <WebhooksCard agents={agents} teams={teams} tasks={tasks} />
+          </div>
+        </div>
+      )}
 
       {runsFor && (
         <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setRunsFor(null); }}>

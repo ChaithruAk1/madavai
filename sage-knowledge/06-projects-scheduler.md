@@ -130,9 +130,15 @@ What: The "Search tasks…" box and the arrows sort toggle in the header.
 Why: Manage a long task list quickly.
 Behavior: Search matches the task name and description as you type. The sort button flips between alphabetical and most-recently-run order; its tooltip names the order you'd switch to.
 
+### Scheduled tasks · Toolbar (filters, Webhooks, Keep awake)
+aliases: filter tasks, source filter, where schedule comes from, task tags, keep awake, too many tasks
+What: The slim toolbar under the header: filter chips (All · Scheduled · Manual · then one per source — Workroom, Agent, Team, Chat, Folder, Brief — each with a count), a "Webhooks" button, and the "Keep awake" checkbox chip.
+Why: With many tasks, the chips slice the list by what a schedule belongs to; every task row also wears a source tag (e.g. the workroom or agent it targets).
+Behavior: Click a chip to filter; click the active source chip again to clear. "Scheduled" = runs on a timer; "Manual" = run-on-demand only. Source chips appear only for sources that have tasks. "Keep awake" prevents the computer sleeping so timers can fire. The Webhooks button opens the triggers popup (below). Your own FOLDERS appear as 📁 chips too: every task row has a folder button ("Move to a folder…") that opens a dialog to file the task, create a new folder ("Create & move"), or delete a folder (its tasks are kept, just unfiled). Folder chips filter exactly like source chips.
+
 ### Scheduled tasks · Webhook triggers
 aliases: webhooks, POST hook, fire agent from outside, zapier trigger, curl example
-What: A desktop-only card letting external systems (Zapier, mail rules, CI, cron) fire an agent, team, or scheduled task via `POST http://127.0.0.1:<port>/hook/<agent|team|task>/<id>` with a JSON `{"prompt": …}` body.
+What: A popup (the "Webhooks" button in the Scheduler toolbar) letting external systems (Zapier, mail rules, CI, cron) fire an agent, team, or scheduled task via `POST http://127.0.0.1:<port>/hook/<agent|team|task>/<id>` with a JSON `{"prompt": …}` body. Desktop only.
 Why: Connect Madav to anything that can make an HTTP request.
 Behavior: Ticking "Enabled" generates a bearer token automatically and starts a listener (status shows "listening on :8765" or an error). You can change the Port, pick what to fire ("Agent" / "Team" / "Scheduled task" plus a target), and "Copy example" copies a ready curl command; the raw command stays collapsed behind a "Show the raw command" reveal so the card reads clean. It's token-protected and local-only by default (127.0.0.1) — anyone with the token can run your agents, so treat it like a password. Not available in the web build.
 

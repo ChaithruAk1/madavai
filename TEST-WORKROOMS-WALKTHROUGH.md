@@ -222,6 +222,52 @@ by design, not a bug.)*
 
 ---
 
+## Test 11 — Connectors work inside a room chat
+
+**Goal:** prove a room chat can pull from your connected apps (Gmail, drives, repos,
+finance-data…) while still carrying the room's instructions and knowledge.
+
+*Prep:* at least one connector enabled (Connectors screen — e.g. finance-data). Connector
+tool-calls need an OpenAI-compatible model (OpenRouter/Starter are fine).
+
+1. Open **Launch Marketing** → click into the composer and type `@`.
+   **PASS point:** the mention menu lists your enabled connectors.
+2. Pick one and ask something it can answer, e.g.
+   `@finance-data what can you tell me right now?`
+3. Send. Approve the tool card when it appears.
+
+**PASS if:** the reply is built from the connector's data (you saw its tool card run),
+AND the conversation still lands in the room's feed afterwards (room tagging intact).
+**FAIL if:** the menu shows no connectors, or the reply claims it has no tools.
+
+---
+
+## Test 12 — A team works inside a room
+
+**Goal:** prove a TEAM staffed into a room runs with the room's context, and the
+mission lands in the room's feed.
+
+*Prep — build a tiny team once:*
+1. **Agents** → Teams → New team → **Relay** line.
+2. Add **Pitchwright** then **Code Reviewer**, name it `Launch Duo`, save.
+
+*The test:*
+1. Open **Launch Marketing** → right column → **TEAMS** → "+ Assign a team to this
+   room…" → pick `Launch Duo`. Its card appears with stacked member faces.
+2. Click the team's **Put to work** → a chat opens with the team attached
+   (top bars show "← Launch Marketing · Workroom task" and "← Agents · Launch Duo").
+3. Brief it: `Produce a short launch blurb: first draft the pitch, then review it.`
+4. Watch **Mission Control**: both stations should light up and pass the baton.
+
+**PASS if:**
+- the final output reflects the room (tagline / launch context) — the room's
+  instructions reached the team without you pasting them,
+- back in the room, the feed has a row tagged **Launch Duo**,
+- the pulse line counts the run.
+**FAIL if:** the output ignores the room context, or the run never appears in the feed.
+
+---
+
 ## Done — scoring
 
 | # | Test | PASS/FAIL |
@@ -236,6 +282,8 @@ by design, not a bug.)*
 | 8 | Shelf banner truth | |
 | 9 | Scheduler combo | |
 | 10 | Delete behaviors | |
+| 11 | Connectors in a room chat | |
+| 12 | Team in a room | |
 
 **If something fails:** screenshot it, note the test number and what you typed, and bring
 it back to the session. Most common false failure: the model is offline (grey dot) — then
