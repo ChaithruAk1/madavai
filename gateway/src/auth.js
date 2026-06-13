@@ -6,10 +6,29 @@
 //   we mint OUR auth code → bounce back to Madav's redirect with it
 //   Madav → /token  →  we issue a gateway access token mapped to the provider token
 import crypto from "node:crypto";
-import { clients, tokens, authCodes, pendings } from "./store.js";
+import { clients, authCodes, pendings } from "./store.js";
 import { PROVIDERS } from "./providers.js";
 
 const rnd = (n = 32) => crypto.randomBytes(n).toString("base64url");
+
+// Stateless gateway tokens: the provider token is encrypted INTO the gateway token, so the
+// gateway needs no server-side storage and tokens survive restarts / free-tier spin-downs.
+// Keyed by GATEWAY_SECRET (set it in env so tokens stay valid across deploys).
+const SECRET = process.env.GATEWAY_SECRET || "";
+if (!SECRET) console.warn("[gateway] GATEWAY_SECRET is not set — sign-ins won't survive restarts. Set it in your env.");
+const KEY = SECRET ? crypto.createHash("sha256").update(SECRET).digest() : crypto.randomBytes(32);
+function seal(obj) {
+  const iv = crypto.randomBytes(12);
+  const c = crypto.createCipheriv("aes-256-gcm", KEY, iv);
+  const enc = Buffer.concat([c.update(JSON.stringify(obj), "utf8"), c.final()]);
+  return Buffer.concat([iv, c.getAuthTag(), enc]).toString("base64url");
+}
+function unseal(tok) {
+  const raw = Buffer.from(tok, "base64url");
+  const d = crypto.createDecipheriv("aes-256-gcm", KEY, raw.subarray(0, 12));
+  d.setAuthTag(raw.subarray(12, 28));
+  return JSON.parse(Buffer.concat([d.update(raw.subarray(28)), d.final()]).toString("utf8"));
+}
 
 class ClientsStore {
   async getClient(clientId) { return clients.get(clientId); }
@@ -69,20 +88,28 @@ export function makeSharedProvider({ publicUrl }) {
     async exchangeAuthorizationCode(client, authorizationCode) {
       const rec = authCodes.take(authorizationCode);     // single use
       if (!rec || rec.clientId !== client.client_id) throw new Error("invalid_grant");
-      const access = "gwt_" + rnd(32);
-      tokens.set(access, { provider: rec.provider, providerToken: rec.providerToken, clientId: client.client_id, sub: rec.sub });
+      const access = "gwt_" + seal({ provider: rec.provider, providerToken: rec.providerToken, refreshToken: rec.refreshToken, expiresAt: rec.expiresAt, clientId: client.client_id });
       return { access_token: access, token_type: "Bearer", expires_in: 60 * 60 * 24 * 30, scope: "" };
     },
 
     async exchangeRefreshToken() { throw new Error("unsupported_grant_type"); },
 
     async verifyAccessToken(token) {
-      const v = tokens.get(token);
-      if (!v) throw new Error("invalid_token");
-      return { token, clientId: v.clientId, scopes: [], extra: { provider: v.provider, providerToken: v.providerToken } };
+      let v;
+      try { v = unseal(token.startsWith("gwt_") ? token.slice(4) : token); }
+      catch { throw new Error("invalid_token"); }
+      let providerToken = v.providerToken;
+      // If the provider token expires (Google) and we have a refresh token, refresh it now.
+      if (v.refreshToken && v.expiresAt && v.expiresAt < Date.now() + 60000) {
+        const prov = PROVIDERS[v.provider];
+        if (prov && prov.refresh) {
+          try { const r = await prov.refresh(v.refreshToken); providerToken = r.providerToken; } catch {}
+        }
+      }
+      return { token, clientId: v.clientId, scopes: [], extra: { provider: v.provider, providerToken } };
     },
 
-    async revokeToken(_client, request) { if (request && request.token) tokens.del(request.token); },
+    async revokeToken() { /* stateless tokens — client simply discards it on sign-out */ },
   };
 }
 
@@ -95,9 +122,9 @@ export async function handleProviderCallback(providerId, req, res, publicUrl) {
   if (!pend) return res.status(400).send("Sign-in session expired — start again from Madav.");
   try {
     const cb = `${publicUrl}/oauth/${providerId}/callback`;
-    const { providerToken } = await prov.exchange({ code: String(code), redirectUri: cb });
+    const ex = await prov.exchange({ code: String(code), redirectUri: cb });
     const gwCode = "gwc_" + rnd(24);
-    authCodes.set(gwCode, { clientId: pend.clientId, redirectUri: pend.redirectUri, codeChallenge: pend.codeChallenge, provider: providerId, providerToken, sub: providerId });
+    authCodes.set(gwCode, { clientId: pend.clientId, redirectUri: pend.redirectUri, codeChallenge: pend.codeChallenge, provider: providerId, providerToken: ex.providerToken, refreshToken: ex.refreshToken, expiresAt: ex.expiresAt, sub: providerId });
     const back = new URL(pend.redirectUri);
     back.searchParams.set("code", gwCode);
     if (pend.state) back.searchParams.set("state", pend.state);
