@@ -8,6 +8,8 @@ import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { randomUUID } from "node:crypto";
 import { listProviders } from "./providers.js";
 import { makeSharedProvider, handleProviderCallback } from "./auth.js";
 
@@ -17,6 +19,7 @@ const app = express();
 app.disable("x-powered-by");
 
 const active = listProviders();
+const sessions = new Map(); // mcp-session-id -> { transport, server }
 if (!active.length) console.warn("[gateway] No providers configured — set CLIENT_ID/SECRET env vars (see .env.example).");
 
 const provider = makeSharedProvider({ publicUrl: PUBLIC_URL });
@@ -62,17 +65,43 @@ for (const prov of active) {
   // Where the real provider (GitHub/Notion/Slack) sends the user back.
   app.get(`/oauth/${prov.id}/callback`, (req, res) => handleProviderCallback(prov.id, req, res, PUBLIC_URL));
 
-  // The MCP endpoint, bearer-protected with the gateway token.
-  app.post(`/${prov.id}/mcp`,
-    requireBearerAuth({ verifier: provider, resourceMetadataUrl: `${PUBLIC_URL}/.well-known/oauth-protected-resource/${prov.id}/mcp` }),
-    express.json({ limit: "1mb" }),
-    async (req, res) => {
-      const server = buildMcpServer(prov);
-      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-      res.on("close", () => { try { transport.close(); } catch {} try { server.close(); } catch {} });
-      try { await server.connect(transport); await transport.handleRequest(req, res, req.body); }
-      catch (e) { if (!res.headersSent) res.status(500).json({ error: String((e && e.message) || e) }); }
-    });
+  // The MCP endpoint, bearer-protected with the gateway token. Stateful sessions: an
+  // initialize request spins up a server+transport keyed by a session id; later requests
+  // (tools/list, tools/call) reuse it via the mcp-session-id header.
+  const bearer = requireBearerAuth({ verifier: provider, resourceMetadataUrl: `${PUBLIC_URL}/.well-known/oauth-protected-resource/${prov.id}/mcp` });
+
+  app.post(`/${prov.id}/mcp`, bearer, express.json({ limit: "1mb" }), async (req, res) => {
+    try {
+      const sid = req.headers["mcp-session-id"];
+      let entry = sid ? sessions.get(sid) : null;
+      if (!entry) {
+        if (!isInitializeRequest(req.body)) {
+          return res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "No valid session — send an initialize request first." }, id: null });
+        }
+        const server = buildMcpServer(prov);
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (id) => sessions.set(id, { transport, server }),
+        });
+        transport.onclose = () => { if (transport.sessionId) sessions.delete(transport.sessionId); };
+        await server.connect(transport);
+        entry = { transport, server };
+      }
+      await entry.transport.handleRequest(req, res, req.body);
+    } catch (e) {
+      if (!res.headersSent) res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: String((e && e.message) || e) }, id: null });
+    }
+  });
+
+  // GET = server→client stream, DELETE = end session. Both keyed by the session id.
+  const bySession = async (req, res) => {
+    const sid = req.headers["mcp-session-id"];
+    const entry = sid ? sessions.get(sid) : null;
+    if (!entry) return res.status(400).send("Unknown or missing session");
+    await entry.transport.handleRequest(req, res);
+  };
+  app.get(`/${prov.id}/mcp`, bearer, bySession);
+  app.delete(`/${prov.id}/mcp`, bearer, bySession);
 }
 
 app.listen(PORT, () => {
