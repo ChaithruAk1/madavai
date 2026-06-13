@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { X, Eye, Code as CodeIcon, ExternalLink, Copy, Download, RotateCw, Check, Pencil, Sparkles, Undo2, Loader2 } from "lucide-react";
+import { X, Eye, Code as CodeIcon, ExternalLink, Copy, Download, RotateCw, Check, Pencil, Sparkles, Undo2, Loader2, Bookmark, Share2 } from "lucide-react";
 import { artifactSrcDoc } from "../artifacts.js";
 import { bridge } from "../bridge/index.js";
+import { madavAlert } from "../dialogs.jsx";
 
 const EXT = { html: "html", svg: "svg", markdown: "md", react: "jsx", mermaid: "mmd", code: "txt" };
 
@@ -13,6 +14,9 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
   const [tab, setTab] = useState(baseArtifact.previewable ? "preview" : "code");
   const [copied, setCopied] = useState(false);
   const [nonce, setNonce] = useState(0); // bump to reload the preview iframe
+  const [saved, setSaved] = useState(false);   // saved to Studio gallery
+  const [roomMenu, setRoomMenu] = useState(false);
+  const [rooms, setRooms] = useState([]);
 
   // ---- EDITABLE CANVAS ----
   // The artifact is no longer preview-only: the Edit tab is a live canvas — type
@@ -74,6 +78,29 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
     setEditHistory(h.slice(0, -1));
   };
 
+  // Save this creation into the Studio gallery so it isn't lost to chat history.
+  const saveToGallery = async () => {
+    try {
+      const c = await bridge.getSettings();
+      const item = { id: "gal_" + Date.now().toString(36), title: artifact.title || "Creation", kind: artifact.kind, code, previewable: !!artifact.previewable, createdAt: Date.now() };
+      const next = [item, ...((c && c.studioGallery) || [])].slice(0, 200);
+      await bridge.saveSettings({ ...c, studioGallery: next });
+      setSaved(true); setTimeout(() => setSaved(false), 1600);
+    } catch (e) { madavAlert("Could not save to gallery: " + String((e && e.message) || e)); }
+  };
+  const openRoomMenu = async () => {
+    if (!roomMenu) { try { setRooms(await bridge.listProjects() || []); } catch { setRooms([]); } }
+    setRoomMenu((v) => !v);
+  };
+  const sendToRoom = async (room) => {
+    setRoomMenu(false);
+    try {
+      const fn = bridge.addKnowledgeText || bridge.addKnowledge;
+      await fn(room.id, "Studio · " + (artifact.title || "Creation"), code);
+      madavAlert(`Sent to “${room.name}” — it's on that workroom's knowledge shelf.`);
+    } catch (e) { madavAlert("Could not send: " + String((e && e.message) || e)); }
+  };
+
   const copy = async () => { try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch {} };
   const download = () => {
     const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
@@ -116,6 +143,21 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
           {editHistory.length > 0 && <button className="artifact-ico" title="Undo last AI revision" onClick={undo}><Undo2 size={14} /></button>}
           {tab === "preview" && artifact.previewable && <button className="artifact-ico" title="Refresh preview" onClick={() => setNonce((n) => n + 1)}><RotateCw size={14} /></button>}
           {artifact.previewable && <button className="artifact-ico" title="Open in new tab" onClick={openTab}><ExternalLink size={14} /></button>}
+          <button className="artifact-ico" title={saved ? "Saved to Studio gallery" : "Save to Studio gallery"} onClick={saveToGallery}>{saved ? <Check size={14} /> : <Bookmark size={14} />}</button>
+          <span className="artifact-roomwrap">
+            <button className="artifact-ico" title="Send to a Workroom's knowledge shelf" onClick={openRoomMenu}><Share2 size={14} /></button>
+            {roomMenu && (
+              <div className="artifact-roommenu">
+                <div className="artifact-roommenu-h">Send to workroom</div>
+                {rooms.length === 0 ? <div className="artifact-roommenu-empty">No workrooms yet.</div>
+                  : rooms.filter((r) => !r.archived).map((r) => (
+                    <button key={r.id} className="artifact-roommenu-row" onClick={() => sendToRoom(r)}>
+                      <span className="artifact-roommenu-glyph" style={{ color: (r.identity && r.identity.color) || "var(--accent)" }}>{(r.identity && r.identity.glyph) || "◆"}</span> {r.name}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </span>
           <button className="artifact-ico" title="Copy code" onClick={copy}>{copied ? <Check size={14} /> : <Copy size={14} />}</button>
           <button className="artifact-ico" title="Download" onClick={download}><Download size={14} /></button>
           <button className="artifact-ico" title="Close" onClick={onClose}><X size={15} /></button>

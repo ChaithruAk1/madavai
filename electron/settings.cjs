@@ -56,6 +56,8 @@ const DEFAULTS = {
   playChains: {}, // play name -> [next play names] (a play hands off to these after it)
   playMeta: {},   // play name -> { connectors:[names], folder:"" } (what a play needs)
   roomTemplates: [], // saved workroom templates: { id, name, instructions, identity, knowledge, pinnedSkills, goals }
+  studioStyles: [], // Studio "design DNA" presets: { id, name, rules } — a saved look applied as a prompt prefix
+  studioGallery: [], // Studio creations saved by the user: { id, title, kind, code, prompt, style, parentId, createdAt }
   account: { name: "", email: "", avatar: "", googleLinked: false, githubLinked: false },
   googleClientId: "",
   googleClientSecret: "",

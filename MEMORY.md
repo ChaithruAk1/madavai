@@ -1129,6 +1129,27 @@ Sequence small→big, 3+4 parallel agents on disjoint files + my wiring pass. NO
 
 ### BRAND RULE (user directive 2026-06-12): wherever the Madav logo appears, show the tagline "Built to think with you" CENTERED below it (app top bar already does; landing nav + hero now do; the landing's final section uses it as the headline under the M). Apply to every future logo placement.
 
+### 14z15. STUDIO CREATIVE SUITE BUILT — full proposal + Studio Guide + ? help (2026-06-13, user approved STUDIO-SPACE-PROPOSAL.md "build everything" + "build a Studio guide like Projects/Agents + ? icon with knowledge"; redesign freedom granted)
+- **StudioLauncher.jsx REDESIGNED** (full rewrite) with tabs Create / Gallery / Guide and creative controls:
+  - **Design DNA** (style presets): save a look (name + rules) → settings.studioStyles; apply as a prompt prefix; delete via × ; persisted.
+  - **Surprise me** (dice): SEEDS[] creative constraints fill the prompt; reroll.
+  - **Variations** 1/2/4: when >1, prompt asks for N distinct variations in ONE comparison-grid HTML page.
+  - **Crew mode**: prompt frames a Concept → Critic → Polish single-pass (pragmatic — no teams backend needed).
+  - **Gallery**: browse settings.studioGallery; preview modal (iframe via artifactSrcDoc); Refine-in-Studio (remix → re-seed onStart with the code), Download, Remove.
+- **StudioGuide.jsx** NEW — mirrors Projects/Playbook guides (agg-* classes): tabs Tour & practice / Do's & don'ts / How to; 5 chapters w/ agg-flow diagrams, DOS/DONTS, STEPS recipes. Rendered inside StudioLauncher's Guide tab (no new routing).
+- **ArtifactPanel.jsx**: added Save-to-gallery (Bookmark → settings.studioGallery) and Send-to-Workroom (Share2 → bridge.addKnowledgeText to a room's knowledge shelf, with a room picker menu). = the "Export anywhere" + "Gallery" capture path.
+- **Persistence**: electron/settings.cjs DEFAULTS += studioStyles[], studioGallery[]. No new IPC (uses getSettings/saveSettings).
+- **Help (standing rule honored):** screens.js studio gained sections styles/surprise/variations/crew/gallery/export (rich what+more+when) + guide route "studio"; 6 HelpDots on launcher controls; Studio added to TOURS + WHATS_NEW. Sage inherits via helpContext.
+- Architecture note: Studio is still a seeded-chat launcher — onStart(prompt) → App.startStudio → chat send → artifact extraction. All new features are prompt-engineering + settings persistence on top of that; no engine changes. Variations/Crew are achieved via prompt framing (single HTML page / single-pass roles).
+- Verified: StudioLauncher/StudioGuide/ArtifactPanel/screens.js parse (esbuild); settings.cjs node --check; styles.css balanced. ⚠️ host Write truncated StudioLauncher mid-write + host Edit truncated settings.cjs tail — both rebuilt in sandbox. Gate: npm run build → FULL restart.
+
+### ⛔ STANDING RULE (user mandate 2026-06-13): EVERY NEW FEATURE SHIPS WITH HELP.
+Whenever a new feature/screen/attribute is added, it is NOT done until ALL THREE are updated in the same change:
+1. A "?" HelpDot is placed next to the new control(s) — `<HelpDot mode="<screen>" section="<id>" />`.
+2. Its entry is added to `src/help/screens.js` SCREEN_HELP (the ONE source) with rich `what` + full `more` paragraph + `when`. This auto-feeds the User Guide's "Every control, explained" chapter.
+3. Sage automatically inherits it (it reads SCREEN_HELP via helpContext in SageDock) — so verify the section is reachable; if the feature is conceptually new, also add a short entry to sage-knowledge/*.md. New top-level screens get added to TOURS/WHATS_NEW too.
+Treat a feature PR without all three as incomplete. This is how Madav stays self-documenting and Sage stays omniscient.
+
 ### 14z14. WHOLE-APP ATTRIBUTE HELP — every field dotted, Sage answers at full depth (2026-06-13, user "i want it in every window/attribute across application, donot stop until done… Sage should say same or more, end-to-end")
 - **Depth upgrade:** SCREEN_HELP sections gained an optional `more` field — a full explanatory paragraph beyond `what`/`when`. HelpDot renders `what` (bold lead) + `more` (paragraph) + `When`; popover widened to 320px + scroll; the "?" icon is now DIM (opacity .35, brightens on hover). CRITICAL CSS: `.hd-pop, .hd-pop * { text-transform:none; letter-spacing:normal; }` — dots sit inside uppercase headers/labels and were inheriting ALL-CAPS (user complaint).
 - **74 sections, every screen at Agent-Designer depth.** `more` paragraphs for: Agent Designer (purpose/instructions/capabilities [each tool incl. Browser=built-in window, Desktop=screen control]/autonomy/knowledge/pinnedmodel/signature), all Workrooms (11), all Playbook (7), agents résumé (6), and NEW full section sets for chat/cowork/code, models, connectors, scheduler, studio, consumption, terminal, viamobile, settings.
