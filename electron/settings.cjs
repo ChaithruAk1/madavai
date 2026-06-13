@@ -50,6 +50,9 @@ const DEFAULTS = {
   agents: [], // user-built agents (Agent Studio): { id, name, description, instructions, tools, model, identity }
   teams: [],  // agent teams (multi-agent): { id, name, identity, mode: "relay"|"manager", members: [agentId] }
   connectors: [],
+  tracing: { enabled: true },                                                  // run tracing (local-only); set false to disable
+  alerts: { enabled: true, onError: true, onTaskError: true, channel: "desktop", costPerRunUSD: 0, latencyMs: 0 }, // failure / budget alerts
+  pricing: {},                                                                 // model-substring -> { in, out } $/1M tokens (overrides trace-store defaults)
   skillsDir: "",
   skillsDirs: [],
   disabledSkills: [],

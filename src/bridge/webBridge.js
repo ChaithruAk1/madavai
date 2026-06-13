@@ -9,6 +9,7 @@
 //   • Local-machine features (folders, installing skills, MCP connector processes, Telegram,
 //     local models) can't run in a browser -> they return a clear "desktop app" result.
 import { streamChat, streamChatTools, listModels as provListModels, ping as provPing, apiBase } from "../shared/providers.js";
+import * as webTrace from "./webTrace.js";
 import { listBundled as _listBundled, readBundled, bundledByName, bundledIndex as _bundledIndex } from "../webSkills.js";
 // Bundled packs honor the same Extras gate as the desktop engine (today: EdgeTrader).
 const FEAT_EDGETRADER = import.meta.env.VITE_FEAT_EDGETRADER !== "0";
@@ -230,7 +231,7 @@ const activeProfile = (s) => resolveProfile((s.profiles && s.profiles[s.activePr
 // ================= event bus (chat streaming) =================
 let seq = 0;
 const listeners = new Set();
-const emit = (sessionId, kind, data) => { const e = { sessionId, seq: seq++, kind, data }; listeners.forEach((cb) => cb(e)); };
+const emit = (sessionId, kind, data) => { try { webTrace.onEvent(sessionId, kind, data, sessions.get(sessionId)); } catch {} const e = { sessionId, seq: seq++, kind, data }; listeners.forEach((cb) => cb(e)); };
 const sessions = new Map(); // sessionId -> { profile, messages, ac, mode, convId, title }
 
 // Build the system prompt from global instructions (+ project context when present).
@@ -972,6 +973,13 @@ export const webBridge = {
     return { messages, tokens, sessions, activeDays: daySet.size, currentStreak: current, longestStreak: longest,
       peakHour: peakEntry ? fmtHour(Number(peakEntry[0])) : "—", favoriteModel: models[0] ? models[0].model : "—", models, byDay };
   },
+
+  // ---- run tracing + alerts (observability, web parity with desktop) ----
+  async getTraces(limit) { try { return webTrace.list(limit); } catch { return []; } },
+  async getTrace(id) { try { return webTrace.get(id); } catch { return null; } },
+  async getTraceSummary(days) { try { return webTrace.summary(days); } catch { return null; } },
+  async clearTraces() { try { webTrace.clear(); return true; } catch { return false; } },
+  async testAlert() { try { return webTrace.testAlert(); } catch { return false; } },
 
   // ---- speed check: runs in the browser (direct to provider, proxy fallback for blocked ones) ----
   async runSpeedTest({ tests, prompt, maxTokens, quiz } = {}) {

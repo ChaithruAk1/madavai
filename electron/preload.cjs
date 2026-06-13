@@ -161,6 +161,13 @@ contextBridge.exposeInMainWorld("madav", {
   // --- usage ---
   getUsage: (days) => ipcRenderer.invoke("madav:getUsage", days),
 
+  // --- run tracing + alerts (observability) ---
+  getTraces: (limit) => ipcRenderer.invoke("madav:getTraces", limit),
+  getTrace: (id) => ipcRenderer.invoke("madav:getTrace", id),
+  getTraceSummary: (days) => ipcRenderer.invoke("madav:getTraceSummary", days),
+  clearTraces: () => ipcRenderer.invoke("madav:clearTraces"),
+  testAlert: () => ipcRenderer.invoke("madav:testAlert"),
+
   // --- messaging (Telegram) ---
   applyMessaging: () => ipcRenderer.invoke("madav:applyMessaging"),
   messagingStatus: () => ipcRenderer.invoke("madav:messagingStatus"),

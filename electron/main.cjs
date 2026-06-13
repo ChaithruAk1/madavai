@@ -846,6 +846,12 @@ ipcMain.handle("madav:updateTask", (_e, { id, patch }) => taskStore.updateTask(i
 ipcMain.handle("madav:deleteTask", (_e, id) => taskStore.deleteTask(id));
 ipcMain.handle("madav:getRuns", (_e, id) => taskStore.getRuns(id));
 ipcMain.handle("madav:getUsage", (_e, days) => usage.summary(days));
+// Run tracing + alerts (observability). All guarded so a tracing fault never breaks IPC.
+ipcMain.handle("madav:getTraces", (_e, limit) => { try { return require("./trace-store.cjs").list(limit); } catch { return []; } });
+ipcMain.handle("madav:getTrace", (_e, id) => { try { return require("./trace-store.cjs").get(id); } catch { return null; } });
+ipcMain.handle("madav:getTraceSummary", (_e, days) => { try { return require("./trace-store.cjs").summary(days); } catch { return null; } });
+ipcMain.handle("madav:clearTraces", () => { try { require("./trace-store.cjs").clear(); return true; } catch { return false; } });
+ipcMain.handle("madav:testAlert", () => { try { require("./alerts.cjs").fire({ title: "Madav test alert", body: "Alerts are working." }); return true; } catch { return false; } });
 
 // ---- IPC: messaging (Telegram) ----
 ipcMain.handle("madav:applyMessaging", async () => {
@@ -979,6 +985,7 @@ ipcMain.handle("madav:runTaskNow", async (_e, id) => {
   if (!t) return { status: "error", output: "Task not found." };
   const run = await runner.runTask(t);
   taskStore.addRun(id, run);
+  try { require("./alerts.cjs").onTaskResult(t, run); } catch {}
   return run;
 });
 
@@ -1001,6 +1008,7 @@ async function schedulerTick() {
     try {
       const run = await runner.runTask(t);
       taskStore.addRun(t.id, run);
+      try { require("./alerts.cjs").onTaskResult(t, run); } catch {}
       if (win && !win.isDestroyed()) win.webContents.send("madav:taskRun", { taskId: t.id, run });
     } catch {}
   }

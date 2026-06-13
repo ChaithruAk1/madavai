@@ -93,6 +93,8 @@ class SessionManager {
   }
 
   _send(sessionId, kind, data) {
+    // Passive run-tracing tee — fully isolated; a tracing error must never affect the turn.
+    try { require("./trace-store.cjs").onEvent(sessionId, kind, data, this._turns.get(sessionId)); } catch {}
     const t = this._turns.get(sessionId);
     if (t) {
       if (kind === "assistant_delta") { t.replyChars += ((data && data.text) || "").length; t.replyText += (data && data.text) || ""; }

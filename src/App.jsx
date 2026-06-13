@@ -12,6 +12,7 @@ import Skills from "./components/Skills.jsx";
 import Plugins from "./components/Plugins.jsx";
 import Workrooms from "./components/Workrooms.jsx";
 import Consumption from "./components/Consumption.jsx";
+import ActivityPanel from "./components/Activity.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import Agents from "./components/Agents.jsx";
@@ -655,6 +656,7 @@ export default function App() {
   const isViaMobile = mode === "viamobile";
   const isScheduler = mode === "scheduler";
   const isConsumption = mode === "consumption";
+  const isActivity = mode === "activity";
   const isGuide = mode === "guide";
   const isStudio = mode === "studio";
   const isTerminal = mode === "terminal";
@@ -802,6 +804,8 @@ export default function App() {
           ViaMobile ? <Suspense fallback={null}><ViaMobile onNavigate={switchMode} onSettingsChanged={setSettings} /></Suspense> : <NotInBuild />
         ) : isScheduler ? (
           Scheduler ? <Suspense fallback={null}><Scheduler /></Suspense> : <NotInBuild />
+        ) : isActivity ? (
+          <ActivityPanel onNavigate={switchMode} />
         ) : isConsumption ? (
           <Consumption />
         ) : isGuide ? (
