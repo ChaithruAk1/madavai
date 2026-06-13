@@ -9,6 +9,7 @@ import crypto from "node:crypto";
 import { clients, authCodes, pendings } from "./store.js";
 import { PROVIDERS } from "./providers.js";
 import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
+import { composioToolkit, composioStartLink } from "./composio.js";
 
 const rnd = (n = 32) => crypto.randomBytes(n).toString("base64url");
 
@@ -57,6 +58,21 @@ export function makeSharedProvider({ publicUrl }) {
 
     async authorize(client, params, res) {
       const fail = (desc) => { const u = new URL(params.redirectUri); u.searchParams.set("error", "invalid_target"); u.searchParams.set("error_description", desc); if (params.state) u.searchParams.set("state", params.state); res.redirect(u.toString()); };
+      // Composio-backed toolkits live at /c/<slug>/mcp — sign in via Composio's hosted link().
+      let segs = [];
+      try { segs = new URL(params.resource).pathname.split("/").filter(Boolean); } catch {}
+      if (segs[0] === "c" && composioToolkit(segs[1])) {
+        const slug = segs[1];
+        const pendingId = rnd(16);
+        const userId = client.client_id;
+        const cb = `${publicUrl}/oauth/composio/callback?p=${pendingId}`;
+        try {
+          const { redirectUrl, connectionId } = await composioStartLink(slug, userId, cb);
+          if (!redirectUrl) return fail("Composio didn't return a sign-in URL for " + slug + ".");
+          pendings.set(pendingId, { clientId: client.client_id, redirectUri: params.redirectUri, codeChallenge: params.codeChallenge, state: params.state, composio: true, toolkit: slug, userId, connectionId });
+          return res.redirect(redirectUrl);
+        } catch (e) { return fail("Composio sign-in failed: " + String((e && e.message) || e).slice(0, 160)); }
+      }
       const list = configured();
       const providerId = providerFromResource(params.resource) || (list.length === 1 ? list[0] : null);
       if (!providerId) return fail("Unknown or missing connector. Use the per-connector MCP URL, e.g. /github/mcp.");
@@ -89,7 +105,7 @@ export function makeSharedProvider({ publicUrl }) {
     async exchangeAuthorizationCode(client, authorizationCode) {
       const rec = authCodes.take(authorizationCode);     // single use
       if (!rec || rec.clientId !== client.client_id) throw new Error("invalid_grant");
-      const access = "gwt_" + seal({ provider: rec.provider, providerToken: rec.providerToken, refreshToken: rec.refreshToken, expiresAt: rec.expiresAt, clientId: client.client_id, sx: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 });
+      const access = "gwt_" + seal({ provider: rec.provider, providerToken: rec.providerToken, refreshToken: rec.refreshToken, expiresAt: rec.expiresAt, composio: rec.composio, toolkit: rec.toolkit, userId: rec.userId, connectionId: rec.connectionId, clientId: client.client_id, sx: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 });
       return { access_token: access, token_type: "Bearer", expires_in: 60 * 60 * 24 * 30, scope: "" };
     },
 
@@ -107,7 +123,7 @@ export function makeSharedProvider({ publicUrl }) {
           try { const r = await prov.refresh(v.refreshToken); providerToken = r.providerToken; } catch {}
         }
       }
-      return { token, clientId: v.clientId, scopes: [], expiresAt: v.sx || (Math.floor(Date.now() / 1000) + 3600), extra: { provider: v.provider, providerToken } };
+      return { token, clientId: v.clientId, scopes: [], expiresAt: v.sx || (Math.floor(Date.now() / 1000) + 3600), extra: { provider: v.provider, providerToken, composio: v.composio, toolkit: v.toolkit, userId: v.userId, connectionId: v.connectionId } };
     },
 
     async revokeToken() { /* stateless tokens — client simply discards it on sign-out */ },
@@ -133,4 +149,17 @@ export async function handleProviderCallback(providerId, req, res, publicUrl) {
   } catch (e) {
     res.status(502).send("Could not complete sign-in: " + String((e && e.message) || e));
   }
+}
+
+// Composio hosted sign-in returns the user here; mint our auth code for the MCP client.
+export function handleComposioCallback(req, res) {
+  const p = req.query.p;
+  const pend = p ? pendings.take(String(p)) : null;
+  if (!pend) return res.status(400).send("Sign-in session expired — start again from Madav.");
+  const gwCode = "gwc_" + rnd(24);
+  authCodes.set(gwCode, { clientId: pend.clientId, redirectUri: pend.redirectUri, codeChallenge: pend.codeChallenge, composio: true, toolkit: pend.toolkit, userId: pend.userId, connectionId: pend.connectionId, sub: "composio" });
+  const back = new URL(pend.redirectUri);
+  back.searchParams.set("code", gwCode);
+  if (pend.state) back.searchParams.set("state", pend.state);
+  res.redirect(back.toString());
 }

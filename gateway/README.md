@@ -110,3 +110,29 @@ Gmail, Drive, Outlook use **restricted scopes**: Google/Microsoft require app ve
 incl. a third-party security (CASA) assessment (~$1k–$5k/yr) and a verified domain + privacy
 policy. The gateway code supports adding them (same provider pattern), but that approval is
 the real gate — exactly the hurdle a vendor like Anthropic clears as a company.
+
+---
+
+## Composio — broad one-click catalog (optional, no per-app OAuth registration)
+
+The five connectors above need you to register an OAuth app each. To get **one-click for
+hundreds of apps without registering anything**, add a Composio API key. Composio supplies
+the OAuth app (managed auth) and hosts the sign-in; your gateway brokers it.
+
+1. Sign up at **app.composio.dev** → copy your **API key** (free tier: 20,000 tool calls/month).
+2. In Render → madav-gateway → **Environment** → add `COMPOSIO_API_KEY` = your key → Save.
+3. After redeploy, open your gateway `/` URL — the `connect` list now includes Composio
+   toolkits with URLs like `…/c/gmail/mcp`, `…/c/linear/mcp`, `…/c/jira/mcp`, etc.
+4. In Madav: add a remote connector → Server URL `…/c/<toolkit>/mcp` → **Sign in with your
+   browser** → you're authenticated via Composio's hosted page → Test.
+
+The curated toolkit list lives in `src/composio.js` (`COMPOSIO_TOOLKITS`) — add or remove
+slugs there to control which apps appear. Composio has ~250+; these are the popular front.
+
+**Cost:** your users pay nothing; you (the operator) are billed by Composio only past the
+free 20k tool-calls/month. **Privacy:** with Composio, users' tokens are held by Composio
+(not your gateway) — that's the trade for not registering OAuth apps yourself.
+
+**Note:** the Composio integration is wired against Composio's documented SDK (managed
+auth configs + `link()` hosted sign-in + `tools.execute`). Like the rest, it needs one live
+test pass with a real key + a real sign-in; the OAuth discovery chain is already verified.

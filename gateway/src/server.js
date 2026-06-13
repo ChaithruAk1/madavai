@@ -11,7 +11,10 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "node:crypto";
 import { listProviders } from "./providers.js";
-import { makeSharedProvider, handleProviderCallback } from "./auth.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { makeSharedProvider, handleProviderCallback, handleComposioCallback } from "./auth.js";
+import { composioEnabled, COMPOSIO_TOOLKITS, composioToolkit, composioListTools, composioExecute } from "./composio.js";
 
 const PORT = process.env.PORT || 8077;
 const PUBLIC_URL = (process.env.PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/+$/, "");
@@ -37,7 +40,10 @@ app.use(mcpAuthRouter({
 // Health + the URLs to paste into Madav.
 app.get("/", (_req, res) => res.json({
   ok: true, service: "madav-connector-gateway",
-  connect: active.map((p) => ({ provider: p.id, label: p.label, mcpUrl: `${PUBLIC_URL}/${p.id}/mcp` })),
+  connect: [
+    ...active.map((p) => ({ provider: p.id, label: p.label, mcpUrl: `${PUBLIC_URL}/${p.id}/mcp` })),
+    ...(composioEnabled() ? COMPOSIO_TOOLKITS.map((t) => ({ provider: t.slug, label: t.label, via: "composio", mcpUrl: `${PUBLIC_URL}/c/${t.slug}/mcp` })) : []),
+  ],
 }));
 
 function buildMcpServer(prov) {
@@ -104,7 +110,65 @@ for (const prov of active) {
   app.delete(`/${prov.id}/mcp`, bearer, bySession);
 }
 
+// ---- Composio-backed toolkits (one-click for ~hundreds of apps, no per-app OAuth app) ----
+if (composioEnabled()) {
+  app.get("/oauth/composio/callback", (req, res) => handleComposioCallback(req, res));
+
+  // PRM per toolkit → points the client at the single root AS.
+  app.get("/.well-known/oauth-protected-resource/c/:toolkit/mcp", (req, res) => res.json({
+    resource: `${PUBLIC_URL}/c/${req.params.toolkit}/mcp`,
+    authorization_servers: [PUBLIC_URL],
+    resource_name: `Madav · ${req.params.toolkit}`,
+  }));
+
+  // Bearer middleware built per-request so the 401 points at this toolkit's PRM.
+  const composioBearer = (req, res, next) =>
+    requireBearerAuth({ verifier: provider, resourceMetadataUrl: `${PUBLIC_URL}/.well-known/oauth-protected-resource/c/${req.params.toolkit}/mcp` })(req, res, next);
+
+  // A low-level MCP server whose tools are listed + executed via Composio at runtime.
+  function buildComposioServer(slug) {
+    const server = new Server({ name: `madav-c-${slug}`, version: "0.1.0" }, { capabilities: { tools: {} } });
+    server.setRequestHandler(ListToolsRequestSchema, async () => {
+      try { return { tools: await composioListTools(slug) }; } catch { return { tools: [] }; }
+    });
+    server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+      const a = (extra && extra.authInfo && extra.authInfo.extra) || {};
+      if (!a.connectionId) return { content: [{ type: "text", text: "Not signed in." }], isError: true };
+      try { return { content: [{ type: "text", text: await composioExecute(request.params.name, a.userId, a.connectionId, request.params.arguments) }] }; }
+      catch (e) { return { content: [{ type: "text", text: "Error: " + String((e && e.message) || e) }], isError: true }; }
+    });
+    return server;
+  }
+
+  app.post("/c/:toolkit/mcp", composioBearer, express.json({ limit: "1mb" }), async (req, res) => {
+    try {
+      if (!composioToolkit(req.params.toolkit)) return res.status(404).json({ jsonrpc: "2.0", error: { code: -32601, message: "Unknown toolkit" }, id: null });
+      const sid = req.headers["mcp-session-id"];
+      let entry = sid ? sessions.get(sid) : null;
+      if (!entry) {
+        if (!isInitializeRequest(req.body)) return res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "No valid session — send initialize first." }, id: null });
+        const server = buildComposioServer(req.params.toolkit);
+        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID(), onsessioninitialized: (id) => sessions.set(id, { transport, server }) });
+        transport.onclose = () => { if (transport.sessionId) sessions.delete(transport.sessionId); };
+        await server.connect(transport);
+        entry = { transport, server };
+      }
+      await entry.transport.handleRequest(req, res, req.body);
+    } catch (e) {
+      if (!res.headersSent) res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: String((e && e.message) || e) }, id: null });
+    }
+  });
+  const composioBySession = async (req, res) => {
+    const sid = req.headers["mcp-session-id"]; const entry = sid ? sessions.get(sid) : null;
+    if (!entry) return res.status(400).send("Unknown or missing session");
+    await entry.transport.handleRequest(req, res);
+  };
+  app.get("/c/:toolkit/mcp", composioBearer, composioBySession);
+  app.delete("/c/:toolkit/mcp", composioBearer, composioBySession);
+}
+
 app.listen(PORT, () => {
   console.log(`[gateway] listening on :${PORT}  (public ${PUBLIC_URL})`);
   for (const p of active) console.log(`[gateway]   ${p.label} → paste into Madav:  ${PUBLIC_URL}/${p.id}/mcp`);
+  if (composioEnabled()) console.log(`[gateway]   Composio: ${COMPOSIO_TOOLKITS.length} toolkits one-click at ${PUBLIC_URL}/c/<toolkit>/mcp`);
 });

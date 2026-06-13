@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, RefreshCw, Check, Search, Settings2, ChevronDown } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Check, Search, Settings2, ChevronDown, Copy, ExternalLink } from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
 import { iconUrlFor } from "../connectorIcons.js";
@@ -27,8 +27,93 @@ const FEATURED = [
   { key: "dropbox", title: "Dropbox", cat: "Productivity", rank: 14, badge: "", query: "dropbox", desc: "Search, read, and share your files." },
   { key: "trello", title: "Trello", cat: "Productivity", rank: 15, badge: "", query: "trello", desc: "Manage boards, lists, and cards." },
   { key: "zapier", title: "Zapier", cat: "Developer", rank: 16, badge: "new", query: "zapier", desc: "Connect thousands of apps and automate workflows." },
+  { key: "gitlab", title: "GitLab", cat: "Developer", rank: 17, badge: "", query: "gitlab", desc: "Manage repos, merge requests, and pipelines." },
+  { key: "sentry", title: "Sentry", cat: "Developer", rank: 18, badge: "", query: "sentry", desc: "Track errors, issues, and performance." },
+  { key: "vercel", title: "Vercel", cat: "Developer", rank: 19, badge: "", query: "vercel", desc: "Deployments, projects, and logs." },
+  { key: "supabase", title: "Supabase", cat: "Data", rank: 20, badge: "trending", query: "supabase", desc: "Query your Postgres database, auth, and storage." },
+  { key: "mongodb", title: "MongoDB", cat: "Data", rank: 21, badge: "", query: "mongodb", desc: "Query collections and documents." },
+  { key: "hubspot", title: "HubSpot", cat: "Marketing", rank: 22, badge: "", query: "hubspot", desc: "CRM contacts, deals, and companies." },
+  { key: "salesforce", title: "Salesforce", cat: "Marketing", rank: 23, badge: "", query: "salesforce", desc: "Records, opportunities, and reports." },
+  { key: "zendesk", title: "Zendesk", cat: "Support", rank: 24, badge: "", query: "zendesk", desc: "Tickets, users, and help center." },
+  { key: "intercom", title: "Intercom", cat: "Support", rank: 25, badge: "", query: "intercom", desc: "Conversations and customer records." },
+  { key: "shopify", title: "Shopify", cat: "Data", rank: 26, badge: "", query: "shopify", desc: "Products, orders, and customers." },
+  { key: "discord", title: "Discord", cat: "Communication", rank: 27, badge: "", query: "discord", desc: "Read and post to your servers." },
+  { key: "teams", title: "Microsoft Teams", cat: "Communication", rank: 28, badge: "", query: "microsoft teams", desc: "Chats, channels, and meetings." },
+  { key: "outlook", title: "Outlook", cat: "Productivity", rank: 29, badge: "", query: "outlook", desc: "Mail and calendar." },
+  { key: "googlesheets", title: "Google Sheets", cat: "Data", rank: 30, badge: "", query: "google sheets", desc: "Read and update spreadsheets." },
+  { key: "clickup", title: "ClickUp", cat: "Productivity", rank: 31, badge: "", query: "clickup", desc: "Tasks, docs, and goals." },
+  { key: "monday", title: "Monday.com", cat: "Productivity", rank: 32, badge: "", query: "monday", desc: "Boards, items, and updates." },
+  { key: "calendly", title: "Calendly", cat: "Productivity", rank: 33, badge: "", query: "calendly", desc: "Scheduling and event types." },
+  { key: "todoist", title: "Todoist", cat: "Productivity", rank: 34, badge: "", query: "todoist", desc: "Tasks and projects." },
+  { key: "box", title: "Box", cat: "Productivity", rank: 35, badge: "", query: "box", desc: "Files and folders." },
+  { key: "pagerduty", title: "PagerDuty", cat: "Developer", rank: 36, badge: "", query: "pagerduty", desc: "Incidents and on-call schedules." },
+  { key: "sentryx", title: "Cloudflare", cat: "Developer", rank: 37, badge: "", query: "cloudflare", desc: "DNS, workers, and analytics." },
+  { key: "spotify", title: "Spotify", cat: "Data", rank: 38, badge: "", query: "spotify", desc: "Search tracks, playlists, and playback." },
 ];
 const CATEGORIES = ["All", "Productivity", "Developer", "Design", "Communication", "Data"];
+
+// One-click connectors served by your hosted Madav gateway (OAuth — sign in with the browser,
+// no token to paste). Change GATEWAY_BASE if you redeploy the gateway elsewhere.
+const GATEWAY_BASE = "https://madav-gateway.onrender.com";
+const GATEWAY = [
+  { key: "github", title: "GitHub", desc: "Browse repos, search issues, and open pull requests — sign in with GitHub.", beta: false },
+  { key: "notion", title: "Notion", desc: "Search and read your Notion workspace — sign in with Notion.", beta: false },
+  { key: "slack", title: "Slack", desc: "List channels and post messages — sign in with Slack.", beta: false },
+  { key: "gmail", title: "Gmail", desc: "Search and read your inbox — sign in with Google.", beta: true },
+  { key: "gdrive", title: "Google Drive", desc: "Search and read your Drive files — sign in with Google.", beta: true },
+];
+const GATEWAY_KEYS = { github: "github", notion: "notion", slack: "slack", gmail: "gmail", gdrive: "googledrive" };
+
+// Per-connector overview shown in the detail panel (Claude-style: tagline, description,
+// developer, tools, and reference links). Unknown connectors fall back to a generic card.
+const CONNECTOR_INFO = {
+  github: {
+    tagline: "Browse repos, search issues, and open pull requests.",
+    desc: "Connect your GitHub account to give Madav access to your repositories. Attach repo files in Chat, sync a codebase into a Project for context, and browse branches or open pull requests while you build.",
+    developer: { name: "GitHub", url: "https://github.com" },
+    tools: ["github_list_repos", "github_search_issues", "github_create_issue"],
+    docs: "https://docs.github.com", support: "https://support.github.com",
+    privacy: "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+  },
+  gmail: {
+    tagline: "Draft replies, summarize threads, & search your inbox.",
+    desc: "Connect Gmail to let Madav quickly find important emails and understand long conversations. Madav can search your messages, read entire threads for context, and help you stay on top of your inbox — great for catching up on chains you missed or preparing for meetings.",
+    developer: { name: "Google", url: "https://google.com" },
+    tools: ["gmail_search", "gmail_read"],
+    docs: "https://developers.google.com/gmail/api", support: "https://support.google.com/mail",
+    privacy: "https://policies.google.com/privacy",
+  },
+  "google drive": {
+    tagline: "Search and read your Drive files.",
+    desc: "Connect Google Drive so Madav can find and read your files — search across your Drive and pull document text in as context for whatever you're working on.",
+    developer: { name: "Google", url: "https://google.com" },
+    tools: ["gdrive_search", "gdrive_read"],
+    docs: "https://developers.google.com/drive", support: "https://support.google.com/drive",
+    privacy: "https://policies.google.com/privacy",
+  },
+  notion: {
+    tagline: "Search and read your workspace.",
+    desc: "Connect Notion to search pages and databases and pull workspace content into your work across Chat, Cowork, and Projects.",
+    developer: { name: "Notion", url: "https://notion.so" },
+    tools: ["notion_search"],
+    docs: "https://developers.notion.com", support: "https://www.notion.so/help",
+    privacy: "https://www.notion.so/privacy",
+  },
+  slack: {
+    tagline: "List channels and post messages.",
+    desc: "Connect Slack to read channels, fetch recent messages, and post updates to a channel from inside Madav.",
+    developer: { name: "Slack", url: "https://slack.com" },
+    tools: ["slack_list_channels", "slack_post_message"],
+    docs: "https://api.slack.com", support: "https://slack.com/help",
+    privacy: "https://slack.com/trust/privacy/privacy-policy",
+  },
+};
+function infoFor(sel) {
+  const n = (sel.name || "").toLowerCase();
+  for (const k of Object.keys(CONNECTOR_INFO)) if (n.includes(k)) return CONNECTOR_INFO[k];
+  return { tagline: "Connected app", desc: "Once connected, this connector's tools are available to the agent in Chat, Cowork, Code, and Projects.", developer: null, tools: [], docs: null, support: null, privacy: null };
+}
+const openExt = (url) => { try { (bridge.openExternal || window.open)(url); } catch { try { window.open(url, "_blank"); } catch {} } };
 
 // Remove competitor branding that leaks in from registry descriptions.
 const scrub = (t) => String(t || "")
@@ -57,15 +142,15 @@ export default function Connectors() {
   // Registry fallback — only when the user is searching for something the curated set
   // doesn't cover. Debounced so it never gets in the way of the instant local filter.
   useEffect(() => {
+    if (!bridge.listConnectorDirectory) { setReg([]); setRegMsg(""); return; }
     const term = q.trim();
-    if (!term || !bridge.listConnectorDirectory) { setReg([]); setRegMsg(""); return; }
-    setRegMsg("Searching the registry…");
+    setRegMsg(term ? "Searching the registry…" : "");
     const t = setTimeout(() => {
       bridge.listConnectorDirectory({ search: term }).then((r) => {
         setReg(r.items || []);
         setRegMsg("");
       }).catch(() => setRegMsg("Couldn't reach the registry."));
-    }, 350);
+    }, term ? 350 : 0);
     return () => clearTimeout(t);
   }, [q]);
 
@@ -73,7 +158,8 @@ export default function Connectors() {
   // so the hook order is stable across renders.)
   const featured = useMemo(() => {
     const term = q.trim().toLowerCase();
-    let arr = FEATURED.filter((f) => cat === "All" || f.cat === cat);
+    const covered = new Set(Object.values(GATEWAY_KEYS));
+    let arr = FEATURED.filter((f) => !covered.has(f.key) && (cat === "All" || f.cat === cat));
     if (term) arr = arr.filter((f) => (f.title + " " + f.desc + " " + f.cat).toLowerCase().includes(term));
     arr = [...arr];
     if (sortBy === "name") arr.sort((a, b) => a.title.localeCompare(b.title));
@@ -105,11 +191,19 @@ export default function Connectors() {
   const has = (name) => list.some((c) => c.name && name && c.name.toLowerCase() === name.toLowerCase());
 
   // Registry items that AREN'T already in the curated set (avoid duplicates).
-  const featuredNames = new Set(FEATURED.map((f) => f.query));
-  const regShown = (q.trim() ? reg : [])
-    .filter((it) => !featuredNames.has((it.title || "").toLowerCase()))
-    .slice(0, 40);
+  const covered = new Set([...FEATURED.map((f) => f.title.toLowerCase()), ...FEATURED.map((f) => f.query.toLowerCase()), ...GATEWAY.map((g) => g.title.toLowerCase())]);
+  const regShown = reg
+    .filter((it) => { const t = (it.title || "").toLowerCase(); return t && !covered.has(t); })
+    .slice(0, 80);
 
+  const addGateway = (g) => {
+    const url = `${GATEWAY_BASE}/${g.key}/mcp`;
+    const existing = list.find((c) => c.url === url || c.name.toLowerCase() === g.title.toLowerCase());
+    if (existing) { setSelId(existing.id); return; }
+    const id = "c_" + Math.random().toString(36).slice(2, 7);
+    setConnectors([...list, { id, name: g.title, url, transport: "http", enabled: true }]);
+    setSelId(id); setTools(null); setStatus("");
+  };
   const addFeatured = async (f) => {
     if (has(f.title)) { const e = list.find((c) => c.name.toLowerCase() === f.title.toLowerCase()); setSelId(e.id); return; }
     setAdding(f.key); setStatus("");
@@ -167,10 +261,27 @@ export default function Connectors() {
       </p>
 
       {!sel && <>
+      {list.length > 0 && (
+        <>
+          <div className="nav-label" style={{ paddingLeft: 0 }}>Connected<HelpDot mode="connectors" section="usage" /></div>
+          <div className="conn-mini-grid">
+            {list.map((c) => (
+              <button key={c.id} className="conn-minicard" onClick={() => { setSelId(c.id); setTools(null); setStatus(""); }}>
+                <ConnectorIcon item={{ title: c.name, name: c.name }} />
+                <span className="conn-minicard-main">
+                  <b>{c.name}</b>
+                  <span className="conn-minicard-sub"><span className={`conn-minidot ${c.enabled ? "on" : ""}`} /> {c.enabled ? "Connected" : "Off"}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="nav-label" style={{ paddingLeft: 0, marginTop: list.length ? 22 : 0 }}>Add a connector</div>
       <div className="cdir-search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search connectors…" /></div>
 
       <div className="cdir-bar">
-        <span className="cdir-pill">Madav &amp; Partners</span>
         <span style={{ flex: 1 }} />
         <label className="cdir-selwrap">
           <select className="cdir-select" value={cat} onChange={(e) => setCat(e.target.value)}>
@@ -187,11 +298,37 @@ export default function Connectors() {
       </div>
 
       <div className="cdir-grid">
+        {GATEWAY.filter((g) => { const t = q.trim().toLowerCase(); return !t || (g.title + " " + g.desc).toLowerCase().includes(t); }).map((g) => {
+          const url = `${GATEWAY_BASE}/${g.key}/mcp`;
+          const added = list.some((c) => c.url === url || c.name.toLowerCase() === g.title.toLowerCase());
+          return (
+            <div key={g.key} className="cdir-card" onClick={() => addGateway(g)}>
+              <div className="cdir-cardhead">
+                <ConnectorIcon item={{ title: g.title, name: GATEWAY_KEYS[g.key] }} />
+                <div className="cdir-titles">
+                  <div className="cdir-name">{g.title}
+                    {g.beta && <span className="cdir-tag trending">Beta</span>}
+                    <span className="cdir-tag oneclick">1-click</span>
+                  </div>
+                  <div className="cdir-rank">Hosted · OAuth sign-in</div>
+                </div>
+                <button className={`cdir-add ${added ? "on" : ""}`} title={added ? "Open" : "Add connector"} onClick={(e) => { e.stopPropagation(); addGateway(g); }}>
+                  {added ? <Settings2 size={15} /> : <Plus size={16} />}
+                </button>
+              </div>
+              <div className="cdir-desc">{g.desc}</div>
+            </div>
+          );
+        })}
+      </div>
+
+
+      <div className="cdir-grid">
         {featured.map((f) => {
           const added = has(f.title);
           const busy = adding === f.key;
           return (
-            <div key={f.key} className="cdir-card">
+            <div key={f.key} className="cdir-card" onClick={() => addFeatured(f)}>
               <div className="cdir-cardhead">
                 <ConnectorIcon item={{ title: f.title, name: f.key }} />
                 <div className="cdir-titles">
@@ -203,7 +340,7 @@ export default function Connectors() {
                   <div className="cdir-rank">{rankLabel(f.rank)}</div>
                 </div>
                 <button className={`cdir-add ${added ? "on" : ""}`} title={added ? "Configure" : "Add connector"}
-                  disabled={busy} onClick={() => addFeatured(f)}>
+                  disabled={busy} onClick={(e) => { e.stopPropagation(); addFeatured(f); }}>
                   {busy ? <RefreshCw size={15} className="spin" /> : added ? <Settings2 size={15} /> : <Plus size={16} />}
                 </button>
               </div>
@@ -213,17 +350,17 @@ export default function Connectors() {
         })}
       </div>
 
-      {q.trim() && (
+      {(regShown.length > 0 || q.trim()) && (
         <>
-          <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>More from the registry</div>
+          <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>{q.trim() ? "More from the registry" : "More connectors"}</div>
           {regMsg && <div className="cdir-msg">{regMsg}</div>}
-          {!regMsg && regShown.length === 0 && <div className="cdir-msg">No other connectors match “{q.trim()}”.</div>}
+          {!regMsg && regShown.length === 0 && q.trim() && <div className="cdir-msg">No other connectors match “{q.trim()}”.</div>}
           <div className="cdir-grid">
             {regShown.map((item) => {
               const cname = item.connector && item.connector.name;
               const added = cname && has(cname);
               return (
-                <div key={item.name} className="cdir-card">
+                <div key={item.name} className="cdir-card" onClick={() => addFromRegistry(item)}>
                   <div className="cdir-cardhead">
                     <ConnectorIcon item={item} />
                     <div className="cdir-titles">
@@ -232,7 +369,7 @@ export default function Connectors() {
                       </div>
                       <div className="cdir-id">{item.name}</div>
                     </div>
-                    <button className={`cdir-add ${added ? "on" : ""}`} title={added ? "Added" : "Add connector"} onClick={() => addFromRegistry(item)}>
+                    <button className={`cdir-add ${added ? "on" : ""}`} title={added ? "Added" : "Add connector"} onClick={(e) => { e.stopPropagation(); addFromRegistry(item); }}>
                       {added ? <Check size={16} /> : <Plus size={16} />}
                     </button>
                   </div>
@@ -243,100 +380,113 @@ export default function Connectors() {
           </div>
         </>
       )}
+      <button className="conn-customrow" onClick={addCustom}><Plus size={15} /> Add a custom MCP server</button>
       </>}
-
-      <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>Your connectors<HelpDot mode="connectors" section="usage" /></div>
-      {!sel && (
-        <div className="mc-pgrid">
-          {list.length === 0 && <div style={{ color: "var(--text-2)", fontSize: 13, padding: "6px 2px" }}>None yet — add one above.</div>}
-          {list.map((c) => (
-            <button key={c.id} className="mc-pcard" onClick={() => { setSelId(c.id); setTools(null); setStatus(""); }}>
-              <ConnectorIcon item={{ title: c.name, name: c.name }} />
-              <span className="mc-pmain">
-                <b>{c.name}</b>
-                <small>{[c.command, ...(c.args || [])].join(" ").slice(0, 46) || "not configured"}</small>
-              </span>
-              <span className={`mc-pact ${c.enabled ? "ok" : ""}`}>{c.enabled ? "Enabled" : "Off"}</span>
-            </button>
-          ))}
-          <button className="mc-pcard" onClick={addCustom}>
-            <span className="mc-pchip"><Plus size={18} /></span>
-            <span className="mc-pmain">
-              <b>Custom MCP server</b>
-              <small>any stdio MCP command</small>
-            </span>
-            <span className="mc-pact">Set up</span>
-          </button>
-        </div>
-      )}
 
       {sel && (() => {
         const isRemote = !!(sel.url != null || sel.transport != null);
+        const info = infoFor(sel);
         return (
         <div>
-          <button className="btn ghost" style={{ marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => { setSelId(null); setTools(null); setStatus(""); }}>
+          <button className="btn ghost" style={{ marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => { setSelId(null); setTools(null); setStatus(""); }}>
             ← All connectors
           </button>
           <div style={{ maxWidth: 720 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>{sel.name}</h3>
-              <label className="chip" style={{ cursor: "pointer" }}>
-                <input type="checkbox" checked={sel.enabled} onChange={(e) => patch("enabled", e.target.checked)} style={{ marginRight: 6 }} /> enabled
-              </label>
-              <span style={{ flex: 1 }} />
-              <button className="btn ghost danger" onClick={remove}><Trash2 size={14} /></button>
+            {/* Claude-style overview header */}
+            <div className="conn-head">
+              <span className="conn-headico"><ConnectorIcon item={{ title: sel.name, name: sel.name }} /></span>
+              <div className="conn-headmain">
+                <h3 className="conn-headname">{sel.name}</h3>
+                <div className="conn-tagline">{info.tagline}</div>
+              </div>
+              {isRemote && (auth.connected
+                ? <button className="btn ghost" onClick={doSignOut}>Disconnect</button>
+                : <button className="btn" disabled={signingIn} onClick={doSignIn}>{signingIn ? <RefreshCw size={14} className="spin" /> : null} Connect</button>)}
+              <button className="btn ghost danger" title="Remove connector" onClick={remove}><Trash2 size={14} /></button>
             </div>
-            <Field label="Display name"><input className="model-search" value={sel.name} onChange={(e) => patch("name", e.target.value)} /></Field>
-            <Field label="Connection type">
-              <select className="model-search" value={isRemote ? "remote" : "local"} onChange={(e) => setType(e.target.value === "remote")}>
-                <option value="local">Local — runs an MCP command on this computer</option>
-                <option value="remote">Remote — connects to a hosted MCP server URL</option>
-              </select>
-            </Field>
-            {isRemote ? (
-              <>
-                <Field label="Server URL"><input className="model-search" value={sel.url || ""} onChange={(e) => patch("url", e.target.value.trim())} placeholder="https://mcp.example.com/  (from the provider; often needs sign-in)" /></Field>
-                <Field label="Transport">
-                  <select className="model-search" value={sel.transport || "http"} onChange={(e) => patch("transport", e.target.value)}>
-                    <option value="http">Streamable HTTP</option>
-                    <option value="sse">SSE</option>
-                  </select>
-                </Field>
-                <div className="cdir-auth">
-                  <div className="cdir-auth-state">
-                    <span className={`cdir-auth-dot ${auth.connected ? "on" : ""}`} />
-                    {auth.connected ? "Signed in" : "Not signed in"}
+
+            <p className="conn-blurb">{info.desc}</p>
+            {info.developer && <p className="conn-dev">Developed by <a className="conn-link" href="#" onClick={(e) => { e.preventDefault(); openExt(info.developer.url); }}>{info.developer.name} <ExternalLink size={11} /></a></p>}
+            <p className="conn-trust">Only use connectors from developers you trust. Madav can't verify that third-party tools will work as intended or that they won't change.</p>
+
+            {status && <div className="cdir-msg" style={{ marginTop: 8, color: status.startsWith("Failed") ? "var(--danger)" : "var(--text-2)" }}>{status}</div>}
+
+            {/* Tools */}
+            {(() => {
+              const tl = (tools && tools.length) ? tools : info.tools;
+              return (tl && tl.length) ? (
+                <div className="conn-sec">
+                  <div className="conn-sec-h">Tools <span className="conn-count">{tl.length}</span><span style={{ flex: 1 }} />
+                    <button className="btn ghost conn-mini" onClick={test}><RefreshCw size={13} /> {tools ? "Re-check" : "Check"}</button>
                   </div>
-                  {auth.connected
-                    ? <button className="btn ghost" onClick={doSignOut}>Sign out</button>
-                    : <button className="btn" disabled={signingIn} onClick={doSignIn}>{signingIn ? <RefreshCw size={14} className="spin" /> : null} Sign in with your browser</button>}
+                  <div className="conn-tools">{tl.map((t) => <span key={t} className="conn-tool">{t}</span>)}</div>
                 </div>
-                <div className="cdir-msg" style={{ marginTop: 2 }}>Cloud connectors open a normal browser sign-in (OAuth). Your password and tokens stay between you and the provider — Madav only keeps an access token, encrypted on this device.</div>
-              </>
-            ) : (
-              <>
-                <Field label="Command"><input className="model-search" value={sel.command || ""} onChange={(e) => patch("command", e.target.value)} placeholder="npx" /></Field>
-                <Field label="Arguments (space-separated)">
-                  <input className="model-search" value={(sel.args || []).join(" ")} onChange={(e) => patch("args", e.target.value.split(/\s+/).filter(Boolean))} placeholder="-y @modelcontextprotocol/server-filesystem C:\\path" />
-                </Field>
-              </>
-            )}
-            <Field label={isRemote ? "Headers / tokens (KEY=VALUE per line)" : "Environment / tokens (KEY=VALUE per line)"}>
-              <textarea className="model-search" rows={3} style={{ fontFamily: "var(--mono)", resize: "vertical" }}
-                value={Object.entries(sel.env || {}).map(([k, v]) => `${k}=${v}`).join("\n")}
-                onChange={(e) => { const env = {}; e.target.value.split("\n").forEach((l) => { const i = l.indexOf("="); if (i > 0) env[l.slice(0, i).trim()] = l.slice(i + 1).trim(); }); patch("env", env); }}
-                placeholder="GITHUB_PERSONAL_ACCESS_TOKEN=ghp_..." />
-            </Field>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-              <button className="btn" onClick={test}><RefreshCw size={14} /> Test connection</button>
-              <span style={{ color: status.startsWith("Failed") ? "var(--danger)" : "var(--text-2)", fontSize: 12 }}>{status}</span>
+              ) : (
+                <div style={{ marginTop: 10 }}><button className="btn" onClick={test}><RefreshCw size={14} /> Test connection</button></div>
+              );
+            })()}
+
+            {/* Details */}
+            <div className="conn-sec">
+              <div className="conn-sec-h">Details</div>
+              <div className="conn-detgrid">
+                {info.developer && <div><div className="conn-k">Author</div><a className="conn-link" href="#" onClick={(e) => { e.preventDefault(); openExt(info.developer.url); }}>{info.developer.name} <ExternalLink size={11} /></a></div>}
+                {sel.url && <div><div className="conn-k">Connector URL</div><span className="conn-url">{sel.url}<button className="conn-copy" title="Copy" onClick={() => { try { navigator.clipboard.writeText(sel.url); } catch {} }}><Copy size={12} /></button></span></div>}
+              </div>
             </div>
-            {tools && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ color: "var(--text-2)", fontSize: 12, marginBottom: 6 }}>Available tools<HelpDot mode="connectors" section="tools" /></div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{tools.map((t) => <span key={t} className="badge" style={{ fontFamily: "var(--mono)" }}>{t}</span>)}</div>
+
+            {/* More info */}
+            {(info.docs || info.support || info.privacy) && (
+              <div className="conn-sec">
+                <div className="conn-sec-h">More info</div>
+                <div className="conn-links">
+                  {info.docs && <a className="conn-link" href="#" onClick={(e) => { e.preventDefault(); openExt(info.docs); }}>Documentation <ExternalLink size={11} /></a>}
+                  {info.support && <a className="conn-link" href="#" onClick={(e) => { e.preventDefault(); openExt(info.support); }}>Support <ExternalLink size={11} /></a>}
+                  {info.privacy && <a className="conn-link" href="#" onClick={(e) => { e.preventDefault(); openExt(info.privacy); }}>Privacy Policy <ExternalLink size={11} /></a>}
+                </div>
               </div>
             )}
+
+            {/* Settings tucked away — Claude hides the plumbing too */}
+            <details className="conn-settings">
+              <summary>Connection settings</summary>
+              <div style={{ marginTop: 12 }}>
+                <label className="chip" style={{ cursor: "pointer", marginBottom: 12, display: "inline-flex" }}>
+                  <input type="checkbox" checked={sel.enabled} onChange={(e) => patch("enabled", e.target.checked)} style={{ marginRight: 6 }} /> enabled
+                </label>
+                <Field label="Display name"><input className="model-search" value={sel.name} onChange={(e) => patch("name", e.target.value)} /></Field>
+                <Field label="Connection type">
+                  <select className="model-search" value={isRemote ? "remote" : "local"} onChange={(e) => setType(e.target.value === "remote")}>
+                    <option value="local">Local — runs an MCP command on this computer</option>
+                    <option value="remote">Remote — connects to a hosted MCP server URL</option>
+                  </select>
+                </Field>
+                {isRemote ? (
+                  <>
+                    <Field label="Server URL"><input className="model-search" value={sel.url || ""} onChange={(e) => patch("url", e.target.value.trim())} placeholder="https://mcp.example.com/" /></Field>
+                    <Field label="Transport">
+                      <select className="model-search" value={sel.transport || "http"} onChange={(e) => patch("transport", e.target.value)}>
+                        <option value="http">Streamable HTTP</option>
+                        <option value="sse">SSE</option>
+                      </select>
+                    </Field>
+                  </>
+                ) : (
+                  <>
+                    <Field label="Command"><input className="model-search" value={sel.command || ""} onChange={(e) => patch("command", e.target.value)} placeholder="npx" /></Field>
+                    <Field label="Arguments (space-separated)">
+                      <input className="model-search" value={(sel.args || []).join(" ")} onChange={(e) => patch("args", e.target.value.split(/\s+/).filter(Boolean))} placeholder="-y @modelcontextprotocol/server-filesystem C:\\path" />
+                    </Field>
+                  </>
+                )}
+                <Field label={isRemote ? "Headers / tokens (KEY=VALUE per line)" : "Environment / tokens (KEY=VALUE per line)"}>
+                  <textarea className="model-search" rows={3} style={{ fontFamily: "var(--mono)", resize: "vertical" }}
+                    value={Object.entries(sel.env || {}).map(([k, v]) => `${k}=${v}`).join("\n")}
+                    onChange={(e) => { const env = {}; e.target.value.split("\n").forEach((l) => { const i = l.indexOf("="); if (i > 0) env[l.slice(0, i).trim()] = l.slice(i + 1).trim(); }); patch("env", env); }}
+                    placeholder="GITHUB_PERSONAL_ACCESS_TOKEN=ghp_..." />
+                </Field>
+              </div>
+            </details>
           </div>
         </div>
         );
