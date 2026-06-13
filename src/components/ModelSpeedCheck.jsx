@@ -332,6 +332,13 @@ export default function ModelSpeedCheck() {
     return chartK.better === "high" ? vb - va : va - vb;
   });
   const tableCols = [kpiByKey.tps, kpiByKey.ttftMs, kpiByKey.totalMs, ...(anyQuality ? [kpiByKey.qPct] : []), ...(anyCost ? [kpiByKey.estCost] : [])];
+  // Fastest by capability: for each skill, the model that scores best on it, then fastest.
+  const byCap = CAPS.filter((c) => c.scoreKey).map((c) => {
+    const cand = ok.filter((r) => r.scores && r.scores[c.scoreKey] != null);
+    if (!cand.length) return null;
+    const model = [...cand].sort((a, b) => (b.scores[c.scoreKey] - a.scores[c.scoreKey]) || (b.tps - a.tps))[0];
+    return { cap: c, model };
+  }).filter(Boolean);
   const bestOf = {};
   for (const k of tableCols) { const vals = ok.map((r) => colVal(k, r)).filter((v) => v != null); bestOf[k.key] = vals.length ? (k.better === "high" ? Math.max(...vals) : Math.min(...vals)) : null; }
   const meterW = (k, v) => {
@@ -611,15 +618,21 @@ export default function ModelSpeedCheck() {
                 <SpxBarChart rows={ok} kpi={chartK} picked={picked} onPickModel={pickModel} />
               </div>
 
-              {/* ---- speed vs quality scatter ---- */}
-              {ok.length > 1 && scX && scY && scX.key !== scY.key && (
+              {/* ---- fastest model per capability ---- */}
+              {anyQuality && byCap.length > 0 && (
                 <>
                   <div className="spx-sechead">
-                    <span className="spx-label">Trade-offs</span>
-                    <span className="spx-dim">{scY.label.toLowerCase()} vs {scX.label.toLowerCase()}{anyCost ? " · dot size = cost / run" : ""} · click a dot to open its row</span>
+                    <span className="spx-label">Fastest by capability</span>
+                    <span className="spx-dim">the quickest model that's also strongest at each skill · click a card to open its row</span>
                   </div>
-                  <div className="spx-scatter spx-card">
-                    <SpxScatter rows={ok} xk={scX} yk={scY} quads={scQuads} picked={picked} onPick={pickModel} />
+                  <div className="spx-capgrid spx-card">
+                    {byCap.map(({ cap, model }) => { const I = cap.icon; return (
+                      <button key={cap.key} type="button" className={`spx-capcard ${picked === model.label ? "spx-picked" : ""}`} onClick={() => pickModel(model.label)}>
+                        <div className="spx-capcard-h"><I size={13} /> {cap.label}</div>
+                        <div className="spx-capcard-model" title={model.name}>{model.name}</div>
+                        <div className="spx-capcard-nums spx-num"><b>{model.tps}</b> tok/s · <span>{model.scores[cap.scoreKey]}%</span></div>
+                      </button>
+                    ); })}
                   </div>
                 </>
               )}

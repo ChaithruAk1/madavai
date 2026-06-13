@@ -1683,8 +1683,10 @@ textarea.model-search { line-height: 1.5; }
 .ags-crew-head { font-size: 13.5px; font-weight: 600; color: var(--text-0); margin-bottom: 12px; }
 .ags-crew-cat { margin-bottom: 14px; }
 .ags-crew-label { font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px; }
-.ags-crew-row { display: flex; flex-wrap: wrap; gap: 9px; }
-.ags-persona { display: inline-flex; align-items: center; gap: 9px; padding: 8px 13px 8px 9px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); cursor: pointer; text-align: left; transition: border-color 0.12s, background 0.12s; }
+.ags-crew-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 8px; }
+.ags-persona { display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; padding: 7px 10px 7px 8px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg-2); cursor: pointer; text-align: left; transition: border-color 0.12s, background 0.12s; }
+.ags-persona > div { min-width: 0; flex: 1; }
+.ags-persona-name, .ags-persona-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ags-persona:hover { border-color: var(--accent-line); background: var(--accent-weak); }
 .ags-persona-name { font-size: 12.5px; font-weight: 600; color: var(--text-0); }
 .ags-persona-role { font-size: 11px; color: var(--text-2); }
@@ -3084,3 +3086,59 @@ textarea.model-search { border-radius: 14px; }
 .artifact-roommenu-row { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 8px 9px; border: none; background: transparent; border-radius: 9px; cursor: pointer; font-size: 13px; color: var(--text-1); }
 .artifact-roommenu-row:hover { background: var(--bg-2); }
 .artifact-roommenu-glyph { font-size: 14px; flex: none; }
+
+/* ===== Recruiter — default teams + org-chart proposal ===== */
+.rcr-defaults{margin-top:12px}
+.rcr-defaults-lbl{display:flex;align-items:center;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-2);margin-bottom:8px}
+.rcr-defaults-row{display:flex;gap:8px;flex-wrap:wrap}
+.rcr-default{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:7px 13px;color:var(--text-1);background:var(--bg-2);cursor:pointer;transition:.12s}
+.rcr-default:hover{border-color:var(--accent-line,var(--accent));color:var(--accent);transform:translateY(-1px)}
+.rcr-default-g{font-size:14px}
+
+.rcr-shape{margin-left:auto;display:flex;gap:6px;flex:none}
+.rcr-seg{font-size:11.5px;border:1px solid var(--line);border-radius:8px;padding:6px 11px;color:var(--text-2);cursor:pointer;background:transparent}
+.rcr-seg.on{border-color:var(--accent);color:var(--accent);background:var(--accent-weak)}
+
+.rcr-org{padding:22px 6px 6px;position:relative}
+.rcr-lead{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--accent-line,var(--accent));background:var(--accent-weak);border-radius:13px;margin:0 auto 4px;width:max-content}
+.rcr-org.manager{display:flex;flex-direction:column;align-items:center}
+.rcr-fan{width:2px;height:18px;background:linear-gradient(var(--accent-line,var(--accent)),transparent);margin:0 auto}
+.rcr-row{display:flex;align-items:stretch;justify-content:center;gap:12px;flex-wrap:wrap}
+.rcr-arrow{display:flex;align-items:center;color:var(--text-3,var(--text-2));font-size:18px}
+.rcr-node{position:relative;display:flex;align-items:center;gap:10px;width:210px;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--bg-2)}
+.rcr-node:hover{border-color:var(--line-2)}
+.rcr-step{position:absolute;top:-10px;left:10px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#06181b;font-size:10.5px;font-weight:800;display:grid;place-items:center}
+.rcr-node-main{min-width:0;flex:1}
+.rcr-node-n{font-weight:680;color:var(--text-0,var(--text-1));font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcr-node-r{color:var(--text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcr-ready{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:12px;color:var(--text-2)}
+.rcr-ready-i b{color:var(--text-1)}
+.rcr-ready-i i{font-style:normal;font-weight:700}
+.rcr-ready-i i.ok{color:var(--ok,#5fb573)}
+.rcr-ready-i i.warn{color:var(--warn,#e0a13c)}
+
+/* Recruiter: team-wide capability + model controls on the proposal */
+.rcr-teamcfg{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.rcr-cfg-title{font-size:12.5px;font-weight:700;color:var(--text-1);margin-bottom:10px}
+.rcr-cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.rcr-cfg-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+@media (max-width:760px){.rcr-cfg-grid{grid-template-columns:1fr}}
+.rcr-cfg-box{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--bg-1)}
+.rcr-cfg-h{font-size:12px;font-weight:650;color:var(--text-0,var(--text-1));margin-bottom:8px;display:flex;align-items:center;gap:5px}
+
+/* ===== User mandate (2026-06-13): no full-line ALL-CAPS labels — natural casing across the platform ===== */
+.ags-bp > label, .ag-field label, .ags-crew-label, .ags-group-name,
+.flr-sec-head, .wr-sechead, .agsd-cast-cat, .agsd-quick-k,
+.rcr-defaults-lbl, .stu2-section-label, .stu2-kicker, .stu2-opt-label,
+.sage-looks-label, .sage-tours-lbl, .model-group, .env-sec, .slash-head,
+.adminp-sec, .agg-kicker, .agg-rail-s, .agg-sim-label, .agg-arrow-lbl,
+.mo-exp-k, .mo-cmpk, .mo-table th, .sc-card-h, .sc-flabel, .cap-sub,
+.ug-sec-kicker {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+/* Recruiter: actions + shape toggle clustered top-right of the proposal header */
+.rcr-card-top{align-items:flex-start}
+.rcr-card-tr{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none}
+.rcr-acts-inline{display:flex;gap:8px}

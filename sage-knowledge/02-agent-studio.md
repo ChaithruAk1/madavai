@@ -1,4 +1,4 @@
-# Sage knowledge · Agent Studio
+# Sageknowledge · Agent Studio
 <!-- generated from source 2026-06-11 — regenerate per SAGE-KNOWLEDGE-PROCESS.md -->
 
 ### Agent Studio · Name your agent (name input)
@@ -14,11 +14,10 @@ What: The little colored glyph tile beside the name (and in the Designer header)
 Why: A visual identity makes each agent instantly recognizable across the Studio, Floor, and chats.
 Behavior: Each click advances both the color and the glyph by one step through fixed palettes (8 colors, 12 glyphs). New agents get an auto-identity hashed from their id, so it's stable until you change it. Cosmetic only — it never affects behavior. Both the top-bar tile and the Designer-header tile do the same thing.
 
-### Agent Studio · Designer
-aliases: build by chat, left pane, designer chat, talk to designer, drafting table
+### Agent Studio · Designeraliases: build by chat, left pane, designer chat, talk to designer, drafting table
 What: The left-hand chat where you describe the agent in plain words and a model writes the blueprint for you.
 Why: You shouldn't have to hand-write system instructions — describe the job and the fields fill themselves.
-Behavior: Each message updates name, purpose, instructions, and capability toggles, keeping anything you didn't ask to change. It only flips on tools the agent genuinely needs. If it can't produce a usable config it still shows the reply plus a quiet "no blueprint change" notice — edit the fields directly or rephrase.
+Behavior: Each message updates name, purpose, instructions, and capability toggles, keeping anything you didn't ask to change. It only flips on tools the agent genuinely needs. If it can't produce a usable config it still shows the reply plus a quiet "no blueprint change" notice — edit the fields directly or rephrase. This shapes the blueprint — it does not test the agent (that's the Bench).
 Example: "make it review code for security issues and report in a table."
 
 ### Agent Studio · Designer meter (4 dots)
@@ -47,10 +46,8 @@ What: The text box at the bottom of the Designer pane where you type instruction
 Why: It's how you talk to the designer to create or refine the agent.
 Behavior: Press Enter or the up-arrow to send. Every message goes to the designer model, which returns a short reply plus the full updated config. The send button disables while drafting or when empty. This shapes the blueprint — it does not test the agent (that's the Bench).
 
-### Agent Studio · Blueprint & capabilities
-aliases: blueprint bar, capabilities panel, raw config, expand blueprint, advanced
+### Agent Studio · Blueprint & capabilitiesaliases: blueprint bar, capabilities panel, raw config, expand blueprint, advanced
 What: The collapsible bar under the Designer that opens the raw editable config — purpose, instructions, capabilities, knowledge, model pin, and more.
-Why: Direct control when you want to edit fields by hand instead of via chat.
 Behavior: The bar shows "X of 4 set" plus a strip of six capability icons (files, terminal, connectors, skills, browser, desktop) — an icon is highlighted when that tool is on. Click the bar to expand or collapse it. Everything the Designer writes also lives here and stays in sync.
 
 ### Agent Studio · Purpose (blueprint field)
@@ -63,13 +60,13 @@ Behavior: One sentence, caps at 200 characters. The Designer fills it automatica
 aliases: system prompt, behavior, how it thinks, rules
 What: The textarea holding the agent's full system instructions — its role, method, output format, and what it must never do.
 Why: This is the heart of the agent: it defines how it behaves on every task.
-Behavior: Required to run (Put to work and the Bench both need it). The Designer writes detailed second-person instructions; edit directly anytime. Distinct from Knowledge: Instructions = how the agent behaves. Knowledge = reference material it should know. Keep secrets out — instructions travel with .agent exports.
+Behavior: Required to run (Put to work and the Bench both need it). The Designer writes detailed second-person instructions; edit anytime. Distinct from Knowledge: Instructions = how the agent behaves. Knowledge = reference material it should know. Keep secrets out — instructions travel with .agent exports.
 
 ### Agent Studio · Capabilities (pills)
 aliases: tools, files, terminal, shell, connectors, skills, browser, desktop, permissions
 What: Six ON/OFF pills granting the agent capabilities: Files, Terminal (shell), Connectors, Skills, Browser, Desktop.
 Why: An agent should hold only the powers its job needs — least privilege.
-Behavior: Each pill is a permission switch; cyan/highlighted = granted. Files reads/writes in a working folder; Terminal runs shell commands (desktop only); Connectors are your enabled MCP apps (mail, GitHub, Slack…); Skills loads installed playbooks; Browser drives Madav's own visible window; Desktop operates native Windows apps. The pill only grants permission — the actual setup (connecting an MCP, installing a skill) lives elsewhere. Browser hides if your admin disabled it.
+Behavior: Each pill is a permission switch; cyan/highlighted when granted. Files reads/writes in a working folder; Terminal runs shell commands (desktop only); Connectors are your enabled MCP apps (mail, GitHub, Slack…); Skills loads installed playbooks; Browser drives Madav's own visible window; Desktop operates native Windows apps. The pill only grants permission — the actual setup (connecting an MCP, installing a skill) lives elsewhere. Browser hides if your admin disabled it.
 
 ### Agent Studio · Allowed sites (browserAllow)
 aliases: site allowlist, domains, browser allow, allowed domains, web allowlist
@@ -78,8 +75,7 @@ Why: Confine a web agent to trusted sites instead of the whole internet.
 Behavior: Empty = any site. Enter domains like "github.com, news.ycombinator.com". Regardless of the list, navigation, clicks, and form-fills ask your permission, and passwords and payment fields are always refused. Pair an allowlist with the "Act freely" autonomy mode if you want unattended browsing.
 
 ### Agent Studio · Allowed apps (desktopAllow)
-aliases: app allowlist, desktop allow, allowed apps, windows apps, process names
-What: An optional comma-separated list of window-title or process names the Desktop capability may touch, shown only when Desktop is on.
+aliases: app allowlist, desktop allow, allowed apps, windows apps, process namesWhat: An optional comma-separated list of window-title or process names the Desktop capability may touch, shown only when Desktop is on.
 Why: Limit native-app control to specific applications.
 Behavior: Empty = any app. Enter names like "notepad, excel, spotify". Focusing, clicks, and typing ask your permission; password/credential fields are always refused. Windows only.
 
@@ -90,14 +86,13 @@ Why: Give the agent facts, examples, or visuals to work from without pasting the
 Behavior: Text files (md, txt, csv, json, code… ≤1MB each) are retrieved per task — only relevant passages are injected, so large libraries are fine. Up to 6 images (png/jpg/webp/gif ≤1.5MB each) show as thumbnails and are shown to vision-capable models at the start of each conversation. Crucial distinction: Instructions = how the agent behaves. Knowledge = reference material it should know. For PDFs/Word, use a Project instead. Don't store secrets — knowledge travels with .agent exports.
 
 ### Agent Studio · Memory
-aliases: learns across missions, remembers, forget, learnings, per-agent memory
-What: The Blueprint section showing what the agent has learned, with a per-agent on/off toggle and view/edit/clear controls.
+aliases: learns across missions, remembers, forget, learnings, per-agent memoryWhat: The Blueprint section showing what the agent has learned, with a per-agent on/off toggle and view/edit/clear controls.
 Why: Correct an agent once in plain words and it stops re-making the mistake.
 Behavior: After each mission the agent extracts durable learnings (your preferences, corrections, stable facts) and applies them next time. "Learn across missions" toggles it off per agent (old notes are kept but unused, nothing new is learned). Edit notes one-per-line and Save, or "Forget everything" to clear. Memory is private — it never travels with .agent exports. Swarms read memory only.
 
 ### Agent Studio · Track record (run history)
 aliases: run history, missions, history, past runs, clean percentage
-What: A Blueprint section listing the agent's recorded missions with status, source, tokens, and a summary.
+What: A Blueprint section listing the agent's recorded missions with status, source, tokens and a summary.
 Why: Know which agents you can trust before handing them bigger jobs, and audit what a triggered agent did overnight.
 Behavior: Every chat run, team mission, scheduled trigger, webhook, and swarm lands here. Shows the latest 10 with a ✓/✗, relative time, source label, approximate tokens, and summary. The agent card carries the headline "X missions · Y% clean". Desktop-only — hides if the bridge can't provide history.
 
@@ -129,7 +124,7 @@ Behavior: Ask first (default) pauses for your permission before each risky actio
 aliases: save agent, save draft, keep changes, persist
 What: The top-bar button that saves the agent's blueprint without opening a session.
 Why: Keep your work and bank a version snapshot before bigger edits.
-Behavior: Saves the draft, snapshots the previous blueprint (Versions, last 10), fills a blank name with the nickname, and flashes "Saved". It does not start a run. Save errors show inline. Use it before experimenting so Versions can roll you back.
+Behavior: Saves the draft, snapshots the previous blueprint (last 10), fills a blank name with the nickname, flashes "Saved". Does not start a run. Save errors show inline. Use it before experimenting so Versions can roll you back.
 
 ### Agent Studio · Put to work
 aliases: launch, run agent, start session, deploy, go live
@@ -138,14 +133,11 @@ Why: Move from designing to actually using the agent on a real task.
 Behavior: Saves first, then launches a full session where the agent's real capabilities are active — files, terminal, connectors, browser all switch on (unlike the Bench). If Files or Terminal are on you'll pick a working folder when the session starts. Disabled until instructions exist or while saving.
 
 ### Agent Studio · Bench
-aliases: test bench, live test, try it, right pane, sandbox
-What: The right-hand chat for testing the agent's instructions live, right now.
+aliases: test bench, live test, try it, right pane, sandboxWhat: The right-hand chat for testing the agent's instructions live, right now.
 Why: Validate behavior and tone before putting the agent to real work.
 Behavior: The Bench runs instructions ONLY — files, terminal, connectors, browser, and skills do NOT run here; they switch on only in a real session (Put to work). It uses the agent's purpose and instructions as the system prompt. Needs instructions to start. Great for checking wording and output format; not for testing tool actions.
-Example: Paste a sample email and confirm it replies in your required format.
 
-### Agent Studio · Suggest 3 test prompts
-aliases: test ideas, suggest tests, draft tests, example prompts, bench ideas
+### Agent Studio · Suggest 3 test promptsaliases: test ideas, suggest tests, draft tests, example prompts, bench ideas
 What: A Bench button that drafts three realistic test prompts tailored to this agent.
 Why: Skip thinking up test cases — get a typical task, an edge case, and a guardrail probe.
 Behavior: One model call returns three short prompts (one typical with inline sample input, one harder/edge case, one probing limits). Click any to run it on the Bench; the refresh control drafts three new ones. Available once instructions exist and the Bench is empty.
@@ -160,4 +152,4 @@ Behavior: Re-run resends your most recent Bench question — tweak the instructi
 aliases: share agent, export, import, .agent file, portable, backup
 What: Buttons to export an agent to a portable .agent file (in the Blueprint) and import one (from the agent list).
 Why: Share an agent with someone or back it up before a big edit.
-Behavior: Export carries instructions, capabilities, and knowledge — but NOT memory or model pins (those stay private). Import brings the agent in with a fresh id and the model pin stripped, so it runs on your own model. Don't put secrets in instructions or knowledge — they travel with the file.
+Behavior: Export carries instructions, capabilities, and knowledge — but NOT memory or model pins (those stay private). Import brings the agent in with a fresh id and the model pin stripped, so it runs on your own model. Don't store secrets in instructions or knowledge — they travel with .agent exports.

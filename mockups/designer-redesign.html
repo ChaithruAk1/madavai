@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Madav · Designer redesign (mockup)</title>
+<style>
+  :root{
+    --bg:#0e1113; --panel:#15191c; --panel2:#1a1f23; --line:#252c31; --line2:#313a40;
+    --t0:#eef4f6; --t1:#cfd9de; --t2:#92a0a7; --t3:#6b787e;
+    --accent:#16c5d8; --accent2:#dd7a59; --ok:#5fb573; --amber:#e0a13c; --violet:#8b7cf6; --rose:#e76f81;
+    --accent-weak:rgba(22,197,216,.12); --accent-line:rgba(22,197,216,.45);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(120% 80% at 80% -10%,rgba(22,197,216,.07),transparent 55%),var(--bg);color:var(--t1);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:22px 22px 60px}
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--violet));display:grid;place-items:center;color:#06181b;font-weight:800}
+  .h1{font-size:22px;font-weight:750;color:var(--t0);letter-spacing:-.01em}
+  .sub{color:var(--t2);font-size:13px}
+  .pill{margin-left:auto;font-size:11px;color:var(--t2);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  .mocktag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-weak);border:1px solid var(--accent-line);border-radius:999px;padding:3px 9px;margin-left:8px}
+
+  /* archetypes */
+  .seclabel{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t2);margin:22px 2px 10px;display:flex;align-items:center;gap:8px}
+  .arch{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .acard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px;cursor:pointer;transition:.15s;text-align:left}
+  .acard:hover{transform:translateY(-2px);border-color:var(--accent-line)}
+  .acard.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-line),0 10px 30px rgba(0,0,0,.3)}
+  .aface{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:20px;margin-bottom:9px}
+  .atitle{font-weight:650;color:var(--t0);font-size:13.5px}
+  .adesc{color:var(--t2);font-size:11.5px;margin-top:2px}
+
+  /* split */
+  .split{display:grid;grid-template-columns:1fr 1.05fr;gap:16px;margin-top:18px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-height:520px}
+  .phead{display:flex;align-items:center;gap:9px;padding:13px 15px;border-bottom:1px solid var(--line)}
+  .phead .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 9px var(--accent)}
+  .phead b{color:var(--t0);font-size:13.5px}
+  .phead .meta{margin-left:auto;color:var(--t3);font-size:11px}
+
+  /* chat */
+  .chat{flex:1;padding:15px;display:flex;flex-direction:column;gap:11px;overflow:auto}
+  .bub{max-width:88%;padding:10px 13px;border-radius:13px;font-size:13px}
+  .bub.them{align-self:flex-start;background:var(--panel2);border:1px solid var(--line)}
+  .bub.you{align-self:flex-end;background:var(--accent-weak);border:1px solid var(--accent-line);color:var(--t0)}
+  .bub small{display:block;color:var(--t3);font-size:10.5px;margin-bottom:3px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .composer{display:flex;gap:8px;align-items:center;padding:12px;border-top:1px solid var(--line)}
+  .composer input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 13px;color:var(--t0);font:inherit;outline:none}
+  .composer input:focus{border-color:var(--accent-line)}
+  .send{width:38px;height:38px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--accent),var(--violet));color:#06181b;font-size:18px;cursor:pointer;display:grid;place-items:center}
+  .demohint{font-size:11px;color:var(--t3);padding:0 12px 12px;text-align:center}
+  .demohint b{color:var(--accent);cursor:pointer}
+
+  /* living card */
+  .card{flex:1;padding:18px;overflow:auto}
+  .hero{display:flex;gap:15px;align-items:center;margin-bottom:6px}
+  .portrait{width:78px;height:78px;border-radius:20px;flex:none;display:grid;place-items:center;font-size:38px;position:relative;background:#11161a;border:1px solid var(--line);transition:.4s}
+  .portrait .ring{position:absolute;inset:-4px;border-radius:24px;border:2px solid var(--accent-line);opacity:0;transition:.4s}
+  .portrait.lit .ring{opacity:1}
+  .hname{font-size:24px;font-weight:760;color:var(--t0);letter-spacing:-.01em;min-height:30px}
+  .hrole{color:var(--t2);font-size:13.5px;margin-top:2px;min-height:18px}
+  .editline{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--t3);margin-top:6px}
+  .editline span{color:var(--accent)}
+
+  .block{margin-top:18px}
+  .blabel{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+  .ask{font-size:11px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0}
+  .howbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-size:13px;color:var(--t1);line-height:1.55;min-height:46px}
+  .howbox em{color:var(--t3);font-style:normal}
+
+  /* vibe chips */
+  .vibes{display:flex;gap:7px;flex-wrap:wrap}
+  .vibe{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--t2);cursor:pointer;background:var(--panel2)}
+  .vibe.on{border-color:var(--accent);color:var(--accent);background:var(--accent-weak)}
+
+  /* capability grid */
+  .caps{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .cap{display:flex;gap:11px;align-items:flex-start;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);cursor:pointer;transition:.15s;position:relative}
+  .cap:hover{border-color:var(--line2)}
+  .cap.on{border-color:var(--accent-line);background:var(--accent-weak)}
+  .cap.on.risk{border-color:rgba(224,161,60,.5);background:rgba(224,161,60,.10)}
+  .capic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:16px;flex:none;background:#0f1417;border:1px solid var(--line)}
+  .cap.on .capic{color:var(--accent)}
+  .cap.on.risk .capic{color:var(--amber)}
+  .capn{font-weight:650;color:var(--t0);font-size:13px;display:flex;align-items:center;gap:6px}
+  .capd{color:var(--t2);font-size:11px;margin-top:1px;line-height:1.4}
+  .risktag{font-size:9px;font-weight:700;color:var(--amber);border:1px solid rgba(224,161,60,.4);border-radius:5px;padding:0 5px}
+  .capcheck{position:absolute;top:9px;right:9px;width:16px;height:16px;border-radius:5px;border:1px solid var(--line2);display:grid;place-items:center;font-size:11px;color:transparent}
+  .cap.on .capcheck{background:var(--accent);border-color:var(--accent);color:#06181b}
+  .cap.on.risk .capcheck{background:var(--amber);border-color:var(--amber)}
+  .justadded{animation:flash 1.1s ease}
+  @keyframes flash{0%{box-shadow:0 0 0 0 var(--accent)}40%{box-shadow:0 0 0 3px var(--accent-line)}100%{box-shadow:0 0 0 0 transparent}}
+
+  /* advanced fold */
+  .adv{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+  .advhead{display:flex;align-items:center;gap:8px;color:var(--t2);font-size:12.5px;cursor:pointer;font-weight:600}
+  .advbody{display:none;margin-top:12px}
+  .advbody.open{display:block}
+  .advrow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .advrow:last-child{border:none}
+  .advrow .k{color:var(--t1);font-size:13px}
+  .advrow .v{color:var(--t2);font-size:12px;display:flex;gap:6px}
+  .seg{font-size:11.5px;border:1px solid var(--line);border-radius:8px;padding:4px 10px;color:var(--t2);cursor:pointer}
+  .seg.on{border-color:var(--accent);color:var(--accent);background:var(--accent-weak)}
+
+  /* footer actions */
+  .cardfoot{display:flex;gap:10px;padding:14px 16px;border-top:1px solid var(--line)}
+  .btn{flex:1;border:none;border-radius:11px;padding:11px;font-weight:650;font-size:13.5px;cursor:pointer}
+  .btn.try{background:var(--panel2);border:1px solid var(--line2);color:var(--t0)}
+  .btn.hire{background:linear-gradient(135deg,var(--accent),var(--violet));color:#06181b}
+  .note{margin-top:26px;color:var(--t3);font-size:12px;border-left:2px solid var(--accent-line);padding-left:12px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">M</div>
+    <div>
+      <div class="h1">Designer <span class="mocktag">redesign mockup</span></div>
+      <div class="sub">Build a teammate by talking — and watch the card come to life.</div>
+    </div>
+    <div class="pill">Concept · not wired</div>
+  </div>
+
+  <!-- ARCHETYPES -->
+  <div class="seclabel">① Start from a strong default — or describe your own</div>
+  <div class="arch" id="arch"></div>
+
+  <!-- SPLIT -->
+  <div class="split">
+    <!-- left: designer chat -->
+    <div class="panel">
+      <div class="phead"><span class="dot"></span><b>Designer</b><span class="meta">shaping the agent by talking</span></div>
+      <div class="chat" id="chat"></div>
+      <div class="composer">
+        <input id="inp" placeholder="e.g. “also let it read our pricing sheet and stay formal”" />
+        <button class="send" onclick="sendMsg()">↑</button>
+      </div>
+      <div class="demohint">Watch the card on the right fill in as the Designer works → <b onclick="replay()">replay the build ▸</b></div>
+    </div>
+
+    <!-- right: living agent card -->
+    <div class="panel">
+      <div class="phead"><span class="dot"></span><b>The teammate, taking shape</b><span class="meta" id="status">listening…</span></div>
+      <div class="card">
+        <div class="hero">
+          <div class="portrait" id="portrait"><span class="ring"></span><span id="glyph">🫥</span></div>
+          <div>
+            <div class="hname" id="hname">—</div>
+            <div class="hrole" id="hrole">describe a job to begin</div>
+            <div class="editline">avatar <span>· tap to upload your own photo</span></div>
+          </div>
+        </div>
+
+        <div class="block">
+          <div class="blabel">How they work <span class="ask">— their method &amp; tone</span></div>
+          <div class="howbox" id="howbox"><em>The Designer writes this for you as you talk.</em></div>
+        </div>
+
+        <div class="block">
+          <div class="blabel">Personality</div>
+          <div class="vibes" id="vibes"></div>
+        </div>
+
+        <div class="block">
+          <div class="blabel">What they're allowed to touch</div>
+          <div class="caps" id="caps"></div>
+        </div>
+
+        <div class="adv">
+          <div class="advhead" onclick="document.getElementById('advbody').classList.toggle('open')">▸ Advanced — autonomy, model, knowledge</div>
+          <div class="advbody" id="advbody">
+            <div class="advrow"><span class="k">Autonomy</span><span class="v"><span class="seg on">Ask first</span><span class="seg">Act freely</span><span class="seg">Skip risky</span></span></div>
+            <div class="advrow"><span class="k">Pinned model</span><span class="v"><span class="seg">Unpinned (live)</span><span class="seg on">Mid-tier ✓ recommended</span></span></div>
+            <div class="advrow"><span class="k">Knowledge</span><span class="v">0 files · drop a style guide or schema it should always know</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cardfoot">
+        <button class="btn try">▷ Try it — interview before you hire</button>
+        <button class="btn hire">Put to work →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b style="color:var(--t1)">What this mockup is showing:</b> the two panes are <b>one conversation</b> — the card on the right assembles itself (name, avatar, capabilities light up with a flash, instructions populate) as the Designer works.
+    Archetype cards seed a strong blueprint so nobody starts from blank. Capabilities are a visual grid with risk tints (Desktop/Terminal in amber). Autonomy / model / knowledge hide under “Advanced” so the first screen isn’t a wall of fields. “Try it” = test-drive before committing.
+  </div>
+</div>
+
+<script>
+const ARCH=[
+  {id:"research",glyph:"🔎",c:"#16c5d8",t:"Researcher",d:"finds & vets facts",name:"Atlas",role:"Research analyst",how:"Gather from credible sources, cross-check claims, and present key findings first with sources cited. Never guess — say when something is unverified.",vibe:["Thorough","Formal"],caps:["files","browser","skills"]},
+  {id:"writer",glyph:"✍️",c:"#dd7a59",t:"Writer",d:"drafts & edits",name:"Quill",role:"Content writer",how:"Draft in a clear, warm voice; lead with the point; cut filler. Match the brand style guide and offer one bolder alternative.",vibe:["Warm","Thorough"],caps:["files","skills"]},
+  {id:"analyst",glyph:"📊",c:"#8b7cf6",t:"Analyst",d:"data → insight",name:"Vera",role:"Data analyst",how:"Load data, profile it first (shape, types, gaps), compute real numbers, then explain plainly — key figure first, method after, caveats last.",vibe:["Precise","Terse"],caps:["files","terminal","skills"]},
+  {id:"coder",glyph:"⌘",c:"#5fb573",t:"Coder",d:"explore→edit→run",name:"Hex",role:"Software engineer",how:"Explore the codebase before editing, make targeted changes, then run tests to prove it works. Explain trade-offs briefly.",vibe:["Precise","Bold"],caps:["files","terminal","skills"]},
+  {id:"ops",glyph:"⚙️",c:"#e0a13c",t:"Ops",d:"runs the workflow",name:"Pilot",role:"Operations agent",how:"Follow the runbook step by step, confirm each risky action, and report what was done with links. Keep a clean audit trail.",vibe:["Cautious","Thorough"],caps:["files","connectors"]},
+  {id:"support",glyph:"💬",c:"#e76f81",t:"Support",d:"helps customers",name:"Echo",role:"Support specialist",how:"Answer with empathy and accuracy, pull the real account facts from connectors, and escalate cleanly when unsure.",vibe:["Warm","Casual"],caps:["connectors","skills"]},
+];
+const CAPS=[
+  {id:"files",ic:"🗂️",n:"Files",d:"Read, write & edit files in the folder."},
+  {id:"terminal",ic:"⌘",n:"Terminal",d:"Run commands & scripts.",risk:true},
+  {id:"connectors",ic:"🔌",n:"Connectors",d:"Your linked apps (Gmail, GitHub…)."},
+  {id:"skills",ic:"⚡",n:"Skills",d:"Use plays from your Playbook."},
+  {id:"browser",ic:"🌐",n:"Browser",d:"Madav's own built-in web window."},
+  {id:"desktop",ic:"🖥️",n:"Desktop",d:"See & control your screen.",risk:true},
+];
+const VIBES=["Formal","Casual","Warm","Terse","Thorough","Precise","Cautious","Bold"];
+let cur=null, capState={};
+
+function renderArch(){
+  document.getElementById('arch').innerHTML=ARCH.map(a=>`
+    <button class="acard ${cur&&cur.id===a.id?'on':''}" onclick="pick('${a.id}')">
+      <div class="aface" style="background:${a.c}22;color:${a.c}">${a.glyph}</div>
+      <div class="atitle">${a.t}</div><div class="adesc">${a.d}</div>
+    </button>`).join('');
+}
+function renderCaps(){
+  document.getElementById('caps').innerHTML=CAPS.map(c=>`
+    <div class="cap ${capState[c.id]?'on':''} ${c.risk?'risk':''}" id="cap-${c.id}" onclick="toggleCap('${c.id}')">
+      <div class="capic">${c.ic}</div>
+      <div><div class="capn">${c.n} ${c.risk?'<span class="risktag">RISK</span>':''}</div><div class="capd">${c.d}</div></div>
+      <div class="capcheck">✓</div>
+    </div>`).join('');
+}
+function renderVibes(act){
+  document.getElementById('vibes').innerHTML=VIBES.map(v=>`<span class="vibe ${act&&act.includes(v)?'on':''}" onclick="this.classList.toggle('on')">${v}</span>`).join('');
+}
+function toggleCap(id){capState[id]=!capState[id];renderCaps();}
+renderArch();renderCaps();renderVibes([]);
+
+const chat=document.getElementById('chat');
+function addBub(role,who,txt){const b=document.createElement('div');b.className='bub '+(role==='you'?'you':'them');b.innerHTML=(who?`<small>${who}</small>`:'')+txt;chat.appendChild(b);chat.scrollTop=chat.scrollHeight;return b;}
+function typeName(name){const el=document.getElementById('hname');el.textContent='';let i=0;const t=setInterval(()=>{el.textContent=name.slice(0,++i);if(i>=name.length)clearInterval(t);},55);}
+
+function pick(id){
+  cur=ARCH.find(a=>a.id===id);renderArch();
+  chat.innerHTML='';
+  addBub('them','Designer',`Great — let's shape a <b>${cur.t.toLowerCase()}</b>. Building a strong starting point now…`);
+  buildCard(cur);
+}
+function buildCard(a){
+  document.getElementById('status').textContent='building…';
+  // portrait
+  const p=document.getElementById('portrait');p.classList.remove('lit');
+  setTimeout(()=>{document.getElementById('glyph').textContent=a.glyph;p.style.background=a.c+'1f';p.classList.add('lit');document.getElementById('portrait').style.color=a.c;},250);
+  // name + role
+  setTimeout(()=>typeName(a.name),450);
+  setTimeout(()=>{document.getElementById('hrole').textContent=a.role;},700);
+  // how
+  setTimeout(()=>{document.getElementById('howbox').innerHTML=a.how;},950);
+  // vibes
+  setTimeout(()=>renderVibes(a.vibe),1150);
+  // capabilities light up one by one with flash
+  capState={};renderCaps();
+  a.caps.forEach((cid,idx)=>{
+    setTimeout(()=>{
+      capState[cid]=true;renderCaps();
+      const el=document.getElementById('cap-'+cid);if(el){el.classList.add('justadded');}
+      addBub('them','Designer',`Enabled <b>${CAPS.find(c=>c.id===cid).n}</b> — it needs that for the job. <span style="color:var(--t3)">(tap to undo)</span>`);
+    },1300+idx*420);
+  });
+  setTimeout(()=>{document.getElementById('status').textContent='ready · refine by talking';},1300+a.caps.length*420+200);
+}
+function sendMsg(){const v=document.getElementById('inp').value.trim();if(!v)return;addBub('you','You',v);document.getElementById('inp').value='';
+  setTimeout(()=>{addBub('them','Designer','Done — folded that into how they work, and the change is highlighted on the card. Anything else?');
+    const h=document.getElementById('howbox');h.classList.add('justadded');setTimeout(()=>h.classList.remove('justadded'),1200);},500);}
+function replay(){if(cur)buildCard(cur);else pick('research');}
+document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
+
+// auto-demo on load
+setTimeout(()=>pick('research'),500);
+</script>
+</body>
+</html>

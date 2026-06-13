@@ -67,7 +67,7 @@ const DEFAULTS = {
   extras: {}, // feature switchboard (Settings → Extras): { sage, voice, imagegen, office, studio, terminal, scheduler, viamobile } — absent = ON, explicit false = OFF. Keep keys in sync with src/extras.js.
   responseLanguage: "model", // "model" = let the model decide; or a language name to force replies
   theme: "dark", // "dark" | "light" | "system"
-  accent: "default", // "default" = original two-tone; or a hex for a monochrome accent
+  accent: "grad:#0ad0f5:#2196f8:#8b50f5", // Madav logo gradient (cyan->azure->violet) is the default accent
   defaultModel: "", // "profileId::model" — applied on every app start
   proxyUrl: "", // optional corporate proxy, e.g. http://proxy.corp:8080 (applied on startup)
   noProxy: "", // optional comma-separated hosts to bypass the proxy (defaults to localhost)

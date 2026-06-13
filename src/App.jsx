@@ -280,7 +280,9 @@ export default function App() {
   // measured colors: cyan #0ad0f5 → azure #2196f8 → violet #8b50f5.
   useEffect(() => {
     const root = document.documentElement;
-    const raw = ((settings && settings.accent) || "default").trim();
+    const MADAV_ACCENT = "grad:#0ad0f5:#2196f8:#8b50f5";
+    let raw = ((settings && settings.accent) || MADAV_ACCENT).trim();
+    if (raw === "default") raw = MADAV_ACCENT; // previous default retired — Madav is the default now
     const clearVars = () => { ["--accent", "--accent-rgb", "--accent-2", "--accent2-rgb", "--accent-ink", "--accent-grad"].forEach((v) => root.style.removeProperty(v)); };
     const hexRgb = (hex) => { const n = parseInt(hex, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
     const apply = (solidHex, secondHex, gradStops) => {

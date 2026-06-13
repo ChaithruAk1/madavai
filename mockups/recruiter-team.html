@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Madav · Recruiter redesign (mockup)</title>
+<style>
+  :root{
+    --bg:#0e1113; --panel:#15191c; --panel2:#1a1f23; --line:#252c31; --line2:#313a40;
+    --t0:#eef4f6; --t1:#cfd9de; --t2:#92a0a7; --t3:#6b787e;
+    --accent:#16c5d8; --accent2:#dd7a59; --ok:#5fb573; --amber:#e0a13c; --violet:#8b7cf6; --rose:#e76f81;
+    --accent-weak:rgba(22,197,216,.12); --accent-line:rgba(22,197,216,.45);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(120% 80% at 20% -10%,rgba(139,124,246,.08),transparent 55%),var(--bg);color:var(--t1);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 22px 60px}
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--violet),var(--accent));display:grid;place-items:center;color:#06181b;font-weight:800}
+  .h1{font-size:22px;font-weight:750;color:var(--t0);letter-spacing:-.01em}
+  .sub{color:var(--t2);font-size:13px}
+  .pill{margin-left:auto;font-size:11px;color:var(--t2);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  .mocktag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--violet);background:rgba(139,124,246,.12);border:1px solid rgba(139,124,246,.4);border-radius:999px;padding:3px 9px;margin-left:8px}
+
+  .ask{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .askq{font-size:18px;font-weight:700;color:var(--t0);margin-bottom:12px}
+  .askbar{display:flex;gap:10px}
+  .askbar input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;color:var(--t0);font:inherit;font-size:15px;outline:none}
+  .askbar input:focus{border-color:var(--accent-line)}
+  .go{border:none;border-radius:12px;padding:0 22px;font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(135deg,var(--violet),var(--accent));color:#06181b}
+  .egs{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+  .eg{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:6px 13px;color:var(--t2);cursor:pointer;background:var(--panel2)}
+  .eg:hover{border-color:var(--accent-line);color:var(--t1)}
+  .eg.on{border-color:var(--violet);color:var(--violet);background:rgba(139,124,246,.12)}
+
+  /* proposal */
+  .prop{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .prophead{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .tglyph{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:22px;flex:none}
+  .tname{font-size:18px;font-weight:740;color:var(--t0)}
+  .tdesc{color:var(--t2);font-size:12.5px;margin-top:1px}
+  .shape{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .seg{font-size:11.5px;border:1px solid var(--line);border-radius:8px;padding:6px 11px;color:var(--t2);cursor:pointer;display:flex;gap:6px;align-items:center}
+  .seg.on{border-color:var(--violet);color:var(--violet);background:rgba(139,124,246,.12)}
+
+  /* org chart */
+  .org{padding:26px 18px 10px;position:relative}
+  .mgr{display:flex;justify-content:center;margin-bottom:10px}
+  .members{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;position:relative}
+  .node{width:182px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:13px;transition:.15s}
+  .node:hover{border-color:var(--line2);transform:translateY(-2px)}
+  .node.mgrnode{border-color:rgba(139,124,246,.45);background:rgba(139,124,246,.08)}
+  .nhead{display:flex;gap:10px;align-items:center}
+  .face{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex:none}
+  .nn{font-weight:680;color:var(--t0);font-size:13.5px}
+  .nr{color:var(--t2);font-size:11px}
+  .ncaps{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+  .ncap{font-size:9.5px;color:var(--t2);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+  .nstep{position:absolute;top:-11px;left:11px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#06181b;font-size:11px;font-weight:800;display:grid;place-items:center}
+  .relayline{display:flex;align-items:center;justify-content:center;gap:0;color:var(--t3);font-size:18px}
+  /* connectors */
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+
+  .readi{margin:6px 18px 0;display:flex;gap:18px;flex-wrap:wrap;padding:12px 0;border-top:1px dashed var(--line);color:var(--t2);font-size:12px}
+  .readi b{color:var(--t1)}
+  .ok{color:var(--ok)} .warn{color:var(--amber)}
+
+  .propfoot{display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--line)}
+  .btn{border-radius:11px;padding:11px 16px;font-weight:650;font-size:13.5px;cursor:pointer;border:none}
+  .btn.ghost{background:var(--panel2);border:1px solid var(--line2);color:var(--t0)}
+  .btn.hire{flex:1;background:linear-gradient(135deg,var(--violet),var(--accent));color:#06181b}
+
+  .note{margin-top:26px;color:var(--t3);font-size:12px;border-left:2px solid rgba(139,124,246,.45);padding-left:12px;line-height:1.6}
+  .note b{color:var(--t1)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">M</div>
+    <div>
+      <div class="h1">Recruiter <span class="mocktag">redesign mockup</span></div>
+      <div class="sub">Describe an outcome — get a ready-made team, shown as an org chart.</div>
+    </div>
+    <div class="pill">Concept · not wired</div>
+  </div>
+
+  <div class="ask">
+    <div class="askq">What do you want to get done?</div>
+    <div class="askbar">
+      <input id="goal" value="Find leads and send warm outreach for my launch" />
+      <button class="go" onclick="propose()">Build the team →</button>
+    </div>
+    <div class="egs" id="egs"></div>
+  </div>
+
+  <div class="prop" id="prop"></div>
+
+  <div class="note">
+    <b>What this mockup is showing:</b> the Recruiter is <b>outcome-first</b> — you describe a job, it proposes a <b>named team rendered as an org chart</b> (not a list), with the work-shape shown visually: <b>Relay</b> (a chain, ① → ② → ③) or <b>Managed</b> (a coordinator fanning out to members in parallel). Each role is a real blueprint with capabilities. A <b>readiness line</b> flags what the team needs on your setup before you hire. “Hire this team” drops it straight onto the floor. The example chips load different pre-built default teams you’d ship.
+  </div>
+</div>
+
+<script>
+const TEAMS={
+  leads:{glyph:"📣",c:"#dd7a59",name:"Launch Outreach",desc:"Find leads, qualify them, and draft warm outreach — end to end.",shape:"relay",
+    readiness:[["Gmail connector","warn","needed for sending — not linked"],["Model","ok","mid-tier is enough"],["Folder","ok","optional"]],
+    members:[
+      {g:"🔎",c:"#16c5d8",n:"Atlas",r:"Lead finder",caps:["Browser","Files"]},
+      {g:"✅",c:"#8b7cf6",n:"Sift",r:"Qualifier",caps:["Skills"]},
+      {g:"✍️",c:"#dd7a59",n:"Quill",r:"Outreach writer",caps:["Connectors","Skills"]},
+    ]},
+  content:{glyph:"📝",c:"#16c5d8",name:"Content Studio",desc:"Research a topic, draft it, and edit to a clean final — a writing line.",shape:"relay",
+    readiness:[["Model","ok","any tier works"],["Brand-voice play","warn","pin one for best results"],["Folder","ok","optional"]],
+    members:[
+      {g:"🔎",c:"#16c5d8",n:"Atlas",r:"Researcher",caps:["Browser","Files"]},
+      {g:"✍️",c:"#dd7a59",n:"Quill",r:"Drafter",caps:["Skills"]},
+      {g:"🔧",c:"#5fb573",n:"Ledger",r:"Editor",caps:["Skills"]},
+    ]},
+  research:{glyph:"📊",c:"#8b7cf6",name:"Market Recon",desc:"Scan competitors in parallel and synthesize one briefing.",shape:"managed",
+    readiness:[["Browser","ok","built-in"],["Model","warn","a stronger model improves synthesis"],["Connectors","ok","optional"]],
+    members:[
+      {g:"🛰️",c:"#16c5d8",n:"Scout-A",r:"Competitor scan",caps:["Browser"]},
+      {g:"🛰️",c:"#5fb573",n:"Scout-B",r:"Pricing scan",caps:["Browser"]},
+      {g:"🧠",c:"#e0a13c",n:"Synth",r:"Analyst",caps:["Files","Skills"]},
+    ]},
+  inbox:{glyph:"📥",c:"#5fb573",name:"Inbox Triage",desc:"Sort incoming mail, label it, and draft replies for your review.",shape:"managed",
+    readiness:[["Gmail connector","warn","required — not linked"],["Model","ok","fast tier is fine"],["Autonomy","ok","ask-first recommended"]],
+    members:[
+      {g:"🗂️",c:"#16c5d8",n:"Sorter",r:"Classifier",caps:["Connectors"]},
+      {g:"✍️",c:"#dd7a59",n:"Quill",r:"Reply drafter",caps:["Connectors","Skills"]},
+    ]},
+};
+const EG=[["leads","Find leads & do outreach"],["content","Write a blog post"],["research","Research my competitors"],["inbox","Triage my inbox"]];
+let curKey="leads", curShape=null;
+
+document.getElementById('egs').innerHTML=EG.map(([k,t])=>`<span class="eg ${k==='leads'?'on':''}" data-k="${k}" onclick="loadEg('${k}','${t}')">${t}</span>`).join('');
+function loadEg(k,t){curKey=k;curShape=null;document.getElementById('goal').value=t;document.querySelectorAll('.eg').forEach(e=>e.classList.toggle('on',e.dataset.k===k));render();}
+function propose(){render();}
+
+function faceHTML(m){return `<div class="face" style="background:${m.c}22;color:${m.c}">${m.g}</div>`;}
+function node(m,step){return `<div class="node"><div class="nstep">${step}</div><div class="nhead">${faceHTML(m)}<div><div class="nn">${m.n}</div><div class="nr">${m.r}</div></div></div>
+  <div class="ncaps">${m.caps.map(c=>`<span class="ncap">${c}</span>`).join('')}</div></div>`;}
+
+function render(){
+  const T=TEAMS[curKey];const shape=curShape||T.shape;
+  let org='';
+  if(shape==='managed'){
+    org=`<div class="mgr"><div class="node mgrnode" style="width:210px"><div class="nhead"><div class="face" style="background:${T.c}22;color:${T.c}">${T.glyph}</div><div><div class="nn">${T.name} · Lead</div><div class="nr">coordinates &amp; synthesizes</div></div></div></div></div>
+      <div class="members" id="mem">
+        <svg class="wires" id="wires"></svg>
+        ${T.members.map((m,i)=>node(m,i+1)).join('')}
+      </div>`;
+  }else{
+    org=`<div class="members" style="align-items:center">
+      ${T.members.map((m,i)=>`${i?'<div class="relayline">→</div>':''}${node(m,i+1)}`).join('')}
+    </div>`;
+  }
+  document.getElementById('prop').innerHTML=`
+    <div class="prophead">
+      <div class="tglyph" style="background:${T.c}22;color:${T.c}">${T.glyph}</div>
+      <div><div class="tname">${T.name}</div><div class="tdesc">${T.desc}</div></div>
+      <div class="shape">
+        <span class="seg ${shape==='relay'?'on':''}" onclick="setShape('relay')">⛓ Relay <span style="color:var(--t3)">(a chain)</span></span>
+        <span class="seg ${shape==='managed'?'on':''}" onclick="setShape('managed')">🛰 Managed <span style="color:var(--t3)">(parallel)</span></span>
+      </div>
+    </div>
+    <div class="org">${org}</div>
+    <div class="readi">${T.readiness.map(([k,s,v])=>`<span><b>${k}:</b> <span class="${s}">${s==='ok'?'✓':'!'}</span> ${v}</span>`).join('')}</div>
+    <div class="propfoot">
+      <button class="btn ghost">↻ Propose another</button>
+      <button class="btn ghost">✎ Tweak roles</button>
+      <button class="btn hire">Hire this team — put on the floor →</button>
+    </div>`;
+  if(shape==='managed')drawWires(T.members.length);
+}
+function setShape(s){curShape=s;render();}
+function drawWires(n){
+  const mem=document.getElementById('mem');const svg=document.getElementById('wires');if(!mem||!svg)return;
+  const r=mem.getBoundingClientRect();const nodes=mem.querySelectorAll('.node');
+  let paths='';const topX=r.width/2,topY=-12;
+  nodes.forEach(nd=>{const b=nd.getBoundingClientRect();const x=b.left-r.left+b.width/2;const y=b.top-r.top;
+    paths+=`<path d="M ${topX} ${topY} C ${topX} ${(topY+y)/2}, ${x} ${(topY+y)/2}, ${x} ${y}" stroke="rgba(139,124,246,.5)" stroke-width="1.5" fill="none"/>`;});
+  svg.innerHTML=paths;
+}
+window.addEventListener('resize',()=>{const T=TEAMS[curKey];if((curShape||T.shape)==='managed')drawWires(T.members.length);});
+render();
+</script>
+</body>
+</html>

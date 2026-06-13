@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, Fragment } from "react";
-import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench, Scale, Gauge, Gift, Cpu, Layers, ChevronRight } from "lucide-react";
+import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench, Scale, Gauge, Gift, Cpu, Layers, ChevronRight, Code2, Cloud, HardDrive } from "lucide-react";
 import { MODELS, CATEGORIES, freeInfo } from "../data/modelCatalog.js";
 import { classifyProvider, isModelFree } from "../data/providerRules.js";
 import { benchFor, AGENTIC_RANK, agenticTone, thinkingTone } from "../data/benchmarks.js";
@@ -183,6 +183,13 @@ function capsFor(m) {
   if (m.ctx >= 200) c.push("Long context");
   return c;
 }
+// Capability chips shown in the table's "Capabilities" column.
+const CAP_CHIPS = [
+  { key: "coding", test: capCoding, label: "Coding", icon: Code2, tone: "#3ecf8e" },
+  { key: "agentic", test: capAgentic, label: "Agentic", icon: Wrench, tone: "#f0883e" },
+  { key: "reasoning", test: (m) => !!m.thinking, label: "Reasoning", icon: Brain, tone: "#b692f6" },
+  { key: "image", test: (m) => !!m.vision, label: "Image", icon: ImageIcon, tone: "#5aa0ff" },
+]
 function tagsFor(m) {
   const t = [m.cat];
   if (m.agentic) t.push("Agentic");
@@ -380,13 +387,16 @@ export default function ModelsOverview({ activeModel }) {
     total: allModels.length,
     free: allModels.filter((m) => isFree(m)).length,
     agentic: allModels.filter((m) => capAgentic(m)).length,
-    open: allModels.filter((m) => dl(m).open).length,
-    tested: allModels.filter((m) => speedVal(m) != null).length,
+    coding: allModels.filter((m) => capCoding(m)).length,
+    reasoning: allModels.filter((m) => !!m.thinking).length,
+    image: allModels.filter((m) => !!m.vision).length,
+    cloud: allModels.filter((m) => hostLabel(m) !== "Local").length,
+    local: allModels.filter((m) => hostLabel(m) !== "Cloud").length,
   }), [allModels, speedMap]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const COLS = [
     { key: "name", label: "Model", sort: (m) => m.name },
-    { key: "bestFor", label: "Best for", sort: (m) => m.bestFor },
+    { key: "bestFor", label: "Capabilities", sort: (m) => m.bestFor },
     { key: "ctx", label: "Context", hint: "Maximum context window", sort: (m) => m.ctx },
     { key: "cost", label: "Cost · $/1M", hint: "Price per 1M tokens (input / output).", sort: (m) => (m.priceIn != null ? m.priceIn : (isFree(m) ? -1 : 9e9)) },
     { key: "swe", label: "SWE-bench", hint: "SWE-bench Verified — approximate, curated for well-known models.", sort: (m) => pctNum(sweFor(m)) },
@@ -441,10 +451,13 @@ export default function ModelsOverview({ activeModel }) {
           { k: "total", n: stats.total, label: "Models loaded", icon: Layers, act: resetFilters, on: noFilters },
           { k: "free", n: stats.free, label: "Free to use", icon: Gift, act: () => toggle("free"), on: active.has("free") },
           { k: "agentic", n: stats.agentic, label: "Agent-ready", icon: Bot, act: () => toggle("agentic"), on: active.has("agentic") },
-          { k: "open", n: stats.open, label: "Open-weight", icon: Download, act: () => toggle("open"), on: active.has("open") },
-          { k: "tested", n: stats.tested, label: "Speed-tested by you", icon: Gauge, act: () => { setSortKey("speed"); setDir("desc"); }, on: sortKey === "speed" },
+          { k: "coding", n: stats.coding, label: "Coding", icon: Code2, act: () => toggle("coding"), on: active.has("coding") },
+          { k: "reasoning", n: stats.reasoning, label: "Reasoning", icon: Brain, act: () => toggle("reasoning"), on: active.has("reasoning") },
+          { k: "image", n: stats.image, label: "Image", icon: ImageIcon, act: () => toggle("image"), on: active.has("image") },
+          { k: "cloud", n: stats.cloud, label: "Cloud", icon: Cloud, act: () => toggle("cloud"), on: active.has("cloud") },
+          { k: "local", n: stats.local, label: "Local", icon: HardDrive, act: () => toggle("local"), on: active.has("local") },
         ].map((t) => { const I = t.icon; return (
-          <button key={t.k} className={`mo-tile ${t.on ? "on" : ""}`} onClick={t.act} title={t.k === "tested" ? "Sort by your measured speed" : "Click to filter"}>
+          <button key={t.k} className={`mo-tile ${t.on ? "on" : ""}`} onClick={t.act} title="Click to filter">
             <span className="mo-tile-ico"><I size={15} /></span>
             <span className="mo-tile-n">{t.n}</span>
             <span className="mo-tile-k">{t.label}</span>
@@ -487,7 +500,7 @@ export default function ModelsOverview({ activeModel }) {
                   <input type="checkbox" className="mo-cmpck" title="Compare" checked={cmp.has(m.name)} disabled={!cmp.has(m.name) && cmp.size >= 4} onChange={() => toggleCmp(m.name)} />
                 </td>
                 <td><div className="mo-name"><ChevronRight size={12} className={`mo-caret ${expanded === m.name ? "open" : ""}`} />{m.name}{isActive(m) && <span className="mo-activebadge">active</span>}</div><div className="mo-sub"><MakerLogo maker={m.maker} /> {m.maker}{m.year ? " · " + m.year : ""}</div></td>
-                <td><div className="mo-best">{m.bestForFull || m.bestFor}</div></td>
+                <td><div className="mo-caps">{CAP_CHIPS.filter((c) => c.test(m)).map((c) => { const I = c.icon; return <span key={c.key} className="mo-cap" style={{ color: c.tone, borderColor: "color-mix(in srgb, " + c.tone + " 40%, transparent)" }}><I size={12} /> {c.label}</span>; })}{!CAP_CHIPS.some((c) => c.test(m)) && <span className="mo-cap-none">General</span>}</div></td>
                 <td className="mo-num" title={m.ctx ? fmtCtx(m.ctx) + " tokens" : ""}>{fmtCtx(m.ctx)}<Meter pct={ctxPct(m.ctx)} tone="#5aa0ff" /></td>
                 <td>{(() => { const p = priceLabel(m); return <span className={`mo-cost tier-${costTier(m)}`} title={p.free ? "Free to use" : "Per 1M tokens — input / output"}>{p.text}</span>; })()}</td>
                 <td className="mo-num">{sweFor(m)}<Meter pct={pctNum(sweFor(m))} tone="#3ecf8e" /></td>

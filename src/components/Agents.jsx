@@ -30,6 +30,45 @@ const ID_GLYPHS = ["🜁", "✦", "◆", "⌘", "♟", "✺", "☄", "❖", "⚙
 const hashStr = (s) => { let h = 0; for (let i = 0; i < (s || "").length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
 const autoIdentity = (seed) => ({ color: ID_COLORS[hashStr(seed) % ID_COLORS.length], glyph: ID_GLYPHS[hashStr(seed + "g") % ID_GLYPHS.length] });
 
+// Quick-start archetypes — strong, pre-filled blueprints so nobody begins from a blank form.
+// Shaped like a persona so hirePersona() can apply them directly.
+const ARCHETYPES = [
+  { glyph: "\uD83D\uDD0E", color: "#13c2d6", title: "Researcher", persona: "Researcher", role: "Research analyst", tagline: "finds & vets facts", desc: "Finds and vets facts, cites sources.", tools: { files: true, browser: true, skills: true }, instructions: "You are a meticulous research analyst. Gather from credible sources, cross-check claims, and present the key findings first with sources cited. Never guess — say clearly when something is unverified." },
+  { glyph: "\u270D\uFE0F", color: "#dd7a59", title: "Writer", persona: "Writer", role: "Content writer", tagline: "drafts & edits", desc: "Drafts and edits in a clear, warm voice.", tools: { files: true, skills: true }, instructions: "You are a sharp content writer. Draft in a clear, warm voice; lead with the point and cut filler. Match the brand style guide when given, and offer one bolder alternative." },
+  { glyph: "\uD83D\uDCCA", color: "#8b7cf6", title: "Analyst", persona: "Analyst", role: "Data analyst", tagline: "data \u2192 insight", desc: "Turns data into computed insight.", tools: { files: true, shell: true, skills: true }, instructions: "You are a careful data analyst. Load data and profile it first (shape, types, gaps), compute real numbers (never estimate), then explain plainly: key figure first, method second, caveats last. Prefer scripts so results are reproducible." },
+  { glyph: "\u2318", color: "#5fb573", title: "Coder", persona: "Coder", role: "Software engineer", tagline: "explore \u2192 edit \u2192 run", desc: "Explores, edits, and runs to verify.", tools: { files: true, shell: true, skills: true }, instructions: "You are a senior software engineer. Explore the codebase before editing, make targeted changes, then run the build/tests to prove it works. Explain trade-offs briefly and keep diffs small." },
+  { glyph: "\u2699\uFE0F", color: "#e0a13c", title: "Ops", persona: "Operator", role: "Operations agent", tagline: "runs the workflow", desc: "Follows the runbook, clean audit trail.", tools: { files: true, connectors: true }, instructions: "You are a dependable operations agent. Follow the runbook step by step, confirm each risky action, and report what was done with links. Keep a clean, auditable trail." },
+  { glyph: "\uD83D\uDCAC", color: "#e76f81", title: "Support", persona: "Support", role: "Support specialist", tagline: "helps customers", desc: "Answers with empathy and real facts.", tools: { connectors: true, skills: true }, instructions: "You are a warm, accurate support specialist. Answer with empathy, pull the real account facts from connectors before replying, and escalate cleanly when unsure." },
+];
+
+// Ready-made teams the Recruiter can propose instantly (no model call) — the "great defaults".
+// Members use kind:"new" so hireProposal() creates them with full blueprints.
+const DEFAULT_TEAMS = [
+  { id: "leads", glyph: "\uD83D\uDCE3", label: "Find leads & do outreach", reply: "A relay line that finds prospects, qualifies them, and drafts warm outreach — end to end.",
+    team: { name: "Launch Outreach", mode: "relay", members: [
+      { kind: "new", name: "Atlas", description: "Lead finder", tools: { browser: true, files: true }, instructions: "You find and compile prospect lists from public sources. Capture name, company, role and a one-line reason they fit. Never invent contacts; mark anything unverified." },
+      { kind: "new", name: "Sift", description: "Qualifier", tools: { skills: true }, instructions: "You score each lead against the ideal-customer profile, keep the strong ones, and explain the cut in one line each." },
+      { kind: "new", name: "Quill", description: "Outreach writer", tools: { connectors: true, skills: true }, instructions: "You draft short, warm, personalized outreach for each qualified lead. Lead with their context, one clear ask, no hype. Prepare drafts for human review before anything sends." },
+    ] } },
+  { id: "content", glyph: "\uD83D\uDCDD", label: "Write a blog post", reply: "A writing line: research the topic, draft it, then edit to a clean final.",
+    team: { name: "Content Studio", mode: "relay", members: [
+      { kind: "new", name: "Atlas", description: "Researcher", tools: { browser: true, files: true }, instructions: "You gather the facts, angles and sources for the piece and hand the writer an outline with citations." },
+      { kind: "new", name: "Quill", description: "Drafter", tools: { skills: true }, instructions: "You draft the piece from the outline in a clear, warm voice; lead with the point, cut filler, match the brand style guide if pinned." },
+      { kind: "new", name: "Ledger", description: "Editor", tools: { skills: true }, instructions: "You edit for clarity, accuracy and flow, tighten the prose, and flag anything unsupported before final." },
+    ] } },
+  { id: "research", glyph: "\uD83D\uDCCA", label: "Research my competitors", reply: "A managed crew that scans competitors in parallel and synthesizes one briefing.",
+    team: { name: "Market Recon", mode: "manager", members: [
+      { kind: "new", name: "Scout-A", description: "Competitor scan", tools: { browser: true }, instructions: "You research assigned competitors' positioning, features and messaging from public sources and report structured notes with links." },
+      { kind: "new", name: "Scout-B", description: "Pricing scan", tools: { browser: true }, instructions: "You research assigned competitors' pricing and packaging from public sources and report a structured comparison with links." },
+      { kind: "new", name: "Synth", description: "Analyst", tools: { files: true, skills: true }, instructions: "You merge the scouts' notes into one clear briefing: where we win, where we lose, and two recommended moves." },
+    ] } },
+  { id: "inbox", glyph: "\uD83D\uDCE5", label: "Triage my inbox", reply: "A managed crew that sorts incoming mail, labels it, and drafts replies for your review.",
+    team: { name: "Inbox Triage", mode: "manager", members: [
+      { kind: "new", name: "Sorter", description: "Classifier", tools: { connectors: true }, instructions: "You classify incoming mail by topic and urgency and apply labels. You never delete or send anything." },
+      { kind: "new", name: "Quill", description: "Reply drafter", tools: { connectors: true, skills: true }, instructions: "You draft concise, on-tone replies for messages that need them and leave them for human approval — never auto-send." },
+    ] } },
+];
+
 // Personas — a hireable crew spanning common industry practices, grouped by category.
 // Each is a ready-made agent config (instructions + capability toggles); hire one and
 // tweak it in the Designer. tools: files · shell · connectors · skills · browser.
@@ -304,9 +343,32 @@ const agentName = (a) => (a && a.name && a.name.trim()) || nick(a && a.id);
 function Face({ identity, size = 34, fontSize }) {
   const c = (identity && identity.color) || ID_COLORS[0];
   const g = (identity && identity.glyph) || "✦";
+  if (identity && identity.photo) {
+    return <span className="ags-face ags-face-photo" style={{ width: size, height: size, borderColor: `${c}66` }}><img src={identity.photo} alt="" /></span>;
+  }
   return (
     <span className="ags-face" style={{ width: size, height: size, fontSize: fontSize || Math.round(size * 0.46), background: `${c}22`, border: `1px solid ${c}66`, color: c }}>{g}</span>
   );
+}
+
+// Read a user-picked image file into a small data-URL for an agent/team avatar.
+// Caps size to keep settings.json reasonable; downscales via a canvas to 256px.
+function readAvatar(file, cb) {
+  if (!file || !/^image\//.test(file.type || "")) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 256, scale = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      try { cb(cv.toDataURL("image/jpeg", 0.85)); } catch { cb(String(reader.result || "")); }
+    };
+    img.onerror = () => cb(String(reader.result || ""));
+    img.src = String(reader.result || "");
+  };
+  reader.readAsDataURL(file);
 }
 
 const GUIDE_SEEN_KEY = "be.agentsGuideSeen";
@@ -545,7 +607,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [tdraft, setTdraft] = useState(null);       // team being edited: { id, name, identity, mode, members: [agentId] }
   const [tErr, setTErr] = useState("");
   const [draft, setDraft] = useState(blankAgent());
-  const [blueprintOpen, setBlueprintOpen] = useState(false);
+  const [blueprintOpen, setBlueprintOpen] = useState(true);
+  const [castAllOpen, setCastAllOpen] = useState(false);
+  const [benchOpen, setBenchOpen] = useState(false);
   const [q, setQ] = useState("");
   // Tiles vs list presentation of the roster (persisted per user; list is the default —
   // v2 key deliberately re-defaults everyone to list once).
@@ -620,8 +684,15 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           tools: { files: !!(m.tools && m.tools.files), shell: !!(m.tools && m.tools.shell), connectors: !!(m.tools && m.tools.connectors), skills: !!(m.tools && m.tools.skills), browser: !!(m.tools && m.tools.browser), desktop: !!(m.tools && m.tools.desktop) } };
       }
       if (!cfg || !cfg.instructions) continue;
+      // Team-wide defaults from the proposal — apply to every member we create here.
+      if (p.team.applyTools) cfg.tools = { ...p.team.applyTools };
+      if (p.team.applyAutonomy) cfg.autonomy = p.team.applyAutonomy;
+      if (p.team.applyPins && p.team.applyPins.length) cfg.pinnedSkills = [...p.team.applyPins];
+      if (p.team.applyKnowledge && p.team.applyKnowledge.length) cfg.knowledge = [...p.team.applyKnowledge];
       const id = "agent_" + Math.random().toString(36).slice(2, 9);
-      nextAgents.push({ id, ...cfg, identity: autoIdentity(cfg.name || id), createdAt: Date.now() });
+      const made = { id, ...cfg, identity: autoIdentity(cfg.name || id), createdAt: Date.now() };
+      if (p.team.applyModel) made.model = p.team.applyModel;
+      nextAgents.push(made);
       ids.push(id);
     }
     if (ids.length < 1) { setRcErr("No usable members in the proposal — refine it and try again."); return; }
@@ -632,12 +703,43 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     await bridge.saveSettings({ ...cur, agents: nextAgents, teams: [...(cur.teams || []), team] });
     setAgents(nextAgents); setTeams((t) => [...t, team]); setRcProposal(null); setTab("teams");
   };
+  // Add a knowledge file to the whole proposed team (applied to every member at hire).
+  const addTeamKnowledge = (files) => {
+    for (const f of Array.from(files || []).slice(0, 24)) {
+      const img = isImageFile(f);
+      if (img && f.size > 1.5 * 1024 * 1024) { setRcErr(`"${f.name}" is over 1.5MB — resize it first.`); continue; }
+      if (!img && f.size > 1024 * 1024) { setRcErr(`"${f.name}" is over 1MB — trim it first.`); continue; }
+      const reader = new FileReader();
+      reader.onload = () => setRcProposal((p) => {
+        if (!p) return p;
+        const item = img ? { name: f.name, type: "image", dataUrl: String(reader.result || "") } : { name: f.name, content: String(reader.result || "").slice(0, 200000) };
+        return { ...p, team: { ...p.team, applyKnowledge: [...(p.team.applyKnowledge || []), item].slice(0, 24) } };
+      });
+      if (img) reader.readAsDataURL(f); else reader.readAsText(f);
+    }
+  };
   // Resolve a proposal member to something displayable (name + whether it's new).
   const rcMemberView = (m) => {
     if (m.kind === "existing") { const a = agents.find((x) => x.id === m.id); return a ? { name: a.name, sub: a.description, tag: "roster", seed: a.id, color: (a.identity || autoIdentity(a.id)).color } : null; }
     if (m.kind === "persona") { const p = PERSONAS.find((x) => x.persona === m.persona); return p ? { name: p.persona, sub: p.role, tag: "crew", seed: p.persona, color: autoIdentity(p.persona).color } : null; }
     if (m.kind === "new") return { name: m.name || "Specialist", sub: m.description || "", tag: "new hire", seed: m.name || "new", color: autoIdentity(m.name || "new").color };
     return null;
+  };
+  // Tools a proposed member would have (for the readiness check).
+  const memberTools = (m) => {
+    if (m.tools) return m.tools;
+    if (m.kind === "persona") { const p = PERSONAS.find((x) => x.persona === m.persona); return (p && p.tools) || {}; }
+    if (m.kind === "existing") { const a = agents.find((x) => x.id === m.id); return (a && a.tools) || {}; }
+    return {};
+  };
+  // What this team needs on the user's setup before it can really run.
+  const teamReadiness = (team) => {
+    const t = (team.members || []).reduce((a, m) => { const x = memberTools(m); return { files: a.files || x.files, shell: a.shell || x.shell, connectors: a.connectors || x.connectors, browser: a.browser || x.browser }; }, {});
+    const out = [{ k: "Model", s: "ok", v: "your selected model will run it" }];
+    if (t.connectors) out.push({ k: "Connectors", s: "warn", v: "link the apps it needs (e.g. Gmail, GitHub)" });
+    if (t.browser) out.push({ k: "Browser", s: "ok", v: "built-in — nothing to install" });
+    if (t.shell) out.push({ k: "Terminal", s: "warn", v: "runs commands — point it at a folder you trust" });
+    return out;
   };
 
   // The Floor — whole-workforce live status (sessions + schedules + track record)
@@ -1091,8 +1193,22 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     setDraft(a);
     setDMsgs(agent ? [{ role: "designer", text: `${a.name} is loaded. Tell me what to change — instructions, capabilities, tone, anything.` }]
                    : [{ role: "designer", text: "Who are we building? Describe the agent in your own words, or pick a persona below to start from." }]);
-    setTMsgs([]); setDInput(""); setTInput(""); setSaveErr(""); setBlueprintOpen(false);
+    setTMsgs([]); setDInput(""); setTInput(""); setSaveErr(""); setBlueprintOpen(true);
     setView("studio");
+  };
+  // Back from the Designer: if the user picked/typed an UNSAVED agent, step back to the
+  // chooser (blank picker) so they can pick a different start; only leave to the roster
+  // when there's nothing in progress (or it's an existing saved agent).
+  const studioDirty = () => !!(draft.name.trim() || draft.description.trim() || draft.instructions.trim());
+  const studioSaved = () => agents.some((a) => a.id === draft.id);
+  const studioBack = () => {
+    if (studioDirty() && !studioSaved()) {
+      setDraft(blankAgent());
+      setDMsgs([{ role: "designer", text: "Who are we building? Describe the agent in your own words, or pick a persona below to start from." }]);
+      setTMsgs([]); setBenchOpen(false); setSaveErr("");
+      return;
+    }
+    setView("list");
   };
 
   const hirePersona = (p) => {
@@ -1100,6 +1216,16 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     setDraft((d) => ({ ...d, name: p.persona, description: p.desc, instructions: p.instructions, tools: { ...p.tools }, identity: idn }));
     setDMsgs((m) => [...m, { role: "designer", text: `${p.persona} joined — ${p.role.toLowerCase()}. Try them in the bench on the right, or tell me what to adjust.` }]);
   };
+  // Personality "vibe": chips that maintain a Tone: line at the end of the instructions,
+  // so a non-expert can pick a feel and it really shapes how the agent answers.
+  const toggleVibe = (v) => {
+    const cur = draft.vibe || [];
+    const next = cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v];
+    const base = String(draft.instructions || "").replace(/\n*Tone:[^\n]*$/i, "").trimEnd();
+    const tone = next.length ? `\n\nTone: ${next.join(", ").toLowerCase()}.` : "";
+    setDraft({ ...draft, vibe: next, instructions: base + tone });
+  };
+  const onAvatarPick = (e) => { const ff = e.target.files && e.target.files[0]; if (ff) readAvatar(ff, (url) => setDraft((d) => ({ ...d, identity: { ...d.identity, photo: url } }))); e.target.value = ""; };
 
   // Talk to the designer → updated config + a conversational reply.
   const designerSend = async (preset) => {
@@ -1182,6 +1308,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   // RAG-lite retrieval means large libraries are fine — relevant passages are
   // selected per task, so the cap is generous (24 files).
   const knFileRef = useRef(null);
+  const avatarRef = useRef(null);
+  const teamAvatarRef = useRef(null);
+  const teamKnFileRef = useRef(null);
   const isImageFile = (f) => /\.(png|jpe?g|webp|gif)$/i.test(f.name || "") || /^image\//.test(f.type || "");
   const addKnowledgeFiles = (files) => {
     const list = Array.from(files || []).slice(0, 24);
@@ -1232,7 +1361,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const renderAgentCard = (a) => (
     <div key={a.id} className="ags-card" {...dragProps(a)}>
       <div className="ags-card-top">
-        <span className="ags-presence-wrap"><Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={46} title={a.name} /><span className="ags-presence" style={{ background: presence(a).dot }} title={presence(a).label} /></span>
+        <span className="ags-presence-wrap">{a.identity && a.identity.photo ? <span className="ags-cardphoto" style={{ width: 46, height: 46 }}><img src={a.identity.photo} alt={a.name} /></span> : <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={46} title={a.name} />}<span className="ags-presence" style={{ background: presence(a).dot }} title={presence(a).label} /></span>
         <div className="ags-card-id">
           <div className="ags-card-name">{agentName(a)}</div>
           <div className="ags-card-role">{a.description || "No description"}</div>
@@ -1705,39 +1834,131 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                   {rcBusy ? <><Loader2 size={13} className="ag-spin" /> recruiting…</> : rcProposal ? <>Refine</> : <><Wand2 size={13} /> Assemble</>}
                 </button>
               </div>
-              {rcErr && <div className="ag-err" style={{ marginTop: 8 }}>{rcErr}</div>}
-              {rcProposal && (
-                <div className="rcr-card">
-                  <div className="rcr-card-top">
-                    <Face identity={autoIdentity(String(rcProposal.team.name || "team"))} size={30} />
-                    <div className="rcr-card-id">
-                      <div className="ags-card-name">{rcProposal.team.name || "Proposed team"}</div>
-                      <div className="ags-card-role">{rcProposal.team.mode === "manager" ? "Managed — parallel slices, merged by a coordinator" : "Relay line — work flows member to member"}{Number(rcProposal.team.budgetTokens) > 0 ? ` · budget ~${Math.round(Number(rcProposal.team.budgetTokens) / 1000)}k tokens` : ""}</div>
-                    </div>
-                  </div>
-                  <p className="rcr-reply">{rcProposal.reply}</p>
-                  <div className="rcr-members">
-                    {(rcProposal.team.members || []).map((m, i) => {
-                      const v = rcMemberView(m);
-                      return v && (
-                        <div key={i} className="rcr-member">
-                          <Portrait seed={v.seed} color={v.color} size={38} mood="hello" title={v.name} />
-                          <div className="ags-list-main">
-                            <span className="ags-list-name">{v.name}</span>
-                            <span className="ags-list-desc">{v.sub}</span>
-                          </div>
-                          <span className={`rcr-tag ${m.kind === "existing" ? "have" : ""}`}>{v.tag}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="rcr-acts">
-                    <button className="btn primary" onClick={hireProposal}><Rocket size={13} /> Hire this team</button>
-                    <button className="btn ghost" onClick={() => setRcProposal(null)}>Dismiss</button>
-                    <span className="ag-hint" style={{ margin: 0 }}>Refine by typing above — the recruiter reworks this proposal.</span>
+              {!rcProposal && (
+                <div className="rcr-defaults">
+                  <span className="rcr-defaults-lbl">Or start from a ready-made team<HelpDot mode="agents" section="recruiter" /></span>
+                  <div className="rcr-defaults-row">
+                    {DEFAULT_TEAMS.map((t) => (
+                      <button key={t.id} type="button" className="rcr-default" onClick={() => { setRcProposal({ reply: t.reply, team: t.team }); setRcErr(""); }}>
+                        <span className="rcr-default-g">{t.glyph}</span> {t.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
+              {rcErr && <div className="ag-err" style={{ marginTop: 8 }}>{rcErr}</div>}
+              {rcProposal && (() => {
+                const team = rcProposal.team; const mode = team.mode === "manager" ? "manager" : "relay";
+                const members = (team.members || []).map(rcMemberView).filter(Boolean);
+                const ready = teamReadiness(team);
+                const tident = autoIdentity(String(team.name || "team"));
+                return (
+                  <div className="rcr-card">
+                    <div className="rcr-card-top">
+                      <Face identity={tident} size={34} />
+                      <div className="rcr-card-id">
+                        <div className="ags-card-name">{team.name || "Proposed team"}</div>
+                        <div className="ags-card-role">{rcProposal.reply}</div>
+                      </div>
+                      <div className="rcr-card-tr">
+                        <div className="rcr-acts-inline">
+                          <button className="btn primary" onClick={hireProposal} title="Create the agents and put the team on the floor"><Rocket size={13} /> Hire this team</button>
+                          <button className="btn ghost" onClick={() => setRcProposal(null)}>Dismiss</button>
+                        </div>
+                        <div className="rcr-shape">
+                          <button type="button" className={`rcr-seg ${mode === "relay" ? "on" : ""}`} title="Work flows member to member, in order" onClick={() => setRcProposal({ ...rcProposal, team: { ...team, mode: "relay" } })}>⛓ Relay</button>
+                          <button type="button" className={`rcr-seg ${mode === "manager" ? "on" : ""}`} title="A coordinator fans the work out in parallel, then merges" onClick={() => setRcProposal({ ...rcProposal, team: { ...team, mode: "manager" } })}>🛰 Managed</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`rcr-org ${mode}`}>
+                      {mode === "manager" && (
+                        <div className="rcr-lead">
+                          <Face identity={tident} size={28} />
+                          <div><div className="rcr-node-n">{team.name || "Team"} · Lead</div><div className="rcr-node-r">coordinates &amp; merges</div></div>
+                        </div>
+                      )}
+                      {mode === "manager" && <div className="rcr-fan" aria-hidden="true" />}
+                      <div className="rcr-row">
+                        {members.map((v, i) => (
+                          <Fragment key={i}>
+                            {mode === "relay" && i > 0 && <span className="rcr-arrow">→</span>}
+                            <div className="rcr-node">
+                              <span className="rcr-step">{i + 1}</span>
+                              <Portrait seed={v.seed} color={v.color} size={34} mood="hello" title={v.name} />
+                              <div className="rcr-node-main"><div className="rcr-node-n">{v.name}</div><div className="rcr-node-r">{v.sub}</div></div>
+                              <span className={`rcr-tag ${v.tag === "roster" ? "have" : ""}`}>{v.tag}</span>
+                            </div>
+                          </Fragment>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rcr-teamcfg">
+                      <div className="rcr-cfg-title">Team settings <span className="ag-hint" style={{ margin: 0 }}>— applied to every member when you hire</span></div>
+                      <div className="rcr-cfg-grid">
+                        <div className="rcr-cfg-col">
+                        <div className="rcr-cfg-box">
+                          <div className="rcr-cfg-h">What they may touch<HelpDot mode="agents" section="teamtools" /></div>
+                          <div className="ags-bp-tools">
+                            {TOOL_DEFS.filter((t) => t.key !== "browser" || browserOn).map((t) => {
+                              const I = t.icon; const on = !!(team.applyTools && team.applyTools[t.key]);
+                              return (
+                                <button key={t.key} type="button" className={`ag-pill ags-bp-tool ${on ? "on" : ""}`} title={t.note}
+                                  onClick={() => setRcProposal({ ...rcProposal, team: { ...team, applyTools: { ...(team.applyTools || {}), [t.key]: !on } } })}>
+                                  <I size={11} /> {t.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="rcr-cfg-box">
+                          <div className="rcr-cfg-h">Team model<HelpDot mode="agents" section="teammodel" /></div>
+                          <div className="ag-model-row">
+                            <ModelPicker value={team.applyModel || undefined} groups={groups} onChange={(v) => setRcProposal({ ...rcProposal, team: { ...team, applyModel: v } })} onRefresh={onRefresh} agenticOnly />
+                            {team.applyModel && <button className="btn ghost" onClick={() => setRcProposal({ ...rcProposal, team: { ...team, applyModel: "" } })}>Unpin</button>}
+                          </div>
+                          {!team.applyModel && <span className="ag-hint" style={{ margin: "4px 0 0" }}>Unpinned — each uses the live selector.</span>}
+                        </div>
+                        </div>
+                        <div className="rcr-cfg-col">
+                        <div className="rcr-cfg-box">
+                          <div className="rcr-cfg-h">Autonomy<HelpDot mode="agents" section="teamautonomy" /></div>
+                          <div className="ags-bp-tools">
+                            {[{ v: "ask", label: "Ask first" }, { v: "act", label: "Act freely" }, { v: "skip", label: "Skip & decide" }].map((o) => (
+                              <button key={o.v} type="button" className={`ag-pill ags-bp-tool ${(team.applyAutonomy || "ask") === o.v ? "on" : ""}`} onClick={() => setRcProposal({ ...rcProposal, team: { ...team, applyAutonomy: o.v } })}>{o.label}</button>
+                            ))}
+                          </div>
+                        </div>
+                        {allPlays.length > 0 && (
+                          <div className="rcr-cfg-box">
+                            <div className="rcr-cfg-h">Signature plays<HelpDot mode="agents" section="teamplays" /></div>
+                            <div className="ags-kn">
+                              {(team.applyPins || []).map((n) => (
+                                <span key={n} className="ag-pill">⚡ {n}<button className="agent-chip-x" aria-label={`Unpin ${n}`} onClick={() => setRcProposal({ ...rcProposal, team: { ...team, applyPins: (team.applyPins || []).filter((x) => x !== n) } })}><Trash2 size={10} /></button></span>
+                              ))}
+                              <select className="model-search" style={{ marginBottom: 0, width: "auto", maxWidth: 220 }} value="" onChange={(e) => { const n = e.target.value; if (n && !(team.applyPins || []).includes(n)) setRcProposal({ ...rcProposal, team: { ...team, applyPins: [...(team.applyPins || []), n] } }); }}>
+                                <option value="">+ Pin a play…</option>
+                                {allPlays.filter((sk) => !(team.applyPins || []).includes(sk.name)).map((sk) => <option key={sk.dir || sk.name} value={sk.name}>{sk.name}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                        <div className="rcr-cfg-box">
+                          <div className="rcr-cfg-h">Knowledge<HelpDot mode="agents" section="teamknowledge" /></div>
+                          <div className="ags-kn">
+                            {(team.applyKnowledge || []).map((k, i) => (
+                              <span key={i} className="ag-pill" title={k.name}>{k.name}<button className="agent-chip-x" aria-label={`Remove ${k.name}`} onClick={() => setRcProposal({ ...rcProposal, team: { ...team, applyKnowledge: (team.applyKnowledge || []).filter((_, x) => x !== i) } })}><Trash2 size={10} /></button></span>
+                            ))}
+                            <button type="button" className="ag-pill ags-bp-tool" onClick={() => teamKnFileRef.current && teamKnFileRef.current.click()}><Plus size={11} /> Add file</button>
+                            <input ref={teamKnFileRef} type="file" multiple accept=".txt,.md,.markdown,.csv,.json,.log,.yml,.yaml,.html,.xml,.js,.ts,.py,.png,.jpg,.jpeg,.webp,.gif" style={{ display: "none" }} onChange={(e) => { addTeamKnowledge(e.target.files); e.target.value = ""; }} />
+                          </div>
+                        </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <div className="ag-hint" style={{ marginTop: 14 }}>The Recruiter staffs from your existing roster first, then the persona crew, and invents a new specialist only when nobody fits. Hired teams land on the Agents Team tab, new members on the Agent tab.</div>
           </>
@@ -1769,7 +1990,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                     <div className="ag-card-actions">
                       <button className="btn primary" disabled={!members.length} onClick={() => launchTeam(t)}><Rocket size={13} /> Brief the team</button>
                       <button className="btn ghost" onClick={() => editTeam(t)}><Pencil size={13} /> Edit</button>
-                      {!(etLocked && t.id === "team_edgetrader") && <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>}
+                      {!(etLocked && t.id === "team_edgetrader")
+                        ? <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>
+                        : <button className="btn ghost" aria-hidden="true" tabIndex={-1} style={{ visibility: "hidden" }}><Trash2 size={13} /></button>}
                     </div>
                   </div>
                 );
@@ -1797,7 +2020,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                     <div className="ags-list-acts">
                       <button className="btn primary" disabled={!members.length} onClick={() => launchTeam(t)}><Rocket size={13} /> Brief the team</button>
                       <button className="btn ghost" title="Edit" onClick={() => editTeam(t)}><Pencil size={13} /></button>
-                      {!(etLocked && t.id === "team_edgetrader") && <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>}
+                      {!(etLocked && t.id === "team_edgetrader")
+                        ? <button className="btn ghost ag-del" title="Delete" onClick={() => removeTeam(t.id)}><Trash2 size={13} /></button>
+                        : <button className="btn ghost" aria-hidden="true" tabIndex={-1} style={{ visibility: "hidden" }}><Trash2 size={13} /></button>}
                     </div>
                   </div>
                 );
@@ -1819,9 +2044,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           const totalMissions = Object.values(stats).reduce((n, s) => n + ((s && s.missions) || 0), 0);
           const groups = [
             { id: "working", label: "Working now", cls: "live", icon: <i className="ags-live-dot" />, items: working },
-            { id: "finished", label: "Finished recently", cls: "ok", icon: <BadgeCheck size={13} />, items: finished },
             { id: "sched", label: "On a schedule", cls: "warn", icon: <Clock size={13} />, items: sched },
-            { id: "resting", label: "Resting — ready for work", cls: "dim", icon: <Moon size={13} />, items: resting },
           ];
           // mood map: working → running, finished → cheer, resting → sleeping
           const moodFor = (state) => state === "working" ? "running" : state === "happy" ? "cheer" : "sleeping";
@@ -1844,7 +2067,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               title={run ? (state === "working" ? "Open the live session" : "Open this agent's latest conversation") : undefined}
               onClick={() => run && onOpenSession(run.id)}
               onKeyDown={(e) => { if (run && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpenSession(run.id); } }}>
-              <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={layout === "list" ? 48 : 66} mood={moodFor(state)} title={a.name} />
+              {a.identity && a.identity.photo ? <span className="ags-cardphoto" style={{ width: layout === "list" ? 48 : 66, height: layout === "list" ? 48 : 66 }}><img src={a.identity.photo} alt={a.name} /></span> : <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={layout === "list" ? 48 : 66} mood={moodFor(state)} title={a.name} />}
               <div className="flr-main">
                 <div className="flr-name">{agentName(a)}{sch && <Clock size={11} className="flr-sch" title="Runs on a schedule" />}</div>
                 <div className="flr-role">{a.description || "No description"}</div>
@@ -1865,9 +2088,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                 <>
                   <div className="flr-strip">
                     <span className="flr-k live"><i className="ags-live-dot" /> {working.length} working now</span>
-                    <span className="flr-k ok"><BadgeCheck size={12} /> {finished.length} finished recently</span>
                     <span className="flr-k warn"><Clock size={12} /> {sched.length} on schedules</span>
-                    <span className="flr-k"><Moon size={12} /> {resting.length} resting</span>
                     <span className="flr-k flr-r"><BadgeCheck size={12} /> {totalMissions} missions all-time</span>
                   </div>
                   {groups.map((g) => g.items.length > 0 && (
@@ -2057,7 +2278,11 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       <div className="agents-page scroll">
         <div className="ags-topbar">
           <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>
-          <Face identity={tdraft.identity} size={30} />
+          <span className="ags-teamport">
+            <button type="button" className="ags-face-btn" title="Cycle the team look" onClick={() => setTdraft({ ...tdraft, identity: autoIdentity(String(tdraft.id) + Math.random()) })}><Face identity={tdraft.identity} size={30} /></button>
+            <button type="button" className="ags-teamcam" title="Upload a team photo" onClick={() => teamAvatarRef.current && teamAvatarRef.current.click()}><Upload size={9} /></button>
+            <input ref={teamAvatarRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const ff = e.target.files && e.target.files[0]; if (ff) readAvatar(ff, (url) => setTdraft((td) => ({ ...td, identity: { ...td.identity, photo: url } }))); e.target.value = ""; }} />
+          </span>
           <input className="ags-name" value={tdraft.name} placeholder="Name your team…" onChange={(e) => setTdraft({ ...tdraft, name: e.target.value })} />
           <div className="ags-topbar-right">
             {tErr && <span className="ag-err" style={{ margin: 0 }}>{tErr}</span>}
@@ -2162,9 +2387,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
     <div className="ags-studio" style={{ "--idc": (draft.identity && draft.identity.color) || "var(--accent)" }}>
       {/* top bar: identity + name + actions */}
       <div className="ags-topbar">
-        <button className="btn ghost ag-back" onClick={() => setView("list")}>← Studio</button>
+        <button className="btn ghost ag-back" onClick={studioBack}>{studioDirty() && !studioSaved() ? "← Pick another" : "← Studio"}</button>
         <button className="ags-face-btn" title="Change look" onClick={cycleIdentity}><Face identity={draft.identity} size={30} /></button>
-        <input className="ags-name" value={draft.name} placeholder={`Name your agent — or go with “${nick(draft.id)}”`} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+        <span className="ags-name ags-name-static" title="Edit the name on the card">{draft.name.trim() || nick(draft.id)}</span>
         <div className="ags-topbar-right">
           {saved && <span className="ag-saved"><Check size={12} /> Saved</span>}
           {saveErr && <span className="ag-err" style={{ margin: 0 }}>{saveErr}</span>}
@@ -2184,6 +2409,20 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
         </div>
       )}
 
+      {casting && (
+        <div className="ags-archstrip">
+          <div className="ags-archstrip-lbl">Start from a strong default — or describe your own</div>
+          <div className="ags-archstrip-row">
+            {ARCHETYPES.map((a) => (
+              <button key={a.persona} type="button" className="ags-arch" onClick={() => hirePersona(a)} title={a.desc}>
+                <span className="ags-arch-face" style={{ background: a.color + "22", color: a.color }}>{a.glyph}</span>
+                <span className="ags-arch-t">{a.title}</span>
+                <span className="ags-arch-d">{a.tagline}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="ags-split">
         {/* left — the designer's drafting table */}
         <div className="agsd-pane">
@@ -2210,8 +2449,12 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
             {casting ? (
               <div className="agsd-cast">
                 <div className="agsd-cast-title">Who are you hiring?</div>
-                <div className="agsd-cast-sub">Describe the role in your own words below and the blueprint fills itself in as you talk — or start from the casting call: every persona is a complete blueprint you can reshape.</div>
-                {/* The casting call, grouped by profession — a browsable directory, not a pile. */}
+                <div className="agsd-cast-sub">Start from a strong default below — or describe the role in your own words and the blueprint fills itself in as you talk.<HelpDot mode="agents" section="archetype" /></div>
+                {/* The full role catalogue — tucked behind a toggle so the clean archetype starters lead. */}
+                <button type="button" className="agsd-browseall" onClick={() => setCastAllOpen((o) => !o)}>
+                  {castAllOpen ? "Hide the full role catalogue" : `Browse all ${PERSONAS.length} specialist roles`} {castAllOpen ? "▾" : "▸"}
+                </button>
+                {castAllOpen && (
                 <div className="agsd-cast-groups">
                   {[...new Set(PERSONAS.map((p) => p.cat || "More"))].map((cat) => (
                     <section key={cat} className="agsd-cast-group">
@@ -2228,6 +2471,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                     </section>
                   ))}
                 </div>
+                )}
               </div>
             ) : (
               <>
@@ -2258,31 +2502,57 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
             <button type="button" className="agsd-send" aria-label="Send to designer" disabled={dBusy || !dInput.trim()} onClick={() => designerSend()}><ArrowUp size={15} /></button>
           </div>
 
-          {/* blueprint: the raw config, always one click away */}
-          <button className="agsd-bp-toggle" aria-expanded={blueprintOpen} onClick={() => setBlueprintOpen((o) => !o)}
-            title="Capabilities live here — files, terminal, connectors, skills, browser + allowed sites, knowledge, model pin">
-            <Hammer size={12} />
-            <span className="agsd-bp-label">Blueprint &amp; capabilities</span>
-            <span className="agsd-bp-sum">{compDone} of {compSteps.length} set</span>
-            <span className="agsd-bp-caps" aria-hidden="true">
-              {TOOL_DEFS.map((t) => { const I = t.icon; return <I key={t.key} size={11} className={draft.tools && draft.tools[t.key] ? "on" : ""} />; })}
-            </span>
-            <span className="agsd-bp-cx">{blueprintOpen ? "▾" : "▸"}</span>
-          </button>
-          {blueprintOpen && (
+        </div>
+
+        {/* right — the teammate card; the Bench lives behind "Try it" */}
+        <div className="ags-pane ags-cardpane">
+          {!benchOpen ? (
+            <>
+              <div className="ags-pane-head"><span className="ags-card-dot" /> The teammate, taking shape <span className="ags-pane-sub" style={{ marginLeft: "auto" }}>{draft.instructions.trim() ? "ready · refine by talking" : "describe a job to begin"}</span></div>
             <div className="ags-bp scroll">
-              <label>Purpose <span>— one sentence on what it's for</span><HelpDot mode="agents" section="purpose" /></label>
-              <input value={draft.description} placeholder="One sentence" onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
-              <label>Instructions <span>— how it thinks and answers</span><HelpDot mode="agents" section="instructions" /></label>
+              {/* hero — the teammate's character card */}
+              <div className="ags-hero">
+                <div className="ags-hero-portwrap">
+                  <button type="button" className="ags-hero-portrait" onClick={cycleIdentity} title="Cycle the generated look"><Face identity={draft.identity} size={66} /></button>
+                  <button type="button" className="ags-hero-cam" title="Upload a photo for this agent" onClick={() => avatarRef.current && avatarRef.current.click()}><Upload size={11} /></button>
+                  <input ref={avatarRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onAvatarPick} />
+                </div>
+                <div className="ags-hero-main">
+                  <input className="ags-hero-name" value={draft.name} placeholder="Name your agent" onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+                  <input className="ags-hero-role" value={draft.description} placeholder="One-line role — what's their job?" onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
+                  <div className="ags-hero-foot">
+                    <HelpDot mode="agents" section="purpose" />
+                    <HelpDot mode="agents" section="avatar" />
+                    {draft.identity && draft.identity.photo
+                      ? <button type="button" className="ags-hero-link" onClick={() => setDraft((d) => ({ ...d, identity: { ...d.identity, photo: undefined } }))}>remove photo</button>
+                      : <span className="ags-hero-hint">tap the portrait to cycle the look, or upload a photo</span>}
+                  </div>
+                </div>
+              </div>
+
+              <label>How they work <span>— their method &amp; tone</span><HelpDot mode="agents" section="instructions" /></label>
               <textarea rows={7} value={draft.instructions} onChange={(e) => setDraft({ ...draft, instructions: e.target.value })} />
-              <label>Capabilities <span>— what it may use</span><HelpDot mode="agents" section="capabilities" /></label>
-              <div className="ags-bp-tools">
+
+              <label>Personality <span>— pick a feel; it shapes how they answer</span><HelpDot mode="agents" section="vibe" /></label>
+              <div className="ags-vibes">
+                {["Formal", "Casual", "Warm", "Terse", "Thorough", "Precise", "Cautious", "Bold"].map((v) => (
+                  <button key={v} type="button" className={`ags-vibe ${(draft.vibe || []).includes(v) ? "on" : ""}`} onClick={() => toggleVibe(v)}>{v}</button>
+                ))}
+              </div>
+
+              <label>What they're allowed to touch<HelpDot mode="agents" section="capabilities" /></label>
+              <div className="ags-capgrid">
                 {TOOL_DEFS.filter((t) => t.key !== "browser" || browserOn).map((t) => {
-                  const I = t.icon; const on = !!draft.tools[t.key];
+                  const I = t.icon; const on = !!draft.tools[t.key]; const risk = t.key === "shell" || t.key === "desktop";
                   return (
-                    <button key={t.key} className={`ag-pill ags-bp-tool ${on ? "on" : ""}`} title={t.note}
+                    <button key={t.key} type="button" className={`ags-capcard ${on ? "on" : ""} ${risk ? "risk" : ""}`}
                       onClick={() => setDraft({ ...draft, tools: { ...draft.tools, [t.key]: !on } })}>
-                      <I size={11} /> {t.label}
+                      <span className="ags-capcard-ic"><I size={16} /></span>
+                      <span className="ags-capcard-main">
+                        <span className="ags-capcard-n">{t.label}{risk && <i className="ags-risktag">risk</i>}</span>
+                        <span className="ags-capcard-d">{t.note}</span>
+                      </span>
+                      <span className="ags-capcard-check">{on ? <Check size={12} /> : null}</span>
                     </button>
                   );
                 })}
@@ -2364,23 +2634,26 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               {(draft.tools.files || draft.tools.shell) && <div className="ag-hint">Works in a folder — you'll pick it when the real session starts.</div>}
               <BlueprintExtras draft={draft} setDraft={setDraft} onExport={() => exportAgentFile(draft)} />
             </div>
-          )}
-        </div>
-
-        {/* right — the live bench */}
-        <div className="ags-pane ags-bench">
-          <div className="ags-pane-head">
-            <FlaskConical size={14} /> Bench <span className="ags-pane-sub">— talk to {draft.name.trim() || "the agent"} right now</span>
-            {lastBenchAsk && <button className="ags-bench-reset" style={{ marginLeft: "auto" }} disabled={tBusy} title="Re-run the last test — compare the answer after a blueprint change" onClick={() => benchSend(lastBenchAsk.text)}><Play size={12} /></button>}
-            {tMsgs.length > 0 && <button className="ags-bench-reset" style={lastBenchAsk ? { marginLeft: 0 } : undefined} title="Reset bench" onClick={() => setTMsgs([])}><RotateCcw size={12} /></button>}
-          </div>
+              <div className="ags-cardfoot">
+                <button className="btn ghost" onClick={() => setBenchOpen(true)}><Play size={13} /> Try it — interview before you hire</button><HelpDot mode="agents" section="bench" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="ags-pane-head">
+                <button className="ags-bench-reset" title="Back to the card" onClick={() => setBenchOpen(false)}>←</button>
+                <FlaskConical size={14} /> Bench <span className="ags-pane-sub">— talk to {draft.name.trim() || "the agent"} right now</span>
+                {lastBenchAsk && <button className="ags-bench-reset" style={{ marginLeft: "auto" }} disabled={tBusy} title="Re-run the last test" onClick={() => benchSend(lastBenchAsk.text)}><Play size={12} /></button>}
+                {tMsgs.length > 0 && <button className="ags-bench-reset" style={lastBenchAsk ? { marginLeft: 0 } : { marginLeft: "auto" }} title="Reset bench" onClick={() => setTMsgs([])}><RotateCcw size={12} /></button>}
+              </div>
           <div className="ags-chat scroll">
             {!draft.instructions.trim() && <div className="ags-bench-empty">Nothing to test yet — describe the agent to the designer first.</div>}
             {draft.instructions.trim() && tMsgs.length === 0 && (
               <div className="ags-bench-empty">
                 <span className="ags-bench-aura"><Portrait seed={draft.id} color={(draft.identity && draft.identity.color) || "var(--accent)"} size={68} mood="hello" title={draft.name} /></span>
                 <div className="ags-bench-live"><i className="ags-live-dot" /> {draft.name.trim() || "Your agent"} is live on the bench</div>
-                <div>Say something — instructions only here; files, terminal and connectors switch on in a real session.</div>
+                <div>Say something to rehearse how it <b>thinks &amp; sounds</b> — quick, no setup, tools off. To test it <b>for real with Files, Terminal &amp; Connectors</b>, run a live session:</div>
+                <button type="button" className="btn primary ags-trytools" disabled={!canRun || saveBusy} onClick={launch}><Rocket size={13} /> Try with tools — run for real →</button>
                 {testIdeas.length === 0 && (
                   <button type="button" className="btn ghost ags-ideas-btn" disabled={ideasBusy} onClick={suggestTests}>
                     {ideasBusy ? <><Loader2 size={13} className="ag-spin" /> drafting tests…</> : <><Wand2 size={13} /> Suggest 3 test prompts</>}
@@ -2411,6 +2684,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               onChange={(e) => setTInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") benchSend(); }} />
             <button className="ag-gen" aria-label="Send test message" disabled={tBusy || !tInput.trim() || !canRun} onClick={benchSend}><Send size={13} /></button>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -2421,12 +2696,15 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 // Desktop-only sections (each hides itself when the bridge method isn't available).
 // Hoisted to module scope: declared inside BlueprintExtras it was a NEW component type
 // every render, so React remounted each section per keystroke (inputs lost focus).
-function Section({ id, icon: I, label, count, open, setOpen, children }) {
+function Section({ id, icon: I, label, count, open, setOpen, help, children }) {
   return (
     <>
-      <button className="ags-bp-toggle" style={{ marginTop: 8 }} onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>
-        <I size={12} /> {label}{count != null ? ` (${count})` : ""} {open[id] ? "▾" : "▸"}
-      </button>
+      <div className="ags-bp-secrow">
+        <button className="ags-bp-toggle" style={{ flex: 1 }} onClick={() => setOpen((o) => ({ ...o, [id]: !o[id] }))}>
+          <I size={12} /> {label}{count != null ? ` (${count})` : ""} {open[id] ? "▾" : "▸"}
+        </button>
+        {help}
+      </div>
       {open[id] && <div style={{ padding: "6px 2px 2px" }}>{children}</div>}
     </>
   );
@@ -2464,7 +2742,7 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
     <div style={{ marginTop: 10, borderTop: "1px solid color-mix(in srgb, currentColor 12%, transparent)", paddingTop: 8 }}>
       {/* Memory — what this agent has learned */}
       {bridge.getAgentMemory && (
-        <Section id="memory" icon={Brain} open={open} setOpen={setOpen} label={`Memory — what ${draft.name.trim() || "this agent"} has learned`} count={memNotes ? memNotes.length : undefined}>
+        <Section id="memory" icon={Brain} open={open} setOpen={setOpen} label={`Memory — what ${draft.name.trim() || "this agent"} has learned`} count={memNotes ? memNotes.length : undefined} help={<HelpDot mode="agents" section="memory" />}>
           <label className="chip" style={{ cursor: "pointer", display: "inline-flex", marginBottom: 8 }}>
             <input type="checkbox" checked={memoryOn} onChange={() => setDraft({ ...draft, memory: memoryOn ? false : undefined })} style={{ marginRight: 6 }} />
             Learn across missions
@@ -2495,7 +2773,7 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
 
       {/* Track record — persisted run history */}
       {bridge.getAgentHistory && (
-        <Section id="runs" icon={History} open={open} setOpen={setOpen} label="Track record" count={runs ? runs.length : undefined}>
+        <Section id="runs" icon={History} open={open} setOpen={setOpen} label="Track record" count={runs ? runs.length : undefined} help={<HelpDot mode="agents" section="trackrecord" />}>
           {(runs || []).length === 0 && <div className="ag-hint" style={{ margin: 0 }}>No missions recorded yet — every chat run, team mission, scheduled trigger, webhook and swarm lands here.</div>}
           {(runs || []).slice(0, 10).map((r, i) => (
             <div key={i} style={{ fontSize: 12, padding: "5px 0", borderBottom: "1px dashed color-mix(in srgb, currentColor 10%, transparent)", display: "flex", gap: 8, alignItems: "baseline" }}>
@@ -2509,7 +2787,7 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
 
       {/* Versions — rollback to an earlier blueprint */}
       {bridge.listAgentVersions && (
-        <Section id="versions" icon={Clock} open={open} setOpen={setOpen} label="Versions" count={versions ? versions.length : undefined}>
+        <Section id="versions" icon={Clock} open={open} setOpen={setOpen} label="Versions" count={versions ? versions.length : undefined} help={<HelpDot mode="agents" section="versions" />}>
           {(versions || []).length === 0 && <div className="ag-hint" style={{ margin: 0 }}>No earlier versions yet — each Studio save keeps the previous blueprint (last 10).</div>}
           {(versions || []).map((v, i) => (
             <div key={i} style={{ fontSize: 12, padding: "5px 0", display: "flex", gap: 8, alignItems: "center", borderBottom: "1px dashed color-mix(in srgb, currentColor 10%, transparent)" }}>
@@ -2526,7 +2804,7 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
       )}
 
       {/* Craft — harness quality/cost toggles (PLAN-AGENT-PARITY waves) */}
-      <Section id="craft" icon={Hammer} open={open} setOpen={setOpen} label="Craft — quality vs cost">
+      <Section id="craft" icon={Hammer} open={open} setOpen={setOpen} label="Craft — quality vs cost" help={<HelpDot mode="agents" section="craft" />}>
         <div className="ag-hint" style={{ margin: "0 0 8px" }}>
           The reliability layer (plan tracking, self-repair, context compaction, read-before-edit) is always on and free.
           These three trade a little extra cost for extra rigor:
@@ -2563,7 +2841,7 @@ function BlueprintExtras({ draft, setDraft, onExport }) {
       {/* Share */}
       {bridge.exportAgent && (
         <div style={{ marginTop: 10 }}>
-          <button className="btn ghost" onClick={onExport}><Download size={12} /> Export .agent file</button>
+          <button className="btn ghost" onClick={onExport}><Download size={12} /> Export .agent file</button><HelpDot mode="agents" section="exportagent" />
           <span className="ag-hint" style={{ margin: "0 0 0 8px" }}>Portable: instructions, capabilities, knowledge. Memory and model pins stay private.</span>
         </div>
       )}

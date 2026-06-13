@@ -225,3 +225,91 @@
   .agsd-send:not(:disabled):active { transform: none; }
   .ags-bench-aura, .ags-live-dot { animation: none; }
 }
+
+/* ===== Living-card Designer redesign ===== */
+.ags-face-photo{overflow:hidden;padding:0!important;border-radius:14px;display:inline-flex}
+.ags-face-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.ags-cardphoto{display:inline-flex;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.ags-cardphoto img{width:100%;height:100%;object-fit:cover;display:block}
+
+.ags-hero{display:flex;gap:14px;align-items:center;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.ags-hero-portwrap{position:relative;flex:none}
+.ags-hero-portrait{border:none;background:transparent;cursor:pointer;padding:0;border-radius:18px}
+.ags-hero-portrait .ags-face{border-radius:18px}
+.ags-hero-cam{position:absolute;right:-4px;bottom:-4px;width:24px;height:24px;border-radius:50%;border:2px solid var(--bg-1,#15191c);background:var(--accent);color:#06181b;display:grid;place-items:center;cursor:pointer}
+.ags-hero-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.ags-hero-name{background:transparent;border:none;outline:none;font-size:22px;font-weight:740;color:var(--text-0,#eef4f6);padding:0}
+.ags-hero-name::placeholder{color:var(--text-3,#6b787e)}
+.ags-hero-role{background:transparent;border:none;outline:none;font-size:13.5px;color:var(--text-2,#92a0a7);padding:0}
+.ags-hero-role::placeholder{color:var(--text-3,#6b787e)}
+.ags-hero-foot{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-3,#6b787e)}
+.ags-hero-link{background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;padding:0}
+
+.ags-vibes{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.ags-vibe{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--text-2,#92a0a7);background:transparent;cursor:pointer;transition:.12s}
+.ags-vibe:hover{border-color:var(--line-2,#313a40)}
+.ags-vibe.on{border-color:var(--accent);color:var(--accent);background:var(--accent-weak,rgba(22,197,216,.12))}
+
+.ags-capgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.ags-capcard{display:flex;gap:10px;align-items:flex-start;text-align:left;padding:11px;border:1px solid var(--line);border-radius:12px;background:transparent;cursor:pointer;transition:.12s;position:relative}
+.ags-capcard:hover{border-color:var(--line-2,#313a40)}
+.ags-capcard.on{border-color:var(--accent-line,rgba(22,197,216,.45));background:var(--accent-weak,rgba(22,197,216,.1))}
+.ags-capcard.on.risk{border-color:rgba(224,161,60,.5);background:rgba(224,161,60,.1)}
+.ags-capcard-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--bg-2,#1a1f23);border:1px solid var(--line);color:var(--text-2,#92a0a7)}
+.ags-capcard.on .ags-capcard-ic{color:var(--accent)}
+.ags-capcard.on.risk .ags-capcard-ic{color:var(--amber,#e0a13c)}
+.ags-capcard-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ags-capcard-n{font-weight:650;color:var(--text-0,#eef4f6);font-size:13px;display:flex;align-items:center;gap:6px}
+.ags-capcard-d{color:var(--text-2,#92a0a7);font-size:11px;line-height:1.4}
+.ags-risktag{font-style:normal;font-size:9px;font-weight:700;color:var(--amber,#e0a13c);border:1px solid rgba(224,161,60,.4);border-radius:5px;padding:0 5px}
+.ags-capcard-check{position:absolute;top:9px;right:9px;width:16px;height:16px;border-radius:5px;display:grid;place-items:center;color:#06181b}
+.ags-capcard.on .ags-capcard-check{background:var(--accent)}
+.ags-capcard.on.risk .ags-capcard-check{background:var(--amber,#e0a13c)}
+
+/* archetype quick-starts */
+.agsd-quickstarts{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0 4px}
+.agsd-qs{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:11px;border:1px solid var(--line);border-radius:13px;background:transparent;cursor:pointer;transition:.14s}
+.agsd-qs:hover{transform:translateY(-2px);border-color:var(--accent-line,rgba(22,197,216,.45))}
+.agsd-qs-face{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;margin-bottom:4px}
+.agsd-qs-t{font-weight:650;color:var(--text-0,#eef4f6);font-size:13px}
+.agsd-qs-d{color:var(--text-2,#92a0a7);font-size:11px}
+
+/* team avatar upload */
+.ags-teamport{position:relative;display:inline-flex;flex:none}
+.ags-teamcam{position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;border-radius:50%;border:2px solid var(--bg-1,#15191c);background:var(--accent);color:#06181b;display:grid;place-items:center;cursor:pointer;padding:0}
+@media (max-width:720px){.ags-capgrid{grid-template-columns:1fr}.agsd-quickstarts{grid-template-columns:1fr 1fr}}
+
+/* Browse-all-roles toggle (collapses the dense persona catalogue) */
+.agsd-browseall{display:inline-flex;align-items:center;gap:6px;margin:14px 0 4px;font-size:12.5px;font-weight:600;color:var(--text-2,#92a0a7);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+.agsd-browseall:hover{border-color:var(--accent-line,var(--accent));color:var(--accent)}
+
+/* ===== 3-zone Designer layout (top archetypes · chat left · card right) ===== */
+.ags-archstrip{margin:0 0 14px}
+.ags-archstrip-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2,#92a0a7);margin:0 2px 9px}
+.ags-archstrip-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.ags-arch{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--bg-1,#15191c);cursor:pointer;transition:.14s}
+.ags-arch:hover{transform:translateY(-2px);border-color:var(--accent-line,rgba(22,197,216,.45));box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.ags-arch-face{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:19px;margin-bottom:6px}
+.ags-arch-t{font-weight:680;color:var(--text-0,#eef4f6);font-size:14px}
+.ags-arch-d{color:var(--text-2,#92a0a7);font-size:11.5px}
+
+/* right card pane */
+.ags-cardpane{display:flex;flex-direction:column;min-height:0}
+.ags-cardpane .ags-bp{flex:1;min-height:0;border:none;margin:0;padding:16px 18px}
+.ags-card-dot{width:8px;height:8px;border-radius:50%;background:var(--ok,#5fb573);box-shadow:0 0 8px var(--ok,#5fb573);flex:none}
+.ags-cardfoot{flex:none;display:flex;gap:10px;padding:13px 16px;border-top:1px solid var(--line)}
+.ags-cardfoot .btn{flex:1;justify-content:center}
+@media (max-width:1100px){.ags-archstrip-row{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:680px){.ags-archstrip-row{grid-template-columns:repeat(2,1fr)}}
+
+/* Top-bar name is a read-only label now — the editable name lives on the card hero */
+.ags-name-static{display:inline-flex;align-items:center;font-size:16px;font-weight:680;color:var(--text-0,#eef4f6);background:transparent;border:none;padding:0 2px}
+
+/* BlueprintExtras section header row (toggle + help dot side by side) */
+.ags-bp-secrow{display:flex;align-items:center;gap:2px;margin-top:8px}
+
+/* Bench: escalate to a real tooled session */
+.ags-trytools{margin-top:10px}
+
+/* No full-line ALL-CAPS labels (platform mandate) */
+.ags-archstrip-lbl { text-transform: none !important; letter-spacing: normal !important; }

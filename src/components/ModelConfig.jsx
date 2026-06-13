@@ -41,7 +41,7 @@ const BRAND_SLUG = {
   "Fireworks AI": "fireworksai", "Perplexity": "perplexity", "Cerebras": "cerebras",
   "Ollama (local)": "ollama", "LM Studio (local)": "lmstudio", "llama.cpp (local)": "llamacpp",
 };
-import mUrl from "../../madav-m.png";
+import mUrl from "../../LogoM.png";
 function PChip({ name }) {
   const [broken, setBroken] = useState(false);
   let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
@@ -80,9 +80,13 @@ export default function ModelConfig({ onChanged }) {
   const [selId, setSelId] = useState(null);
   const [view, setView] = useState("grid"); // "grid" = provider gallery · "edit" = inside one provider's setup
   const [status, setStatus] = useState("");
+  const [isPriv, setIsPriv] = useState(false); // admin OR creator — Anthropic is gated to them only
   const restoreRef = useRef(null); // backup-restore file input (must sit above the early return — hooks rule)
 
   useEffect(() => { bridge.getSettings().then((cfg) => { setS(cfg); setSelId(cfg.activeProfileId); }); }, []);
+  useEffect(() => { bridge.authMe?.().then((r) => {
+    if (r && !r.error) { const role = r.role || (((r.subscription || {}).plan === "Complimentary") ? "complimentary" : null); setIsPriv(!!r.admin || role === "creator"); }
+  }).catch(() => {}); }, []);
   if (!s || !selId) return (
     <div className="skel-page">
       <div className="skel" style={{ width: 260, height: 26 }} />
@@ -168,6 +172,7 @@ export default function ModelConfig({ onChanged }) {
   };
   const test = async () => { setStatus("Fetching models…"); const list = await bridge.listModels(selId); setStatus(list.length ? `${list.length} models found` : "No /v1/models — enter the model id manually"); };
   const saveProvider = async () => {
+    if (sel.kind === "anthropic" && !isPriv) { setStatus("Anthropic is available to admins and creators only."); return; }
     setStatus("Saving & validating…");
     let list = []; try { list = await bridge.listModels(selId); } catch {}
     const next = { ...s, profiles: { ...s.profiles, [selId]: { ...sel, cachedModels: list } } };
@@ -206,7 +211,7 @@ export default function ModelConfig({ onChanged }) {
       </p>
       {/* Provider gallery — every configured provider plus one-click presets, as cards. */}
       <div className="mc-pgrid">
-        {profiles.map((p) => {
+        {profiles.filter((p) => isPriv || p.kind !== "anthropic").map((p) => {
           const local = /localhost|127\.0\.0\.1/i.test(p.baseUrl || "");
           const starter = /\/starter\b/.test(p.baseUrl || "");
           const ready = starter || local || !!(p.apiKey || "").trim();
@@ -221,7 +226,7 @@ export default function ModelConfig({ onChanged }) {
             </button>
           );
         })}
-        {PROVIDER_PRESETS.filter((pr) => !profiles.some((x) => x.name === pr.name)).map((pr) => (
+        {PROVIDER_PRESETS.filter((pr) => (isPriv || pr.kind !== "anthropic") && !profiles.some((x) => x.name === pr.name)).map((pr) => (
           <button key={pr.name} className="mc-pcard" onClick={() => addPreset(pr.name)}>
             <PChip name={pr.name} />
             <span className="mc-pmain">
@@ -272,7 +277,7 @@ export default function ModelConfig({ onChanged }) {
             <Field label="Wire format">
               <select className="model-search" value={sel.kind} onChange={(e) => patch("kind", e.target.value)}>
                 <option value="openai">OpenAI-compatible (/v1/chat/completions)</option>
-                <option value="anthropic">Anthropic-compatible (/v1/messages)</option>
+                {isPriv && <option value="anthropic">Anthropic-compatible (/v1/messages)</option>}
               </select>
             </Field>
             <Field label="Base URL" help={<HelpDot mode="models" section="baseurl" />}><input className="model-search" value={sel.baseUrl} onChange={(e) => patch("baseUrl", e.target.value)} placeholder="https://openrouter.ai/api" /></Field>
