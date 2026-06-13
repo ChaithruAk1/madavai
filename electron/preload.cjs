@@ -78,6 +78,9 @@ contextBridge.exposeInMainWorld("madav", {
 
   // --- connectors (MCP) ---
   testConnector: (server) => ipcRenderer.invoke("madav:testConnector", server),
+  connectorSignIn: (server) => ipcRenderer.invoke("madav:connectorSignIn", server),
+  connectorAuthStatus: (serverId) => ipcRenderer.invoke("madav:connectorAuthStatus", serverId),
+  connectorSignOut: (serverId) => ipcRenderer.invoke("madav:connectorSignOut", serverId),
   listConnectorDirectory: (opts) => ipcRenderer.invoke("madav:listConnectorDirectory", opts),
 
   // --- skills ---

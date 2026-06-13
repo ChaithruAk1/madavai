@@ -24,8 +24,12 @@ const DEFAULTS = {
 
 async function getStore() {
   const s = await chrome.storage.local.get("providers");
-  const p = s.providers;
-  if (!p || !Array.isArray(p.list)) return structuredClone(DEFAULTS);
+  let p = s.providers;
+  if (!p || !Array.isArray(p.list)) p = structuredClone(DEFAULTS);
+  // Models come from the desktop app: make sure the "Madav (desktop)" provider exists
+  // and is the default the first time, so the agent runs ON the app (no Chrome setup).
+  if (!p.list.find((x) => x.id === "madav")) p.list.unshift(structuredClone(DEFAULTS.list[0]));
+  if (!p.migratedDerive) { p.activeId = "madav"; p.migratedDerive = true; await chrome.storage.local.set({ providers: p }); }
   return p;
 }
 async function setStore(p) { await chrome.storage.local.set({ providers: p }); }
@@ -45,35 +49,76 @@ function chatUrl(base) {
 function modelsUrl(base) { return withV1(base) + "/models"; }
 
 // ---- header model selector ----
+// The dropdown is DERIVED FROM THE DESKTOP APP: it lists the exact same providers
+// and models you configured in Madav (pulled over the local link via /hook/models).
+// Nothing to set up in Chrome — pick a model and it runs ON the app (keys never leave it).
 async function renderModelSelect() {
   const p = await getStore();
   const sel = $("modelSelect");
   sel.innerHTML = "";
-  for (const prov of p.list) {
-    const og = document.createElement("optgroup");
-    og.label = prov.name + (prov.apiKey || /localhost|127\.0\.0\.1/.test(prov.baseUrl) ? "" : " (no key)");
-    const models = prov.models && prov.models.length ? prov.models : [prov.model].filter(Boolean);
-    for (const m of models) {
-      const o = document.createElement("option");
-      o.value = prov.id + "::" + m;
-      o.textContent = m;
-      if (prov.id === p.activeId && m === prov.model) o.selected = true;
-      og.appendChild(o);
+  const madav = p.list.find((x) => x.id === "madav");
+  const groups = (madav && madav.groups) || [];
+  if (groups.length) {
+    // mirror the application's own model picker: one optgroup per app profile
+    for (const g of groups) {
+      const og = document.createElement("optgroup");
+      og.label = g.name + (g.kind ? "" : "");
+      for (const m of g.models) {
+        const o = document.createElement("option");
+        o.value = "madav::" + g.id + "::" + m;     // pid::model handled by /hook/chat
+        o.textContent = m;
+        if (p.activeId === "madav" && madav.model === g.id + "::" + m) o.selected = true;
+        og.appendChild(o);
+      }
+      sel.appendChild(og);
     }
-    sel.appendChild(og);
+    $("dot").className = "dot on";
+    return;
   }
-  const a = activeOf(p);
-  $("dot").className = "dot" + (a.apiKey || /localhost|127\.0\.0\.1/.test(a.baseUrl) ? " on" : "");
+  // Not linked yet — one hint row (set the link token in ⚙ once).
+  const o = document.createElement("option");
+  o.value = ""; o.textContent = "Open the Madav app — your models load automatically";
+  sel.appendChild(o);
+  $("dot").className = "dot";
 }
 $("modelSelect").onchange = async (e) => {
-  const [id, model] = e.target.value.split("::");
+  const v = e.target.value;
+  if (!v) return;
+  const i = v.indexOf("::");          // value = "madav::pid::model"
+  const id = v.slice(0, i), model = v.slice(i + 2);
   const p = await getStore();
   p.activeId = id;
   const prov = p.list.find((x) => x.id === id);
-  if (prov) prov.model = model;
+  if (prov) prov.model = model;        // for madav, model = "pid::model"
   await setStore(p);
   renderModelSelect();
 };
+
+// Pull the app's whole catalog (same options as the application) over the local link.
+async function loadAppCatalog(silent) {
+  const link = await chrome.storage.local.get(["madavPort", "madavToken"]);
+  const port = link.madavPort || "8765";
+  const headers = link.madavToken ? { Authorization: "Bearer " + link.madavToken } : {};
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/hook/models`, { headers });
+    if (!res.ok) throw new Error(res.status + " from Madav");
+    const j = await res.json();
+    const groups = (j.groups || []).filter((g) => g.models && g.models.length);
+    if (!groups.length) throw new Error("no models from the app");
+    const p = await getStore();
+    const madav = p.list.find((x) => x.id === "madav");
+    madav.groups = groups;
+    madav.models = groups.flatMap((g) => g.models.map((m) => g.id + "::" + m));
+    // default to the app's active model the first time
+    const activeFlat = j.active && groups.find((g) => g.id === j.active) ? (j.active + "::" + groups.find((g) => g.id === j.active).models[0]) : madav.models[0];
+    if (!madav.model || !madav.models.includes(madav.model)) madav.model = activeFlat;
+    p.activeId = "madav";
+    await setStore(p);
+    renderModelSelect();
+    if (!silent) setStatus(`Loaded ${madav.models.length} models from the app ✓`, true);
+    return true;
+  } catch (e) { if (!silent) setStatus("Couldn't reach the Madav app — make sure it's open, then try again."); return false; }
+}
 
 // ---- settings drawer (provider editor) ----
 let editId = null;
@@ -182,11 +227,11 @@ async function askLLM(messages) {
   // and keys (which never enter Chrome). Model ids look like "pid::model".
   if (c.id === "madav") {
     const link = await chrome.storage.local.get(["madavPort", "madavToken"]);
-    if (!link.madavToken) throw new Error("Set the Madav webhook token in ⚙ (Madav → Scheduler → Webhook triggers).");
+    const headers = { "Content-Type": "application/json", ...(link.madavToken ? { Authorization: "Bearer " + link.madavToken } : {}) };
     const r = await fetch(`http://127.0.0.1:${link.madavPort || "8765"}/hook/chat`, {
-      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + link.madavToken },
+      method: "POST", headers,
       body: JSON.stringify({ model: c.model, messages }),
-    }).catch(() => { throw new Error("Couldn't reach the Madav desktop app — is it running with webhooks enabled?"); });
+    }).catch(() => { throw new Error("Couldn't reach the Madav desktop app — please open it, then try again."); });
     const j = await r.json().catch(() => ({}));
     if (!j.ok) throw new Error(j.error || ("Madav said " + r.status));
     return stripReasoning(j.text || "");
@@ -298,9 +343,22 @@ setInterval(refreshRec, 2500);
   if ($("mToken")) $("mToken").value = c.madavToken || "";
 })();
 if ($("saveMadav")) $("saveMadav").onclick = async () => {
-  await chrome.storage.local.set({ madavPort: ($("mPort").value || "8765").trim(), madavToken: ($("mToken").value || "").trim() });
-  $("status").textContent = "Madav link saved.";
+  let port = "8765", token = "";
+  const conn = (($("mConn") && $("mConn").value) || "").trim();
+  if (conn) {                                   // "madav:<port>:<token>" from the app
+    const parts = conn.replace(/^madav:/i, "").split(":");
+    port = (parts[0] || "8765").trim(); token = (parts[1] || "").trim();
+  } else {
+    port = (($("mPort") && $("mPort").value) || "8765").trim();
+    token = (($("mToken") && $("mToken").value) || "").trim();
+  }
+  await chrome.storage.local.set({ madavPort: port, madavToken: token });
+  $("status").textContent = "Saved.";
+  await loadAppCatalog(false);
 };
 
 renderModelSelect();
+loadAppCatalog(true);                                  // auto-connect on open
+setTimeout(() => loadAppCatalog(true), 2500);          // retry if the app was still starting
+setTimeout(() => loadAppCatalog(true), 6000);
 refreshRec();

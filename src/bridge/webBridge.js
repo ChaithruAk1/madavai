@@ -1071,6 +1071,9 @@ export const webBridge = {
   async listDir() { return []; },
   async openExternal(url) { try { window.open(url, "_blank", "noopener"); } catch {} return true; },
   async testConnector() { return { ok: false, error: "Connecting an MCP server runs in the desktop app." }; },
+  async connectorSignIn() { return { ok: false, error: "Connector sign-in runs in the desktop app." }; },
+  async connectorAuthStatus() { return { connected: false, registered: false }; },
+  async connectorSignOut() { return { ok: true }; },
   async listConnectorDirectory() {
     // Curated catalog of popular MCP connectors so the gallery isn't empty on web. Actually connecting
     // them (local processes / OAuth) happens in the desktop app — here it's a preview of what's available.

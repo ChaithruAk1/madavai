@@ -2,11 +2,30 @@
   "manifest_version": 3,
   "name": "Madav for Chrome",
   "version": "0.1.0",
-  "description": "Browse with your own LLMs — a Madav browsing agent that reads pages and clicks, types, and navigates for you.",
-  "permissions": ["activeTab", "scripting", "storage", "tabs", "sidePanel"],
-  "host_permissions": ["<all_urls>"],
-  "background": { "service_worker": "background.js" },
-  "action": { "default_title": "Open Madav" },
-  "side_panel": { "default_path": "sidepanel.html" },
-  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  "description": "Browse with your own LLMs \u2014 a Madav browsing agent that reads pages and clicks, types, and navigates for you.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAj0v37qe31AhsE0w3f1Gz5G0Nmfbpy9zYjvnLOkrL3mgbUNILHdEl7SH2IUJVf0cTW/9uoN2D8gnGl6sV67J96+fsTgmkwlEaiJXfG6gE44yUklYX+pGk97qzasjVa/xZWinfXZKUydsNSdrAVWvwwW843oiOgGM5cpolvM54nUfdvEuBsEFuM8SbyPpFfixEGow34G4uMIl97qf1KgUPpHOg8zGRcJBiMPP/lbHTggq70Desm8hEvOkwp2hb/pdXVbZ/yQr55KrqRMAv40IsxOReHofim34kqoP131SUCe0yXW6q1ev/5dcHa1WrqfuyEnf36+KL+3JRWFgjoUxEfwIDAQAB",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Madav"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
 }

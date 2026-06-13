@@ -204,7 +204,7 @@ export const SCREEN_HELP = {
     guide: null,
     sections: [
       { id: "theme", label: "Theme", what: "Switches Madav between light and dark appearance.", more: "A straightforward light/dark choice for comfort and environment. Madav is carefully styled for both — dark for low-light focus, light for bright rooms — and the whole app, including these help popovers, follows your pick.", when: "Set it to match your lighting and preference." },
-      { id: "accent", label: "Accent colour", what: "Sets the highlight colour used across buttons, links and active states — including multi-colour accents drawn from the Madav logo.", more: "The accent is the single colour that ties the interface together. Beyond the presets you can build a custom one, choose Claude's terracotta, or generate a multi-colour accent sampled from the Madav logo's own gradient — so the app can feel personal or on-brand. It's purely visual and changes nothing about behaviour.", when: "Change it whenever you want a different look or a brand-matched palette." },
+      { id: "accent", label: "Accent colour", what: "Sets the highlight colour used across buttons, links and active states — including multi-colour accents drawn from the Madav logo.", more: "The accent is the single colour that ties the interface together. Beyond the presets you can build a custom one, choose a warm terracotta, or generate a multi-colour accent sampled from the Madav logo's own gradient — so the app can feel personal or on-brand. It's purely visual and changes nothing about behaviour.", when: "Change it whenever you want a different look or a brand-matched palette." },
       { id: "account", label: "Account & workspace", what: "Your login and the agents, teams and folders that follow it.", more: "Your account anchors your workspace — sign in and your agents, teams and task folders come with you, so the same setup is there across sessions and machines. This is also where account-level details live.", when: "Use it to sign in, review your account, or confirm your workspace is synced." },
       { id: "extras", label: "Extras (feature switches)", what: "Toggles for optional features like voice input, spoken replies, and learned-skill drafting.", more: "Not every feature suits every user, so Madav keeps the optional ones behind switches here — voice input, spoken replies, automatic skill-forging from your habits, and similar. Turn off what you don't use to keep the interface lean; turn things on to opt into more automation. Nothing here is required for the core app to work.", when: "Visit it to enable a feature you want or silence one you don't." },
     ],
@@ -227,7 +227,7 @@ export const WHATS_NEW = [
   { t: "Pinned plays everywhere", d: "Pin a play to an agent (signature move) or a room (team standard); chains, needs, usage stats, and .madavplay sharing.", go: "skills" },
   { t: "Workroom goals, templates & archive", d: "Track objectives, save a room as a template, archive finished ones, and let a room write its own digest.", go: "project" },
   { t: "Agent résumé & coaching", d: "A full profile per agent — track record, plays, rooms — and a thumbs up/down that graduates into its memory.", go: "agents" },
-  { t: "Multi-color accents", d: "Settings → Appearance: the Madav logo gradient, Claude's terracotta, or build your own.", go: "settings" },
+  { t: "Multi-color accents", d: "Settings → Appearance: the Madav logo gradient, a warm terracotta, or build your own.", go: "settings" },
 ];
 
 export function screenHelp(mode) { return SCREEN_HELP[mode] || null; }

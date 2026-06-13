@@ -53,7 +53,21 @@
   </div>
 
   <div class="settings" id="settings">
-    <h4>Providers</h4>
+    <h4>Madav app — your models come from here</h4>
+    <p style="font-size:11.5px;color:var(--text2);margin:0 0 8px;line-height:1.5">Just keep the <b>Madav desktop app open</b> — this panel finds it on its own and loads your models. Nothing to set up.</p>
+    <button class="btn primary" id="saveMadav" style="margin-top:2px">Reload my models</button>
+    <div class="status" id="status"></div>
+    <details style="margin-top:10px"><summary style="font-size:11px;color:var(--text2);cursor:pointer">Trouble connecting? Enter it manually</summary>
+      <label>Connection code (from app: Scheduler → Webhooks → Copy connection)</label>
+      <input id="mConn" placeholder="madav:8765:…" />
+      <label>or — Webhook port</label>
+      <input id="mPort" placeholder="8765" />
+      <label>Webhook token</label>
+      <input id="mToken" type="password" placeholder="paste the token" />
+    </details>
+
+    <h4 style="margin-top:16px">Advanced — extra providers (optional)</h4>
+    <p style="font-size:11px;color:var(--text2);margin:0 0 4px">The dropdown already lists the same models as your Madav app. You only need this to add a provider that isn't in the app.</p>
     <label>Edit provider</label>
     <select id="provSelect"></select>
     <label>Name</label>
@@ -70,13 +84,6 @@
       <button class="btn" id="addProv">+ Add</button>
       <button class="btn danger" id="delProv">Delete</button>
     </div>
-    <h4 style="margin-top:14px">Madav link (Flow Recorder)</h4>
-    <label>Webhook port</label>
-    <input id="mPort" placeholder="8765" />
-    <label>Webhook token (Madav → Scheduler → Webhook triggers)</label>
-    <input id="mToken" type="password" placeholder="paste the token" />
-    <button class="btn primary" id="saveMadav" style="margin-top:8px">Save link</button>
-    <div class="status" id="status"></div>
   </div>
 
   <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center">
@@ -85,7 +92,7 @@
   </div>
 
   <div class="log" id="log">
-    <div class="empty">Pick a provider &amp; model above, then give me a goal for <b>this tab</b> — e.g. "find the pricing page and tell me the cheapest plan". I read the page and click / type / navigate step by step.</div>
+    <div class="empty">Your models are pulled straight from the <b>Madav app</b> — pick one above, then give me a goal for <b>this tab</b> — e.g. "find the pricing page and tell me the cheapest plan". I read the page and click / type / navigate step by step.</div>
   </div>
 
   <div class="composer">

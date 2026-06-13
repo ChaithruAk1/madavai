@@ -27,8 +27,12 @@ async function connect(server) {
   let transport;
   if (server.url) {
     // Remote MCP server (hosted, like the official-registry "remotes" entries).
+    // Attach the OAuth provider so stored tokens are used + refreshed automatically;
+    // if the server needs auth and there are no tokens, it throws "Sign-in required".
     const url = new URL(server.url);
-    const opts = server.headers ? { requestInit: { headers: server.headers } } : undefined;
+    const oauth = require("./mcp-oauth.cjs");
+    const opts = { authProvider: oauth.silentProvider(server.id) };
+    if (server.headers) opts.requestInit = { headers: server.headers };
     if (server.transport === "sse") {
       if (!m.SSEClientTransport) throw new Error("SSE transport unavailable in this MCP SDK build");
       transport = new m.SSEClientTransport(url, opts);

@@ -1175,6 +1175,14 @@ input, textarea, select { font-family: inherit; }
 .cdir-add:hover { background: var(--accent-weak); border-color: var(--accent-line); color: var(--text-0); }
 .cdir-add.on { color: var(--ok); border-color: transparent; }
 .cdir-desc { color: var(--text-1); font-size: 13px; line-height: 1.5; margin-top: 11px; }
+.cdir-rank { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
+.cdir-tag.trending { color: #c98a12; background: rgba(201,138,18,0.12); }
+.cdir-selwrap { display: inline-flex; }
+.cdir-add:disabled { opacity: .6; cursor: default; }
+.cdir-auth { display: flex; align-items: center; gap: 12px; margin: 4px 0 2px; }
+.cdir-auth-state { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-1); }
+.cdir-auth-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
+.cdir-auth-dot.on { background: var(--ok); box-shadow: 0 0 7px var(--ok); }
 
 /* message hover actions (Save / Copy) */
 .msg-actions { display: flex; gap: 6px; margin-top: 6px; opacity: 0; transition: opacity .12s; }

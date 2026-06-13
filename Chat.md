@@ -35754,3 +35754,33 @@ takeaways, Skill Forge, Flow Recorder) — caused write collisions; rule: ONE se
 NEXT SESSION TASK #1: Projects → "Workrooms" redesign + agent ecosystem (full spec in
 memory.md §14z6).
 ================================================================================
+
+================================================================================
+## SESSION 2026-06-13 (cont'd) — LOGO REVERT + GIT INDEX REPAIR
+
+USER ARC (logo): enlarge top-left wordmark + hero M → "triple the size" → then
+full reversal: "revert everything related to logo" → "revert to how it was 2
+hours ago" → clarified "previously we used madav-logo1 from folder."
+
+OUTCOME — rolled the whole logo swap back to the madav-logo1 era:
+- MadavLogo.jsx → madav-logo1-tight.png; MadavMark.jsx → madav-m.png
+- hero M size 44, top-left height 32, .topnav 64px (all the day's size bumps undone)
+- the 4 "Built to think with you" taglines restored (TopNav, AuthGate, landing ×2)
+- landing/logo.png + landing/m.png + build/icon.png restored to committed images
+- ModelConfig.jsx keeps LogoM.png (separate admin-Anthropic feature; left as-is)
+
+CORRUPTION CAUGHT + FIXED: git diff exposed host Edit had truncated the tails of
+MadavLogo/MadavMark/TopNav/AuthGate.jsx (missing closing braces). Restored each via
+`git show HEAD:<f> > <f>` — reverts AND repairs in one move; all parse clean now.
+Lesson: readFileSync "ok" is not a parse — use esbuild; restore big/binary files
+with `git show HEAD:<f> > <f>` (no index touch, no host truncation).
+
+GIT INDEX REPAIR (the long-standing commit blocker): index was corrupt
+(`unable to read 9157...0000`) + stale .git/index.lock held by a Windows process.
+User ran in PowerShell: Remove-Item .git\index.lock, .git\index; git reset → index
+rebuilt from HEAD, working tree preserved, status readable. Branch is 2 commits
+ahead of origin/main. Large uncommitted batch staged (git add -u + mockups/);
+3 stray PNGs (LogoM-clear/madav-wordmark/MadavLogo.png) excluded. Commit pending.
+
+DOCS: memory.md §14z17 records all of the above.
+================================================================================

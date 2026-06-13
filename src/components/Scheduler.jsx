@@ -369,6 +369,7 @@ function WebhooksCard({ agents, teams, tasks }) {
   const [kind, setKind] = useState("agent");
   const [target, setTarget] = useState("");
   const [copied, setCopied] = useState(false);
+  const [connCopied, setConnCopied] = useState(false);
 
   useEffect(() => {
     bridge.getSettings().then((s) => setCfg(s.webhooks || { enabled: false, port: 8765, token: "" })).catch(() => {});
@@ -391,6 +392,9 @@ function WebhooksCard({ agents, teams, tasks }) {
   const id = target || (list[0] && list[0].id) || "<id>";
   const curl = `curl -X POST http://127.0.0.1:${cfg.port || 8765}/hook/${kind}/${id} -H "Authorization: Bearer ${cfg.token || "<token>"}" -H "Content-Type: application/json" -d "{\\"prompt\\":\\"your mission here\\"}"`;
   const copy = async () => { try { await navigator.clipboard.writeText(curl); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} };
+  // One paste = connect the Chrome extension. Format: "madav:<port>:<token>".
+  const connCode = `madav:${cfg.port || 8765}:${cfg.token || ""}`;
+  const copyConn = async () => { try { await navigator.clipboard.writeText(connCode); setConnCopied(true); setTimeout(() => setConnCopied(false), 1500); } catch {} };
 
   return (
     <div className="acc-card" style={{ padding: "14px 16px", marginTop: 18 }}>
@@ -427,6 +431,13 @@ function WebhooksCard({ agents, teams, tasks }) {
             <summary className="mo-sub" style={{ cursor: "pointer" }}>Show the raw command (for the technically inclined — "Copy example" gives you the same thing)</summary>
             <div className="mo-sub" style={{ marginTop: 6, fontFamily: "var(--mono)", fontSize: 11, wordBreak: "break-all", userSelect: "all" }}>{curl}</div>
           </details>
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600 }}>Connect the Madav Chrome extension</div>
+              <div className="mo-sub">The extension finds the app on its own — this code is only a manual fallback if it can't.</div>
+            </div>
+            <button className="btn" onClick={copyConn}>{connCopied ? <Check size={13} /> : <Copy size={13} />} {connCopied ? "Copied" : "Copy connection"}</button>
+          </div>
           <div className="mo-sub" style={{ marginTop: 6 }}>Token-protected, local-only by default (127.0.0.1). Anyone with the token can run your agents — treat it like a password.</div>
         </div>
       )}

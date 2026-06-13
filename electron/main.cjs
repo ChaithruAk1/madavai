@@ -409,6 +409,9 @@ ipcMain.handle("madav:listDir", (_e, dir) => {
 
 // ---- IPC: connectors (MCP) ----
 ipcMain.handle("madav:testConnector", (_e, server) => mcp.testServer(server));
+ipcMain.handle("madav:connectorSignIn", (_e, server) => require("./mcp-oauth.cjs").signIn(server, (u) => shell.openExternal(u)));
+ipcMain.handle("madav:connectorAuthStatus", (_e, serverId) => require("./mcp-oauth.cjs").authStatus(serverId));
+ipcMain.handle("madav:connectorSignOut", (_e, serverId) => require("./mcp-oauth.cjs").signOut(serverId));
 const connectorRegistry = require("./connector-registry.cjs");
 ipcMain.handle("madav:listConnectorDirectory", (_e, opts) => connectorRegistry.listDirectory(opts || {}));
 

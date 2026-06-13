@@ -1,0 +1,15 @@
+{
+  "name": "madav-connector-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Madav one-click connector gateway — brokers GitHub/Notion/Slack OAuth and exposes each as an OAuth-protected remote MCP server.",
+  "main": "src/server.js",
+  "scripts": { "start": "node src/server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "express": "^4.21.2",
+    "zod": "^3.23.8"
+  }
+}

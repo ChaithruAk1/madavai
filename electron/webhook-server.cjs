@@ -62,11 +62,20 @@ function reconcile(deps) {
   const cfg = deps.settings.load();
   const wh = cfg.webhooks || {};
   stop();
-  if (!wh.enabled) return status();
+  // Companion mode: the server ALWAYS listens on localhost so the Madav Chrome
+  // extension can auto-discover the model catalog (GET /hook/models) and run
+  // completions (POST /hook/chat) with NO token — trusted by Origin
+  // (chrome-extension://…), which web pages cannot forge. The headless
+  // agent/team/task/flow routes stay OFF unless the user enables webhooks, and
+  // still require the token.
+  const fullEnabled = !!wh.enabled;
+  // The ONE official Madav Chrome extension is the only token-free companion. Its ID is
+  // pinned by the "key" in extension/manifest.json — any other extension is rejected.
+  const ALLOWED_EXT_ORIGIN = "chrome-extension://idepjombikgdomgbnfmhgfebamldbgdm";
   const port = Number(wh.port) || 8765;
   const token = wh.token || "";
-  const host = wh.lan ? "0.0.0.0" : "127.0.0.1";
-  if (wh.lan) {
+  const host = (fullEnabled && wh.lan) ? "0.0.0.0" : "127.0.0.1";
+  if (fullEnabled && wh.lan) {
     console.warn([
       "",
       "============================================================",
@@ -84,9 +93,32 @@ function reconcile(deps) {
       const u = new URL(req.url, "http://localhost");
       const ip = (req.socket && req.socket.remoteAddress) || "?";
       if (rateLimited(ip)) return send(res, 429, { ok: false, error: "rate limit exceeded (30 req/min)" });
+      const origin = String(req.headers.origin || "");
+      // The token-free companion bypass is only granted to the browser extension running
+      // on THIS machine (loopback). Any LAN/remote caller must present the token, even if
+      // it forges a chrome-extension Origin — closes the hole when webhooks.lan binds 0.0.0.0.
+      const isLoopback = ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
+      const isExt = origin === ALLOWED_EXT_ORIGIN && isLoopback;
+      // CORS for the browser extension. Web origins are never granted access by the
+      // auth gate below, so echoing the extension origin here is safe.
+      if (isExt) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      }
+      if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
       const auth = (req.headers.authorization || "").replace(/^Bearer\s+/i, "") || u.searchParams.get("token") || "";
       if (u.pathname === "/hook/ping") return send(res, 200, { ok: true, app: "Madav" });
-      if (!token || !tokenMatches(auth, token)) return send(res, 401, { ok: false, error: "bad or missing token" });
+      const authed = !!token && tokenMatches(auth, token);
+      // Companion endpoints (model catalog + chat) are usable by the trusted Chrome
+      // extension with no token. Everything else needs the token AND webhooks enabled.
+      const companion = u.pathname === "/hook/models" || u.pathname === "/hook/chat";
+      if (companion) {
+        if (!authed && !isExt) return send(res, 401, { ok: false, error: "bad or missing token" });
+      } else {
+        if (!fullEnabled) return send(res, 403, { ok: false, error: "webhooks are off — enable them in Madav -> Scheduler -> Webhooks" });
+        if (!authed) return send(res, 401, { ok: false, error: "bad or missing token" });
+      }
       // POST /hook/flow — a workflow recorded in REAL Chrome (Madav extension) arrives
       // here; the Flow Recorder's distiller turns it into a Skill Forge DRAFT (the
       // user still approves it on the Skills screen — nothing activates by itself).
