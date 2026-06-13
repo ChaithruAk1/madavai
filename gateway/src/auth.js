@@ -8,6 +8,7 @@
 import crypto from "node:crypto";
 import { clients, authCodes, pendings } from "./store.js";
 import { PROVIDERS } from "./providers.js";
+import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 
 const rnd = (n = 32) => crypto.randomBytes(n).toString("base64url");
 
@@ -88,7 +89,7 @@ export function makeSharedProvider({ publicUrl }) {
     async exchangeAuthorizationCode(client, authorizationCode) {
       const rec = authCodes.take(authorizationCode);     // single use
       if (!rec || rec.clientId !== client.client_id) throw new Error("invalid_grant");
-      const access = "gwt_" + seal({ provider: rec.provider, providerToken: rec.providerToken, refreshToken: rec.refreshToken, expiresAt: rec.expiresAt, clientId: client.client_id });
+      const access = "gwt_" + seal({ provider: rec.provider, providerToken: rec.providerToken, refreshToken: rec.refreshToken, expiresAt: rec.expiresAt, clientId: client.client_id, sx: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 });
       return { access_token: access, token_type: "Bearer", expires_in: 60 * 60 * 24 * 30, scope: "" };
     },
 
@@ -97,7 +98,7 @@ export function makeSharedProvider({ publicUrl }) {
     async verifyAccessToken(token) {
       let v;
       try { v = unseal(token.startsWith("gwt_") ? token.slice(4) : token); }
-      catch { throw new Error("invalid_token"); }
+      catch { throw new InvalidTokenError("Session is invalid or from an old key — please sign in again."); }
       let providerToken = v.providerToken;
       // If the provider token expires (Google) and we have a refresh token, refresh it now.
       if (v.refreshToken && v.expiresAt && v.expiresAt < Date.now() + 60000) {
@@ -106,7 +107,7 @@ export function makeSharedProvider({ publicUrl }) {
           try { const r = await prov.refresh(v.refreshToken); providerToken = r.providerToken; } catch {}
         }
       }
-      return { token, clientId: v.clientId, scopes: [], extra: { provider: v.provider, providerToken } };
+      return { token, clientId: v.clientId, scopes: [], expiresAt: v.sx || (Math.floor(Date.now() / 1000) + 3600), extra: { provider: v.provider, providerToken } };
     },
 
     async revokeToken() { /* stateless tokens — client simply discards it on sign-out */ },
