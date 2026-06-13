@@ -87,7 +87,7 @@ ${AGENT_GUIDE_RAW}`;
 
 // GOTO key → app mode for onNavigate(switchMode)
 const GOTO_MODE = { chat: "chat", collaborate: "cowork", build: "code", studio: "studio", projects: "project", agents: "agents", models: "models-overview", connectors: "connectors", scheduler: "scheduler", consumption: "consumption", skills: "skills", terminal: "terminal", settings: "settings", guide: "guide" };
-const GOTO_LABEL = { chat: "Let's Chat", collaborate: "Let's Collaborate", build: "Let's Build", studio: "Studio", projects: "Projects", agents: "Agents", models: "Models", connectors: "Connectors", scheduler: "Scheduler", consumption: "Consumption", skills: "Skills", terminal: "Terminal", settings: "Settings", guide: "the User Guide" };
+const GOTO_LABEL = { chat: "Let's Chat", collaborate: "Let's Collaborate", build: "Let's Build", studio: "Studio", projects: "Projects", agents: "Agents", models: "Models", connectors: "Connectors", scheduler: "Scheduler", consumption: "Consumption", skills: "Playbook", terminal: "Terminal", settings: "Settings", guide: "the User Guide" };
 
 // Light, dismissible proactive offers keyed to the current screen.
 function tipFor(mode) {

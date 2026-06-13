@@ -273,25 +273,36 @@ export default function App() {
     }
   }, [settings && settings.theme]);
 
-  // Accent color: "default" = original two-tone (iris + teal, multi-color marks).
-  // Any hex = monochrome blend of the whole UI to that single color.
+  // Accent color: "default" = original two-tone (iris + teal, multi-color marks);
+  // "#hex" = monochrome blend; "grad:#a:#b[:#c]" = MULTI-COLOR accent — a gradient
+  // paints primary surfaces (--accent-grad) while a solid mid-stop keeps text,
+  // borders, and icons readable (--accent). The "Madav" preset uses the logo's
+  // measured colors: cyan #0ad0f5 → azure #2196f8 → violet #8b50f5.
   useEffect(() => {
     const root = document.documentElement;
     const raw = ((settings && settings.accent) || "default").trim();
-    const clearVars = () => { ["--accent", "--accent-rgb", "--accent-2", "--accent2-rgb", "--accent-ink"].forEach((v) => root.style.removeProperty(v)); };
+    const clearVars = () => { ["--accent", "--accent-rgb", "--accent-2", "--accent2-rgb", "--accent-ink", "--accent-grad"].forEach((v) => root.style.removeProperty(v)); };
+    const hexRgb = (hex) => { const n = parseInt(hex, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    const apply = (solidHex, secondHex, gradStops) => {
+      const [r, g, b] = hexRgb(solidHex);
+      const [r2, g2, b2] = hexRgb(secondHex);
+      root.dataset.accent = "custom";
+      root.style.setProperty("--accent", "#" + solidHex);
+      root.style.setProperty("--accent-rgb", `${r},${g},${b}`);
+      root.style.setProperty("--accent-2", "#" + secondHex);
+      root.style.setProperty("--accent2-rgb", `${r2},${g2},${b2}`);
+      if (gradStops) root.style.setProperty("--accent-grad", `linear-gradient(110deg, ${gradStops.map((h) => "#" + h).join(", ")})`);
+      else root.style.removeProperty("--accent-grad");
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      root.style.setProperty("--accent-ink", brightness < 145 ? "#ffffff" : "#04121a");
+    };
+    if (raw.startsWith("grad:")) {
+      const stops = raw.slice(5).split(":").map((x) => (/^#?([0-9a-f]{6})$/i.exec(x.trim()) || [])[1]).filter(Boolean);
+      if (stops.length >= 2) { apply(stops[Math.floor((stops.length - 1) / 2)], stops[stops.length - 1], stops); return; }
+    }
     const m = /^#?([0-9a-f]{6})$/i.exec(raw);
     if (raw === "default" || !m) { root.dataset.accent = "default"; clearVars(); return; }
-    const n = parseInt(m[1], 16);
-    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-    const rgb = `${r},${g},${b}`;
-    root.dataset.accent = "custom";
-    root.style.setProperty("--accent", "#" + m[1]);
-    root.style.setProperty("--accent-rgb", rgb);
-    root.style.setProperty("--accent-2", "#" + m[1]);   // blend secondary into the chosen color
-    root.style.setProperty("--accent2-rgb", rgb);
-    // Readable text/icon color ON a solid accent fill: white for dark accents, near-black for light ones.
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    root.style.setProperty("--accent-ink", brightness < 145 ? "#ffffff" : "#04121a");
+    apply(m[1], m[1], null);
   }, [settings && settings.accent]);
   useEffect(() => {
     const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) { e.preventDefault(); setSidebarOpen((v) => !v); } };

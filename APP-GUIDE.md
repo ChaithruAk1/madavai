@@ -4,8 +4,8 @@
 in the app. Keep it factual — only describe features that actually exist.*
 
 ## What Madav is
-A desktop + web app with complete AI workflows — Chat, Collaborate, Build, Projects,
-Agents, Skills, Connectors — running on ANY model you choose: cloud providers
+A desktop + web app with complete AI workflows — Chat, Collaborate, Build, Workrooms,
+Agents, Playbook, Connectors — running on ANY model you choose: cloud providers
 (OpenRouter, NVIDIA NIM, Anthropic, etc.) or local models (Ollama, LM Studio). You
 bring your own API key; the model you pick in the top-bar selector decides which
 provider runs. No per-seat fees, no lock-in.
@@ -47,10 +47,14 @@ crews, visualized live in Mission Control. There's a Recruiter (describe the wor
 staffs a team), a Floor (whole-workforce live status), and Activity (agent
 conversations). Full detail lives in the Agent Guide. (Sage's deepest knowledge.)
 
-## Skills
-Skill playbooks (a folder with SKILL.md). Add skill folders, enable/disable
-per skill, import folders or .zip/.skill files. Agents and chat can load a skill on demand
-to follow its instructions and run its bundled scripts.
+## Playbook (formerly Skills)
+Every move Madav has learned, shown as PLAYS on a card wall (your plays + built-in packs).
+A play is a SKILL.md (+ optional scripts) that Madav runs automatically when a task matches,
+or on demand with /name; agents with the Skills capability use the whole book. Teach a new
+play four ways: record a web workflow, record a desktop workflow, write one by hand, or
+import a folder/.zip. Madav also DRAFTS plays itself (from recordings and from noticing
+repeated tasks - Skill Forge) and waits for your approval. A global "Record" chip in the
+top bar starts/stops recording from any screen.
 
 ## Connectors (MCP)
 Connect external apps via Model Context Protocol — Gmail, GitHub, Slack, Google Drive,
@@ -82,7 +86,7 @@ Telegram remote control — drive a bound session or folder from your phone; rep
 back in the desktop session.
 
 ## Settings
-Profile & appearance (theme light/dark, accent, default language), Account & sign-in,
+Profile & appearance (theme light/dark; accent - Default, the Madav logo gradient, Claude terracotta, a custom color, or a build-your-own gradient; default language), Account & sign-in,
 Model configuration, Agent Browser controls (admin), Connectors, and more. The app footer
 reads "© 2026 Madav · Proprietary".
 

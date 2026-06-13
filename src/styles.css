@@ -2951,3 +2951,43 @@ textarea.model-search { border-radius: 14px; }
 .sched-chips .chip.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .sched-src { display: inline-flex; align-items: center; margin-left: 10px; padding: 1px 9px; border-radius: 99px; border: 1px solid var(--line); font-size: 11px; font-weight: 500; color: var(--text-2); vertical-align: 1px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sched-desc { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* MULTI-COLOR ACCENT — when a gradient accent is chosen (--accent-grad set), primary
+   surfaces wear it; text/borders/icons keep the solid mid-stop for readability.
+   Single-color and default accents are untouched (the var falls back to --accent). */
+:root[data-accent="custom"] .btn.primary { background: var(--accent-grad, var(--accent)); color: var(--accent-ink, #fff); }
+:root[data-accent="custom"] .send { background: var(--accent-grad, var(--accent)); }
+:root[data-accent="custom"] .wr-meterfill { background: var(--accent-grad, linear-gradient(90deg, var(--wr), color-mix(in srgb, var(--wr) 55%, #ffffff))); }
+
+/* Top-bar workflow recorder — quiet chip at rest, unmistakable while recording */
+.tn-recwrap { position: relative; }
+.tn-rec { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.tn-rec.on { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.tn-recdot { width: 8px; height: 8px; border-radius: 99px; background: var(--danger); animation: tnrec 1.2s ease-in-out infinite; }
+@keyframes tnrec { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .tn-recdot { animation: none; } }
+.tn-recmenu { right: 0; left: auto; top: calc(100% + 8px); bottom: auto; }
+
+/* ===== PLAYBOOK (formerly Skills) — teach strip, draft approvals, play wall ===== */
+.pb2 { height: 100%; overflow-y: auto; padding: 24px; }
+.pb2-inner { max-width: 1080px; margin: 0 auto; }
+.pb2-teach { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.pb2-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-1); cursor: pointer; transition: border-color .15s ease, transform .15s ease; }
+.pb2-tile:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); transform: translateY(-1px); }
+.pb2-tile.on { border-color: var(--danger); }
+.pb2-tileic { color: var(--accent); }
+.pb2-tilet { font-size: 13.5px; font-weight: 650; }
+.pb2-tiles { font-size: 11.5px; color: var(--text-2); line-height: 1.4; }
+.pb2-drafts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.pb2-draft { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 14px; padding: 12px; background: color-mix(in srgb, var(--accent) 5%, var(--bg-1)); }
+.pb2-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.pb2-card { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-1); cursor: pointer; text-align: left; color: inherit; transition: border-color .15s ease, transform .15s ease; min-height: 116px; }
+.pb2-card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); transform: translateY(-1px); }
+.pb2-card.off { opacity: 0.55; }
+.pb2-glyph { font-size: 20px; line-height: 1; }
+.pb2-cardname { font-size: 13.5px; font-weight: 650; }
+.pb2-carddesc { font-size: 11.5px; color: var(--text-2); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pb2-cardmeta { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 6px; }
+.pb2-readhead { display: flex; align-items: center; gap: 12px; margin: 8px 0 4px; }
+.pb2-readtitle { margin: 0; font-size: 24px; }
+.pb2-readdesc { color: var(--text-2); font-size: 13.5px; margin: 8px 0 14px; }

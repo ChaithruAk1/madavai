@@ -121,16 +121,40 @@ export default function Settings({ onChanged }) {
                 </select>
               </Field>
               <Field label="Accent color">
-                <div className="prof-accents">
-                  <button className={`prof-acc ${(s.accent || "default") === "default" ? "on" : ""}`} onClick={() => setField("accent", "default")} title="Default (multi-color)">
-                    <span className="prof-acc-dot" style={{ background: "linear-gradient(135deg, #9fb0ff, #38e8d0 55%, #b88cff)" }} /> Default
-                  </button>
-                  <label className={`prof-acc ${(s.accent && s.accent !== "default") ? "on" : ""}`} title="Pick your own accent">
-                    <span className="prof-acc-dot" style={{ background: (s.accent && s.accent !== "default") ? s.accent : "var(--bg-1)" }} />
-                    Custom
-                    <input type="color" value={(s.accent && s.accent !== "default") ? s.accent : "#13c2d6"} onChange={(e) => setField("accent", e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
-                  </label>
-                </div>
+                {(() => {
+                  const acc = s.accent || "default";
+                  const isGrad = acc.startsWith("grad:");
+                  const isSolid = !isGrad && acc !== "default";
+                  const MADAV = "grad:#0ad0f5:#2196f8:#8b50f5"; // measured from the Madav logo (cyan → azure → violet)
+                  const stops = isGrad ? acc.slice(5).split(":") : ["#0ad0f5", "#8b50f5"];
+                  const gradCss = (st) => `linear-gradient(110deg, ${st.join(", ")})`;
+                  const setStop = (i, v) => { const st = isGrad ? acc.slice(5).split(":") : ["#0ad0f5", "#8b50f5"]; st[i === 0 ? 0 : st.length - 1] = v; setField("accent", "grad:" + st.join(":")); };
+                  return (
+                    <div className="prof-accents">
+                      <button className={`prof-acc ${acc === "default" ? "on" : ""}`} onClick={() => setField("accent", "default")} title="Default (multi-color)">
+                        <span className="prof-acc-dot" style={{ background: "linear-gradient(135deg, #9fb0ff, #38e8d0 55%, #b88cff)" }} /> Default
+                      </button>
+                      <button className={`prof-acc ${acc === MADAV ? "on" : ""}`} onClick={() => setField("accent", MADAV)} title="The Madav logo's own colors — cyan → azure → violet">
+                        <span className="prof-acc-dot" style={{ background: gradCss(["#0ad0f5", "#2196f8", "#8b50f5"]) }} /> Madav
+                      </button>
+                      <button className={`prof-acc ${acc === "#d97757" ? "on" : ""}`} onClick={() => setField("accent", "#d97757")} title="Claude's warm terracotta">
+                        <span className="prof-acc-dot" style={{ background: "#d97757" }} /> Claude
+                      </button>
+                      <label className={`prof-acc ${isSolid ? "on" : ""}`} title="Pick a single accent color">
+                        <span className="prof-acc-dot" style={{ background: isSolid ? acc : "var(--bg-1)" }} />
+                        Custom
+                        <input type="color" value={isSolid ? acc : "#13c2d6"} onChange={(e) => setField("accent", e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
+                      </label>
+                      <span className={`prof-acc ${isGrad && acc !== MADAV ? "on" : ""}`} title="Build your own two-color gradient accent" style={{ cursor: "default" }}>
+                        <span className="prof-acc-dot" style={{ background: gradCss([stops[0], stops[stops.length - 1]]) }} />
+                        Gradient
+                        <input type="color" title="Start color" value={stops[0]} onChange={(e) => setStop(0, e.target.value)} style={{ width: 22, height: 22, padding: 0, border: "none", background: "none", cursor: "pointer", marginLeft: 6 }} />
+                        <span style={{ color: "var(--text-2)" }}>→</span>
+                        <input type="color" title="End color" value={stops[stops.length - 1]} onChange={(e) => setStop(1, e.target.value)} style={{ width: 22, height: 22, padding: 0, border: "none", background: "none", cursor: "pointer" }} />
+                      </span>
+                    </div>
+                  );
+                })()}
               </Field>
             </div>
 

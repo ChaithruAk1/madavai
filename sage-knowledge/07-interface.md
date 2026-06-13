@@ -128,47 +128,41 @@ What: The last item in the account menu.
 Why: Ends your session, e.g., to switch accounts or hand off a machine.
 Behavior: Click to sign out and reload the app to the sign-in state. Local settings stay on the machine; you'll just need to sign in again.
 
-### Skills · Skills list & Reload
-aliases: personal skills, skill catalog, refresh skills
-What: The left panel listing every skill discovered in your skill folders, with a Reload button in its header.
-Why: See and select everything the agent can be taught at a glance.
-Behavior: Skills are discovered recursively — each subfolder containing a SKILL.md counts, with duplicate names de-duplicated. Disabled skills render dimmed. Click a skill to view its description, trigger ("/name + auto"), last-updated date, and full rendered SKILL.md. Reload rescans folders after you edit files on disk.
+### Playbook · The play wall
+aliases: skills, playbook, plays, skill catalog, where are my skills
+What: The Playbook screen (sidebar "Playbook", formerly "Skills") shows every move Madav has learned as PLAYS — a teach strip on top, then card grids: "Your plays" and "Built-in packs".
+Why: A play is a reusable know-how (a SKILL.md + optional scripts). Madav runs the right play automatically when a task matches, or you call it with /name; agents with the Skills capability draw on the whole book.
+Behavior: Each card shows an auto emoji glyph, the play's name, a short description, badges ("pack" for built-in, "benched" when disabled), and its /trigger. Search filters live. Click a card to open the full reader. Reload (↻) rescans your folders.
 
-### Skills · Create skill
-aliases: new skill, new-skill-name, starter skill
-What: The "new-skill-name" input with a plus button at the bottom of the Skills list.
-Why: Scaffolds a fresh skill so you can start writing instructions immediately.
-Behavior: Type a name (defaults to "new-skill") and click the plus — a starter skill folder is created inside your primary skills folder. You'll need at least one skills folder added first, or you'll get "Add a skills folder first." Desktop only.
+### Playbook · Teach a new play
+aliases: record skill, write skill, import skill, new play, teach madav
+What: The "Teach Madav a new play" strip — four tiles: Record on the web, Record on the desktop, Write it by hand, Import.
+Why: Four ways to add a play. Recording is the easiest: show Madav a task once and it drafts the play.
+Behavior: "Record on the web" opens a browser window — do the task by hand, close the window, Madav drafts the play (credential fields are never recorded). "Record on the desktop" captures your real Windows apps; the tile turns red while recording — click it again to stop. "Write it by hand" reveals a name field that scaffolds a SKILL.md you fill in. "Import" brings in a skill folder or a .zip/.skill archive. All recording/writing/import is desktop-only. Drafts land in the approval strip below.
 
-### Skills · Import folder / .zip
-aliases: import skill, add skill from zip, .skill file
-What: Two buttons — "Import folder" and ".zip" — that bring existing skills in.
-Why: Install skills shared by others or built elsewhere without manual copying.
-Behavior: "Import folder" copies a folder containing SKILL.md into your primary skills folder; if you pick a parent folder of several skills, each is imported (a count shows in the status line). ".zip" accepts .zip and .skill archives. Both guard against importing a folder already in your skills path. Desktop only.
+### Playbook · Drafted by Madav (approval)
+aliases: skill forge, learned drafts, approve skill, recorded skill
+What: The "Drafted by Madav — your approval needed" strip of draft cards.
+Why: Madav drafts plays on its own — from recordings, and from noticing you repeat a task (Skill Forge). Nothing goes live without your approval.
+Behavior: Each draft shows the move it learned and how many similar tasks Madav saw. "Approve" adds it to your plays (live immediately); "Discard" removes it. Recordings you make also surface here once distilled.
 
-### Skills · Folders
-aliases: skills directories, add folder, primary folder
-What: The "Folders" button reveals the list of folders Madav scans for skills, with "Add folder" and per-folder remove (X) controls.
-Why: Skills can live wherever you like — a synced drive, a repo, anywhere.
-Behavior: The first folder is badged "primary" — creations and imports land there. "Add folder" opens a directory picker; removing a folder stops scanning it but deletes nothing from disk. Changes save instantly and the list rescans. Desktop only.
+### Playbook · Open a play (reader)
+aliases: read skill, view play, skill details, enable disable play, delete play
+What: Clicking a play card opens a full-page reader: glyph + name, an origin/updated/trigger line, the rendered SKILL.md, and (for your own plays) "In play / Benched" and Delete controls.
+Why: Read exactly what a play does, edit-by-disk, and bench or remove it.
+Behavior: "In play / Benched" toggles whether the play is offered (benched = dimmed, ignored). Delete asks to confirm and removes the play's folder from disk (can't be undone — re-import if you kept a copy). Built-in pack plays are read-only ("Ships with Madav"). "All plays" returns to the wall.
 
-### Skills · Enable toggle
-aliases: turn skill on, disable skill, skill switch
-What: The toggle in a skill's detail header.
-Why: Park a skill without deleting it — handy when two skills overlap.
-Behavior: Green/right means enabled: the skill is offered to the agent (triggered by "/name" or automatically when a request matches). Toggled off, it's dimmed in the list and ignored entirely. The setting persists per skill directory across restarts.
+### Playbook · Folders
+aliases: skills directories, add folder, primary folder, where plays live
+What: The "Folders" button reveals the disk folders Madav scans for plays, with Add/remove controls.
+Why: Plays can live anywhere — a synced drive, a repo, a project folder.
+Behavior: The first folder is "primary" — recordings, writes, and imports land there. Add opens a picker; removing a folder stops scanning it but deletes nothing. Desktop only; the web build shows a note that managing play files needs the desktop app.
 
-### Skills · Delete
-aliases: remove skill, trash skill
-What: The trash button in a skill's detail header.
-Why: Permanently removes a skill you no longer want.
-Behavior: A confirm dialog shows the skill name and its folder path first. Confirming deletes the skill's folder from disk (recursively) and clears any disabled flag for it. This can't be undone from the app — re-import if you kept a copy.
-
-### Skills · Web version note
-aliases: skills in browser, desktop only skills
-What: A banner shown in the web app: "Skill folders, import and creation need the desktop app — the browser can't manage files on your computer."
-Why: Honest signposting — skills are folders on a real disk.
-Behavior: On web you can't add folders, create, or import skills; the desktop app unlocks all of it.
+### Top bar · Record (global workflow recorder)
+aliases: record button, recording icon, stop recording, record from anywhere
+What: A "⊙ Record" chip in the top bar (next to the online indicator, desktop only).
+Why: Recording a workflow is a global action — start it from any screen, and always see when it's on.
+Behavior: Click it for a menu: Record a web workflow / Record a desktop workflow. While recording, the chip becomes a pulsing red "Recording · ⏹ Stop" badge visible everywhere; click Stop (desktop) or close the recorder window (web) to finish. The result is a play draft waiting in the Playbook for your approval — the chip takes you there when a recording ends.
 
 ### Connectors · App gallery
 aliases: connector directory, MCP registry, one-click add, search connectors

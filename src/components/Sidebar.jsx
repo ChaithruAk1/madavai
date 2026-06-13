@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen, Share2 } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
-const TOP = [
-  { id: "project", label: "Projects", icon: FolderKanban },
+// Nav order (user-set 2026-06-12): Models · Agents · Projects · Studio · Scheduler ·
+// Interface · Consumption · Test Center · Terminal. MAIN renders between the Models
+// group and the Interface group; TAIL renders after Interface.
+const MAIN = [
   { id: "agents", label: "Agents", icon: Bot },
+  { id: "project", label: "Projects", icon: FolderKanban },
   { id: "studio", label: "Studio", icon: Shapes },
-  { id: "terminal", label: "Terminal", icon: TerminalSquare },
+  { id: "scheduler", label: "Scheduler", icon: Clock },
 ];
 const INTERFACE = [
-  { id: "skills", label: "Skills", icon: Puzzle },
+  { id: "skills", label: "Playbook", icon: Puzzle },
   { id: "connectors", label: "Connectors", icon: Plug },
   { id: "plugins", label: "Plugins", icon: Blocks },
   { id: "viamobile", label: "Via Mobile", icon: Send },
@@ -19,10 +22,10 @@ const MODELS = [
   { id: "models-overview", label: "Models overview", icon: List },
   { id: "models-speed", label: "Models speed check", icon: Gauge },
 ];
-const BOTTOM = [
-  { id: "scheduler", label: "Scheduler", icon: Clock },
+const TAIL = [
   { id: "consumption", label: "Consumption", icon: BarChart3 },
 ];
+const TERMINAL_ITEM = { id: "terminal", label: "Terminal", icon: TerminalSquare };
 const ADMIN_ITEM = { id: "testcenter", label: "Test Center", icon: FlaskConical };
 
 export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, extras = {} }) {
@@ -173,7 +176,20 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
     <aside className="sidebar glass">
       <button className="sb-new" onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
 
-      {TOP.filter((t) => !extraOff(t.id)).map(navBtn)}
+      <button className={`nav-item nav-group ${MODELS.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setModelsOpen((o) => !o)}>
+        <Cpu size={16} /> <span className="sb-t">Models</span>
+        <span className="nav-caret sb-t">{modelsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+      </button>
+      {modelsOpen && MODELS.map((t) => {
+        const I = t.icon;
+        return (
+          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
+            <I size={15} /> <span className="sb-t">{t.label}</span>
+          </button>
+        );
+      })}
+
+      {MAIN.filter((t) => !extraOff(t.id)).map(navBtn)}
 
       <button className={`nav-item nav-group ${INTERFACE.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setIfaceOpen((o) => !o)}>
         <LayoutGrid size={16} /> <span className="sb-t">Interface</span>
@@ -188,21 +204,9 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
         );
       })}
 
-      <button className={`nav-item nav-group ${MODELS.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setModelsOpen((o) => !o)}>
-        <Cpu size={16} /> <span className="sb-t">Models</span>
-        <span className="nav-caret sb-t">{modelsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
-      </button>
-      {modelsOpen && MODELS.map((t) => {
-        const I = t.icon;
-        return (
-          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
-            <I size={15} /> <span className="sb-t">{t.label}</span>
-          </button>
-        );
-      })}
-
-      {BOTTOM.filter((t) => !extraOff(t.id)).map(navBtn)}
+      {TAIL.filter((t) => !extraOff(t.id)).map(navBtn)}
       {isAdmin && qaHere && navBtn(ADMIN_ITEM)}
+      {!extraOff("terminal") && navBtn(TERMINAL_ITEM)}
 
       <div className="sb-expand">
         <div className="nav-label" style={{ marginTop: 10 }}>Recents</div>
