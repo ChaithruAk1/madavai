@@ -4,6 +4,7 @@
 // from a category-card picker: the prompt is the hero; formats are lenses, not gates.
 import { useEffect, useRef, useState } from "react";
 import { Globe, FileText, Gamepad2, Wrench, Palette, Workflow, ListChecks, Sparkles, Wand2, ArrowRight, ArrowUp, Shuffle } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 
 const STYLES = ["Minimalist", "Modern", "Bold & colorful", "Playful", "Professional", "Dark"];
 
@@ -86,7 +87,7 @@ export default function StudioLauncher({ onStart }) {
       <div className="stu2">
         {/* header */}
         <div className="stu2-kicker"><Wand2 size={13} /> Studio · the build console</div>
-        <h1 className="stu2-title">What should we <span className="stu2-grad">build</span> today?</h1>
+        <h1 className="stu2-title">What should we <span className="stu2-grad">build</span> today?<HelpDot mode="studio" section="build" /></h1>
         <p className="stu2-sub">Describe an idea in a line — Madav forges it into a <b>live, runnable preview</b> you can refine. Pick a lens to shape the format, or just hit create.</p>
 
         {/* the console: prompt bar */}
@@ -99,6 +100,7 @@ export default function StudioLauncher({ onStart }) {
           {canCreate && (
             <button className="send pop" onClick={create} title="Create (⌘/Ctrl+Enter)"><ArrowUp size={17} /></button>
           )}
+          <HelpDot mode="studio" section="prompt" />
         </div>
 
         {/* format lenses */}

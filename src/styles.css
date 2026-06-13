@@ -2130,6 +2130,26 @@ svg.lucide { color: var(--accent); }
 .sage-hello { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin: auto; max-width: 280px; color: var(--text-1); font-size: 12.5px; line-height: 1.5; }
 .sage-panel-msgs .agsd-sheet { font-size: 13.5px; }
 .sage-panel-msgs .agsd-say { font-size: 13px; }
+/* Sage quick-actions row: instant "Explain this screen" + Tours launcher */
+.sage-quick { display: flex; gap: 7px; padding: 8px 12px 0; }
+.sage-quick-btn { display: inline-flex; align-items: center; gap: 5px; flex: 1; justify-content: center; padding: 7px 9px; font-size: 11.5px; font-weight: 600; color: var(--text-1); background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; transition: border-color .12s, color .12s, background .12s; }
+.sage-quick-btn:hover { border-color: var(--accent-line, var(--accent)); color: var(--accent); }
+
+/* Tours / what's-new overlay (inside the Sage panel) */
+.sage-tours { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.32); border-radius: inherit; }
+.sage-tours-card { width: 92%; max-height: 86%; display: flex; flex-direction: column; background: var(--bg-1); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 40px rgba(0,0,0,.34); overflow: hidden; }
+.sage-tours-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 13px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 13px; }
+.sage-tours-head span { display: inline-flex; align-items: center; gap: 7px; }
+.sage-tours-scroll { padding: 8px; overflow-y: auto; }
+.sage-tours-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); margin: 8px 6px 4px; }
+.sage-tours-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; margin-bottom: 4px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 11px; cursor: pointer; transition: border-color .12s, background .12s; }
+.sage-tours-row:hover { border-color: var(--accent-line, var(--accent)); }
+.sage-tours-row > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.sage-tours-row b { font-size: 12.5px; color: var(--text-0); }
+.sage-tours-sub { font-size: 11px; color: var(--text-2); line-height: 1.4; }
+.sage-tours-ico { flex: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; color: var(--accent); }
+.sage-tours-ico.new { color: var(--ok, #5fb573); }
+.sage-tours-arr { flex: none; color: var(--text-2); }
 .sage-panel-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
 .sage-panel-input input { flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--line); border-radius: 11px; padding: 9px 12px; color: var(--text-0); font: inherit; font-size: 13px; outline: none; }
 .sage-panel-input input:focus { border-color: var(--accent-line); }

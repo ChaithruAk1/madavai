@@ -9,6 +9,7 @@ import {
   Network, Layers, Clock, Globe, Mic, Plug, Send, BarChart3, Cpu, UserRound,
   LifeBuoy, GitBranch, Repeat
 } from "lucide-react";
+import { SCREEN_HELP } from "../help/screens.js";
 import "../userguide.css";
 
 /* ----------------------------------------------------------------------------
@@ -1298,6 +1299,52 @@ const SECTIONS = [
   },
 
   /* 19 ────────────────────────────────────────────────────────────────── */
+  {
+    id: "reference",
+    title: "Every control, explained",
+    icon: BookOpen,
+    keywords: "reference field control every button explain what is when do i index glossary minute detail dictionary screen",
+    render: (nav) => (
+      <>
+        <p>
+          A storybook walk through <strong>every screen and every control</strong> Madav has —
+          what each one is, and when you'd reach for it. This page is generated from the same
+          source that powers the <Chip>?</Chip> dots beside controls and Sage's{" "}
+          <strong>"Explain this screen"</strong>, so it can never fall out of sync with the app.
+        </p>
+        {Object.entries(SCREEN_HELP)
+          .filter(([, h]) => h && h.title)
+          .map(([mode, h]) => (
+            <div key={mode} className="ug-ref-screen">
+              <h3 className="ug-ref-title">
+                {h.title}
+                {h.guide ? null : <span className="ug-ref-tag">screen</span>}
+              </h3>
+              <p className="ug-ref-blurb">{h.blurb}</p>
+              {h.sections && h.sections.length > 0 && (
+                <dl className="ug-ref-list">
+                  {h.sections.map((s) => (
+                    <div key={s.id || s.label} className="ug-ref-row">
+                      <dt>{s.label}</dt>
+                      <dd>
+                        {s.what}
+                        {s.more && <span className="ug-ref-more">{s.more}</span>}
+                        {s.when && <span className="ug-ref-when">{s.when}</span>}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              {h.guide && h.guide.route && (
+                <Go nav={nav} to={h.guide.route}>
+                  Open {h.title}
+                </Go>
+              )}
+            </div>
+          ))}
+      </>
+    ),
+  },
   {
     id: "troubleshooting",
     title: "Troubleshooting & FAQ",

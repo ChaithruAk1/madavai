@@ -9,7 +9,8 @@
 // Engine contract: project.{identity,agentIds} (projects-store), assign/unassign IPC,
 // runs tagged projectId, getProjectAgentHistory for the room record.
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Trash2, FileText, FileUp, MessageSquare, Github, FolderInput, RefreshCw, Search, ArrowUpDown, ArrowLeft, Users, UserPlus, Hammer, BookOpen, Sparkles, Share2, Upload, X, Maximize2, LayoutGrid, List, Plug, GraduationCap, Play, BookOpen as BookIcon, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check } from "lucide-react";
+import { Plus, Trash2, FileText, FileUp, MessageSquare, Github, FolderInput, RefreshCw, Search, ArrowUpDown, ArrowLeft, Users, UserPlus, Hammer, BookOpen, Sparkles, Share2, Upload, X, Maximize2, LayoutGrid, List, Plug, GraduationCap, Play, BookOpen as BookIcon, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check, Archive, ListChecks, Copy, FileStack } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
 import { madavAlert, madavConfirm } from "../dialogs.jsx";
 import Composer from "./Composer.jsx";
@@ -220,6 +221,10 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
   const [draft, setDraft] = useState({ name: "", desc: "" });
   const [q, setQ] = useState("");
   const [sortBy, setSortBy] = useState("date");
+  const [scope, setScope] = useState("active");        // active | archived | all
+  const [goalText, setGoalText] = useState("");        // new-goal input in the room
+  const [templates, setTemplates] = useState([]);      // saved room templates (settings.roomTemplates)
+  const [tmplOpen, setTmplOpen] = useState(false);     // "new from template" menu
 
   const [selId, setSelId] = useState(null);
   const [room, setRoom] = useState(null);
@@ -245,6 +250,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
     loadList(); loadSessions();
     bridge.getSettings().then((s) => { setAgents(s.agents || []); setTeams(s.teams || []); }).catch(() => {});
     bridge.listSkills && bridge.listSkills().then((l) => setAllSkills(l || [])).catch(() => {});
+    bridge.getSettings().then((cfg) => setTemplates((cfg && cfg.roomTemplates) || [])).catch(() => {});
   }, []);
   // Returning from a room-scoped run: land straight back inside that room.
   useEffect(() => { if (openId) open(openId); }, []); // eslint-disable-line
@@ -350,6 +356,44 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
     if (!(await madavConfirm(`Close workroom "${room.name}"? Its conversations are deleted too.`, { okLabel: "Close workroom" }))) return;
     await bridge.deleteProject(selId); back();
   };
+
+  // ---- GOALS ----
+  const goals = (room && Array.isArray(room.goals)) ? room.goals : [];
+  const addGoal = async () => { const t = goalText.trim(); if (!t) return; await bridge.updateProject(selId, { goals: [...goals, { id: "g_" + Date.now().toString(36), text: t.slice(0, 160), done: false }] }); setGoalText(""); refreshRoom(); };
+  const toggleGoal = async (id) => { await bridge.updateProject(selId, { goals: goals.map((g) => g.id === id ? { ...g, done: !g.done } : g) }); refreshRoom(); };
+  const removeGoal = async (id) => { await bridge.updateProject(selId, { goals: goals.filter((g) => g.id !== id) }); refreshRoom(); };
+
+  // ---- ARCHIVE ----
+  const toggleArchive = async () => { await bridge.updateProject(selId, { archived: !room.archived }); refreshRoom(); loadList(); };
+
+  // ---- DIGEST (room writes its own summary) ----
+  const writeDigest = () => {
+    const recent = sessions.filter((x) => x.projectId === selId).slice(0, 8).map((x) => `- ${x.title || "(untitled)"}${x.agentName ? " · " + x.agentName : ""}`).join("\n");
+    const convLines = convs.slice(0, 8).map((c) => `- ${c.title || "Conversation"}`).join("\n");
+    const prompt = `Write a short digest of this workroom's recent work for me. Use the room's instructions and knowledge as context, plus this activity:\n\nCHATS:\n${convLines || "(none)"}\n\nMISSIONS:\n${recent || "(none)"}\n\nGive: 1) a 2-3 sentence summary of what's been happening, 2) progress against the room's goals if any, 3) one suggested next step. Warm, plain language, under 180 words.`;
+    onStartChat && onStartChat(room, prompt);
+  };
+
+  // ---- TEMPLATES ----
+  const saveAsTemplate = async () => {
+    const full = await bridge.getProject(selId); if (!full) return;
+    const cfg = await bridge.getSettings();
+    const tmpl = { id: "tmpl_" + Date.now().toString(36), name: full.name, instructions: full.instructions || "", identity: full.identity, knowledge: (full.knowledge || []).map((k) => ({ name: k.name, type: k.type, content: k.content })), pinnedSkills: full.pinnedSkills || [], goals: (full.goals || []).map((g) => ({ text: g.text })) };
+    const next = [...((cfg && cfg.roomTemplates) || []), tmpl];
+    await bridge.saveSettings({ ...cfg, roomTemplates: next }); setTemplates(next);
+    madavAlert(`Saved "${full.name}" as a room template. Use "New workroom \u2192 From template" to spin up a copy.`);
+  };
+  const newFromTemplate = async (tmpl) => {
+    setTmplOpen(false);
+    const p = await bridge.createProject(tmpl.name + " (copy)");
+    const patch = { instructions: tmpl.instructions || "", pinnedSkills: tmpl.pinnedSkills || [],
+      knowledge: (tmpl.knowledge || []).map((k) => ({ id: "kn_" + Math.random().toString(36).slice(2, 9), name: k.name, type: k.type === "file" ? "file" : "text", content: String(k.content || "").slice(0, 200000) })),
+      goals: (tmpl.goals || []).map((g) => ({ id: "g_" + Math.random().toString(36).slice(2, 9), text: g.text, done: false })) };
+    if (tmpl.identity && tmpl.identity.glyph) patch.identity = tmpl.identity;
+    await bridge.updateProject(p.id, patch);
+    await loadList(); open(p.id);
+  };
+  const deleteTemplate = async (id) => { const cfg = await bridge.getSettings(); const next = ((cfg && cfg.roomTemplates) || []).filter((t) => t.id !== id); await bridge.saveSettings({ ...cfg, roomTemplates: next }); setTemplates(next); };
 
   // ---- brief: sources ----
   const linkFolder = async () => { const r = await bridge.linkProjectFolder(selId); if (r?.folder) { setSrc(""); refreshRoom(); } else if (r?.error) setSrc("Error: " + r.error); };
@@ -703,7 +747,10 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
             <h1 className="wr-roomname">{room.name}</h1>
             <div className="wr-pulse">{pulseLine(room, sessions, convs)}</div>
           </div>
+          <button className="icon-btn" title="Write a digest of this room's recent work" onClick={writeDigest}><FileStack size={15} /></button>
+          <button className="icon-btn" title="Save this room as a reusable template" onClick={saveAsTemplate}><Copy size={15} /></button>
           <button className="icon-btn" title="Share this workroom — exports a .madavroom.json with the brief, knowledge, and crew agents" onClick={shareRoom}><Share2 size={15} /></button>
+          {!room.sim && <button className="icon-btn" title={room.archived ? "Unarchive — show on the active shelf" : "Archive — hide from the active shelf (kept, not deleted)"} onClick={toggleArchive} style={room.archived ? { color: "var(--accent)" } : undefined}><Archive size={15} /></button>}
           {!room.sim && <button className="icon-btn danger" title="Close this workroom" onClick={delRoom}><Trash2 size={15} /></button>}
         </header>
 
@@ -711,7 +758,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
           {/* LEFT — the brief */}
           <aside className="wr-brief">
             <div className="wr-sec wr-resizable" title="Drag the bottom-right corner to resize">
-              <div className="wr-sechead"><Sparkles size={13} /> Instructions
+              <div className="wr-sechead"><Sparkles size={13} /> Instructions<HelpDot mode="project" section="instructions" />
                 <span style={{ flex: 1 }} />
                 <button className="icon-btn" title="Open in a large editor" style={{ width: 22, height: 22 }} onClick={() => setBriefOpen(true)}><Maximize2 size={12} /></button>
               </div>
@@ -721,8 +768,32 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
                 onChange={(e) => setInstr(e.target.value)} onBlur={saveInstr} />
             </div>
 
+            <div className="wr-sec">
+              <div className="wr-sechead"><Target size={13} /> Goals<HelpDot mode="project" section="goals" />
+                {goals.length > 0 && <><span style={{ flex: 1 }} /><span className="mo-sub">{goals.filter((g) => g.done).length}/{goals.length} done</span></>}
+              </div>
+              {goals.length > 0 && (
+                <>
+                  <div className="wr-goalbar"><span className="wr-goalfill" style={{ width: (goals.length ? Math.round(goals.filter((g) => g.done).length / goals.length * 100) : 0) + "%", "--wr": idn.color }} /></div>
+                  <div className="wr-goallist">
+                    {goals.map((g) => (
+                      <div key={g.id} className={`wr-goal ${g.done ? "done" : ""}`}>
+                        <button className="wr-goalcheck" onClick={() => toggleGoal(g.id)} title={g.done ? "Mark not done" : "Mark done"}>{g.done ? <Check size={12} /> : ""}</button>
+                        <span className="wr-goaltext">{g.text}</span>
+                        <button className="btn ghost" style={{ padding: "2px 6px" }} onClick={() => removeGoal(g.id)}><X size={11} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <input className="model-search" style={{ flex: 1, minWidth: 0, marginBottom: 0 }} placeholder="Add an objective…" value={goalText} onChange={(e) => setGoalText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addGoal()} />
+                <button className="btn" onClick={addGoal}><Plus size={14} /></button>
+              </div>
+            </div>
+
             <div className="wr-sec wr-resizable" title="Drag the bottom-right corner to resize">
-              <div className="wr-sechead"><BookOpen size={13} /> Knowledge</div>
+              <div className="wr-sechead"><BookOpen size={13} /> Knowledge<HelpDot mode="project" section="knowledge" /></div>
               {kn.length === 0 ? (
                 <div className="pjd-files-empty">An empty shelf. Add documents, data, or notes the room should know.</div>
               ) : (
@@ -749,7 +820,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
             </div>
 
             <div className="wr-sec">
-              <div className="wr-sechead"><FolderInput size={13} /> Linked folder &amp; repo</div>
+              <div className="wr-sechead"><FolderInput size={13} /> Linked folder &amp; repo<HelpDot mode="project" section="folder" /></div>
               {room.folder ? (
                 <div className="folder-bar" style={{ borderRadius: 10, border: "1px solid var(--line)" }}>
                   {room.githubUrl ? <Github size={14} /> : <FolderInput size={14} />}
@@ -813,7 +884,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
 
           {/* RIGHT — the crew */}
           <aside className="wr-crewzone">
-            <div className="wr-sechead" style={{ marginBottom: 8 }}><Users size={13} /> Crew</div>
+            <div className="wr-sechead" style={{ marginBottom: 8 }}><Users size={13} /> Crew<HelpDot mode="project" section="crew" /></div>
             {crew.length === 0 && (
               <div className="pjd-files-empty">No agents staffed. Assign one below — it works with this room's brief, knowledge, and folder.</div>
             )}
@@ -895,7 +966,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
             )}
             {allSkills.length > 0 && (
               <>
-                <div className="wr-sechead" style={{ margin: "14px 0 8px" }}><BookOpen size={13} /> Room playbook</div>
+                <div className="wr-sechead" style={{ margin: "14px 0 8px" }}><BookOpen size={13} /> Room playbook<HelpDot mode="project" section="playbook" /></div>
                 {roomPlays.length === 0 && <div className="pjd-files-empty">No plays pinned. Pin one and every chat + crew mission here will use it automatically.</div>}
                 {roomPlays.map((n) => (
                   <div key={n} className="wr-crewcard" style={{ minHeight: 0, padding: "8px 10px" }}>
@@ -990,9 +1061,20 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
   }
 
   // ---------- SHELF (landing) ----------
+  // Cross-room search: a room matches if its name OR any of its feed titles contains q.
+  const ql = q.trim().toLowerCase();
+  const roomMatchesSearch = (p) => {
+    if (!ql) return true;
+    if ((p.name || "").toLowerCase().includes(ql)) return true;
+    return sessions.some((x) => x.projectId === p.id && (x.title || "").toLowerCase().includes(ql));
+  };
+  const IDLE_MS = 30 * DAY;
+  const isIdle = (p) => { const last = Math.max(p.lastConvAt || 0, p.updatedAt || 0, p.createdAt || 0); return last && (Date.now() - last > IDLE_MS); };
   const shown = rooms
-    .filter((p) => !q || (p.name || "").toLowerCase().includes(q.toLowerCase()))
+    .filter((p) => scope === "all" ? true : scope === "archived" ? p.archived : !p.archived)
+    .filter(roomMatchesSearch)
     .sort((a, b) => sortBy === "name" ? (a.name || "").localeCompare(b.name || "") : ((b.lastConvAt || b.updatedAt || b.createdAt || 0) - (a.lastConvAt || a.updatedAt || a.createdAt || 0)));
+  const archivedCount = rooms.filter((p) => p.archived).length;
 
   return (
     <div className="wr scroll">
@@ -1010,9 +1092,33 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
           <button className="btn ghost" title="Projects Guide — tour, do's & don'ts, and runnable simulations" onClick={() => { setGuideTab("tour"); setChapter(0); setView("guide"); }}><BookIcon size={15} /> Projects Guide</button>
           <button className="btn ghost" title="Import a shared .madavroom.json — recreates the room and its crew agents" onClick={() => importRef.current && importRef.current.click()}><Upload size={15} /> Import</button>
           <input ref={importRef} type="file" accept=".json,.madavroom" style={{ display: "none" }} onChange={onImportRoom} />
+          {templates.length > 0 && (
+            <div className="plus-wrap" style={{ position: "relative" }}>
+              <button className="btn ghost" title="Create a room from a saved template" onClick={() => setTmplOpen((o) => !o)}><FileStack size={15} /> From template</button>
+              {tmplOpen && (
+                <div className="plus-menu" style={{ right: 0, left: "auto", top: "calc(100% + 6px)", bottom: "auto" }}>
+                  {templates.map((t) => (
+                    <div key={t.id} style={{ display: "flex", alignItems: "center" }}>
+                      <button className="plus-item" style={{ flex: 1 }} onClick={() => newFromTemplate(t)}>{(t.identity && t.identity.glyph) || "✦"} {t.name}</button>
+                      <button className="icon-btn" title="Delete template" onClick={(e) => { e.stopPropagation(); deleteTemplate(t.id); }}><X size={12} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <button className="btn primary" onClick={() => { setDraft({ name: "", desc: "" }); setCreating(true); }}><Plus size={15} /> New workroom</button>
         </div>
       </div>
+
+      {/* Scope: active rooms by default; archived ones are kept but hidden */}
+      {(archivedCount > 0 || scope !== "active") && (
+        <div className="sched-chips" style={{ margin: "0 0 12px" }}>
+          <button className={`chip ${scope === "active" ? "on" : ""}`} onClick={() => setScope("active")}>Active · {rooms.filter((p) => !p.archived).length}</button>
+          <button className={`chip ${scope === "archived" ? "on" : ""}`} onClick={() => setScope("archived")}><Archive size={11} /> Archived · {archivedCount}</button>
+          <button className={`chip ${scope === "all" ? "on" : ""}`} onClick={() => setScope("all")}>All · {rooms.length}</button>
+        </div>
+      )}
 
       {shown.length === 0 ? (
         <div className="pjd-files-empty" style={{ marginTop: 20 }}>No workrooms yet. Open one, brief it, shelve some knowledge, and staff a crew.</div>
@@ -1039,8 +1145,8 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
               <button key={p.id} className="wr-banner" style={{ "--wr": idn.color }} onClick={() => open(p.id)}>
                 <span className="wr-spine"><span className="wr-glyph">{idn.glyph}</span></span>
                 <span className="wr-body">
-                  <span className="wr-name">{p.name}</span>
-                  <span className="wr-pulse">{pulseLine(p, sessions)}</span>
+                  <span className="wr-name">{p.name}{p.archived && <span className="badge" style={{ marginLeft: 8 }}>archived</span>}{!p.archived && isIdle(p) && <span className="badge" style={{ marginLeft: 8, color: "var(--text-2)" }} title="No activity in 30+ days — consider archiving">idle</span>}</span>
+                  <span className="wr-pulse">{pulseLine(p, sessions)}{(p.goals && p.goals.length) ? ` · ${p.goals.filter((g) => g.done).length}/${p.goals.length} goals` : ""}</span>
                 </span>
                 <span className="wr-crewstrip" title={crewFaces.length ? crewFaces.map((a) => a.name).join(" · ") : "No crew yet"}>
                   {crewFaces.slice(0, 5).map((a) => (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Plug, RefreshCw, Check, Mail, Cloud, HardDrive, Github, MessageSquare, FolderOpen, Globe, Search } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
 import { iconUrlFor } from "../connectorIcons.js";
 
@@ -78,7 +79,7 @@ export default function Connectors() {
 
   return (
     <div className="settings scroll" style={{ padding: 24, overflow: "auto" }}>
-      <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Connect your apps</h2>
+      <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Connect your apps<HelpDot mode="connectors" section="what" /></h2>
       <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 0 }}>
         Add an integration from the Model Context Protocol registry — popular apps are shown below; search for anything else.
         Cloud apps then need a quick sign-in or token. Connected apps are available to the agent in Chat, Cowork, Code, and Projects.
@@ -93,6 +94,7 @@ export default function Connectors() {
         </button>
       </div>
 
+      <div className="nav-label" style={{ paddingLeft: 0, display: "flex", alignItems: "center" }}>Add a connector<HelpDot mode="connectors" section="add" /></div>
       <div className="cdir-search"><Search size={16} /><input value={dirQ} onChange={(e) => setDirQ(e.target.value)} placeholder="Search connectors…" /></div>
       <div className="cdir-bar">
         <span style={{ flex: 1 }} />
@@ -135,7 +137,7 @@ export default function Connectors() {
 
       </>}
 
-      <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>Your connectors</div>
+      <div className="nav-label" style={{ paddingLeft: 0, marginTop: 18 }}>Your connectors<HelpDot mode="connectors" section="usage" /></div>
       {!sel && (
         <div className="mc-pgrid">
           {list.length === 0 && <div style={{ color: "var(--text-2)", fontSize: 13, padding: "6px 2px" }}>None yet — add one above.</div>}
@@ -191,7 +193,7 @@ export default function Connectors() {
             </div>
             {tools && (
               <div style={{ marginTop: 12 }}>
-                <div style={{ color: "var(--text-2)", fontSize: 12, marginBottom: 6 }}>Available tools</div>
+                <div style={{ color: "var(--text-2)", fontSize: 12, marginBottom: 6 }}>Available tools<HelpDot mode="connectors" section="tools" /></div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{tools.map((t) => <span key={t} className="badge" style={{ fontFamily: "var(--mono)" }}>{t}</span>)}</div>
               </div>
             )}

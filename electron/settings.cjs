@@ -55,6 +55,7 @@ const DEFAULTS = {
   disabledSkills: [],
   playChains: {}, // play name -> [next play names] (a play hands off to these after it)
   playMeta: {},   // play name -> { connectors:[names], folder:"" } (what a play needs)
+  roomTemplates: [], // saved workroom templates: { id, name, instructions, identity, knowledge, pinnedSkills, goals }
   account: { name: "", email: "", avatar: "", googleLinked: false, githubLinked: false },
   googleClientId: "",
   googleClientSecret: "",

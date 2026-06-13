@@ -4,6 +4,7 @@ import Community from "./Community.jsx";
 import ProductRequests from "./ProductRequests.jsx";
 import ModelPicker from "./ModelPicker.jsx";
 import AccountCard from "../auth/AccountCard.jsx";
+import HelpDot from "./HelpDot.jsx";
 import AdminPanel from "../auth/AdminPanel.jsx";
 import CliAccess from "./CliAccess.jsx";
 import { bridge } from "../bridge/index.js";
@@ -108,19 +109,19 @@ export default function Settings({ onChanged }) {
       <div style={{ padding: 24, overflowY: "auto" }}>
         {section === "profile" && (
           <div className="prof">
-            <h2 style={{ margin: "0 0 16px", fontSize: 20 }}>Profile</h2>
+            <h2 style={{ margin: "0 0 16px", fontSize: 20 }}>Profile<HelpDot mode="settings" section="account" /></h2>
             <AccountCard />
 
             <div className="prof-card">
               <div className="prof-card-h"><span className="prof-ico"><Palette size={15} /></span> Appearance</div>
-              <Field label="Theme">
+              <Field label="Theme" help={<HelpDot mode="settings" section="theme" />}>
                 <select className="model-search" value={s.theme || "dark"} onChange={(e) => setField("theme", e.target.value)}>
                   <option value="dark">Dark</option>
                   <option value="light">Light</option>
                   <option value="system">System (match OS)</option>
                 </select>
               </Field>
-              <Field label="Accent color">
+              <Field label="Accent color" help={<HelpDot mode="settings" section="accent" />}>
                 {(() => {
                   const acc = s.accent || "default";
                   const isGrad = acc.startsWith("grad:");
@@ -183,7 +184,7 @@ export default function Settings({ onChanged }) {
 
         {section === "terminal" && (
           <div style={{ maxWidth: 720 }}>
-            <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Terminal access</h2>
+            <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Terminal access<HelpDot mode="terminal" section="cli" /></h2>
             <p style={{ color: "var(--text-2)", fontSize: 13, margin: "0 0 16px" }}>Run Madav as a coding agent in any terminal — like the desktop app, but in your shell. It's set up automatically for active subscribers using the provider and key you already configured; the controls below let you re-run or turn it off.</p>
             <CliAccess />
           </div>
@@ -191,7 +192,7 @@ export default function Settings({ onChanged }) {
 
         {section === "extras" && extrasOk && (
           <div className="prof">
-            <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Extras</h2>
+            <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Extras<HelpDot mode="settings" section="extras" /></h2>
             <p className="mo-sub" style={{ margin: "0 0 16px" }}>
               The feature switchboard — turn this install's capabilities on or off for users.
               Only Creator and Complimentary accounts see this page.
@@ -246,10 +247,10 @@ export default function Settings({ onChanged }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, help, children }) {
   return (
     <label style={{ display: "block", marginBottom: 12 }}>
-      <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 5 }}>{label}{help}</div>
       {children}
     </label>
   );

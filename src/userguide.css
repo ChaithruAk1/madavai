@@ -482,3 +482,16 @@
 .ug-shot-clock { font-style: normal; font-size: 11px; flex: none; }
 .ug-shot-cap { margin-top: 18px; font-size: 12px; color: var(--text-2); line-height: 1.55; max-width: 560px; }
 @media (max-width: 620px) { .ug-shot-body { grid-template-columns: 72px 1fr; } .ug-shot-cards { grid-template-columns: 1fr 1fr; } }
+
+/* ---- Reference section: auto-generated "Every control, explained" ---- */
+.ug-ref-screen { margin: 18px 0 22px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-1); }
+.ug-ref-title { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font-size: 15px; }
+.ug-ref-tag { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+.ug-ref-blurb { margin: 0 0 10px; color: var(--text-2); font-size: 13px; line-height: 1.55; }
+.ug-ref-list { margin: 0; display: grid; gap: 8px; }
+.ug-ref-row { display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: baseline; }
+.ug-ref-row dt { font-weight: 600; font-size: 13px; color: var(--text-1); }
+.ug-ref-row dd { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.55; }
+.ug-ref-when { display: block; margin-top: 2px; color: var(--text-3, var(--text-2)); font-size: 12px; }
+@media (max-width: 620px) { .ug-ref-row { grid-template-columns: 1fr; gap: 2px; } }
+.ug-ref-more { display: block; margin-top: 4px; color: var(--text-2); font-size: 12.5px; line-height: 1.6; }

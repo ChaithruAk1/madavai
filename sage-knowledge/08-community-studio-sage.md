@@ -253,3 +253,27 @@ aliases: sage scope, can sage search the web, sage limitations, general question
 What: Sage's domain is Madav only — its screens, features, agents, and your way of using them.
 Why: He's a guide, not a general assistant — that keeps his answers exact.
 Behavior: He answers from the app's built-in guides plus what he's learned about you; he has NO web access and never cites outside facts — if the guides don't cover it, he says so plainly. General questions get warmly redirected: world facts and chat to Let's Chat, coding to Let's Build, repeatable jobs to Agents. He thinks with whatever model your selector points at, so a broken key affects him too.
+
+### Sage · Explain this screen
+aliases: explain this screen, what is this page, explain everything here, tour this screen
+What: A quick-action button in Sage's panel (next to "Tours & what's new") that instantly narrates the current screen — its purpose plus every section, with what each one is and when to use it.
+Why: A whole-screen orientation in one tap, with no typing and no waiting.
+Behavior: It answers LOCALLY and instantly (no model call, so it works even if your key is down) by reading Madav's built-in screen guide. You get the screen's summary followed by each control: what it is and when you'd reach for it. Available on every screen that has a guide entry (Workrooms, Agents, Playbook, Scheduler, and the work surfaces).
+
+### Sage · Tours & what's new
+aliases: take a tour, whats new, tours, feature tour, discover features
+What: A button in Sage's panel that opens a launcher listing the main spaces (Workrooms, Agents, Playbook, Scheduler) and a "What's new" list of recent additions.
+Why: A front door for exploring Madav and discovering features you haven't tried.
+Behavior: Click any space to jump straight to it (its in-app guide lives there); click a "what's new" item to land on the screen where that feature lives. Same content as the User Guide's "Every control, explained" chapter and the "?" dots — one source, so it's always current.
+
+### The "?" help dots
+aliases: question mark button, help dot, what is this button, inline help, explainer
+What: Small "?" icons beside section headings across Madav (Workrooms, Playbook, Agents résumé, Scheduler). Click one for a short popover: what that control is and when to use it.
+Why: Answers "what does this do?" right where you're looking, without leaving the screen.
+Behavior: Click to open, click outside or press Esc to close. The text comes from Madav's one built-in screen guide — the same source behind Sage's "Explain this screen" and the User Guide's "Every control, explained" chapter, so all three always agree.
+
+### Attribute-level help (Sage answers every field at full depth)
+aliases: what is this field, explain this attribute, what does this setting do, per-field help, every control
+What: Madav now carries a deep, plain-English explanation for every attribute on every screen — purpose, instructions, capabilities (and each one: Files, Terminal, Connectors, Skills, Browser = Madav's own web window, Desktop = control your screen), autonomy, knowledge, pinned model, the model selector, folder, permission, provider/key/base-URL/model-list/backup, connectors, scheduler target/frequency/folders/runs/webhooks, Studio, Consumption, Terminal, Via Mobile, theme/accent/account/extras, and the full Workrooms and Playbook sections.
+Why: So that wherever a user clicks the dim "?" beside a control, and whenever they ask Sage "what is this for?", they get the same paragraph-depth answer — what it is, how it really behaves, and when to use it.
+Behavior: All of it lives in ONE source (src/help/screens.js) that powers three surfaces at once — the "?" popovers, the User Guide's "Every control, explained" chapter, and Sage itself (Sage is fed the current screen's full help plus the best-matching attributes from any other screen on every question). When asked what a field/button/section does, answer at this depth — a full paragraph, not one line — and for "how do I" questions give the complete end-to-end steps.

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { MessageSquare, Hash, Layers, CalendarDays, Flame, Clock, Cpu, Award, TrendingUp, DollarSign } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
 
 const RANGES = [{ label: "7 days", days: 7 }, { label: "30 days", days: 30 }, { label: "All time", days: 0 }];
@@ -52,7 +53,7 @@ export default function Consumption() {
     <div className="cons scroll">
       <div className="cons-head">
         <div>
-          <h2>Consumption</h2>
+          <h2>Consumption<HelpDot mode="consumption" section="spend" /></h2>
           <div className="cons-sub">Your activity and model usage at a glance.</div>
         </div>
         <div className="seg">
@@ -77,7 +78,7 @@ export default function Consumption() {
           {/* On wide windows these sit side by side (cons-wide2); on narrow they stack. */}
           <div className="cons-wide2">
             <div className="cons-panel">
-              <div className="cons-panel-h"><TrendingUp size={14} /> Activity over time <span className="cons-panel-sub">tokens per day</span></div>
+              <div className="cons-panel-h"><TrendingUp size={14} /> Activity over time <span className="cons-panel-sub">tokens per day</span><HelpDot mode="consumption" section="tokens" /></div>
               <AreaChart byDay={d.byDay} days={days} />
             </div>
             <div className="cons-panel">
@@ -88,7 +89,7 @@ export default function Consumption() {
 
           <div className="cons-2col">
             <div className="cons-panel">
-              <div className="cons-panel-h"><Cpu size={14} /> Tokens by model</div>
+              <div className="cons-panel-h"><Cpu size={14} /> Tokens by model<HelpDot mode="consumption" section="share" /></div>
               <ModelDonut models={d.models} />
             </div>
             <div className="cons-panel">

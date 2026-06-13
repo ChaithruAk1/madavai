@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder, Volume2, VolumeX } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
 import { madavAlert } from "../dialogs.jsx";
 // Two-channel build flag: public builds without Voice fold this to false and the mic code drops out.
@@ -367,6 +368,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
 
           <div className="plus-wrap" ref={menuRef}>
             <button className="icon-btn bare" onClick={() => setMenuOpen((o) => !o)} title="Add"><Plus size={19} /></button>
+            <HelpDot mode="chat" section="mention" />
             {menuOpen && (
               <div className="plus-menu">
                 <button className="plus-item" onClick={pickFiles}><Paperclip size={15} /> Add files or photos <span className="kbd">Ctrl+U</span></button>
@@ -405,6 +407,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
             </button>
           )}
           {voiceOn && <button className={`icon-btn bare ${listening ? "rec" : ""}`} onClick={toggleMic} title="Voice input"><Mic size={18} /></button>}
+          {voiceOn && <HelpDot mode="chat" section="voice" />}
           {busy ? (
             <button className="send pop" onClick={onStop} title="Stop" style={{ background: "var(--bg-3)" }}><Square size={14} /></button>
           ) : canSend ? (

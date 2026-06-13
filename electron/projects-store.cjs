@@ -25,6 +25,8 @@ function normalize(p) {
   if (!Array.isArray(p.agentIds)) p.agentIds = [];
   if (!Array.isArray(p.teamIds)) p.teamIds = []; // teams staffed in the room (crew's big sibling)
   if (!Array.isArray(p.pinnedSkills)) p.pinnedSkills = []; // room playbook (signature plays)
+  if (!Array.isArray(p.goals)) p.goals = [];              // room objectives: { id, text, done }
+  if (typeof p.archived !== "boolean") p.archived = false; // archived rooms hide from the active shelf
   return p;
 }
 
@@ -43,7 +45,7 @@ function listProjects() {
     id: p.id, name: p.name, instructions: p.instructions, createdAt: p.createdAt, updatedAt: p.updatedAt,
     knowledgeCount: (p.knowledge || []).length,
     knowledgeBytes: (p.knowledge || []).reduce((n, k) => n + String(k.content || "").length, 0),
-    identity: p.identity, agentIds: p.agentIds, teamIds: p.teamIds, pinnedSkills: p.pinnedSkills, folder: p.folder || "", githubUrl: p.githubUrl || "",
+    identity: p.identity, agentIds: p.agentIds, teamIds: p.teamIds, pinnedSkills: p.pinnedSkills, goals: p.goals, archived: p.archived, folder: p.folder || "", githubUrl: p.githubUrl || "",
     sim: !!p.sim, // built-in Project Simulation room (Workrooms guide) — delete-protected in the UI
     convCount: (convMeta[p.id] || {}).count || 0, lastConvAt: (convMeta[p.id] || {}).lastAt || 0,
   }));
@@ -51,7 +53,7 @@ function listProjects() {
 function getProject(id) { return loadProjects().find((p) => p.id === id) || null; }
 function createProject(name) {
   const id = rand("prj_");
-  const p = { id, name: name || "Untitled project", instructions: "", knowledge: [], agentIds: [], teamIds: [], pinnedSkills: [], identity: autoIdentity(id), createdAt: Date.now() };
+  const p = { id, name: name || "Untitled project", instructions: "", knowledge: [], agentIds: [], teamIds: [], pinnedSkills: [], goals: [], archived: false, identity: autoIdentity(id), createdAt: Date.now() };
   const arr = loadProjects(); arr.unshift(p); saveProjects(arr); return p;
 }
 function updateProject(id, patch) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRef } from "react";
 import { Plus, Trash2, Check, RefreshCw, Plug, Save, Download, Upload } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import ModelPicker from "./ModelPicker.jsx";
 import { bridge, isWeb } from "../bridge/index.js";
 import { madavAlert, madavConfirm } from "../dialogs.jsx";
@@ -65,10 +66,10 @@ function PChip({ name }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, help, children }) {
   return (
     <label style={{ display: "block", marginBottom: 12 }}>
-      <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 5 }}>{label}{help}</div>
       {children}
     </label>
   );
@@ -198,7 +199,7 @@ export default function ModelConfig({ onChanged }) {
         </div>
       </div>
 
-      <div className="nav-label" style={{ paddingLeft: 0 }}>Providers &amp; models</div>
+      <div className="nav-label" style={{ paddingLeft: 0 }}>Providers &amp; models<HelpDot mode="models" section="provider" /></div>
       <p style={{ color: "var(--text-2)", fontSize: 12.5, margin: "2px 0 10px" }}>
         <b style={{ color: "var(--text-1)" }}>Madav Starter (free)</b> works the moment you sign in — no API key needed, with a daily limit on free models.
         For long-term use we recommend adding your own provider key (OpenRouter is the easiest: one key, hundreds of models, pay only for what you use) — pick a provider below, paste the key, and every model unlocks with no daily cap.
@@ -242,7 +243,7 @@ export default function ModelConfig({ onChanged }) {
 
       {/* Backup & restore — global, lives on the gallery view. */}
       <div className="mc-card" style={{ marginTop: 18 }}>
-        <div className="nav-label" style={{ paddingLeft: 0 }}>Backup &amp; restore</div>
+        <div className="nav-label" style={{ paddingLeft: 0 }}>Backup &amp; restore<HelpDot mode="models" section="backup" /></div>
         <p style={{ color: "var(--text-2)", fontSize: 12, margin: "6px 0 10px" }}>
           One file holds your providers, agents, teams and preferences. ⚠ The backup contains your API keys in readable form — store it somewhere private.
         </p>
@@ -274,8 +275,8 @@ export default function ModelConfig({ onChanged }) {
                 <option value="anthropic">Anthropic-compatible (/v1/messages)</option>
               </select>
             </Field>
-            <Field label="Base URL"><input className="model-search" value={sel.baseUrl} onChange={(e) => patch("baseUrl", e.target.value)} placeholder="https://openrouter.ai/api" /></Field>
-            <Field label="API key"><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder={sel.kind === "anthropic" ? "sk-ant-…" : "leave blank for local"} /></Field>
+            <Field label="Base URL" help={<HelpDot mode="models" section="baseurl" />}><input className="model-search" value={sel.baseUrl} onChange={(e) => patch("baseUrl", e.target.value)} placeholder="https://openrouter.ai/api" /></Field>
+            <Field label="API key" help={<HelpDot mode="models" section="key" />}><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder={sel.kind === "anthropic" ? "sk-ant-…" : "leave blank for local"} /></Field>
           </div>
           {isWeb && (
             <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 0" }}>
@@ -288,7 +289,7 @@ export default function ModelConfig({ onChanged }) {
               (billing a Claude consumer plan from third-party software breaches Anthropic's ToS). */}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
-            <button className="btn primary" onClick={saveProvider}><Save size={14} /> Save &amp; load models</button>
+            <button className="btn primary" onClick={saveProvider}><Save size={14} /> Save &amp; load models</button><HelpDot mode="models" section="modellist" />
             <button className="btn" onClick={test}><RefreshCw size={14} /> Test only</button>
             <span style={{ color: status.startsWith("Saved") ? "var(--ok)" : "var(--text-2)", fontSize: 12 }}>{status}</span>
           </div>

@@ -5,6 +5,7 @@
 // No cloud sandbox (Madav runs locally), no Remote Control.
 import { useEffect, useState } from "react";
 import { FolderOpen, Github, Plus, ChevronDown, Check, X, Trash2, Loader, Search, FolderGit2, Link2 } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { bridge, isWeb } from "../bridge/index.js";
 
 // `github` (default true): Build shows the full GitHub integration; Collaborate passes
@@ -80,6 +81,7 @@ export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl
       <button className="chip" onClick={() => setOpen((o) => !o)} title="Select the folder (or repo) to work in">
         <FolderGit2 size={13} /> {cwd ? cwd.split(/[\\/]/).pop() : "Select Folder"} <ChevronDown size={12} />
       </button>
+      <HelpDot mode="cowork" section="folder" />
       {open && (
         <div className="env-menu">
           <div className="env-sec">Local</div>

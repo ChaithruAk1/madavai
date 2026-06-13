@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer, Webhook, Copy, Check, LayoutGrid, List, Folder, FolderPlus } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { madavConfirm } from "../dialogs.jsx";
 import { bridge } from "../bridge/index.js";
 import ModelPicker from "./ModelPicker.jsx";
@@ -163,7 +164,7 @@ export default function Scheduler() {
       <div className="sched-wrap">
       <div className="pj-head">
         <div>
-          <h1 className="pj-title">Scheduled tasks</h1>
+          <h1 className="pj-title">Scheduled tasks<HelpDot mode="scheduler" section="target" /></h1>
           <p style={{ color: "var(--text-2)", fontSize: 13, margin: "4px 0 0" }}>Run tasks on a schedule or whenever you need them.</p>
         </div>
         <div className="pj-actions">
@@ -202,8 +203,8 @@ export default function Scheduler() {
           ))}
         </div>
         <span style={{ flex: 1 }} />
-        <button className="btn ghost" title="Create a folder to organize tasks — then use the folder button on any row to file it" onClick={() => { setNewGrp(""); setGrpOpen(true); }}><FolderPlus size={14} /> New folder</button>
-        <button className="btn ghost" title="Webhook triggers — let external systems fire your agents" onClick={() => setWhOpen(true)}><Webhook size={14} /> Webhooks</button>
+        <button className="btn ghost" title="Create a folder to organize tasks — then use the folder button on any row to file it" onClick={() => { setNewGrp(""); setGrpOpen(true); }}><FolderPlus size={14} /> New folder</button><HelpDot mode="scheduler" section="folders" />
+        <button className="btn ghost" title="Webhook triggers — let external systems fire your agents" onClick={() => setWhOpen(true)}><Webhook size={14} /> Webhooks</button><HelpDot mode="scheduler" section="webhooks" />
         <label className="chip" style={{ cursor: "pointer" }} title="Tasks only run while the computer is awake — this prevents sleep">
           <input type="checkbox" checked={keepAwake} onChange={toggleKeepAwake} style={{ marginRight: 6 }} /> Keep awake
         </label>
@@ -333,7 +334,7 @@ export default function Scheduler() {
         <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setRunsFor(null); }}>
           <div className="pj-create" style={{ width: 680 }}>
             <div style={{ display: "flex", alignItems: "center" }}>
-              <h2 style={{ flex: 1, margin: 0, fontSize: 18 }}>Run history — {runsFor.task.name}</h2>
+              <h2 style={{ flex: 1, margin: 0, fontSize: 18 }}>Run history — {runsFor.task.name}<HelpDot mode="scheduler" section="runs" /></h2>
               <button className="icon-btn" onClick={() => setRunsFor(null)}><X size={16} /></button>
             </div>
             {runsFor.runs.length === 0 ? (
@@ -467,6 +468,7 @@ function TaskModal({ draft, setDraft, projects, agents = [], teams = [], skills 
         <textarea className="model-search" rows={4} style={{ resize: "vertical", fontFamily: "inherit" }}
           value={d.prompt} placeholder="What should Madav do each run?" onChange={(e) => set({ prompt: e.target.value })} />
 
+        <label>Target<HelpDot mode="scheduler" section="target" /></label>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "2px 0 6px" }}>
           <select className="model-search" style={{ marginBottom: 0, width: "auto" }} value={d.target?.type || "chat"} onChange={(e) => setTarget({ type: e.target.value })}>
             <option value="chat">Let's Chat (plain)</option>
@@ -541,7 +543,7 @@ function TaskModal({ draft, setDraft, projects, agents = [], teams = [], skills 
         </div>
         {d.target?.type === "folder" && d.target?.folder && <div className="mo-sub" style={{ marginBottom: 6, fontFamily: "var(--mono)" }}>{d.target.folder}</div>}
 
-        <label>Frequency</label>
+        <label>Frequency<HelpDot mode="scheduler" section="frequency" /></label>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <select className="model-search" style={{ marginBottom: 0, width: 160 }} value={sc.mode || "off"} onChange={(e) => setSchedule({ mode: e.target.value })}>
             <option value="off">Manual</option>

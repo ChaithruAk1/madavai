@@ -4,6 +4,7 @@
 // process (electron/terminal.cjs). Type `madav` here to run the agent without leaving the app.
 import { useEffect, useRef, useState } from "react";
 import { Terminal as TerminalIcon, Plus, Check, Download, Monitor } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
@@ -80,7 +81,7 @@ export default function TerminalPanel({ cwd }) {
       <div style={{ height: "100%", display: "grid", placeItems: "center", padding: 24 }}>
         <div style={{ maxWidth: 460, textAlign: "center", border: "1px solid var(--line)", borderRadius: 16, padding: "30px 28px", background: "var(--bg-2)" }}>
           <div style={{ width: 52, height: 52, borderRadius: 14, display: "grid", placeItems: "center", margin: "0 auto 14px", background: "rgba(19,196,214,.12)", color: "#13c4d8" }}><TerminalIcon size={26} /></div>
-          <h2 style={{ margin: "0 0 6px", fontSize: 19 }}>Terminal lives in the desktop app</h2>
+          <h2 style={{ margin: "0 0 6px", fontSize: 19 }}>Terminal lives in the desktop app<HelpDot mode="terminal" section="inapp" /></h2>
           <p style={{ color: "var(--text-2)", fontSize: 13, margin: "0 0 18px", lineHeight: 1.5 }}>A real shell needs access to your computer, which a browser can't provide. Get the Madav desktop app to unlock it.</p>
           <div style={{ textAlign: "left", margin: "0 auto 20px", display: "grid", gap: 9 }}>
             {perks.map((p) => (

@@ -5,11 +5,12 @@
 // a running session (he talks through a separate one-shot call). Draggable, minimizable,
 // with a chooseable face. Shares the persisted thread with the in-Agents "Ask Sage" tab.
 import { useEffect, useRef, useState } from "react";
-import { X, Plus, Minus, Smile, ArrowUp, ArrowRight, Loader2, Mic, Volume2, VolumeX } from "lucide-react";
+import { X, Plus, Minus, Smile, ArrowUp, ArrowRight, Loader2, Mic, Volume2, VolumeX, Compass, Sparkles, BookOpen } from "lucide-react";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
 import { recordScreen, recordQuestion, recordEvent, memoryBlock, maybeDistill } from "../sageMemory.js";
 import { retrieveKnowledge } from "../sageKnowledge.js";
+import { SCREEN_HELP, TOURS, WHATS_NEW } from "../help/screens.js";
 import AGENT_GUIDE_RAW from "../../AGENT-GUIDE.md?raw";
 import APP_GUIDE_RAW from "../../APP-GUIDE.md?raw";
 // Two-channel build flag: public builds without Voice fold this to false (mic hidden).
@@ -101,6 +102,36 @@ function tipFor(mode) {
   }
 }
 
+// Screen & attribute help fed to Sage so it answers field/button questions at the SAME
+// depth as the in-app "?" dots and the User Guide — all three read SCREEN_HELP. Always
+// includes the current screen in full; also keyword-matches the question across every
+// screen so cross-screen attribute questions get their rich paragraph too.
+function fmtSection(x) {
+  return `- ${x.label}: ${x.what}${x.more ? " " + x.more : ""}${x.when ? " (When to use: " + x.when + ")" : ""}`;
+}
+function helpContext(mode, text) {
+  const blocks = [];
+  const cur = SCREEN_HELP[mode];
+  if (cur) blocks.push(`Current screen — "${cur.title}": ${cur.blurb}\n` + (cur.sections || []).map(fmtSection).join("\n"));
+  const q = String(text || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 3);
+  if (q.length) {
+    const scored = [];
+    for (const [m, sh] of Object.entries(SCREEN_HELP)) {
+      if (!sh || !sh.sections || m === mode) continue;
+      for (const x of sh.sections) {
+        const hay = (x.label + " " + x.what + " " + (x.more || "")).toLowerCase();
+        let sc = 0; for (const w of q) if (hay.includes(w)) sc++;
+        if (sc >= 2) scored.push([sc, sh.title, x]);
+      }
+    }
+    scored.sort((a, b) => b[0] - a[0]);
+    for (const [, title, x] of scored.slice(0, 3)) blocks.push(`From "${title}" → ${fmtSection(x).slice(2)}`);
+  }
+  return blocks.length
+    ? "\n\n===== SCREEN & ATTRIBUTE HELP (AUTHORITATIVE: when the user asks what a field, button, toggle or section is/does, answer at THIS depth and clarity — a full, plain-prose paragraph, not one line. Use these exact behaviors.) =====\n" + blocks.join("\n\n")
+    : "";
+}
+
 // A saved position is only trustworthy on the window it was dragged on: clamp it to the
 // CURRENT viewport so Sage can never be restored off-screen (smaller window/monitor).
 function clampPos(p) {
@@ -121,6 +152,7 @@ export default function SageDock({ mode, onNavigate }) {
   const [pos, setPos] = useState(() => { try { return clampPos(JSON.parse(localStorage.getItem("be.sage.pos") || "null")); } catch { return null; } });
   const [look, setLook] = useState(() => { try { return Number(localStorage.getItem("be.sage.look")) || 0; } catch { return 0; } });
   const [lookPick, setLookPick] = useState(false);
+  const [tours, setTours] = useState(false); // Tours / What's-new launcher overlay
   const [peek, setPeek] = useState(() => { try { return localStorage.getItem("be.sage.greeted") !== "1"; } catch { return false; } });
   const [tip, setTip] = useState(null);
   const [listening, setListening] = useState(false);
@@ -301,7 +333,8 @@ export default function SageDock({ mode, onNavigate }) {
       // (local string scoring, zero tokens spent retrieving — see src/sageKnowledge.js).
       const know = retrieveKnowledge(text, mode);
       const knowCtx = know ? `\n\n===== CONTROL-LEVEL KNOWLEDGE (the entries below describe the exact fields/buttons this question is about — trust their labels and behaviors over general knowledge) =====\n${know}` : "";
-      const r = await bridge.completeOnce([{ role: "system", content: SYS(name) + memoryBlock() + knowCtx + walkCtx }, ...hist]);
+      const screenCtx = helpContext(mode, text);
+      const r = await bridge.completeOnce([{ role: "system", content: SYS(name) + memoryBlock() + knowCtx + screenCtx + walkCtx }, ...hist]);
       // I think with whatever model the selector points at — any provider, any key.
       // When the key/model isn't ready, say so plainly and offer the fix screen.
       let reply = (r && r.text) || "";
@@ -344,6 +377,26 @@ export default function SageDock({ mode, onNavigate }) {
     } catch (e) {
       setMsgs((m) => [...m, { role: "mentor", text: "Error: " + String((e && e.message) || e) }]);
     } finally { setBusy(false); }
+  };
+
+  // "Explain this screen" — instant, LOCAL narration of the current screen from the
+  // shared SCREEN_HELP source. Zero tokens: no model call, just a readable digest of the
+  // same knowledge the "?" dots and the User Guide show, so it can never drift.
+  const explainScreen = () => {
+    openDock();
+    const h = SCREEN_HELP[mode];
+    if (!h) {
+      setMsgs((m) => [...m, { role: "mentor", text: "This screen doesn't have a quick explainer yet — ask me anything about it and I'll walk you through it." }]);
+      return;
+    }
+    recordEvent("explain-screen", mode);
+    let t = h.title + " — " + h.blurb;
+    if (h.sections && h.sections.length) {
+      t += "\n\n" + h.sections.map((s) => s.label + ": " + s.what + " When: " + s.when).join("\n");
+    }
+    if (h.guide && h.guide.note) t += "\n\n" + h.guide.note;
+    setMsgs((m) => [...m, { role: "mentor", text: t }]);
+    speakReply(h.title + ". " + h.blurb);
   };
 
   // Voice — SIMPLE Windows mic: tap, speak, and your words are TYPED into the box
@@ -527,6 +580,10 @@ export default function SageDock({ mode, onNavigate }) {
             {busy && <div className="agsd-sheet agsd-busy"><Loader2 size={13} className="ag-spin" /> thinking…</div>}
             <div ref={endRef} />
           </div>
+          <div className="sage-quick">
+            <button className="sage-quick-btn" title="Explain everything on this screen — instantly, no waiting" onClick={explainScreen}><Compass size={12} /> Explain this screen</button>
+            <button className="sage-quick-btn" title="Tour the spaces and see what's new" onClick={() => setTours(true)}><Sparkles size={12} /> Tours &amp; what's new</button>
+          </div>
           <div className="sage-panel-input">
             {voiceOn && <button className={`sage-mic ${listening ? "rec" : ""}`}
               aria-label={listening ? (micEngineRef.current === "win" ? "Listening — stops automatically" : "Stop listening") : `Talk to ${name}`}
@@ -535,6 +592,34 @@ export default function SageDock({ mode, onNavigate }) {
             <input value={input} placeholder={listening ? "Listening…" : `Ask ${name} anything…`} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
             <button className="agsd-send" aria-label={`Ask ${name}`} disabled={busy || !input.trim()} onClick={send}><ArrowUp size={15} /></button>
           </div>
+          {tours && (
+            <div className="sage-tours" onMouseDown={(e) => { if (e.target === e.currentTarget) setTours(false); }}>
+              <div className="sage-tours-card">
+                <div className="sage-tours-head">
+                  <span><Compass size={14} /> Take a tour</span>
+                  <button className="sage-ico" onClick={() => setTours(false)}><X size={14} /></button>
+                </div>
+                <div className="sage-tours-scroll scroll">
+                  <div className="sage-tours-lbl">The spaces</div>
+                  {TOURS.map((t) => (
+                    <button key={t.id} className="sage-tours-row" onClick={() => { setTours(false); recordEvent("tour-open", t.id); setOpen(false); onNavigate && onNavigate(t.id); }}>
+                      <span className="sage-tours-ico"><BookOpen size={14} /></span>
+                      <span><b>{t.title}</b><span className="sage-tours-sub">{t.blurb}</span></span>
+                      <ArrowRight size={13} className="sage-tours-arr" />
+                    </button>
+                  ))}
+                  <div className="sage-tours-lbl">What's new</div>
+                  {WHATS_NEW.map((w, i) => (
+                    <button key={i} className="sage-tours-row" onClick={() => { setTours(false); recordEvent("whatsnew-open", w.go); setOpen(false); onNavigate && onNavigate(GOTO_MODE[w.go] || w.go); }}>
+                      <span className="sage-tours-ico new"><Sparkles size={14} /></span>
+                      <span><b>{w.t}</b><span className="sage-tours-sub">{w.d}</span></span>
+                      <ArrowRight size={13} className="sage-tours-arr" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="sage-fab-wrap">

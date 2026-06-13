@@ -10,6 +10,8 @@ const PERMS = [
   { id: "plan", label: "Read-only", desc: "Inspect only, never modify", icon: Eye },
 ];
 
+import HelpDot from "./HelpDot.jsx";
+
 export function PermissionPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -65,7 +67,9 @@ export default function Topbar({ mode, model, groups, onModel, onRefresh, permis
         </span>
       )}
       {agent && <PermissionPicker value={permissionMode} onChange={onPermissionChange} />}
+      {agent && <HelpDot mode="cowork" section="permission" />}
       {mode !== "settings" && <ModelPicker value={model} groups={groups} onChange={onModel} onRefresh={onRefresh} />}
+      {mode !== "settings" && <HelpDot mode="chat" section="model" />}
     </div>
   );
 }

@@ -7,6 +7,7 @@
 // deleteSkill/createSkill/import*, forgeList/Approve/Discard, recorders.
 import { useEffect, useState, createElement } from "react";
 import { FolderPlus, FolderUp, Upload, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight, X, ArrowLeft, Search, Globe, AppWindow, PenLine, Package, Sparkles, BookOpen, Pin, Share2, Download, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check, Bot, FolderKanban, Clock, BarChart3, Users, GitMerge, Plug, FolderInput, Play } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { bridge, isWeb } from "../bridge/index.js";
 import { madavConfirm } from "../dialogs.jsx";
 
@@ -545,7 +546,7 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
         {/* AUTO-PIN SUGGESTIONS — agents that keep loading a play but haven't pinned it */}
         {suggestions.length > 0 && (
           <div className="pb2-suggest">
-            <div className="wr-sechead" style={{ marginBottom: 6, color: "var(--accent)" }}><Pin size={13} /> Suggested signatures — Madav noticed a habit</div>
+            <div className="wr-sechead" style={{ marginBottom: 6, color: "var(--accent)" }}><Pin size={13} /> Suggested signatures — Madav noticed a habit<HelpDot mode="skills" section="pin" /></div>
             {suggestions.map((sg) => (
               <div key={sg.agentId + sg.play} className="pb2-suggestrow">
                 <span><b>{sg.agentName}</b> loaded <b>{sg.play}</b> {sg.uses}× — make it a signature?</span>
@@ -557,7 +558,7 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
         )}
 
         {/* TEACH STRIP — four ways Madav learns a new play */}
-        <div className="wr-sechead" style={{ margin: "4px 0 8px" }}><Sparkles size={13} /> Teach Madav a new play</div>
+        <div className="wr-sechead" style={{ margin: "4px 0 8px" }}><Sparkles size={13} /> Teach Madav a new play<HelpDot mode="skills" section="teach" /></div>
         <div className="pb2-teach">
           {!isWeb && bridge.recordFlowStart && (
             <Tile icon={Globe} title="Record on the web" sub="Do it once in a browser window; close it — Madav drafts the play."
@@ -596,7 +597,7 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
         {/* APPROVAL STRIP — plays Madav drafted on its own (Skill Forge + recorders) */}
         {drafts.length > 0 && (
           <>
-            <div className="wr-sechead" style={{ margin: "14px 0 8px", color: "var(--accent)" }}><BookOpen size={13} /> Drafted by Madav — your approval needed</div>
+            <div className="wr-sechead" style={{ margin: "14px 0 8px", color: "var(--accent)" }}><BookOpen size={13} /> Drafted by Madav — your approval needed<HelpDot mode="skills" section="drafts" /></div>
             <div className="pb2-drafts">
               {drafts.map((d) => (
                 <div key={d.name} className="pb2-draft">

@@ -5,6 +5,7 @@
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare, Minus, Smile, AppWindow } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
 import { madavAlert } from "../dialogs.jsx";
@@ -528,6 +529,11 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [browserOn, setBrowserOn] = useState(true); // admin master switch for the Agent Browser feature
   const [stats, setStats] = useState({});           // agentId → { missions, cleanPct, lastAt } (track record)
   const [allPlays, setAllPlays] = useState([]);     // available plays (to pin as signature moves)
+  const [resumeAgent, setResumeAgent] = useState(null); // agent whose résumé page is open
+  const [resumeHist, setResumeHist] = useState([]);     // its run history
+  const [resumeMem, setResumeMem] = useState([]);       // its memory notes
+  const [resumeRooms, setResumeRooms] = useState([]);   // rooms it's staffed in
+  const [coachText, setCoachText] = useState("");
   const [swarmAgent, setSwarmAgent] = useState(null); // agent for the swarm modal, or null
   const [tab, setTab] = useState("agents");         // "agents" | "teams"
   const [view, setView] = useState(() => {          // "guide" | "list" | "studio" | "team"
@@ -882,6 +888,30 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   // Track record: per-agent mission stats power the "12 missions · 92% clean" line.
   const loadStats = () => { if (bridge.getAgentStats) bridge.getAgentStats().then((x) => setStats(x || {})).catch(() => {}); };
   useEffect(() => { bridge.listSkills && bridge.listSkills().then((l) => setAllPlays(l || [])).catch(() => {}); }, []);
+
+  // Presence — derived from the agent's last run: fresh (24h) = available, idle (30d+) = off-duty.
+  const presence = (a) => {
+    const st = stats[a.id]; const last = st && st.lastAt;
+    if (!last) return { dot: "var(--text-2)", label: "new" };
+    const d = Date.now() - last;
+    if (d < 86400000) return { dot: "var(--ok)", label: "active" };
+    if (d > 30 * 86400000) return { dot: "var(--text-2)", label: "off-duty" };
+    return { dot: "var(--accent)", label: "ready" };
+  };
+  const openResume = async (a) => {
+    setResumeAgent(a); setResumeHist([]); setResumeMem([]); setResumeRooms([]); setCoachText("");
+    try { if (bridge.getAgentHistory) setResumeHist((await bridge.getAgentHistory(a.id)) || []); } catch {}
+    try { if (bridge.getAgentMemory) setResumeMem(((await bridge.getAgentMemory(a.id)) || {}).notes || []); } catch {}
+    try { if (bridge.listProjects) { const ps = (await bridge.listProjects()) || []; setResumeRooms(ps.filter((p) => (p.agentIds || []).includes(a.id))); } } catch {}
+  };
+  // Coach: a 👍/👎 + note graduates into the agent's durable memory.
+  const coach = async (verdict) => {
+    const a = resumeAgent; if (!a) return;
+    const note = `${verdict === "up" ? "👍 Do more of this" : "👎 Avoid this"}: ${coachText.trim() || "(general feedback)"}`;
+    const next = [...resumeMem, { at: Date.now(), text: note }];
+    try { await bridge.setAgentMemory(a.id, next); } catch {}
+    setResumeMem(next); setCoachText("");
+  };
   useEffect(() => { loadStats(); }, [view]);
   // Agent/team conversations live here (scoped out of the general chat recents).
   const loadRuns = () => {
@@ -1202,7 +1232,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const renderAgentCard = (a) => (
     <div key={a.id} className="ags-card" {...dragProps(a)}>
       <div className="ags-card-top">
-        <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={46} title={a.name} />
+        <span className="ags-presence-wrap"><Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={46} title={a.name} /><span className="ags-presence" style={{ background: presence(a).dot }} title={presence(a).label} /></span>
         <div className="ags-card-id">
           <div className="ags-card-name">{agentName(a)}</div>
           <div className="ags-card-role">{a.description || "No description"}</div>
@@ -1228,6 +1258,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       <div className="ag-card-actions">
         <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
         <button className="btn ghost" onClick={() => openStudio(a)}><Pencil size={13} /> Open in Studio</button>
+        <button className="btn ghost" title="Résumé — track record, plays, rooms, memory" onClick={() => openResume(a)}><BadgeCheck size={13} /></button>
         {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
         {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
         {canDelete(a) && <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>}
@@ -1236,7 +1267,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   );
   const renderAgentRow = (a) => (
     <div key={a.id} className="ags-listrow" {...dragProps(a)}>
-      <Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={40} title={a.name} />
+      <span className="ags-presence-wrap"><Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={40} title={a.name} /><span className="ags-presence" style={{ background: presence(a).dot }} title={presence(a).label} /></span>
       <div className="ags-list-main">
         <span className="ags-list-name">{agentName(a)}</span>
         <span className="ags-list-desc" title={a.description || ""}>{a.description || "No description"}</span>
@@ -1254,6 +1285,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       <div className="ags-list-acts">
         <button className="btn primary" onClick={() => onLaunch && onLaunch(a, null)}><Rocket size={13} /> Put to work</button>
         <button className="btn ghost" title="Open in Studio" onClick={() => openStudio(a)}><Pencil size={13} /></button>
+        <button className="btn ghost" title="Résumé" onClick={() => openResume(a)}><BadgeCheck size={13} /></button>
         {bridge.runSwarm && <button className="btn ghost" title="Swarm — run this agent over a whole list of items" onClick={() => setSwarmAgent(a)}><Layers size={13} /></button>}
         {bridge.exportAgent && <button className="btn ghost" title="Export .agent file — share this agent" onClick={() => exportAgentFile(a)}><Download size={13} /></button>}
         {canDelete(a) && <button className="btn ghost ag-del" title="Delete" onClick={() => removeAgent(a.id)}><Trash2 size={13} /></button>}
@@ -1530,9 +1562,83 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   }
 
   // ---------------- list ("Your crew" + "Teams") ----------------
+  // ---- AGENT RÉSUMÉ — a drill-in profile overlay (track record · plays · rooms · memory · coaching) ----
+  const ResumeOverlay = () => {
+    const a = resumeAgent; if (!a) return null;
+    const st = stats[a.id] || {};
+    const t = a.tools || {};
+    const caps = [t.files && "Files", t.shell && "Terminal", t.connectors && "Connectors", t.skills && "Skills", t.browser && "Browser", t.desktop && "Desktop"].filter(Boolean);
+    const pr = presence(a);
+    return (
+      <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setResumeAgent(null); }}>
+        <div className="pj-create ags-resume" style={{ width: 720 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span className="ags-presence-wrap"><Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={48} title={a.name} /><span className="ags-presence" style={{ background: pr.dot }} /></span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2 style={{ margin: 0, fontSize: 19 }}>{agentName(a)}</h2>
+              <div className="mo-sub">{a.description || "Custom agent"} · {pr.label}</div>
+            </div>
+            <button className="btn primary" onClick={() => { setResumeAgent(null); onLaunch && onLaunch(a, null); }}><Rocket size={13} /> Put to work</button>
+            <button className="btn ghost" onClick={() => { setResumeAgent(null); openStudio(a); }}><Pencil size={13} /> Edit</button>
+            <button className="icon-btn" onClick={() => setResumeAgent(null)}><X size={16} /></button>
+          </div>
+
+          <div className="ags-resume-stats">
+            <div className="ags-stat"><span className="ags-statn">{st.missions || 0}</span><span className="ags-statl">missions</span></div>
+            <div className="ags-stat"><span className="ags-statn">{st.cleanPct != null ? st.cleanPct + "%" : "—"}</span><span className="ags-statl">clean</span></div>
+            <div className="ags-stat"><span className="ags-statn">{st.tokens ? Math.round(st.tokens / 1000) + "k" : "0"}</span><span className="ags-statl">tokens</span></div>
+            <div className="ags-stat"><span className="ags-statn">{st.lastAt ? rel(st.lastAt) : "never"}</span><span className="ags-statl">last run</span></div>
+          </div>
+
+          <div className="ags-resume-grid">
+            <div>
+              <div className="wr-sechead" style={{ marginBottom: 6 }}><Target size={13} /> Capabilities<HelpDot mode="agents" section="capabilities" /></div>
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{caps.length ? caps.map((c) => <span key={c} className="ag-pill">{c}</span>) : <span className="mo-sub">chat only</span>}{a.model && <span className="ag-pill ag-pill-model"><Cpu size={11} /> {a.model.split("::")[1] || a.model}</span>}</div>
+
+              <div className="wr-sechead" style={{ margin: "12px 0 6px" }}><Zap size={13} /> Signature plays<HelpDot mode="agents" section="signature" /></div>
+              {Array.isArray(a.pinnedSkills) && a.pinnedSkills.length ? <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{a.pinnedSkills.map((n) => <span key={n} className="ag-pill">⚡ {n}</span>)}</div> : <span className="mo-sub">none pinned — pin some in the Playbook</span>}
+
+              <div className="wr-sechead" style={{ margin: "12px 0 6px" }}><Users size={13} /> Staffed in rooms<HelpDot mode="agents" section="resume" /></div>
+              {resumeRooms.length ? <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{resumeRooms.map((p) => <span key={p.id} className="ag-pill">{(p.identity && p.identity.glyph) || "✦"} {p.name}</span>)}</div> : <span className="mo-sub">not staffed in any room yet</span>}
+            </div>
+
+            <div>
+              <div className="wr-sechead" style={{ marginBottom: 6 }}><Brain size={13} /> Memory &amp; coaching<HelpDot mode="agents" section="coach" /></div>
+              <div className="ags-coach">
+                <input className="model-search" style={{ marginBottom: 6 }} placeholder="One-line feedback (e.g. always lead with risks)…" value={coachText} onChange={(e) => setCoachText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && coach("up")} />
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="btn" onClick={() => coach("up")}>👍 Do more</button>
+                  <button className="btn" onClick={() => coach("down")}>👎 Avoid</button>
+                </div>
+              </div>
+              <div className="ags-memlist">
+                {resumeMem.length === 0 ? <span className="mo-sub">No learnings yet. Coach it above — corrections stick across every future mission.</span>
+                  : resumeMem.slice().reverse().slice(0, 8).map((m, i) => <div key={i} className="ags-memrow">{typeof m === "string" ? m : m.text}</div>)}
+              </div>
+            </div>
+          </div>
+
+          <div className="wr-sechead" style={{ margin: "14px 0 6px" }}><History size={13} /> Recent missions<HelpDot mode="agents" section="putwork" /></div>
+          <div className="ags-resume-runs">
+            {resumeHist.length === 0 ? <span className="mo-sub">No runs recorded yet — Put it to work and they'll appear here.</span>
+              : resumeHist.slice(0, 10).map((h, i) => (
+                <div key={i} className="ags-runrow">
+                  <span style={{ width: 7, height: 7, borderRadius: 99, background: h.ok ? "var(--ok)" : "var(--danger)", flex: "none" }} />
+                  <span className="mo-sub" style={{ width: 70, flex: "none" }}>{rel(h.at)}</span>
+                  <span className="ag-pill" style={{ flex: "none" }}>{h.source || "chat"}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.summary || ""}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (view === "list") {
     return (
       <div className="agents-page scroll">
+        {resumeAgent && <ResumeOverlay />}
         <div className="ag-head">
           <div>
             <h2 className="ag-title">Agent Studio</h2>
@@ -2165,11 +2271,11 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </button>
           {blueprintOpen && (
             <div className="ags-bp scroll">
-              <label>Purpose <span>— one sentence on what it's for</span></label>
+              <label>Purpose <span>— one sentence on what it's for</span><HelpDot mode="agents" section="purpose" /></label>
               <input value={draft.description} placeholder="One sentence" onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
-              <label>Instructions <span>— how it thinks and answers</span></label>
+              <label>Instructions <span>— how it thinks and answers</span><HelpDot mode="agents" section="instructions" /></label>
               <textarea rows={7} value={draft.instructions} onChange={(e) => setDraft({ ...draft, instructions: e.target.value })} />
-              <label>Capabilities <span>— what it may use</span></label>
+              <label>Capabilities <span>— what it may use</span><HelpDot mode="agents" section="capabilities" /></label>
               <div className="ags-bp-tools">
                 {TOOL_DEFS.filter((t) => t.key !== "browser" || browserOn).map((t) => {
                   const I = t.icon; const on = !!draft.tools[t.key];
@@ -2198,7 +2304,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                   <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Focusing, clicks and typing ask your permission; password/credential fields are always refused. Windows only.</div>
                 </>
               )}
-              <label>Autonomy <span>— how it handles risky actions (files, terminal, browser)</span></label>
+              <label>Autonomy <span>— how it handles risky actions (files, terminal, browser)</span><HelpDot mode="agents" section="autonomy" /></label>
               <div className="ags-bp-tools">
                 {[
                   { v: "ask", label: "Ask first", note: "Pauses and asks your permission before each risky action. The safe default." },
@@ -2211,7 +2317,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               </div>
               {draft.autonomy === "act" && <div className="ag-hint" style={{ margin: "2px 0 6px" }}>⚠ Acts without asking — file edits, terminal commands and browser actions run automatically. Pair with a site allowlist and a folder you trust it with.</div>}
               {draft.autonomy === "skip" && <div className="ag-hint" style={{ margin: "2px 0 6px" }}>Risky actions are declined instantly (no prompt); the agent adapts or tells you what it skipped. Reads are always allowed.</div>}
-              <label>Knowledge <span>— {(draft.knowledge || []).length}/24 files it always knows</span></label>
+              <label>Knowledge <span>— {(draft.knowledge || []).length}/24 files it always knows</span><HelpDot mode="agents" section="knowledge" /></label>
               <div className="ags-kn">
                 {(draft.knowledge || []).map((k, i) => (
                   k.type === "image" ? (
@@ -2234,7 +2340,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               <div className="ag-hint" style={{ margin: 0 }}>Text files (md, txt, csv, json…). Large libraries are retrieved per task — only the relevant passages are injected. For PDFs, add them to a Project instead — Projects parse PDF/Word.</div>
               <div className="ag-hint" style={{ margin: "2px 0 0" }}>Images (screenshots, diagrams) are shown to vision-capable models at the start of each conversation.</div>
               {allPlays.length > 0 && (<>
-                <label>Signature plays <span>— pinned plays this agent always has in hand (pre-loaded every mission)</span></label>
+                <label>Signature plays <span>— pinned plays this agent always has in hand (pre-loaded every mission)</span><HelpDot mode="agents" section="signature" /></label>
                 <div className="ags-kn">
                   {(draft.pinnedSkills || []).map((n, i) => (
                     <span key={n} className="ag-pill" title="Pinned play — preloaded on every mission">⚡ {n}
@@ -2248,7 +2354,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                 </div>
                 <div className="ag-hint" style={{ margin: "2px 0 0" }}>If a pinned play is missing or renamed, the agent simply falls back to the normal Playbook — it never blocks a run. (Needs the Skills capability on to use plays.)</div>
               </>)}
-              <label>Pinned model <span>— overrides the live selector for this agent</span></label>
+              <label>Pinned model <span>— overrides the live selector for this agent</span><HelpDot mode="agents" section="pinnedmodel" /></label>
               <div className="ag-model-row">
                 <ModelPicker value={draft.model || undefined} groups={groups} onChange={(v) => setDraft({ ...draft, model: v })} onRefresh={onRefresh} agenticOnly />
                 {draft.model

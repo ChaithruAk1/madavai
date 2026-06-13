@@ -1,6 +1,7 @@
 // © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 import { useEffect, useState } from "react";
 import { Smartphone, Trash2, RefreshCw, FolderInput, ChevronDown, ChevronRight, HelpCircle, ExternalLink } from "lucide-react";
+import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
 import { madavConfirm } from "../dialogs.jsx";
 
@@ -65,7 +66,7 @@ export default function ViaMobile({ onSettingsChanged } = {}) {
     <div className="settings scroll" style={{ padding: 24, overflow: "auto" }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
-          <h2 style={{ margin: 0, fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><Smartphone size={18} style={{ color: "var(--accent)" }} /> Via Mobile</h2>
+          <h2 style={{ margin: 0, fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><Smartphone size={18} style={{ color: "var(--accent)" }} /> Via Mobile<HelpDot mode="viamobile" section="use" /></h2>
           <span className="chip" style={{ color: online ? "var(--ok)" : "var(--text-2)" }}>
             <span style={{ width: 7, height: 7, borderRadius: 9, background: online ? "var(--ok)" : "var(--text-2)", marginRight: 6, display: "inline-block" }} />
             {status ? maskBot(status.status) : "checking…"}
@@ -108,7 +109,7 @@ export default function ViaMobile({ onSettingsChanged } = {}) {
             </p>
 
             <button className="nav-item nav-group vm-help-toggle" style={{ marginBottom: helpOpen ? 6 : 12 }} onClick={() => setHelpOpen((o) => !o)}>
-              <HelpCircle size={15} /> <span className="sb-t">How to set up your Telegram bot</span>
+              <HelpCircle size={15} /> <span className="sb-t">How to set up your Telegram bot</span><HelpDot mode="viamobile" section="setup" />
               <span className="nav-caret sb-t">{helpOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
             </button>
             {helpOpen && (
