@@ -3005,3 +3005,11 @@ textarea.model-search { border-radius: 14px; }
 .pb2-conflabel { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 650; color: var(--text-2); min-width: 78px; }
 .pb2-suggest { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 14px; padding: 12px; margin-bottom: 14px; background: color-mix(in srgb, var(--accent) 5%, var(--bg-1)); }
 .pb2-suggestrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }
+
+/* Playbook guide: "how to use a play" step cards */
+.pb2-steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 8px; }
+.pb2-stepcard { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: var(--bg-1); }
+.pb2-stephead { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 650; margin-bottom: 6px; }
+.pb2-stepic { display: inline-flex; color: var(--accent); }
+.pb2-steplist { margin: 0; padding-left: 18px; }
+.pb2-steplist li { font-size: 12.5px; color: var(--text-1); line-height: 1.5; margin: 3px 0; }

@@ -6,7 +6,7 @@
 // convention). Engine contract unchanged: listSkills/readSkill/setSkillEnabled/
 // deleteSkill/createSkill/import*, forgeList/Approve/Discard, recorders.
 import { useEffect, useState, createElement } from "react";
-import { FolderPlus, FolderUp, Upload, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight, X, ArrowLeft, Search, Globe, AppWindow, PenLine, Package, Sparkles, BookOpen, Pin, Share2, Download, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check, Bot, FolderKanban, Clock, BarChart3, Users, GitMerge, Plug, FolderInput } from "lucide-react";
+import { FolderPlus, FolderUp, Upload, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight, X, ArrowLeft, Search, Globe, AppWindow, PenLine, Package, Sparkles, BookOpen, Pin, Share2, Download, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check, Bot, FolderKanban, Clock, BarChart3, Users, GitMerge, Plug, FolderInput, Play } from "lucide-react";
 import { bridge, isWeb } from "../bridge/index.js";
 import { madavConfirm } from "../dialogs.jsx";
 
@@ -122,6 +122,43 @@ const PB_MATRIX = [
   ["Team playbook", "Plays pinned to a team apply to every member, on top of each member's own pins."],
 ];
 
+// How to actually USE a play once it's in your Playbook — step-by-step, each route.
+const PB_STEPS = [
+  { icon: Bot, t: "Use it in any chat", steps: [
+    "Open Let's Chat (or any chat in a Workroom).",
+    "Just describe your task — if it matches a play, Madav loads and follows it automatically.",
+    "Or force a specific play: type / then the play's name (e.g. /weekly-summary) and add your details.",
+    "Watch the reply: a 'Play loaded' note means it's following the play's steps.",
+  ] },
+  { icon: Pin, t: "Make it an agent's signature", steps: [
+    "Open the play here in the Playbook (click its card).",
+    "Click 'Pin to agent' and choose one or more agents.",
+    "Turn the agent's Skills capability ON (Agents → the agent → Blueprint → Capabilities).",
+    "Now every time you Put that agent to work, the play is pre-loaded — no need to ask.",
+  ] },
+  { icon: FolderKanban, t: "Give it to a Workroom", steps: [
+    "Open a Workroom (Projects) and find the 'Room playbook' section in the crew column.",
+    "Click 'Pin a play to this room' and pick the play.",
+    "Every chat and every crew mission in that room now uses it automatically.",
+  ] },
+  { icon: Clock, t: "Run it on a schedule", steps: [
+    "Open Scheduler → New task → Set up manually.",
+    "Set the target to 'Run a play' and pick your play.",
+    "Choose a time (e.g. daily 07:00) — optionally attach a folder for plays that touch files.",
+    "Save. The play runs itself on the timer; read the result in the task's run history.",
+  ] },
+  { icon: GitMerge, t: "Chain it into a pipeline", steps: [
+    "Open the play → the 'Then run' row.",
+    "Add the plays that should follow it, in order.",
+    "When this play loads anywhere, the chained plays load right after — a quick pipeline.",
+  ] },
+  { icon: Share2, t: "Share it with a teammate", steps: [
+    "Open the play → click the Share (export) button → save the .madavplay file.",
+    "If an agent pins this play, that expert agent travels with it automatically.",
+    "Your teammate clicks 'Import play' on the Playbook — the play (and the agent) appear, ready to use.",
+  ] },
+];
+
 export default function Skills({ onSelectScreen = () => {} } = {}) {
   const [dirs, setDirs] = useState([]);
   const [skills, setSkills] = useState([]);
@@ -222,6 +259,33 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
   // ---------- PLAYBOOK GUIDE (Agent-Guide format) ----------
   if (view === "guide") {
     const ch = PB_CHAPTERS[chapter];
+    if (guideTab === "activate") {
+      return (
+        <div className="agg-ref scroll">
+          <div className="agg-ref-inner">
+            <button className="pj-back" style={{ marginBottom: 6 }} onClick={() => setView("wall")}><ArrowLeft size={15} /> Playbook</button>
+            <div className="agg-subnav">
+              <button onClick={() => setGuideTab("tour")}><Compass size={14} /> Tour &amp; practice</button>
+              <button onClick={() => setGuideTab("reference")}><BookOpen size={14} /> Do's &amp; don'ts</button>
+              <button className="on"><Play size={14} /> How to activate</button>
+              <button onClick={() => setView("wall")}><ArrowRight size={14} /> Go to Playbook</button>
+            </div>
+            <div className="agg-kicker"><Play size={13} /> Madav Playbook Guide</div>
+            <h1>How to activate a play</h1>
+            <p className="agg-ref-sub">Six ways to put a play to work once it's in your Playbook — pick whichever fits the moment. Every route is one quick setup; after that the play just runs.</p>
+            <div className="pb2-steps">
+              {PB_STEPS.map((st, i) => { const I = st.icon; return (
+                <div key={i} className="pb2-stepcard">
+                  <div className="pb2-stephead"><span className="pb2-stepic"><I size={15} /></span> {st.t}</div>
+                  <ol className="pb2-steplist">{st.steps.map((x, k) => <li key={k}>{x}</li>)}</ol>
+                </div>
+              ); })}
+            </div>
+            <div className="ag-hint" style={{ marginTop: 12 }}>Tip: the fastest route is just chatting — describe your task and Madav matches the right play on its own. Pin it when you want it guaranteed, every time.</div>
+          </div>
+        </div>
+      );
+    }
     if (guideTab === "reference") {
       return (
         <div className="agg-ref scroll">
@@ -230,6 +294,7 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
             <div className="agg-subnav">
               <button onClick={() => setGuideTab("tour")}><Compass size={14} /> Tour &amp; practice</button>
               <button className="on"><BookOpen size={14} /> Do's &amp; don'ts</button>
+              <button onClick={() => setGuideTab("activate")}><Play size={14} /> How to activate</button>
               <button onClick={() => setView("wall")}><ArrowRight size={14} /> Go to Playbook</button>
             </div>
             <div className="agg-kicker"><BookOpen size={13} /> Madav Playbook Guide</div>
@@ -261,6 +326,7 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
           <div className="agg-subnav">
             <button className="on"><Compass size={14} /> Tour &amp; practice</button>
             <button onClick={() => setGuideTab("reference")}><BookOpen size={14} /> Do's &amp; don'ts</button>
+            <button onClick={() => setGuideTab("activate")}><Play size={14} /> How to activate</button>
             <button onClick={() => setView("wall")}><ArrowRight size={14} /> Go to Playbook</button>
           </div>
           <div className="agg-rail">
