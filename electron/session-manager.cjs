@@ -360,6 +360,7 @@ class SessionManager {
       await runOpenAIAgentTurn({
         prompt: userText, mode: "chat", cwd: null, profile, permMode: ap.permMode,
         history: s.history, emit, permissions: ap.permissions, signal: controller.signal,
+        agentName: (s.agent && s.agent.name) || "",
         connectors: ex.connectors, skillsDir: ex.skillsDir, disabledSkills: ex.disabledSkills, globalInstructions: withLang(cfg),
         systemOverride: this._agentSys(s, userText) || null,
         allowAskUser: true,
@@ -402,8 +403,17 @@ class SessionManager {
     };
   }
 
-  _memberSys(member, taskText) {
-    return agentPrompt.memberSystem(member, taskText || "");
+  _memberSys(member, taskText, team) {
+    let sys = agentPrompt.memberSystem(member, taskText || "");
+    // TEAM PLAYBOOK — plays pinned to the whole team apply to every member.
+    const names = (team && team.pinnedSkills) || [];
+    if (names.length) {
+      try {
+        const dirs = settings.load().skillsDirs || [];
+        sys += require("./skills-manager.cjs").pinnedBlock(dirs, names, { record: true, by: (team && team.name) || "team", context: "team" });
+      } catch {}
+    }
+    return sys;
   }
 
   // Run one member to completion, capturing its final text. Member tool calls and
@@ -413,7 +423,7 @@ class SessionManager {
     const t = member.tools || {};
     let buf = "";
     if (prof.kind === "anthropic") {
-      const { text } = await streamChat(prof, [{ role: "system", content: this._memberSys(member, task) }, { role: "user", content: task }], { signal, onDelta: () => {} });
+      const { text } = await streamChat(prof, [{ role: "system", content: this._memberSys(member, task, s.team) }, { role: "user", content: task }], { signal, onDelta: () => {} });
       return text || "";
     }
     const innerEmit = (e) => {
@@ -423,6 +433,7 @@ class SessionManager {
     };
     await runOpenAIAgentTurn({
       prompt: task,
+      agentName: (member && member.name) || "",
       mode: (t.files || t.shell) && s.cwd ? "cowork" : "chat",
       cwd: (t.files || t.shell) ? (s.cwd || null) : null,
       profile: prof, permMode: this._permsFor(member, s.permMode || "default").permMode,
@@ -430,7 +441,7 @@ class SessionManager {
       connectors: t.connectors ? (cfg.connectors || []) : [],
       skillsDir: t.skills ? (cfg.skillsDirs || []) : [],
       disabledSkills: cfg.disabledSkills || [],
-      systemOverride: this._memberSys(member, task),
+      systemOverride: this._memberSys(member, task, s.team),
       allowAskUser: true, // members can pause the mission with a question for the user
       browser: this._browserFor(member),
       desktop: this._desktopFor(member),

@@ -2991,3 +2991,17 @@ textarea.model-search { border-radius: 14px; }
 .pb2-readhead { display: flex; align-items: center; gap: 12px; margin: 8px 0 4px; }
 .pb2-readtitle { margin: 0; font-size: 24px; }
 .pb2-readdesc { color: var(--text-2); font-size: 13.5px; margin: 8px 0 14px; }
+
+/* Playbook: usage stat line, signature row, pin panel */
+.pb2-cardstat { font-size: 10.5px; color: var(--text-2); margin-top: 4px; }
+.pb2-signrow { display: flex; align-items: center; gap: 12px; margin: 6px 0 4px; flex-wrap: wrap; }
+.pb2-stat { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-2); }
+.pb2-pinpanel { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 6px 0 12px; background: var(--bg-1); }
+.pb2-pinlist { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; }
+
+/* Playbook: chains, needs, suggestions, config rows */
+.pb2-config { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 6px 0 12px; background: var(--bg-1); }
+.pb2-confrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.pb2-conflabel { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 650; color: var(--text-2); min-width: 78px; }
+.pb2-suggest { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 14px; padding: 12px; margin-bottom: 14px; background: color-mix(in srgb, var(--accent) 5%, var(--bg-1)); }
+.pb2-suggestrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }

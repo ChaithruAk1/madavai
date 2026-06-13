@@ -440,6 +440,111 @@ ipcMain.handle("madav:createSkill", (_e, name) => {
   try { return skillsMgr.createStarter(dir, name); } catch (e) { return { error: String(e.message || e) }; }
 });
 
+// ---- PLAYBOOK: pinned plays (signature moves / room playbooks), usage stats, sharing ----
+ipcMain.handle("madav:setPinnedSkills", (_e, { context, contextId, skillNames }) => {
+  const names = Array.isArray(skillNames) ? skillNames.filter(Boolean).slice(0, 24) : [];
+  if (context === "agent") {
+    const cfg = settings.load();
+    const a = (cfg.agents || []).find((x) => x.id === contextId);
+    if (!a) return { error: "Agent not found." };
+    a.pinnedSkills = names; settings.save(cfg); return { ok: true, pinnedSkills: names };
+  }
+  if (context === "project") { store.updateProject(contextId, { pinnedSkills: names }); return { ok: true, pinnedSkills: names }; }
+  return { error: "Unknown pin context." };
+});
+ipcMain.handle("madav:getPlayStats", () => { try { return require("./play-usage.cjs").stats(); } catch { return {}; } });
+// Play chains (settings.playChains) + needs (settings.playMeta): set per play.
+ipcMain.handle("madav:setPlayChain", (_e, { name, chain }) => {
+  const cfg = settings.load(); cfg.playChains = cfg.playChains || {};
+  if (Array.isArray(chain) && chain.length) cfg.playChains[name] = chain.filter(Boolean).slice(0, 8);
+  else delete cfg.playChains[name];
+  settings.save(cfg); return { ok: true };
+});
+ipcMain.handle("madav:setPlayNeeds", (_e, { name, connectors, folder }) => {
+  const cfg = settings.load(); cfg.playMeta = cfg.playMeta || {};
+  const m = { connectors: Array.isArray(connectors) ? connectors.filter(Boolean) : [], folder: folder || "" };
+  if (m.connectors.length || m.folder) cfg.playMeta[name] = m; else delete cfg.playMeta[name];
+  settings.save(cfg); return { ok: true };
+});
+ipcMain.handle("madav:getPlayConfig", () => { const cfg = settings.load(); return { chains: cfg.playChains || {}, meta: cfg.playMeta || {} }; });
+// Pin a play to a TEAM (settings.teams[].pinnedSkills) — a team playbook.
+ipcMain.handle("madav:setTeamPinnedSkills", (_e, { teamId, skillNames }) => {
+  const cfg = settings.load();
+  const t = (cfg.teams || []).find((x) => x.id === teamId);
+  if (!t) return { error: "Team not found." };
+  t.pinnedSkills = Array.isArray(skillNames) ? skillNames.filter(Boolean).slice(0, 24) : [];
+  settings.save(cfg); return { ok: true, pinnedSkills: t.pinnedSkills };
+});
+// AUTO-PIN SUGGESTIONS — agents that loaded a play >= N times (via load_skill) but
+// haven't pinned it. Returns [{ agentId, agentName, play, uses }] for the Playbook strip.
+ipcMain.handle("madav:getPinSuggestions", () => {
+  try {
+    const pu = require("./play-usage.cjs");
+    const ev = pu.events ? pu.events() : [];
+    const cfg = settings.load();
+    const counts = {}; // agentName::play -> count (live load_skill only)
+    for (const e of ev) {
+      if (e.source !== "load_skill" || !e.ok || !e.by) continue;
+      const k = e.by + "\u0000" + e.name; counts[k] = (counts[k] || 0) + 1;
+    }
+    const out = [];
+    for (const k of Object.keys(counts)) {
+      if (counts[k] < 5) continue;
+      const [by, play] = k.split("\u0000");
+      const a = (cfg.agents || []).find((x) => x.name === by);
+      if (!a) continue;
+      if (Array.isArray(a.pinnedSkills) && a.pinnedSkills.includes(play)) continue;
+      out.push({ agentId: a.id, agentName: a.name, play, uses: counts[k] });
+    }
+    return out.sort((x, y) => y.uses - x.uses).slice(0, 8);
+  } catch { return []; }
+});
+ipcMain.handle("madav:exportPlay", async (_e, skillName) => {
+  try {
+    const cfg = settings.load();
+    const sk = skillsMgr.discover(cfg.skillsDirs || []).find((x) => x.name === skillName || path.basename(x.dir) === skillName);
+    if (!sk) return { error: "Play not found." };
+    const r = skillsMgr.readSkill(sk.dir);
+    const master = (cfg.agents || []).find((a) => Array.isArray(a.pinnedSkills) && a.pinnedSkills.includes(skillName)) || null;
+    const payload = {
+      app: "madav", kind: "play", version: 1, exportedAt: Date.now(),
+      play: { name: skillName, folder: path.basename(sk.dir), body: r ? r.body : "", meta: r ? r.meta : {} },
+      agent: master ? { ...master } : null,
+    };
+    const save = await dialog.showSaveDialog(win, { title: "Export play", defaultPath: skillName.replace(/[^\w.-]+/g, "-") + ".madavplay.json", filters: [{ name: "Madav play", extensions: ["madavplay.json", "json"] }] });
+    if (save.canceled) return { canceled: true };
+    fs.writeFileSync(save.filePath, JSON.stringify(payload, null, 2));
+    return { ok: true, withAgent: master ? master.name : null };
+  } catch (e) { return { error: String((e && e.message) || e).slice(0, 200) }; }
+});
+ipcMain.handle("madav:importPlay", async () => {
+  try {
+    const dest = (settings.load().skillsDirs || [])[0];
+    if (!dest) return { error: "Add a skills folder first (Playbook \u2192 Folders)." };
+    const r = await dialog.showOpenDialog(win, { properties: ["openFile"], filters: [{ name: "Madav play", extensions: ["madavplay.json", "json"] }] });
+    if (r.canceled) return { canceled: true };
+    const j = JSON.parse(fs.readFileSync(r.filePaths[0], "utf8"));
+    if (!j || j.app !== "madav" || j.kind !== "play" || !j.play) return { error: "Not a Madav play file (.madavplay.json)." };
+    const folder = String(j.play.folder || j.play.name || "play").replace(/[^\w.-]+/g, "-").toLowerCase();
+    const d = path.join(dest, folder);
+    if (fs.existsSync(path.join(d, "SKILL.md"))) return { error: `A play folder "${folder}" already exists \u2014 rename or remove it first.` };
+    fs.mkdirSync(d, { recursive: true });
+    const meta = j.play.meta || {};
+    const front = `---\nname: ${meta.name || j.play.name}\ndescription: ${meta.description || "Imported play."}\n---\n\n`;
+    fs.writeFileSync(path.join(d, "SKILL.md"), front + (j.play.body || ""));
+    let agentName = null;
+    if (j.agent && j.agent.name) {
+      const cfg = settings.load(); const roster = (cfg.agents || []).slice();
+      if (!roster.some((a) => a.id === j.agent.id && a.name === j.agent.name)) {
+        const nid = (!j.agent.id || roster.some((a) => a.id === j.agent.id)) ? "agent_" + crypto.randomBytes(6).toString("hex") : j.agent.id;
+        const clean = { ...j.agent, id: nid, model: "" }; delete clean.autonomy;
+        roster.push(clean); settings.save({ ...cfg, agents: roster }); agentName = clean.name;
+      }
+    }
+    return { ok: true, play: meta.name || j.play.name, agent: agentName };
+  } catch (e) { return { error: String((e && e.message) || e).slice(0, 200) }; }
+});
+
 // Import a skill by copying a folder into the first skills folder.
 //  - if the folder itself has SKILL.md → import it as one skill
 //  - if it's a parent of several skill subfolders → import each

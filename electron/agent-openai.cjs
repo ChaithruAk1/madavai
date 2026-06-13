@@ -244,11 +244,12 @@ function walkFiles(root, dir, depth, cb) {
 }
 
 // Route a tool call to a skill, an MCP connector, a remote SSH backend, or a local tool.
-async function runTool(cwd, name, args, skillsDir, backend, mission) {
+async function runTool(cwd, name, args, skillsDir, backend, mission, agentName) {
   if (name === "load_skill") {
-    const r = skillsMgr.loadSkill(skillsDir, args.name);
-    if (!r) return "Skill not found: " + args.name;
-    return `(Skill "${args.name}" loaded. Its files are in: ${r.dir} — run any scripts there with run_bash.)\n\n` + r.body;
+    const c = skillsMgr.composePlay(skillsDir, args.name);
+    if (!c) { try { require("./play-usage.cjs").record({ name: args.name, by: agentName || "", context: "chat", source: "load_skill", ok: false }); } catch {} return "Skill not found: " + args.name; }
+    try { require("./play-usage.cjs").record({ name: args.name, by: agentName || "", context: "chat", source: "load_skill", ok: true }); } catch {}
+    return `(Play "${args.name}" loaded. Its files are in: ${c.dir} — run any scripts there with run_bash.)\n\n` + c.text;
   }
   if (mcp.isMcpTool(name)) return await mcp.callTool(name, args);
   if (backend) return backendExec(backend, name, args);
@@ -328,7 +329,7 @@ function askUserQuestion(emit, permissions, toolUseId, question, options) {
   });
 }
 
-async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, desktop = null, noShell = false, agentOpts = {} }) {
+async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, desktop = null, noShell = false, agentName = "", agentOpts = {} }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
   // ---- Mission state (the harness's memory for this conversation) ----
   // Attached to the history array: custom props on arrays survive in RAM across turns
@@ -774,7 +775,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         output = "(user declined this tool call)";
       } else {
         try {
-          output = await runTool(cwd, tc.name, args, skillsDir, null, mission);
+          output = await runTool(cwd, tc.name, args, skillsDir, null, mission, agentName);
           guard.noteResult(tc.name, target, true);
           emit({ kind: "tool_result", data: { id: tc.id, output: String(output).slice(0, 4000) } });
         } catch (e) {

@@ -92,6 +92,57 @@ function loadSkill(dirs, name) {
   return { dir: s.dir, body };
 }
 
+// Compose a play for injection/loading: its body, a "this play needs…" hint from
+// settings.playMeta (connectors/folder), and any chained plays (settings.playChains)
+// appended in order. `seen` guards chain cycles. Returns { dir, text } or null.
+function composePlay(dirs, name, opts = {}) {
+  const r = loadSkill(dirs, name);
+  if (!r) return null;
+  let cfg = opts.settings;
+  if (!cfg) { try { cfg = require("./settings.cjs").load(); } catch { cfg = {}; } }
+  const seen = opts.seen || new Set();
+  seen.add(name);
+  let text = `### ${name}\n`;
+  const meta = (cfg.playMeta || {})[name];
+  if (meta && ((meta.connectors && meta.connectors.length) || meta.folder)) {
+    const needs = [];
+    if (meta.connectors && meta.connectors.length) needs.push(`connectors: ${meta.connectors.join(", ")}`);
+    if (meta.folder) needs.push(`a working folder (${meta.folder})`);
+    text += `_This play needs: ${needs.join("; ")}. Use them if available; if a needed tool is missing, do what you can and say what was unavailable._\n\n`;
+  }
+  text += r.body;
+  const chain = (cfg.playChains || {})[name] || [];
+  for (const next of chain) {
+    if (seen.has(next)) continue;
+    const c = composePlay(dirs, next, { settings: cfg, seen });
+    if (c) text += `\n\n--- THEN run this chained play (${next}) ---\n\n` + c.text;
+  }
+  return { dir: r.dir, text };
+}
+
+// PINNED PLAYS — given a list of play names, return their composed bodies (with chains +
+// needs hints) as a system-prompt block so they're ALWAYS in hand (no tool call needed).
+// Missing/unreadable names are skipped silently (graceful fallback to the normal skills
+// index + load_skill path). Records a usage event per pinned play (ok true/false for
+// health). `by` is a label (agent/room name) for the "last by …" stat.
+function pinnedBlock(dirs, names, { record = false, by = "", context = "" } = {}) {
+  const list = Array.isArray(names) ? names.filter(Boolean) : [];
+  if (!list.length) return "";
+  let log = null;
+  if (record) { try { log = require("./play-usage.cjs"); } catch {} }
+  const parts = [];
+  for (const name of list.slice(0, 12)) {
+    try {
+      const c = composePlay(dirs, name);
+      if (!c) { if (log) { try { log.record({ name, by, context, source: "pinned", ok: false }); } catch {} } continue; }
+      parts.push(c.text);
+      if (log) { try { log.record({ name, by, context, source: "pinned", ok: true }); } catch {} }
+    } catch {}
+  }
+  if (!parts.length) return "";
+  return "\n\nPINNED PLAYS — these are already loaded for you; follow them when the task fits (no need to call load_skill for these):\n\n" + parts.join("\n\n");
+}
+
 // Read one skill's full content for the detail view.
 function readSkill(dir) {
   const file = path.join(dir, "SKILL.md");
@@ -117,4 +168,5 @@ function createStarter(dir, name) {
   return { dir: d, file };
 }
 
-module.exports = { discover, indexText, loadSkill, readSkill, createStarter };
+module.exports = {
+  pinnedBlock, composePlay, discover, indexText, loadSkill, readSkill, createStarter };

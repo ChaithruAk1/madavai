@@ -793,7 +793,7 @@ export default function App() {
         ) : isConnectors ? (
           <Connectors />
         ) : isSkills ? (
-          <Skills />
+          <Skills onSelectScreen={switchMode} />
         ) : isPlugins ? (
           <Plugins onNavigate={switchMode} />
         ) : isViaMobile ? (

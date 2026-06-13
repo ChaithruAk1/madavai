@@ -90,6 +90,7 @@ async function runAgentHeadless({ agent, prompt, cwd = null, source = "schedule"
       const emit = (e) => { if (e.kind === "assistant_delta") buf += (e.data && e.data.text) || ""; };
       await runOpenAIAgentTurn({
         prompt,
+        agentName: (agent && agent.name) || "",
         mode: (t.files || t.shell) && cwd ? "cowork" : "chat",
         cwd: (t.files || t.shell) ? cwd : null,
         profile: prof, permMode: "bypass",
@@ -153,8 +154,12 @@ async function runTeamHeadless({ team, prompt, source = "schedule", profile = nu
   const prof = profile || settings.activeProfile(cfg);
   if (!prof || !prof.baseUrl) return { ok: false, text: "No provider configured." };
 
+  // TEAM PLAYBOOK — plays pinned to the team apply to every member's headless run too
+  // (merged into each member's own signature plays; graceful if a play is missing).
+  const teamPins = (team && team.pinnedSkills) || [];
+  const withTeamPins = (m) => teamPins.length ? { ...m, pinnedSkills: [...new Set([...(m.pinnedSkills || []), ...teamPins])] } : m;
   const runMember = (m, task) =>
-    runAgentHeadless({ agent: m, prompt: task, source, depth: 1, profile: m.model ? profileFor(m.model, cfg) : prof, signal })
+    runAgentHeadless({ agent: withTeamPins(m), prompt: task, source, depth: 1, profile: m.model ? profileFor(m.model, cfg) : prof, signal })
       .then((r) => ({ name: m.name, text: r.text }));
 
   try {

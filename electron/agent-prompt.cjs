@@ -6,6 +6,18 @@
 const retrieval = require("./knowledge-retrieval.cjs");
 const memory = require("./agent-memory.cjs");
 
+// SIGNATURE PLAYS — an agent's pinned plays are pre-loaded into its system prompt so
+// they're always in hand. Resolves skill folders from settings; missing names are
+// skipped (graceful fallback to the normal skills index). Records usage for stats.
+function pinnedPlays(agent, context) {
+  const names = (agent && agent.pinnedSkills) || [];
+  if (!names.length) return "";
+  try {
+    const dirs = require("./settings.cjs").load().skillsDirs || [];
+    return require("./skills-manager.cjs").pinnedBlock(dirs, names, { record: true, by: (agent && agent.name) || "", context: context || "agent" });
+  } catch { return ""; }
+}
+
 function dateLine() {
   const now = new Date();
   return `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
@@ -34,7 +46,8 @@ function agentSystem(agent, { taskText = "" } = {}) {
     (agent.description ? ` Purpose: ${agent.description}` : "") + ` ${dateLine()}` +
     `\n\nAgent instructions (always follow):\n${agent.instructions}` +
     knowledgeBlock(agent, taskText) +
-    memory.block(agent);
+    memory.block(agent) +
+    pinnedPlays(agent, "agent");
 }
 
 // System prompt for one member of a team mission.
@@ -44,6 +57,7 @@ function memberSystem(member, taskText) {
     `\n\nAgent instructions (always follow):\n${member.instructions || ""}` +
     knowledgeBlock(member, taskText) +
     memory.block(member) +
+    pinnedPlays(member, "team") +
     `\n\nYou receive a task (possibly with work from teammates). Do YOUR part thoroughly and reply with your complete work product as plain text — a teammate or coordinator consumes it next, so be complete and self-contained.`;
 }
 

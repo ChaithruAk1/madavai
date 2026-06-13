@@ -59,13 +59,14 @@ export default function Scheduler() {
   const [filt, setFilt] = useState("all");        // all | scheduled | manual | project | agent | team | chat | folder | brief
   const [whOpen, setWhOpen] = useState(false);    // webhook triggers popup
   const [taskGroups, setTaskGroups] = useState([]); // user folders for tasks (settings.taskGroups)
+  const [skills, setSkills] = useState([]);          // plays (for the "Run a play" target)
   const [moveFor, setMoveFor] = useState(null);     // task being moved to a folder, or null
   const [newGrp, setNewGrp] = useState("");          // new-folder name in the move dialog
   const [grpOpen, setGrpOpen] = useState(false);     // standalone "New folder" dialog
 
   // Where a schedule COMES FROM — its target, resolved to a human tag. This is what
   // keeps 1000 tasks navigable: filter by source, read the tag on every row.
-  const SRC_META = { project: "Workroom", agent: "Agent", team: "Team", folder: "Folder", brief: "Brief", chat: "Chat" };
+  const SRC_META = { project: "Workroom", agent: "Agent", team: "Team", play: "Play", folder: "Folder", brief: "Brief", chat: "Chat" };
   const srcOf = (t) => (t.target && t.target.type) || "chat";
   const srcLabel = (t) => {
     const tg = t.target || {};
@@ -73,6 +74,7 @@ export default function Scheduler() {
     if (tg.type === "agent") return (agents.find((a) => a.id === tg.agentId) || {}).name || "Agent";
     if (tg.type === "team") return (teams.find((x) => x.id === tg.teamId) || {}).name || "Team";
     if (tg.type === "folder") return (tg.folder || "Folder").split(/[\\/]/).filter(Boolean).pop() || "Folder";
+    if (tg.type === "play") return tg.skillName || "Play";
     if (tg.type === "brief") return "Daily brief";
     return "Chat";
   };
@@ -88,6 +90,7 @@ export default function Scheduler() {
   useEffect(() => {
     load();
     bridge.listProjects().then(setProjects);
+    bridge.listSkills && bridge.listSkills().then((l) => setSkills(l || [])).catch(() => {});
     bridge.getSettings().then((s) => {
       setAgents(s.agents || []);
       setTeams(s.teams || []);
@@ -351,7 +354,7 @@ export default function Scheduler() {
 
       {editing && (editing._wizard
         ? <WizardModal draft={editing} setDraft={setEditing} projects={projects} agents={agents} onSave={saveTask} onClose={closeModal} />
-        : <TaskModal draft={editing} setDraft={setEditing} projects={projects} agents={agents} teams={teams} modelGroups={modelGroups} onSave={saveTask} onClose={closeModal} />
+        : <TaskModal draft={editing} setDraft={setEditing} projects={projects} agents={agents} teams={teams} skills={skills} modelGroups={modelGroups} onSave={saveTask} onClose={closeModal} />
       )}
     </div>
   );
@@ -430,7 +433,7 @@ function WebhooksCard({ agents, teams, tasks }) {
   );
 }
 
-function TaskModal({ draft, setDraft, projects, agents = [], teams = [], modelGroups, onSave, onClose }) {
+function TaskModal({ draft, setDraft, projects, agents = [], teams = [], skills = [], modelGroups, onSave, onClose }) {
   const d = draft;
   const set = (p) => setDraft({ ...d, ...p });
   const setTarget = (p) => set({ target: { ...d.target, ...p } });
@@ -471,10 +474,22 @@ function TaskModal({ draft, setDraft, projects, agents = [], teams = [], modelGr
             <option value="folder">Let's Collaborate (folder)</option>
             <option value="agent">Run an agent</option>
             <option value="team">Run an agent team</option>
+            <option value="play">Run a play</option>
             <option value="brief">Daily brief (your activity digest)</option>
           </select>
           {d.target?.type === "brief" && (
             <span className="ag-hint" style={{ margin: 0 }}>Summarizes recent conversations, agent work and today's schedules each run — set it daily at your morning time. The prompt field adds extra topics to cover.</span>
+          )}
+          {d.target?.type === "play" && (
+            <>
+              <select className="model-search" style={{ marginBottom: 0, width: "auto", flex: 1 }} value={d.target?.skillName || ""} onChange={(e) => setTarget({ skillName: e.target.value })}>
+                <option value="">Select a play…</option>
+                {skills.map((sk) => <option key={sk.dir || sk.name} value={sk.name}>{sk.name}</option>)}
+              </select>
+              <button className="btn" title="Optional working folder (for plays that touch files)" onClick={async () => { const dir = await bridge.chooseFolder(); if (dir && typeof dir === "string") setTarget({ folder: dir }); }}>
+                <FolderInput size={13} /> {d.target?.folder ? "Folder ✓" : "Folder (optional)"}
+              </button>
+            </>
           )}
           {d.target?.type === "project" && (
             <>

@@ -152,6 +152,30 @@ What: Clicking a play card opens a full-page reader: glyph + name, an origin/upd
 Why: Read exactly what a play does, edit-by-disk, and bench or remove it.
 Behavior: "In play / Benched" toggles whether the play is offered (benched = dimmed, ignored). Delete asks to confirm and removes the play's folder from disk (can't be undone — re-import if you kept a copy). Built-in pack plays are read-only ("Ships with Madav"). "All plays" returns to the wall.
 
+### Playbook · Pinned plays (signature moves & room playbooks)
+aliases: pin a play, signature move, agent plays, room playbook, knows N plays, pin skill
+What: Plays can be PINNED so they're always pre-loaded, not just matched-and-hoped. Pin to an AGENT (open a play → "Pin to agent") or to a WORKROOM (the room's "Room playbook" section). The play's reader shows a usage line and which agents pin it; agent cards read "knows 2 plays".
+Why: A pinned play is always in hand — an agent's signature move runs on every mission, a room's plays apply to every chat and crew mission there. No more relying on the matcher.
+Behavior: Pinned plays are injected into the system prompt (pre-loaded) for that agent's runs or that room's chats/missions. GRACEFUL: if a pinned play is missing, renamed, or broken, Madav silently continues on the normal Playbook — pins never block a run. The agent needs the Skills capability on to use plays. Pin from the Playbook reader, the agent Blueprint ("Signature plays"), or the room's "Room playbook" section.
+
+### Playbook · Chains, needs, auto-pin, team playbooks & health
+aliases: play chain, then run, play needs connectors, suggested signature, team playbook, retire play, dead play
+What: A play's reader has "Then run" (chain to other plays) and "Needs" (declare connectors + a folder it uses). The Playbook shows "Suggested signatures," agent cards show "knows N plays," teams have a "Team playbook," and idle plays show a "retire?" chip.
+Why: Plays become pipelines, declare their tools, learn your habits, apply to whole teams, and surface dead weight.
+Behavior: CHAINS — set "Then run" so a play hands off to the next; chained plays load right after it (cycles skipped). NEEDS — declared connectors/folder are surfaced as a hint when the play loads; missing tools never block. AUTO-PIN — when an agent loads a play 5+ times on its own, the Playbook offers a one-click "Pin it" to make it that agent's signature. TEAM PLAYBOOK — pin plays to a whole team in the Agents team editor; every member uses them on top of their own. HEALTH — a play never used or idle 90+ days shows a "retire?" chip (a hint; nothing is deleted automatically). All of this is graceful: a missing pinned/chained play is skipped and the run continues.
+
+### Playbook · Play stats & sharing
+aliases: used 12 times, play usage, dead play, share play, madavplay, import play, export play
+What: Each play card shows a usage line ("used 12× · last by Pitchwright · 2h ago", or "never used"). The Playbook header has "Import play"; a play's reader has a Share button.
+Why: See which plays earn their keep (and which to delete), and hand a play to a teammate WITH the agent that knows it.
+Behavior: Every time a play loads — pinned pre-load OR a live /name call OR a scheduled run — it's logged. Share exports a `.madavplay.json` carrying the play plus the agent that pins it; Import recreates the play AND any missing agent (the agent arrives in ask-permission mode on the default model, like shared rooms). The Playbook Guide button (header) opens an illustrated guide to all of this.
+
+### Scheduled tasks · Run a play
+aliases: schedule a play, run a skill on a timer, play target
+What: A Scheduler target type "Run a play" — pick a play and a time.
+Why: Turn a play into a recurring job ("compile the weekly competitor summary," every Monday 7am).
+Behavior: The play's instructions are loaded and run on the schedule, seeded with the task prompt; an optional folder lets file-touching plays work. The run appears in the task's run history; a missing play errors clearly instead of hanging.
+
 ### Playbook · Folders
 aliases: skills directories, add folder, primary folder, where plays live
 What: The "Folders" button reveals the disk folders Madav scans for plays, with Add/remove controls.

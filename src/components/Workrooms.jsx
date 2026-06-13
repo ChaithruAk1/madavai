@@ -209,6 +209,8 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
   const [layout, setLayout] = useState(lsGet("be.wr.layout", "rows")); // rows | tiles
   const [briefOpen, setBriefOpen] = useState(false);   // brief in a big resizable editor
   const [glyphOpen, setGlyphOpen] = useState(false);   // room icon picker
+  const [allSkills, setAllSkills] = useState([]);      // available plays (to pin to the room)
+  const [playPick, setPlayPick] = useState(false);
   const [guideTab, setGuideTab] = useState("tour");    // Projects guide: tour | reference
   const [chapter, setChapter] = useState(0);            // Projects guide chapter rail
   const [openFeat, setOpenFeat] = useState(0);          // Projects guide reference accordion
@@ -242,6 +244,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
   useEffect(() => {
     loadList(); loadSessions();
     bridge.getSettings().then((s) => { setAgents(s.agents || []); setTeams(s.teams || []); }).catch(() => {});
+    bridge.listSkills && bridge.listSkills().then((l) => setAllSkills(l || [])).catch(() => {});
   }, []);
   // Returning from a room-scoped run: land straight back inside that room.
   useEffect(() => { if (openId) open(openId); }, []); // eslint-disable-line
@@ -476,6 +479,10 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
     await bridge.updateProject(selId, { identity: { ...(room.identity || {}), glyph } });
     setGlyphOpen(false); refreshRoom(); loadList();
   };
+  // Room Playbook — pinned plays pre-load into every chat + crew mission in this room.
+  const roomPlays = (room && Array.isArray(room.pinnedSkills)) ? room.pinnedSkills : [];
+  const pinPlay = async (name) => { await bridge.setPinnedSkills("project", selId, [...roomPlays, name]); setPlayPick(false); refreshRoom(); };
+  const unpinPlay = async (name) => { await bridge.setPinnedSkills("project", selId, roomPlays.filter((n) => n !== name)); refreshRoom(); };
   const recordFor = (agentId) => {
     const runs = roomHist.filter((e) => e.agentId === agentId);
     if (!runs.length) return "no missions in this room yet";
@@ -883,6 +890,36 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
                     <option value="">+ Assign a team to this room…</option>
                     {benchedTeams.map((t) => <option key={t.id} value={t.id}>{t.name || "Untitled team"} · {(t.members || []).length} agents</option>)}
                   </select>
+                )}
+              </>
+            )}
+            {allSkills.length > 0 && (
+              <>
+                <div className="wr-sechead" style={{ margin: "14px 0 8px" }}><BookOpen size={13} /> Room playbook</div>
+                {roomPlays.length === 0 && <div className="pjd-files-empty">No plays pinned. Pin one and every chat + crew mission here will use it automatically.</div>}
+                {roomPlays.map((n) => (
+                  <div key={n} className="wr-crewcard" style={{ minHeight: 0, padding: "8px 10px" }}>
+                    <span style={{ fontSize: 18 }}>⚡</span>
+                    <div className="wr-crewinfo"><div className="wr-crewname">{n}</div><div className="mo-sub">pinned play</div></div>
+                    <button className="btn ghost" style={{ padding: "4px 8px" }} title="Unpin from this room" onClick={() => unpinPlay(n)}><Trash2 size={12} /></button>
+                  </div>
+                ))}
+                {!playPick && <button className="btn" style={{ marginTop: 6, justifyContent: "center", width: "100%" }} onClick={() => setPlayPick(true)}><Plus size={13} /> Pin a play to this room</button>}
+                {playPick && (
+                  <div className="wr-assign" style={{ marginTop: 6 }}>
+                    <div className="wr-assignlist">
+                      {allSkills.filter((sk) => !roomPlays.includes(sk.name)).length === 0
+                        ? <div className="mo-sub">All plays are pinned, or the Playbook is empty.</div>
+                        : allSkills.filter((sk) => !roomPlays.includes(sk.name)).map((sk) => (
+                          <button key={sk.dir || sk.name} className="wr-assignrow" onClick={() => pinPlay(sk.name)} title={sk.description || sk.name}>
+                            <span style={{ fontSize: 16 }}>⚡</span>
+                            <span className="wr-assignname">{sk.name}</span>
+                            <span className="wr-assigncheck">+</span>
+                          </button>
+                        ))}
+                    </div>
+                    <div style={{ display: "flex", marginTop: 8 }}><span style={{ flex: 1 }} /><button className="btn" onClick={() => setPlayPick(false)}>Done</button></div>
+                  </div>
                 )}
               </>
             )}

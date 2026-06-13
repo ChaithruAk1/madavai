@@ -527,6 +527,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [recentRuns, setRecentRuns] = useState([]); // past agent/team conversations (scoped to this screen)
   const [browserOn, setBrowserOn] = useState(true); // admin master switch for the Agent Browser feature
   const [stats, setStats] = useState({});           // agentId → { missions, cleanPct, lastAt } (track record)
+  const [allPlays, setAllPlays] = useState([]);     // available plays (to pin as signature moves)
   const [swarmAgent, setSwarmAgent] = useState(null); // agent for the swarm modal, or null
   const [tab, setTab] = useState("agents");         // "agents" | "teams"
   const [view, setView] = useState(() => {          // "guide" | "list" | "studio" | "team"
@@ -880,6 +881,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   }, []);
   // Track record: per-agent mission stats power the "12 missions · 92% clean" line.
   const loadStats = () => { if (bridge.getAgentStats) bridge.getAgentStats().then((x) => setStats(x || {})).catch(() => {}); };
+  useEffect(() => { bridge.listSkills && bridge.listSkills().then((l) => setAllPlays(l || [])).catch(() => {}); }, []);
   useEffect(() => { loadStats(); }, [view]);
   // Agent/team conversations live here (scoped out of the general chat recents).
   const loadRuns = () => {
@@ -1215,6 +1217,12 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           title={`${stats[a.id].missions} missions recorded · ${stats[a.id].cleanPct}% finished clean · ~${Math.round((stats[a.id].tokens || 0) / 1000)}k tokens total`}>
           <BadgeCheck size={12} style={{ color: stats[a.id].cleanPct >= 80 ? "var(--ok)" : "var(--text-2)", flexShrink: 0 }} />
           {stats[a.id].missions} mission{stats[a.id].missions === 1 ? "" : "s"} · {stats[a.id].cleanPct}% clean · last {rel(stats[a.id].lastAt)}
+        </div>
+      )}
+      {Array.isArray(a.pinnedSkills) && a.pinnedSkills.length > 0 && (
+        <div className="ags-card-role" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, color: "var(--text-2)" }}
+          title={"Signature plays: " + a.pinnedSkills.join(", ")}>
+          <Zap size={12} style={{ flexShrink: 0, color: "var(--accent)" }} /> knows {a.pinnedSkills.length} play{a.pinnedSkills.length === 1 ? "" : "s"}
         </div>
       )}
       <div className="ag-card-actions">
@@ -1966,6 +1974,23 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </div>
         </div>
 
+        {allPlays.length > 0 && (
+          <div className="ag-field" style={{ marginTop: 10 }}>
+            <label>Team playbook <span className="ag-tool-note" style={{ display: "inline" }}>— plays every member uses, in any room (on top of each member's own signature plays)</span></label>
+            <div className="ags-kn">
+              {(tdraft.pinnedSkills || []).map((n) => (
+                <span key={n} className="ag-pill" title="Pinned to the whole team">⚡ {n}
+                  <button className="agent-chip-x" aria-label={`Unpin ${n}`} onClick={() => setTdraft({ ...tdraft, pinnedSkills: (tdraft.pinnedSkills || []).filter((x) => x !== n) })}><Trash2 size={10} /></button>
+                </span>
+              ))}
+              <select className="model-search" style={{ marginBottom: 0, width: "auto", maxWidth: 220 }} value="" onChange={(e) => { const n = e.target.value; if (n && !(tdraft.pinnedSkills || []).includes(n)) setTdraft({ ...tdraft, pinnedSkills: [...(tdraft.pinnedSkills || []), n] }); }}>
+                <option value="">+ Pin a play to the team…</option>
+                {allPlays.filter((sk) => !(tdraft.pinnedSkills || []).includes(sk.name)).map((sk) => <option key={sk.dir || sk.name} value={sk.name}>{sk.name}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+
         <div className="ag-field" style={{ marginTop: 10 }}>
           <label>The line-up {tdraft.mode === "relay" ? "(order matters — work flows top to bottom)" : ""}</label>
           {memberObjs.length > 0 && (
@@ -2208,6 +2233,21 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               </div>
               <div className="ag-hint" style={{ margin: 0 }}>Text files (md, txt, csv, json…). Large libraries are retrieved per task — only the relevant passages are injected. For PDFs, add them to a Project instead — Projects parse PDF/Word.</div>
               <div className="ag-hint" style={{ margin: "2px 0 0" }}>Images (screenshots, diagrams) are shown to vision-capable models at the start of each conversation.</div>
+              {allPlays.length > 0 && (<>
+                <label>Signature plays <span>— pinned plays this agent always has in hand (pre-loaded every mission)</span></label>
+                <div className="ags-kn">
+                  {(draft.pinnedSkills || []).map((n, i) => (
+                    <span key={n} className="ag-pill" title="Pinned play — preloaded on every mission">⚡ {n}
+                      <button className="agent-chip-x" aria-label={`Unpin ${n}`} onClick={() => setDraft({ ...draft, pinnedSkills: (draft.pinnedSkills || []).filter((x) => x !== n) })}><Trash2 size={10} /></button>
+                    </span>
+                  ))}
+                  <select className="model-search" style={{ marginBottom: 0, width: "auto", maxWidth: 220 }} value="" onChange={(e) => { const n = e.target.value; if (n && !(draft.pinnedSkills || []).includes(n)) setDraft({ ...draft, pinnedSkills: [...(draft.pinnedSkills || []), n] }); }}>
+                    <option value="">+ Pin a play…</option>
+                    {allPlays.filter((sk) => !(draft.pinnedSkills || []).includes(sk.name)).map((sk) => <option key={sk.dir || sk.name} value={sk.name}>{sk.name}</option>)}
+                  </select>
+                </div>
+                <div className="ag-hint" style={{ margin: "2px 0 0" }}>If a pinned play is missing or renamed, the agent simply falls back to the normal Playbook — it never blocks a run. (Needs the Skills capability on to use plays.)</div>
+              </>)}
               <label>Pinned model <span>— overrides the live selector for this agent</span></label>
               <div className="ag-model-row">
                 <ModelPicker value={draft.model || undefined} groups={groups} onChange={(v) => setDraft({ ...draft, model: v })} onRefresh={onRefresh} agenticOnly />

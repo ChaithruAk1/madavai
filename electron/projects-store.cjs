@@ -24,6 +24,7 @@ function normalize(p) {
   if (!p.identity || !p.identity.color) p.identity = autoIdentity(p.id || p.name || "room");
   if (!Array.isArray(p.agentIds)) p.agentIds = [];
   if (!Array.isArray(p.teamIds)) p.teamIds = []; // teams staffed in the room (crew's big sibling)
+  if (!Array.isArray(p.pinnedSkills)) p.pinnedSkills = []; // room playbook (signature plays)
   return p;
 }
 
@@ -42,7 +43,7 @@ function listProjects() {
     id: p.id, name: p.name, instructions: p.instructions, createdAt: p.createdAt, updatedAt: p.updatedAt,
     knowledgeCount: (p.knowledge || []).length,
     knowledgeBytes: (p.knowledge || []).reduce((n, k) => n + String(k.content || "").length, 0),
-    identity: p.identity, agentIds: p.agentIds, teamIds: p.teamIds, folder: p.folder || "", githubUrl: p.githubUrl || "",
+    identity: p.identity, agentIds: p.agentIds, teamIds: p.teamIds, pinnedSkills: p.pinnedSkills, folder: p.folder || "", githubUrl: p.githubUrl || "",
     sim: !!p.sim, // built-in Project Simulation room (Workrooms guide) — delete-protected in the UI
     convCount: (convMeta[p.id] || {}).count || 0, lastConvAt: (convMeta[p.id] || {}).lastAt || 0,
   }));
@@ -50,7 +51,7 @@ function listProjects() {
 function getProject(id) { return loadProjects().find((p) => p.id === id) || null; }
 function createProject(name) {
   const id = rand("prj_");
-  const p = { id, name: name || "Untitled project", instructions: "", knowledge: [], agentIds: [], teamIds: [], identity: autoIdentity(id), createdAt: Date.now() };
+  const p = { id, name: name || "Untitled project", instructions: "", knowledge: [], agentIds: [], teamIds: [], pinnedSkills: [], identity: autoIdentity(id), createdAt: Date.now() };
   const arr = loadProjects(); arr.unshift(p); saveProjects(arr); return p;
 }
 function updateProject(id, patch) {
@@ -106,6 +107,14 @@ function projectSystem(project) {
   if (project.instructions) s += `\n\nProject instructions:\n${project.instructions}`;
   const kn = project.knowledge || [];
   if (kn.length) s += `\n\nProject knowledge (reference material you can use):\n` + kn.map((k) => `### ${k.name}\n${k.content}`).join("\n\n");
+  // Room playbook — pinned plays pre-loaded so every chat/mission here has them in hand.
+  try {
+    const names = project.pinnedSkills || [];
+    if (names.length) {
+      const dirs = require("./settings.cjs").load().skillsDirs || [];
+      s += require("./skills-manager.cjs").pinnedBlock(dirs, names, { record: true, by: project.name || "room", context: "room" });
+    }
+  } catch {}
   s += `\n\nReply clearly in natural language; never paste raw JSON or tool syntax.`;
   return s;
 }

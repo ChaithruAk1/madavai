@@ -124,6 +124,21 @@ async function runTask(task) {
       } else {
         await runAgent({ mode: project.folder ? "cowork" : "chat", cwd: project.folder || null, systemOverride: sys });
       }
+    } else if (target.type === "play") {
+      // SCHEDULED PLAY — load a play's instructions and run them on a timer, seeded
+      // with the task prompt. Graceful: a missing play errors clearly instead of hanging.
+      const skillsMgr = require("./skills-manager.cjs");
+      const r = skillsMgr.loadSkill(cfg.skillsDirs || [], target.skillName);
+      if (!r) return { status: "error", output: `Play "${target.skillName}" not found — it may have been deleted or renamed.` };
+      try { require("./play-usage.cjs").record({ name: target.skillName, context: "schedule", by: "Scheduler", source: "schedule" }); } catch {}
+      const sys = `You are Madav, running a saved play on a schedule. Follow this play's instructions exactly:\n\n${r.body}`;
+      const cwd = target.folder || null;
+      if (profile.kind === "anthropic" || !((cfg.skillsDirs || []).length || (cfg.connectors || []).some((c) => c.enabled))) {
+        const rr = await streamChat(profile, [{ role: "system", content: sys }, ...history, { role: "user", content: task.prompt || "Run the play." }], { onDelta: () => {} });
+        text = rr.text;
+      } else {
+        await runAgent({ mode: cwd ? "cowork" : "chat", cwd, systemOverride: sys });
+      }
     } else if (target.type === "folder" && target.folder) {
       if (profile.kind === "anthropic") return { status: "error", output: "Folder tasks need an OpenAI-compatible provider." };
       await runAgent({ mode: "cowork", cwd: target.folder });

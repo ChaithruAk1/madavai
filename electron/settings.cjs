@@ -53,6 +53,8 @@ const DEFAULTS = {
   skillsDir: "",
   skillsDirs: [],
   disabledSkills: [],
+  playChains: {}, // play name -> [next play names] (a play hands off to these after it)
+  playMeta: {},   // play name -> { connectors:[names], folder:"" } (what a play needs)
   account: { name: "", email: "", avatar: "", googleLinked: false, githubLinked: false },
   googleClientId: "",
   googleClientSecret: "",

@@ -54,7 +54,11 @@ or on demand with /name; agents with the Skills capability use the whole book. T
 play four ways: record a web workflow, record a desktop workflow, write one by hand, or
 import a folder/.zip. Madav also DRAFTS plays itself (from recordings and from noticing
 repeated tasks - Skill Forge) and waits for your approval. A global "Record" chip in the
-top bar starts/stops recording from any screen.
+top bar starts/stops recording from any screen. PINNING makes plays work everywhere:
+pin a play to an agent (its signature move, pre-loaded every mission) or a workroom
+(used by the whole crew there). Cards show usage ("used 12x"); the Scheduler can "Run a
+play" on a timer; and a .madavplay file shares a play bundled with the agent that masters
+it. If a pinned play is missing it falls back to the normal Playbook gracefully. Plays can also CHAIN (one hands off to the next), declare what they NEED (connectors + a folder, surfaced as a hint), be pinned to a whole TEAM, and Madav SUGGESTS making a play a signature when an agent keeps loading it; idle plays show a "retire?" hint.
 
 ## Connectors (MCP)
 Connect external apps via Model Context Protocol — Gmail, GitHub, Slack, Google Drive,

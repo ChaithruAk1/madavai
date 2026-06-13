@@ -88,6 +88,15 @@ contextBridge.exposeInMainWorld("madav", {
   readSkill: (dir) => ipcRenderer.invoke("madav:readSkill", dir),
   setSkillEnabled: (dir, enabled) => ipcRenderer.invoke("madav:setSkillEnabled", { dir, enabled }),
   deleteSkill: (dir) => ipcRenderer.invoke("madav:deleteSkill", dir),
+  setPinnedSkills: (context, contextId, skillNames) => ipcRenderer.invoke("madav:setPinnedSkills", { context, contextId, skillNames }),
+  getPlayStats: () => ipcRenderer.invoke("madav:getPlayStats"),
+  exportPlay: (skillName) => ipcRenderer.invoke("madav:exportPlay", skillName),
+  importPlay: () => ipcRenderer.invoke("madav:importPlay"),
+  setPlayChain: (name, chain) => ipcRenderer.invoke("madav:setPlayChain", { name, chain }),
+  setPlayNeeds: (name, connectors, folder) => ipcRenderer.invoke("madav:setPlayNeeds", { name, connectors, folder }),
+  getPlayConfig: () => ipcRenderer.invoke("madav:getPlayConfig"),
+  setTeamPinnedSkills: (teamId, skillNames) => ipcRenderer.invoke("madav:setTeamPinnedSkills", { teamId, skillNames }),
+  getPinSuggestions: () => ipcRenderer.invoke("madav:getPinSuggestions"),
 
   // --- projects ---
   listProjects: () => ipcRenderer.invoke("madav:listProjects"),
