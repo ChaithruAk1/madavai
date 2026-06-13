@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, RefreshCw, Check, Search, Settings2, ChevronDown, Copy, ExternalLink } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Check, Search, Settings2, ChevronDown, Copy, ExternalLink, MousePointerClick } from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
-import { iconUrlFor } from "../connectorIcons.js";
+import { iconUrlFor, iconBySlug } from "../connectorIcons.js";
 
 const BLANK = (id) => ({ id, name: "New connector", command: "npx", args: [], env: {}, enabled: true });
 
@@ -55,14 +55,73 @@ const CATEGORIES = ["All", "Productivity", "Developer", "Design", "Communication
 // One-click connectors served by your hosted Madav gateway (OAuth — sign in with the browser,
 // no token to paste). Change GATEWAY_BASE if you redeploy the gateway elsewhere.
 const GATEWAY_BASE = "https://madav-gateway.onrender.com";
+
+// Native broker endpoints — your OWN registered OAuth apps, brokered at /<key>/mcp. $0, with
+// no third party in the token path. (Google's gmail/drive use restricted scopes that require
+// app verification, so those are served one-click via Composio below instead of natively.)
 const GATEWAY = [
-  { key: "github", title: "GitHub", desc: "Browse repos, search issues, and open pull requests — sign in with GitHub.", beta: false },
-  { key: "notion", title: "Notion", desc: "Search and read your Notion workspace — sign in with Notion.", beta: false },
-  { key: "slack", title: "Slack", desc: "List channels and post messages — sign in with Slack.", beta: false },
-  { key: "gmail", title: "Gmail", desc: "Search and read your inbox — sign in with Google.", beta: true },
-  { key: "gdrive", title: "Google Drive", desc: "Search and read your Drive files — sign in with Google.", beta: true },
+  { key: "github", title: "GitHub", desc: "Browse repos, search issues, and open pull requests.", beta: false },
+  { key: "notion", title: "Notion", desc: "Search and read your Notion workspace.", beta: false },
+  { key: "slack", title: "Slack", desc: "List channels and post messages.", beta: false },
 ];
-const GATEWAY_KEYS = { github: "github", notion: "notion", slack: "slack", gmail: "gmail", gdrive: "googledrive" };
+const GATEWAY_KEYS = { github: "github", notion: "notion", slack: "slack" };
+
+// Composio managed-auth endpoints — one-click for hundreds of apps with NO OAuth app to
+// register yourself: Composio supplies the verified OAuth client and hosts the sign-in. The
+// same gateway brokers them at /c/<slug>/mcp. Mirrors COMPOSIO_TOOLKITS in
+// gateway/src/composio.js — keep the two in sync (slug must match Composio's toolkit slug).
+// Apps already served natively above (github/notion/slack) are omitted to avoid duplicate cards.
+const COMPOSIO = [
+  { slug: "gmail",          title: "Gmail",           icon: "gmail",          desc: "Search, read, and draft email." },
+  { slug: "googledrive",    title: "Google Drive",    icon: "googledrive",    desc: "Search and read your Drive files." },
+  { slug: "googlecalendar", title: "Google Calendar", icon: "googlecalendar", desc: "Read and manage events on your calendar." },
+  { slug: "googlesheets",   title: "Google Sheets",   icon: "googlesheets",   desc: "Read and update spreadsheets." },
+  { slug: "linear",         title: "Linear",          icon: "linear",         desc: "Track issues, cycles, and projects." },
+  { slug: "jira",           title: "Jira",            icon: "jira",           desc: "Access and update issues and boards." },
+  { slug: "asana",          title: "Asana",           icon: "asana",          desc: "Manage tasks, projects, and timelines." },
+  { slug: "trello",         title: "Trello",          icon: "trello",         desc: "Manage boards, lists, and cards." },
+  { slug: "hubspot",        title: "HubSpot",         icon: "hubspot",        desc: "CRM contacts, deals, and companies." },
+  { slug: "salesforce",     title: "Salesforce",      icon: "salesforce",     desc: "Records, opportunities, and reports." },
+  { slug: "zendesk",        title: "Zendesk",         icon: "zendesk",        desc: "Tickets, users, and the help center." },
+  { slug: "discord",        title: "Discord",         icon: "discord",        desc: "Read and post to your servers." },
+  { slug: "airtable",       title: "Airtable",        icon: "airtable",       desc: "Read and update bases, tables, and records." },
+  { slug: "calendly",       title: "Calendly",        icon: "calendly",       desc: "Scheduling links and event types." },
+  { slug: "dropbox",        title: "Dropbox",         icon: "dropbox",        desc: "Search, read, and share your files." },
+  { slug: "figma",          title: "Figma",           icon: "figma",          desc: "Read design files, comments, and file data." },
+  { slug: "gitlab",         title: "GitLab",          icon: "gitlab",         desc: "Manage repos, issues, merge requests, and pipelines." },
+  { slug: "clickup",        title: "ClickUp",         icon: "clickup",        desc: "Create tasks, docs, and manage projects." },
+  { slug: "todoist",        title: "Todoist",         icon: "todoist",        desc: "Create tasks, projects, and reminders." },
+  { slug: "intercom",       title: "Intercom",        icon: "intercom",       desc: "Read conversations and contacts, and reply to support." },
+  { slug: "confluence",     title: "Confluence",      icon: "confluence",     desc: "Create and search pages and spaces." },
+  { slug: "box",            title: "Box",             icon: "box",            desc: "Upload, fetch, and share files and folders." },
+  { slug: "monday",         title: "Monday.com",      icon: "monday",         desc: "Manage boards, items, and updates." },
+  { slug: "microsoft_teams",title: "Microsoft Teams", icon: "teams",          desc: "Send messages and manage channels and chats." },
+  { slug: "outlook",        title: "Outlook",         icon: "outlook",        desc: "Mail and calendar." },
+  { slug: "canva",          title: "Canva",           icon: "canva",          desc: "Create designs, templates, and brand assets." },
+  { slug: "one_drive",      title: "OneDrive",        icon: "one_drive",      desc: "Find, upload, and share files and folders." },
+  { slug: "share_point",    title: "SharePoint",      icon: "share_point",    desc: "Manage sites, document libraries, and lists." },
+];
+const COMPOSIO_KEYS = COMPOSIO.map((t) => t.slug);
+// Real brand logos, Claude-style. The app is online-only, so we resolve full-color logos from
+// a logo service rather than shipping every brand asset. Composio serves one per toolkit slug.
+const composioLogo = (slug) => (slug ? `https://logos.composio.dev/api/${slug}` : null);
+// Map a gateway connector URL to a logo slug — covers BOTH Composio (/c/<slug>/mcp) and native
+// (/<key>/mcp) gateway endpoints, so native providers also resolve a brand logo (not a monogram).
+const GATEWAY_LOGO_SLUG = { github: "github", notion: "notion", slack: "slack", gmail: "gmail", gdrive: "googledrive" };
+const composioSlugFromUrl = (u) => {
+  if (!u || !u.startsWith(GATEWAY_BASE)) return null;
+  const m = /\/(?:c\/)?([^/]+)\/mcp/.exec(u);
+  return m ? (GATEWAY_LOGO_SLUG[m[1]] || m[1]) : null;
+};
+
+// Single source of truth for a card's logo URL. Cards pass an explicit `logo` (the Composio
+// toolkit logo, by slug); registry/custom servers fall back to the site's favicon by domain.
+// Swap the provider here (e.g. logo.dev or Clearbit) to change the logo source app-wide.
+const logoFor = (item) => {
+  if (item.logo) return item.logo;
+  const d = iconDomain(item);
+  return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=64` : null;
+};
 
 // Per-connector overview shown in the detail panel (Claude-style: tagline, description,
 // developer, tools, and reference links). Unknown connectors fall back to a generic card.
@@ -134,6 +193,7 @@ export default function Connectors() {
   const [adding, setAdding] = useState("");     // featured key being added
   const [auth, setAuth] = useState({ connected: false });   // OAuth status for the selected remote connector
   const [signingIn, setSigningIn] = useState(false);
+  const [draft, setDraft] = useState(null);   // a connector being set up but NOT yet saved; persisted to the list only on first successful connect
 
   useEffect(() => {
     bridge.getSettings().then((cfg) => setS({ ...cfg, connectors: cfg.connectors || [] }));
@@ -158,8 +218,9 @@ export default function Connectors() {
   // so the hook order is stable across renders.)
   const featured = useMemo(() => {
     const term = q.trim().toLowerCase();
-    const covered = new Set(Object.values(GATEWAY_KEYS));
-    let arr = FEATURED.filter((f) => !covered.has(f.key) && (cat === "All" || f.cat === cat));
+    const covered = new Set([...Object.values(GATEWAY_KEYS), ...COMPOSIO_KEYS]);
+    const composioTitles = new Set(COMPOSIO.map((t) => t.title.toLowerCase()));
+    let arr = FEATURED.filter((f) => !covered.has(f.key) && !composioTitles.has(f.title.toLowerCase()) && (cat === "All" || f.cat === cat));
     if (term) arr = arr.filter((f) => (f.title + " " + f.desc + " " + f.cat).toLowerCase().includes(term));
     arr = [...arr];
     if (sortBy === "name") arr.sort((a, b) => a.title.localeCompare(b.title));
@@ -177,12 +238,16 @@ export default function Connectors() {
 
   if (!s) return <div className="empty"><div>Loading…</div></div>;
   const list = s.connectors;
-  const sel = list.find((c) => c.id === selId) || null;
+  const sel = list.find((c) => c.id === selId) || (draft && draft.id === selId ? draft : null);
+  const editingDraft = !!(draft && selId === draft.id && !list.some((c) => c.id === selId));
 
   const persist = async (next) => { setS(next); await bridge.saveSettings(next); };
   const setConnectors = (cs) => persist({ ...s, connectors: cs });
-  const patch = (field, val) => setConnectors(list.map((c) => (c.id === selId ? { ...c, [field]: val } : c)));
-  const patchMany = (obj) => setConnectors(list.map((c) => (c.id === selId ? { ...c, ...obj } : c)));
+  const openDraft = (conn) => { setDraft(conn); setSelId(conn.id); setTools(null); setStatus(""); };
+  // Save a not-yet-saved connector into the list — called only after a successful first connect.
+  const commitDraft = () => { if (editingDraft) { setConnectors([...list, { ...sel }]); setDraft(null); } };
+  const patchMany = (obj) => { if (editingDraft) { setDraft((d) => ({ ...d, ...obj })); return; } setConnectors(list.map((c) => (c.id === selId ? { ...c, ...obj } : c))); };
+  const patch = (field, val) => patchMany({ [field]: val });
   const setType = (remote) => remote
     ? patchMany({ url: sel.url || "", transport: sel.transport || "http", command: undefined, args: undefined })
     : patchMany({ command: sel.command || "npx", args: sel.args || [], url: undefined, transport: undefined });
@@ -191,7 +256,7 @@ export default function Connectors() {
   const has = (name) => list.some((c) => c.name && name && c.name.toLowerCase() === name.toLowerCase());
 
   // Registry items that AREN'T already in the curated set (avoid duplicates).
-  const covered = new Set([...FEATURED.map((f) => f.title.toLowerCase()), ...FEATURED.map((f) => f.query.toLowerCase()), ...GATEWAY.map((g) => g.title.toLowerCase())]);
+  const covered = new Set([...FEATURED.map((f) => f.title.toLowerCase()), ...FEATURED.map((f) => f.query.toLowerCase()), ...GATEWAY.map((g) => g.title.toLowerCase()), ...COMPOSIO.map((t) => t.title.toLowerCase())]);
   const regShown = reg
     .filter((it) => { const t = (it.title || "").toLowerCase(); return t && !covered.has(t); })
     .slice(0, 80);
@@ -199,44 +264,49 @@ export default function Connectors() {
   const addGateway = (g) => {
     const url = `${GATEWAY_BASE}/${g.key}/mcp`;
     const existing = list.find((c) => c.url === url || c.name.toLowerCase() === g.title.toLowerCase());
-    if (existing) { setSelId(existing.id); return; }
-    const id = "c_" + Math.random().toString(36).slice(2, 7);
-    setConnectors([...list, { id, name: g.title, url, transport: "http", enabled: true }]);
-    setSelId(id); setTools(null); setStatus("");
+    if (existing) { setDraft(null); setSelId(existing.id); setTools(null); setStatus(""); return; }
+    openDraft({ id: "c_" + Math.random().toString(36).slice(2, 7), name: g.title, url, transport: "http", enabled: true });
+  };
+  const addComposio = (t) => {
+    const url = `${GATEWAY_BASE}/c/${t.slug}/mcp`;
+    const existing = list.find((c) => c.url === url || c.name.toLowerCase() === t.title.toLowerCase());
+    if (existing) { setDraft(null); setSelId(existing.id); setTools(null); setStatus(""); return; }
+    openDraft({ id: "c_" + Math.random().toString(36).slice(2, 7), name: t.title, url, transport: "http", enabled: true });
   };
   const addFeatured = async (f) => {
-    if (has(f.title)) { const e = list.find((c) => c.name.toLowerCase() === f.title.toLowerCase()); setSelId(e.id); return; }
+    if (has(f.title)) { const e = list.find((c) => c.name.toLowerCase() === f.title.toLowerCase()); setDraft(null); setSelId(e.id); setTools(null); setStatus(""); return; }
     setAdding(f.key); setStatus("");
     try {
       const r = bridge.listConnectorDirectory ? await bridge.listConnectorDirectory({ search: f.query }) : { items: [] };
       const hit = (r.items || []).find((it) => it.connector) || null;
+      const id = "c_" + Math.random().toString(36).slice(2, 7);
       if (hit && hit.connector) {
-        const id = "c_" + Math.random().toString(36).slice(2, 7);
-        setConnectors([...list, { id, ...hit.connector, name: f.title }]); setSelId(id); setTools(null);
+        openDraft({ id, ...hit.connector, name: f.title });
         if (hit.connector.url) setStatus(`${f.title} is a hosted (remote) connector — confirm its Server URL below and sign in / add a token, then Test. Many cloud apps require the provider's own MCP endpoint + OAuth.`);
       } else {
         // No registry match — open a pre-named custom setup so the user can finish it.
-        const id = "c_" + Math.random().toString(36).slice(2, 7);
-        setConnectors([...list, { ...BLANK(id), name: f.title }]); setSelId(id); setTools(null);
+        openDraft({ ...BLANK(id), name: f.title });
         setStatus(`${f.title} needs manual setup — add its command/URL below.`);
       }
     } finally { setAdding(""); }
   };
   const addFromRegistry = (item) => {
     if (!item.connector) { setStatus(`${scrub(item.title)} isn't one-click installable (package type: ${item.kind}).`); return; }
-    if (has(item.connector.name)) { const e = list.find((c) => c.name.toLowerCase() === item.connector.name.toLowerCase()); setSelId(e.id); return; }
-    const id = "c_" + Math.random().toString(36).slice(2, 7);
-    setConnectors([...list, { id, ...item.connector }]); setSelId(id); setTools(null); setStatus("");
+    if (has(item.connector.name)) { const e = list.find((c) => c.name.toLowerCase() === item.connector.name.toLowerCase()); setDraft(null); setSelId(e.id); setTools(null); setStatus(""); return; }
+    openDraft({ id: "c_" + Math.random().toString(36).slice(2, 7), ...item.connector });
   };
-  const addCustom = () => { const id = "c_" + Math.random().toString(36).slice(2, 7); setConnectors([...list, BLANK(id)]); setSelId(id); setTools(null); setStatus(""); };
-  const remove = () => { setConnectors(list.filter((c) => c.id !== selId)); setSelId(null); };
+  const addCustom = () => openDraft(BLANK("c_" + Math.random().toString(36).slice(2, 7)));
+  const remove = () => {
+    if (editingDraft) { setDraft(null); setSelId(null); setTools(null); setStatus(""); return; }
+    setConnectors(list.filter((c) => c.id !== selId)); setSelId(null);
+  };
 
   const doSignIn = async () => {
     if (!sel || !bridge.connectorSignIn) return;
     setSigningIn(true); setStatus("Opening your browser to sign in…"); setTools(null);
     try {
       const r = await bridge.connectorSignIn(sel);
-      if (r && r.ok) { setAuth({ connected: true }); setTools(r.tools || null); setStatus(`Signed in — ${(r.tools || []).length} tools available.`); }
+      if (r && r.ok) { setAuth({ connected: true }); setTools(r.tools || null); setStatus(`Signed in — ${(r.tools || []).length} tools available.`); commitDraft(); }
       else setStatus("Sign-in failed: " + ((r && r.error) || "unknown error"));
     } finally { setSigningIn(false); }
   };
@@ -248,7 +318,7 @@ export default function Connectors() {
   const test = async () => {
     setStatus("Connecting…"); setTools(null);
     const r = await bridge.testConnector(sel);
-    if (r.ok) { setTools(r.tools); setStatus(`Connected — ${r.tools.length} tools`); }
+    if (r.ok) { setTools(r.tools); setStatus(`Connected — ${r.tools.length} tools`); commitDraft(); }
     else setStatus("Failed: " + r.error);
   };
 
@@ -266,8 +336,8 @@ export default function Connectors() {
           <div className="nav-label" style={{ paddingLeft: 0 }}>Connected<HelpDot mode="connectors" section="usage" /></div>
           <div className="conn-mini-grid">
             {list.map((c) => (
-              <button key={c.id} className="conn-minicard" onClick={() => { setSelId(c.id); setTools(null); setStatus(""); }}>
-                <ConnectorIcon item={{ title: c.name, name: c.name }} />
+              <button key={c.id} className="conn-minicard" onClick={() => { setDraft(null); setSelId(c.id); setTools(null); setStatus(""); }}>
+                <ConnectorIcon item={{ title: c.name, name: c.name, iconKey: composioSlugFromUrl(c.url), logo: composioLogo(composioSlugFromUrl(c.url)) }} />
                 <span className="conn-minicard-main">
                   <b>{c.name}</b>
                   <span className="conn-minicard-sub"><span className={`conn-minidot ${c.enabled ? "on" : ""}`} /> {c.enabled ? "Connected" : "Off"}</span>
@@ -304,13 +374,12 @@ export default function Connectors() {
           return (
             <div key={g.key} className="cdir-card" onClick={() => addGateway(g)}>
               <div className="cdir-cardhead">
-                <ConnectorIcon item={{ title: g.title, name: GATEWAY_KEYS[g.key] }} />
+                <ConnectorIcon item={{ title: g.title, name: GATEWAY_KEYS[g.key], iconKey: g.key }} />
                 <div className="cdir-titles">
                   <div className="cdir-name">{g.title}
                     {g.beta && <span className="cdir-tag trending">Beta</span>}
-                    <span className="cdir-tag oneclick">1-click</span>
+                    <span className="cdir-oneclick" title="One-click — sign in with your browser"><MousePointerClick size={12} /></span>
                   </div>
-                  <div className="cdir-rank">Hosted · OAuth sign-in</div>
                 </div>
                 <button className={`cdir-add ${added ? "on" : ""}`} title={added ? "Open" : "Add connector"} onClick={(e) => { e.stopPropagation(); addGateway(g); }}>
                   {added ? <Settings2 size={15} /> : <Plus size={16} />}
@@ -320,17 +389,33 @@ export default function Connectors() {
             </div>
           );
         })}
-      </div>
-
-
-      <div className="cdir-grid">
+        {COMPOSIO.filter((t) => { const term = q.trim().toLowerCase(); return !term || (t.title + " " + t.desc).toLowerCase().includes(term); }).map((t) => {
+          const url = `${GATEWAY_BASE}/c/${t.slug}/mcp`;
+          const added = list.some((c) => c.url === url || c.name.toLowerCase() === t.title.toLowerCase());
+          return (
+            <div key={t.slug} className="cdir-card" onClick={() => addComposio(t)}>
+              <div className="cdir-cardhead">
+                <ConnectorIcon item={{ title: t.title, name: t.icon, iconKey: t.slug, logo: composioLogo(t.slug) }} />
+                <div className="cdir-titles">
+                  <div className="cdir-name">{t.title}
+                    <span className="cdir-oneclick" title="One-click via Composio"><MousePointerClick size={12} /></span>
+                  </div>
+                </div>
+                <button className={`cdir-add ${added ? "on" : ""}`} title={added ? "Open" : "Add connector"} onClick={(e) => { e.stopPropagation(); addComposio(t); }}>
+                  {added ? <Settings2 size={15} /> : <Plus size={16} />}
+                </button>
+              </div>
+              <div className="cdir-desc">{t.desc}</div>
+            </div>
+          );
+        })}
         {featured.map((f) => {
           const added = has(f.title);
           const busy = adding === f.key;
           return (
             <div key={f.key} className="cdir-card" onClick={() => addFeatured(f)}>
               <div className="cdir-cardhead">
-                <ConnectorIcon item={{ title: f.title, name: f.key }} />
+                <ConnectorIcon item={{ title: f.title, name: f.key, iconKey: f.key, logo: composioLogo(f.key) }} />
                 <div className="cdir-titles">
                   <div className="cdir-name">
                     {f.title}
@@ -388,13 +473,13 @@ export default function Connectors() {
         const info = infoFor(sel);
         return (
         <div>
-          <button className="btn ghost" style={{ marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => { setSelId(null); setTools(null); setStatus(""); }}>
+          <button className="btn ghost" style={{ marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => { setDraft(null); setSelId(null); setTools(null); setStatus(""); }}>
             ← All connectors
           </button>
           <div style={{ maxWidth: 720 }}>
             {/* Claude-style overview header */}
             <div className="conn-head">
-              <span className="conn-headico"><ConnectorIcon item={{ title: sel.name, name: sel.name }} /></span>
+              <span className="conn-headico"><ConnectorIcon item={{ title: sel.name, name: sel.name, iconKey: composioSlugFromUrl(sel.url), logo: composioLogo(composioSlugFromUrl(sel.url)) }} /></span>
               <div className="conn-headmain">
                 <h3 className="conn-headname">{sel.name}</h3>
                 <div className="conn-tagline">{info.tagline}</div>
@@ -513,11 +598,15 @@ const MONO = ["#6e7bff", "#38b2ac", "#e8893a", "#d6597b", "#7a5cf0", "#46a35a", 
 const monoColor = (s) => { let h = 0; for (let i = 0; i < (s || "").length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return MONO[h % MONO.length]; };
 
 function ConnectorIcon({ item }) {
-  const url = iconUrlFor(`${item.title || ""} ${item.name || ""} ${iconDomain(item) || ""}`);
+  // Bundled SVG first (offline-proof), then the real brand logo from Composio, then a monogram.
+  const [failed, setFailed] = useState(false);
+  // Online-first: full-color brand logo from the logo service, then a bundled SVG, then a monogram.
+  const remote = failed ? null : logoFor(item);
+  const url = remote || iconBySlug(item.iconKey) || iconUrlFor(`${item.title || ""} ${item.name || ""} ${iconDomain(item) || ""}`);
   if (url) {
     return (
       <span className="cdir-ico cdir-ico-img" style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)" }}>
-        <img src={url} alt="" />
+        <img src={url} alt="" onError={() => setFailed(true)} />
       </span>
     );
   }

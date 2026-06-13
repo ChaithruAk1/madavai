@@ -25,3 +25,11 @@ export function iconUrlFor(text) {
   for (const [kw, slug] of ALIAS) if (t.includes(kw) && ICONS[slug]) return ICONS[slug];
   return null;
 }
+
+// Exact lookup by bundled filename (e.g. "gitlab" -> gitlab.svg). Lets any SVG dropped into
+// assets/connector-icons/ named exactly <slug>.svg resolve with no ALIAS entry — so the
+// connector cards become offline-proof for that brand the moment the file exists.
+export const iconBySlug = (slug) => {
+  const s = String(slug || "").toLowerCase().trim();
+  return s && ICONS[s] ? ICONS[s] : null;
+};

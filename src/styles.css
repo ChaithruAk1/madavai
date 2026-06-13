@@ -777,10 +777,22 @@ input, textarea, select { font-family: inherit; }
 .env-muted { color: var(--text-3); font-size: 11.5px; padding: 8px 10px; display: flex; align-items: center; gap: 6px; }
 
 /* "+" menu Skills submenu (inline expansion) */
-.plus-sub { display: flex; flex-direction: column; margin: 2px 0 2px 8px; padding-left: 8px; border-left: 1px solid var(--line); max-height: 240px; overflow-y: auto; }
+.plus-sub { display: flex; flex-direction: column; margin: 2px 0 2px 8px; padding-left: 8px; border-left: 1px solid var(--line); }
 .plus-subitem { font-size: 13px; padding: 7px 9px; }
 .plus-subname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plus-subempty { color: var(--text-3); font-size: 12px; padding: 6px 9px; }
+/* Connectors side-flyout (Claude-style) — appears beside the menu item, with toggles */
+.plus-flywrap { position: relative; }
+.plus-fly { position: absolute; left: calc(100% + 8px); top: -6px; width: 252px; background: rgba(13,15,20,0.98); backdrop-filter: blur(16px); border: 1px solid var(--line-2); border-radius: 12px; padding: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); z-index: 60; max-height: min(58vh, calc(100vh - 160px)); overflow-y: auto; overscroll-behavior: contain; animation: pop-in var(--dur-2) var(--ease) both; transform-origin: top left; }
+.plus-flyrow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; border: none; background: transparent; color: var(--text-0); font-size: 13.5px; border-radius: 8px; cursor: pointer; }
+.plus-flyrow:hover { background: var(--bg-2); }
+.plus-flyico { width: 22px; height: 22px; border-radius: 6px; background: #fff; display: grid; place-items: center; flex: none; }
+.plus-flyico img { width: 15px; height: 15px; display: block; }
+.plus-flyrow .plus-subname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plus-switch { margin-left: auto; flex: none; width: 34px; height: 20px; border-radius: 999px; background: var(--line-2); position: relative; transition: background .16s ease; }
+.plus-switch.on { background: var(--accent); }
+.plus-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .16s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.plus-switch.on .plus-knob { left: 16px; }
 
 /* "Add content from GitHub" modal */
 .gh-modal { width: 720px; max-width: 94vw; height: 640px; max-height: 88vh; display: flex; flex-direction: column; background: var(--bg-1); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 30px 90px rgba(0,0,0,0.6); overflow: hidden; }
@@ -1178,6 +1190,8 @@ input, textarea, select { font-family: inherit; }
 .cdir-rank { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
 .cdir-tag.trending { color: #c98a12; background: rgba(201,138,18,0.12); }
 .cdir-tag.oneclick { color: var(--accent-2); background: rgba(var(--accent2-rgb),0.14); }
+.cdir-oneclick { display: inline-flex; align-items: center; flex: 0 0 auto; color: var(--accent-2); cursor: help; }
+.cdir-oneclick:hover { color: var(--text-0); }
 .cdir-selwrap { display: inline-flex; }
 .cdir-add:disabled { opacity: .6; cursor: default; }
 .cdir-auth { display: flex; align-items: center; gap: 12px; margin: 4px 0 2px; }
@@ -1275,7 +1289,7 @@ input, textarea, select { font-family: inherit; }
 .icon-btn.rec { color: var(--danger); border-color: var(--danger); animation: pulse 1.2s infinite; }
 @keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(255,107,107,0.18); } }
 .plus-wrap { position: relative; }
-.plus-menu { position: absolute; bottom: 42px; left: 0; z-index: 40; width: 264px; background: rgba(13,15,20,0.98); backdrop-filter: blur(16px); border: 1px solid var(--line-2); border-radius: 12px; padding: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+.plus-menu { position: absolute; bottom: 42px; left: 0; z-index: 40; width: 264px; background: rgba(13,15,20,0.98); backdrop-filter: blur(16px); border: 1px solid var(--line-2); border-radius: 12px; padding: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); overflow: visible; }
 .plus-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border: none; background: transparent; color: var(--text-0); font-size: 13.5px; border-radius: 8px; }
 .plus-item:hover { background: var(--bg-2); }
 .plus-item .kbd { margin-left: auto; color: var(--text-2); font-size: 11px; font-family: var(--mono); }

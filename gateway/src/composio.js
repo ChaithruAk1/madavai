@@ -32,6 +32,21 @@ export const COMPOSIO_TOOLKITS = [
   { slug: "airtable", label: "Airtable" },
   { slug: "calendly", label: "Calendly" },
   { slug: "dropbox", label: "Dropbox" },
+  // Promoted to one-click after confirming each supports Composio managed auth (OAuth, no
+  // developer credentials of your own required). NOTE: microsoft_teams is the exact Composio slug.
+  { slug: "figma", label: "Figma" },
+  { slug: "gitlab", label: "GitLab" },
+  { slug: "clickup", label: "ClickUp" },
+  { slug: "todoist", label: "Todoist" },
+  { slug: "intercom", label: "Intercom" },
+  { slug: "confluence", label: "Confluence" },
+  { slug: "box", label: "Box" },
+  { slug: "monday", label: "Monday.com" },
+  { slug: "microsoft_teams", label: "Microsoft Teams" },
+  { slug: "outlook", label: "Outlook" },
+  { slug: "canva", label: "Canva" },
+  { slug: "one_drive", label: "OneDrive" },
+  { slug: "share_point", label: "SharePoint" },
 ];
 const TOOLKIT_BY_SLUG = Object.fromEntries(COMPOSIO_TOOLKITS.map((t) => [t.slug, t]));
 export const composioToolkit = (slug) => TOOLKIT_BY_SLUG[String(slug || "").toLowerCase()] || null;

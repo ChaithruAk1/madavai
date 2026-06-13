@@ -5,6 +5,7 @@ import { madavAlert } from "../dialogs.jsx";
 // Two-channel build flag: public builds without Voice fold this to false and the mic code drops out.
 const FEAT_VOICE = import.meta.env.VITE_FEAT_VOICE !== "0";
 import GithubContent from "./GithubContent.jsx";
+import { iconUrlFor } from "../connectorIcons.js";
 
 export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNewChat, onPickFolder, onAddRepo, cwd, controls }) {
   const [text, setText] = useState("");
@@ -13,6 +14,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   const [menuOpen, setMenuOpen] = useState(false);
   const [ghOpen, setGhOpen] = useState(false);   // "Add content from GitHub" modal
   const [skillsSub, setSkillsSub] = useState(false); // Skills submenu in the "+" menu
+  const [connectorsSub, setConnectorsSub] = useState(false); // Connectors submenu in the "+" menu
   const [listening, setListening] = useState(false);
 
   // ---- slash-command (commands + skills) menu ----
@@ -40,7 +42,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   }, []);
 
   const loadSkills = () => { bridge.listSkills && bridge.listSkills().then((l) => setSkills((l || []).filter((s) => s.enabled !== false))).catch(() => {}); };
-  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || []).filter((c) => c.enabled !== false)); setVoiceOn(FEAT_VOICE && ((s && s.extras) || {}).voice !== false); setSpeakOn(!!(s && s.voiceSpeak)); }).catch(() => {}); };
+  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || [])); setVoiceOn(FEAT_VOICE && ((s && s.extras) || {}).voice !== false); setSpeakOn(!!(s && s.voiceSpeak)); }).catch(() => {}); };
   const [voiceOn, setVoiceOn] = useState(FEAT_VOICE); // Extras switchboard: hide the mic when voice input is off
   // Spoken replies (agent voice): speaker button next to the mic toggles settings.voiceSpeak.
   // Muting also silences any reply currently being read aloud. Both composer instances and
@@ -75,7 +77,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   const slashFlat = [...cmdMatches.map((c) => ({ type: "cmd", data: c })), ...skillMatches.map((s) => ({ type: "skill", data: s }))];
 
   const aq = atQuery.toLowerCase();
-  const connMatches = atOpen ? connectors.filter((c) => !aq || (c.name || "").toLowerCase().includes(aq)) : [];
+  const connMatches = atOpen ? connectors.filter((c) => c.enabled !== false && (!aq || (c.name || "").toLowerCase().includes(aq))) : [];
   const fileMatches = atOpen ? dirFiles.filter((f) => !aq || (f.name || "").toLowerCase().includes(aq)).slice(0, 40) : [];
   const atFlat = [...connMatches.map((c) => ({ type: "connector", data: c })), ...fileMatches.map((f) => ({ type: "file", data: f }))];
 
@@ -219,6 +221,15 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   };
 
   const openSlashFromMenu = () => { setMenuOpen(false); setText("/"); setSlashOpen(true); setSlashQuery(""); setSlashIdx(0); loadSkills(); ref.current && ref.current.focus(); };
+  // Toggle a connector on/off for the agent (Claude-style switch). Persists to settings.
+  const toggleConnector = async (c) => {
+    try {
+      const cfg = await bridge.getSettings();
+      const list = (cfg.connectors || []).map((x) => (x.id === c.id || x.name === c.name) ? { ...x, enabled: !(x.enabled !== false) } : x);
+      await bridge.saveSettings({ ...cfg, connectors: list });
+      setConnectors(list);
+    } catch {}
+  };
 
   // Push-to-talk: click to record, click again to stop → transcribed through the
   // user's own Whisper-capable key (OpenAI/Groq) in the main process. Falls back to
@@ -373,21 +384,44 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                 <button className="plus-item" onClick={() => { setMenuOpen(false); setText((v) => (v ? v + " @" : "@")); setAtOpen(true); setAtQuery(""); setAtIdx(0); loadConnectors(); ref.current && ref.current.focus(); }}><AtSign size={15} /> Mention file / connector <span className="kbd">@</span></button>
                 <button className="plus-item" onClick={() => { setMenuOpen(false); setGhOpen(true); }}><Github size={15} /> Add from GitHub</button>
                 <div className="plus-sep" />
-                <button className="plus-item" onClick={() => { setSkillsSub((v) => !v); loadSkills(); }}><Puzzle size={15} /> Skills <ChevronRight size={14} className="pm-chev" style={{ transform: skillsSub ? "rotate(90deg)" : "none" }} /></button>
-                {skillsSub && (
-                  <div className="plus-sub">
-                    {skills.length === 0 && <div className="plus-subempty">No skills installed yet</div>}
-                    {skills.map((s) => (
-                      <button key={s.name || s.dir} className="plus-item plus-subitem" title={s.description || ""} onClick={() => { setSkill({ name: s.name, description: s.description }); setSkillsSub(false); setMenuOpen(false); }}>
-                        <Puzzle size={13} /> <span className="plus-subname">{s.name}</span>
-                      </button>
-                    ))}
-                    <button className="plus-item plus-subitem" onClick={() => nav("skills")}><Plus size={13} /> Manage / add skills</button>
-                  </div>
-                )}
+                <div className="plus-flywrap" onMouseEnter={() => { setSkillsSub(true); loadSkills(); }} onMouseLeave={() => setSkillsSub(false)}>
+                  <button className="plus-item" onClick={() => { setSkillsSub((v) => !v); loadSkills(); }}><Puzzle size={15} /> Skills <ChevronRight size={14} className="pm-chev" /></button>
+                  {skillsSub && (
+                    <div className="plus-fly">
+                      {skills.length === 0 && <div className="plus-subempty">No skills installed yet</div>}
+                      {skills.map((s) => (
+                        <button key={s.name || s.dir} className="plus-flyrow" title={s.description || ""} onClick={() => { setSkill({ name: s.name, description: s.description }); setSkillsSub(false); setMenuOpen(false); }}>
+                          <Puzzle size={14} /> <span className="plus-subname">{s.name}</span>
+                        </button>
+                      ))}
+                      <div className="plus-sep" />
+                      <button className="plus-flyrow" onClick={() => nav("skills")}><Plus size={14} /> <span className="plus-subname">Manage / add skills</span></button>
+                    </div>
+                  )}
+                </div>
                 <button className="plus-item" onClick={() => nav("project")}><FolderKanban size={15} /> Add to project <ChevronRight size={14} className="pm-chev" /></button>
                 <div className="plus-sep" />
-                <button className="plus-item" onClick={() => nav("connectors")}><Plug size={15} /> Connectors <ChevronRight size={14} className="pm-chev" /></button>
+                <div className="plus-flywrap" onMouseEnter={() => { setConnectorsSub(true); loadConnectors(); }} onMouseLeave={() => setConnectorsSub(false)}>
+                  <button className="plus-item" onClick={() => { setConnectorsSub((v) => !v); loadConnectors(); }}><Plug size={15} /> Connectors <ChevronRight size={14} className="pm-chev" /></button>
+                  {connectorsSub && (
+                    <div className="plus-fly">
+                      {connectors.length === 0 && <div className="plus-subempty">No connectors yet</div>}
+                      {connectors.map((c) => {
+                        const on = c.enabled !== false; const ic = iconUrlFor(c.name || "");
+                        return (
+                          <button key={c.id || c.name} className="plus-flyrow" title={c.name} onClick={() => toggleConnector(c)}>
+                            {ic ? <span className="plus-flyico"><img src={ic} alt="" /></span> : <Plug size={14} />}
+                            <span className="plus-subname">{c.name}</span>
+                            <span className={`plus-switch ${on ? "on" : ""}`}><span className="plus-knob" /></span>
+                          </button>
+                        );
+                      })}
+                      <div className="plus-sep" />
+                      <button className="plus-flyrow" onClick={() => nav("connectors")}><Plug size={14} /> <span className="plus-subname">Manage connectors</span></button>
+                      <button className="plus-flyrow" onClick={() => nav("connectors")}><Plus size={14} /> <span className="plus-subname">Add connector</span></button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
