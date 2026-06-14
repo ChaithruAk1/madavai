@@ -1,3 +1,5 @@
+import { renderOfficeHTML } from "./office.js";
+
 // Detect "artifacts" in assistant text — fenced code blocks worth rendering in the side panel:
 // live HTML/SVG, Mermaid diagrams, Markdown docs, React/JSX components, or substantial code.
 export function extractArtifacts(text) {
@@ -7,6 +9,7 @@ export function extractArtifacts(text) {
   let m;
   while ((m = re.exec(text))) {
     const lang = (m[1] || "").toLowerCase();
+    if (lang === "officedoc") continue; // already shown as a downloadable file card — never a raw "snippet" pill
     const code = m[2].replace(/\s+$/, "");
     const looksSvg = /^\s*<svg/i.test(code);
     const looksHtml = /^\s*<(!doctype|html|body|div|section|main|head)/i.test(code);
@@ -90,6 +93,10 @@ const CDN_FAIL = `onerror="document.body.innerHTML='<div style=&quot;font-family
 // Build the srcDoc for a previewable artifact, by kind.
 export function artifactSrcDoc(a) {
   switch (a.kind) {
+    case "office":
+      // The card's spec rendered to HTML — a faithful preview of the .pptx/.docx/.xlsx/.pdf.
+      return renderOfficeHTML(a.code);
+
     case "svg":
       return `<!doctype html><meta charset="utf-8"><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#fff">${a.code}</body>`;
 

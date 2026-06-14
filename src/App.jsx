@@ -137,10 +137,13 @@ export default function App() {
 
   useEffect(() => {
     bridge.getSettings().then(async (cfg) => {
-      // On every launch, snap the active model to the saved Default Model.
-      if (cfg.defaultModel && cfg.defaultModel.includes("::")) {
-        const i = cfg.defaultModel.indexOf("::");
-        const pid = cfg.defaultModel.slice(0, i), mid = cfg.defaultModel.slice(i + 2);
+      // On launch, snap the active model to the current surface's PINNED model if there is one (so a
+      // per-process pick survives a reload), otherwise the saved Default Model.
+      let _pin = ""; try { _pin = (JSON.parse(localStorage.getItem("madav.surfaceModel") || "{}").chat) || ""; } catch {}
+      const launchModel = (_pin && _pin !== "auto" && _pin.includes("::")) ? _pin : cfg.defaultModel;
+      if (launchModel && launchModel.includes("::")) {
+        const i = launchModel.indexOf("::");
+        const pid = launchModel.slice(0, i), mid = launchModel.slice(i + 2);
         if (cfg.profiles[pid]) {
           cfg = { ...cfg, activeProfileId: pid, profiles: { ...cfg.profiles, [pid]: { ...cfg.profiles[pid], model: mid } } };
           await bridge.saveSettings(cfg);
@@ -326,6 +329,18 @@ export default function App() {
     const sync = (e) => setSettings((s) => (s ? { ...s, voiceSpeak: !!e.detail } : s));
     window.addEventListener("madav:voicespeak", sync);
     return () => window.removeEventListener("madav:voicespeak", sync);
+  }, []);
+
+  // Office file cards open a live preview in the side panel (same panel artifacts use),
+  // so a deck/doc/sheet/PDF shows "in a window next to it" on click, on every surface.
+  useEffect(() => {
+    const openOffice = (e) => {
+      const d = (e && e.detail) || {};
+      if (!d.code) return;
+      setArtifact({ kind: "office", code: d.code, office: d.type || "pptx", title: d.name || "Document", previewable: true });
+    };
+    window.addEventListener("madav:openoffice", openOffice);
+    return () => window.removeEventListener("madav:openoffice", openOffice);
   }, []);
 
   const isAgentMode = mode === "cowork" || mode === "code";
@@ -664,12 +679,12 @@ export default function App() {
   // just records the preference — routing happens at send time.
   const curSurface = ["chat", "cowork", "code", "project"].includes(mode) ? mode : "chat";
   const dockValue = surfaceModel[curSurface] === "auto" ? "auto" : activeValue;
-  const onPickModel = (value) => {
+  const onPickModel = async (value) => {
     let v = value;
     // Clicking Auto again DESELECTS it → revert this surface to a concrete model (the active/default).
     if (v === "auto" && surfaceModel[curSurface] === "auto") v = activeValue || null;
     setSurfaceModel((prev) => { const next = { ...prev }; if (v) next[curSurface] = v; else delete next[curSurface]; try { localStorage.setItem("madav.surfaceModel", JSON.stringify(next)); } catch {} return next; });
-    if (v && v !== "auto") selectModel(v);
+    if (v && v !== "auto") await selectModel(v); // persist before any subsequent send uses it
   };
 
   const _hour = new Date().getHours();
@@ -1027,6 +1042,10 @@ export default function App() {
                         };
                         timeline.forEach((item, i) => {
                           const groupable = item.type === "tool" && !item.image && !/^ask_user/.test(item.name || "");
+                          // Plain chat stays clean for everyday users — hide the behind-the-scenes tool
+                          // steps (web search, skill loads, reads). The answer itself carries the result.
+                          // Collaborate/Build keep them (seeing + approving the work matters there).
+                          if (mode === "chat" && groupable) return;
                           if (groupable) buf.push({ item, i });
                           else { flush(); out.push(renderMsg(item, i)); }
                         });

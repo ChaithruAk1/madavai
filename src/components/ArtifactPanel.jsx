@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { X, Eye, Code as CodeIcon, ExternalLink, Copy, Download, RotateCw, Check, Pencil, Sparkles, Undo2, Loader2, Bookmark, Share2 } from "lucide-react";
 import { artifactSrcDoc } from "../artifacts.js";
+import { parseOfficeSpec, downloadOffice } from "../office.js";
 import { bridge } from "../bridge/index.js";
 import { madavAlert } from "../dialogs.jsx";
 
@@ -102,7 +103,13 @@ export default function ArtifactPanel({ artifact: artifactProp, versions = [], o
   };
 
   const copy = async () => { try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch {} };
-  const download = () => {
+  const download = async () => {
+    // Office artifacts download the REAL .pptx/.docx/.xlsx/.pdf (built from the edited spec),
+    // not the raw JSON.
+    if (artifact.kind === "office") {
+      const spec = parseOfficeSpec(code);
+      if (spec) { try { await downloadOffice(spec); return; } catch (e) { madavAlert("Could not build the file: " + String((e && e.message) || e)); return; } }
+    }
     const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `artifact.${EXT[artifact.kind] || "txt"}`; a.click();

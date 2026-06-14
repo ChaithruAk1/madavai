@@ -88,8 +88,8 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   const flyTimer = useRef(null);
   const openFly = (kind) => { clearTimeout(flyTimer.current); if (kind === "conn") { setConnectorsSub(true); loadConnectors(); } else { setSkillsSub(true); loadSkills(); } };
   const closeFlySoon = (kind) => { clearTimeout(flyTimer.current); flyTimer.current = setTimeout(() => { if (kind === "conn") setConnectorsSub(false); else setSkillsSub(false); }, 180); };
-  useLayoutEffect(() => { if (connectorsSub) placeFlyout(connFlyRef.current, connWrapRef.current); }, [connectorsSub, connectors.length]);
-  useLayoutEffect(() => { if (skillsSub) placeFlyout(skillFlyRef.current, skillWrapRef.current); }, [skillsSub, skills.length]);
+  // Flyout positioning (keeping it inside the viewport) is now handled globally by overlayGuard.js,
+  // so there's no per-flyout placement here — one system clamps every popover in the app.
   useEffect(() => { if (cwd && bridge.listDir) bridge.listDir(cwd).then((l) => setDirFiles(l || [])).catch(() => setDirFiles([])); else setDirFiles([]); }, [cwd]);
 
   // Built-in slash commands — inline ACTIONS you use in place, not navigation away.

@@ -61,10 +61,14 @@ function OfficeCard({ code }) {
   const count = parsed.type === "xlsx" ? `${(parsed.sheets || []).length || 1} sheet(s)`
     : parsed.type === "pptx" ? `${(parsed.slides || []).length + (parsed.title ? 1 : 0)} slide(s)`
     : `${(parsed.sections || []).length} section(s)`;
+  // Open a live preview in the side panel ("window next to it"). The same spec
+  // renders to HTML there; Download still builds the real file.
+  const open = () => { try { window.dispatchEvent(new CustomEvent("madav:openoffice", { detail: { code, name: parsed.name, type: parsed.type } })); } catch {} };
   return (
     <div className="md-office">
-      <span className="md-office-ico">{parsed.type === "xlsx" ? "📊" : parsed.type === "pptx" ? "📽" : parsed.type === "pdf" ? "📕" : "📄"}</span>
-      <span className="md-office-meta"><b>{parsed.name}</b><i>{OFFICE_LABEL[parsed.type]} · {count} · built on your device</i></span>
+      <span className="md-office-ico" onClick={open} style={{ cursor: "pointer" }} title="Open preview">{parsed.type === "xlsx" ? "📊" : parsed.type === "pptx" ? "📽" : parsed.type === "pdf" ? "📕" : "📄"}</span>
+      <span className="md-office-meta" onClick={open} style={{ cursor: "pointer" }} title="Open preview"><b>{parsed.name}</b><i>{OFFICE_LABEL[parsed.type]} · {count} · built on your device</i></span>
+      <button className="md-office-open" onClick={open} title="Open beside the chat">Open</button>
       <button className="md-office-btn" disabled={state === "building"} onClick={dl}>
         {state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}
       </button>

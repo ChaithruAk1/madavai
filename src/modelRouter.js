@@ -49,7 +49,9 @@ function scoreModel(item, need) {
 export function pickModel({ prompt, images, mode, groups }) {
   try {
     const all = [];
-    for (const g of groups || []) for (const it of (g.items || [])) if (it && it.id) all.push(it);
+    // Route only among the user's OWN keyed models. Skip the big Madav Starter free pool — it lists
+    // 143 models, many of which aren't reliably callable (they 404), which is the wrong thing to pick.
+    for (const g of groups || []) for (const it of (g.items || [])) if (it && it.id && !/starter/i.test(it.prov || g.group || "")) all.push(it);
     if (all.length === 0) return null;
     if (all.length === 1) return all[0].id; // nothing to choose between
     const need = needsOf(prompt, images, mode);
