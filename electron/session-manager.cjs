@@ -226,14 +226,29 @@ class SessionManager {
   // Workrooms: a room may pin specific connectors (project.connectorNames). Runs
   // tagged with that room then see ONLY those; an empty/missing list = all enabled
   // (back-compat). Agent-bound runs keep the agent's own connector gate.
-  _roomConnectors(cfg, projectId) {
-    const all = cfg.connectors || [];
+  _roomConnectors(cfg, projectId, surface) {
+    // Per-PROCESS connector enablement: a connector must be master-enabled (Connectors page →
+    // c.enabled) AND on for THIS surface. c.surfaces[surface] is the per-process override; the
+    // default is on in every process EXCEPT plain chat (kept conversation-clean unless the user
+    // turns it on for chat from the chat composer's + menu).
+    const su = surface || "chat";
+    const on = (c) => {
+      if (!c || c.enabled === false) return false;
+      const sf = c.surfaces || {};
+      return (su in sf) ? sf[su] !== false : su !== "chat";
+    };
+    const all = (cfg.connectors || []).filter(on);
     if (!projectId) return all;
     try {
       const p = store.getProject(projectId);
       if (p && Array.isArray(p.connectorNames) && p.connectorNames.length) return all.filter((c) => p.connectorNames.includes(c.name));
     } catch {}
     return all;
+  }
+  // Connectors for a session, scoped to its process/surface (chat / cowork / code / project).
+  _connectorsFor(s, cfg) {
+    const surface = s.projectId ? "project" : (s.mode || "chat");
+    return this._roomConnectors(cfg, s.projectId, surface);
   }
 
   // Agent Browser binding: only for agents with the Browser capability on, bound
@@ -359,7 +374,7 @@ class SessionManager {
     s.controller = controller;
     const emit = (e) => this._send(sessionId, e.kind, e.data);
     userText = (userText || "") + materializeImages(images);
-    const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: this._roomConnectors(cfg, s.projectId), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
+    const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
     try {
       const ap = this._permsFor(s.agent, "default");
       await runOpenAIAgentTurn({
@@ -754,7 +769,7 @@ class SessionManager {
         await runOpenAIAgentTurn({
           prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-          connectors: this._roomConnectors(cfg, s.projectId), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
+          connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
           systemOverride: sys,
         });
       }
@@ -809,7 +824,7 @@ class SessionManager {
       s.controller = controller;
       try {
         const cfg = settings.load();
-        const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: this._roomConnectors(cfg, s.projectId), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
+        const ex = s.agent ? this._agentExtras(s, cfg) : { connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [] };
         // A custom agent keeps the mode's file-tool system prompt and appends its own
         // instructions (a full override would lose the tool-usage guidance).
         const agentSys = this._agentSys(s, userText);

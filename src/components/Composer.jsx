@@ -249,11 +249,21 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   };
 
   const openSlashFromMenu = () => { setMenuOpen(false); setText("/"); setSlashOpen(true); setSlashQuery(""); setSlashIdx(0); loadSkills(); ref.current && ref.current.focus(); };
-  // Toggle a connector on/off for the agent (Claude-style switch). Persists to settings.
+  // Per-PROCESS connector control. The Connectors page is the master switch (c.enabled); here in a
+  // composer's "+" menu we flip the connector ON/OFF for THIS process only (chat / cowork / code /
+  // project) via c.surfaces[surface] — independent across processes, never global. Default: on in
+  // every process except plain chat (so chat stays clean unless you turn a connector on here).
+  const surfaceOf = () => mode || "chat";
+  const connOnHere = (c) => {
+    if (!c || c.enabled === false) return false;
+    const su = surfaceOf(); const sf = c.surfaces || {};
+    return (su in sf) ? sf[su] !== false : su !== "chat";
+  };
   const toggleConnector = async (c) => {
     try {
+      const su = surfaceOf(); const next = !connOnHere(c);
       const cfg = await bridge.getSettings();
-      const list = (cfg.connectors || []).map((x) => (x.id === c.id || x.name === c.name) ? { ...x, enabled: !(x.enabled !== false) } : x);
+      const list = (cfg.connectors || []).map((x) => (x.id === c.id || x.name === c.name) ? { ...x, surfaces: { ...(x.surfaces || {}), [su]: next } } : x);
       await bridge.saveSettings({ ...cfg, connectors: list });
       setConnectors(list);
     } catch {}
@@ -429,13 +439,15 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                 </div>
                 <button className="plus-item" onClick={() => nav("project")}><FolderKanban size={15} /> Add to project <ChevronRight size={14} className="pm-chev" /></button>
                 <div className="plus-sep" />
+                {/* Per-process connector toggles: switches the connector on/off for THIS process
+                    only (chat / collaborate / build / project), not globally. */}
                 <div className="plus-flywrap" ref={connWrapRef} onMouseEnter={() => openFly("conn")} onMouseLeave={() => closeFlySoon("conn")}>
                   <button className="plus-item" onClick={() => { setConnectorsSub((v) => !v); loadConnectors(); }}><Plug size={15} /> Connectors <ChevronRight size={14} className="pm-chev" /></button>
                   {connectorsSub && (
                     <div className="plus-fly" ref={connFlyRef} onMouseEnter={() => clearTimeout(flyTimer.current)}>
-                      {connectors.length === 0 && <div className="plus-subempty">No connectors yet</div>}
-                      {connectors.map((c) => {
-                        const on = c.enabled !== false; const ic = iconUrlFor(c.name || "");
+                      {connectors.filter((c) => c.enabled !== false).length === 0 && <div className="plus-subempty">No connectors enabled — turn them on in the Connectors page</div>}
+                      {connectors.filter((c) => c.enabled !== false).map((c) => {
+                        const on = connOnHere(c); const ic = iconUrlFor(c.name || "");
                         return (
                           <button key={c.id || c.name} className="plus-flyrow" title={c.name} onClick={() => toggleConnector(c)}>
                             {ic ? <span className="plus-flyico"><img src={ic} alt="" /></span> : <Plug size={14} />}

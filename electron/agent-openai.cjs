@@ -410,17 +410,13 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   let imagegenOn = true;
   try { imagegenOn = require("./features.cjs").builtIn("imagegen") && (require("./settings.cjs").load().extras || {}).imagegen !== false; } catch {}
   if (imagegenOn) tools.push(CREATE_IMAGE_TOOL);
-  // Plain "Let's Chat" is conversation-only — external connector (MCP) tools are NOT offered here.
-  // They require per-tool approval, weak models misfire them, and loading them adds per-turn latency
-  // when a connector is cold. Use connectors in Let's Collaborate or Agents instead.
-  // NOTE: agents that have no file/shell tools run in "chat" mode internally — they still need
-  // their connectors, so the gate is "plain user chat only" (mode === "chat" AND no agentName).
-  if (mode !== "chat" || agentName) {
-    try {
-      const mcpTools = await mcp.openAiTools(connectors);
-      if (mcpTools.length) tools = [...tools, ...mcpTools];
-    } catch {}
-  }
+  // Connector (MCP) tools — the caller (session-manager) already scoped these to the process/
+  // surface (plain chat is empty unless the user turned connectors on for chat from its + menu),
+  // so just load whatever we were given. Empty list = no per-turn connect = fast.
+  try {
+    const mcpTools = await mcp.openAiTools(connectors);
+    if (mcpTools.length) tools = [...tools, ...mcpTools];
+  } catch {}
 
   // Live token streaming for CHAT: streamChatTools strips reasoning on the fly, so <think>
   // never reaches the UI, and the user sees tokens as they arrive instead of waiting for the
