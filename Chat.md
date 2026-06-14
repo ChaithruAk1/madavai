@@ -35784,3 +35784,63 @@ ahead of origin/main. Large uncommitted batch staged (git add -u + mockups/);
 
 DOCS: memory.md §14z17 records all of the above.
 ================================================================================
+
+================================================================================
+SESSION LOG — 2026-06-13 (continued, after the logo revert) — "Observability + Connectors + Starter trial-gating"
+Appended via Add-Content staging (host tools truncate this large file; sandbox down).
+Full technical detail is in MEMORY §14z18. This is the chronological companion.
+================================================================================
+
+SANDBOX DOWN the whole session → all work verified by static review only (no build/tests run).
+
+CONNECTORS — ONE-CLICK DIRECTORY (user "do option 1", "all apps one-click", "real brand logos like Claude")
+- Baked Composio managed-auth toolkits into the connector directory as one-click cards (no URL pasting):
+  gateway/src/composio.js COMPOSIO_TOOLKITS extended (figma, gitlab, clickup, todoist, intercom,
+  confluence, box, monday, teams, outlook, canva, onedrive, sharepoint + the original 18). Needs a
+  Render redeploy of the gateway to work.
+- Connectors.jsx: COMPOSIO[] cards (/c/<slug>/mcp), real logos (bundled icon → favicon → monogram),
+  and a DRAFT-UNTIL-CONNECTED flow so clicking a card no longer marks it "Connected" until the first
+  connect actually succeeds (user bug fix).
+
+OBSERVABILITY (user compared LangSmith, approved "#1 run tracing, #2 cost+latency, #4 failure alerts")
+- One passive event tap (session-manager tee + webBridge tee) feeds a trace store; cost from a token
+  estimate × pricing map; latency p50/p99; failure alerts via desktop Notification + Telegram + web
+  Notifications. New: electron/trace-store.cjs, electron/alerts.cjs, src/bridge/webTrace.js,
+  src/shared/pricing.js, test/observability.test.cjs. Desktop + web at parity.
+
+CONSUMPTION / ACTIVITY (user: "move Activity under Consumption; source categories; hide/close;
+click → chat; add ? help; dedup")
+- Activity is now embedded in the Consumption page with category chips (Let's Chat / Collaborate /
+  Build / Projects / Agents), per-run hide (×), click-a-row-opens-the-chat, in-app Test-alert feedback,
+  equal-sized cards, and a ? HelpDot. Removed the duplicate spend KPI / top-model / model bars.
+
+UX FIXES
+- Permission popup themed for light mode (was dark) + clearer, tool-aware copy.
+- HelpDot popover made responsive and anchored near its icon, app-wide (fixed positioning, viewport
+  clamp, flips above when needed, dynamic width/height).
+- Model-picker search/filter made sticky (only the list scrolls).
+- pptxgenjs "Failed to resolve module specifier" fixed on web (concrete dist import).
+- Brand/avatar mark renders the Madav "M" everywhere.
+
+MODELCONFIG REDESIGN (user requests over several turns)
+- Top cards shrunk but kept EQUAL size; Backup/Restore moved to top as hover-tooltip icons;
+  "Save & load models" → "Save", "Test only" → "Load Models"; Anthropic "use my subscription"
+  RESTORED but visible to admin/creator only (consumer-subscription-in-3rd-party-software = Anthropic
+  ToS issue, acknowledged); Anthropic card no longer shows "Add key" when on subscription.
+
+MADAV STARTER — 5 RULES (user spec)
+1+ Both house keys provisioned in Render: STARTER_OPENROUTER_KEY (OpenRouter :free) AND
+   STARTER_NVIDIA_KEY (NVIDIA NIM free). NIM models surface with an "nim/" id prefix; chat routes by
+   prefix. Either key works alone.
+2. Non-admin/creator with only Starter → only free models (server returns {data:[]} when not eligible).
+3. Default model = nvidia/nemotron-3-nano-30b-a3b:free.
+4. Free-only rule applies ONLY during the trial: server starterEligible(pl) = admin/creator OR
+   status==="trialing". Paid AND complimentary are excluded (complimentary = "treat as subscribed").
+5. Once subscribed, Starter goes dark — user must add their own provider key.
+- Client polish: the Starter provider card is hidden + a "add your own key" banner shows once the
+  account status is a KNOWN non-trial value (fail-open: never hides on load/offline). Verified /me
+  returns `status`, so the gate reads a real value.
+
+NEXT: npm run build + node --check server/electron + node test/observability.test.cjs once the sandbox
+is back; redeploy auth-server (Starter) and the gateway (Composio) on Render; commit + push.
+

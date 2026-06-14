@@ -162,7 +162,7 @@ function defaultSettings() {
       // Madav Starter — zero-setup free models through the server's house key. The
       // bearer is the user's session token, injected at resolve time (resolveProfile);
       // same-origin "/starter" baseUrl works in prod, AUTH_BASE covers the dev server.
-      p_starter: { id: "p_starter", name: "Madav Starter (free)", kind: "openai", baseUrl: (AUTH_BASE || "") + "/starter", apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free", cachedModels: [] },
+      p_starter: { id: "p_starter", name: "Madav Starter (free)", kind: "openai", baseUrl: (AUTH_BASE || "") + "/starter", apiKey: "", model: "nvidia/nemotron-3-nano-30b-a3b:free", cachedModels: [] },
       p_openrouter: { id: "p_openrouter", name: "OpenRouter", kind: "openai", baseUrl: "https://openrouter.ai/api/v1", apiKey: "", model: "", cachedModels: [] },
     },
     theme: "dark", accent: "#13c2d6", globalInstructions: "", responseLanguage: "model", defaultModel: "", authBaseUrl: AUTH_BASE || "",

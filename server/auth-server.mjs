@@ -234,6 +234,8 @@ function isAllowedProxyHost(urlString) {
 // House key for zero-setup free models. SERVER-ONLY: set STARTER_OPENROUTER_KEY in the
 // host environment; unset = the Starter provider politely reports "not configured".
 const STARTER_KEY = process.env.STARTER_OPENROUTER_KEY || "";
+const STARTER_NIM_KEY = process.env.STARTER_NVIDIA_KEY || ""; // optional 2nd Starter source — NVIDIA NIM free models (surfaced to clients with an "nim/" id prefix so chat routes back here correctly)
+const NIM_BASE = "https://integrate.api.nvidia.com/v1";
 const STARTER_DAILY = Math.max(1, Number(process.env.STARTER_DAILY) || 50);
 const STARTER_HEADERS = { "HTTP-Referer": "https://madav.ai", "X-Title": "Madav" }; // OpenRouter app attribution
 const starterUsed = new Map(); // `${userId}:${yyyy-mm-dd}` → request count (in-memory)
@@ -245,7 +247,19 @@ function starterQuota(uid) {
   if (starterUsed.size > 20000) for (const key of starterUsed.keys()) if (!key.endsWith(today)) starterUsed.delete(key); // daily GC
   return n <= STARTER_DAILY;
 }
-if (STARTER_KEY) console.log(`[auth-server] Madav Starter active — free models on the house key, ${STARTER_DAILY}/user/day.`);
+if (STARTER_KEY || STARTER_NIM_KEY) console.log(`[auth-server] Madav Starter active — ${[STARTER_KEY && "OpenRouter :free", STARTER_NIM_KEY && "NVIDIA NIM"].filter(Boolean).join(" + ")}, ${STARTER_DAILY}/user/day.`);
+
+// Madav Starter eligibility: TRIAL users only (admins/creators exempt — full access). Paid
+// subscribers AND complimentary accounts are excluded — they must add their own provider key.
+async function starterEligible(pl) {
+  try {
+    if (!pl) return false;
+    const user = await store.getUser(pl.sub);
+    if (!user) return false;
+    if (isAdminEmail(user.email)) return true;        // admin / creator: full access
+    return statusOf(user).status === "trialing";       // trial only — paid + complimentary excluded
+  } catch { return false; }
+}
 
 // Static serving for the WEB app: serves the built Vite bundle (dist/) so the web app and the API
 // share one origin (no CORS, OAuth redirects come back here). SPA fallback to index.html.
@@ -574,28 +588,53 @@ const server = http.createServer(async (req, res) => {
   if (p === "/starter/v1/models" && req.method === "GET") {
     if (rateLimited(req, "starter", 60, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "Sign in to Madav to use the Starter models." });
-    if (!STARTER_KEY) return json(res, 503, { error: "Starter models aren't configured on this server." });
-    try {
-      const r = await fetch("https://openrouter.ai/api/v1/models", { headers: { Authorization: "Bearer " + STARTER_KEY, ...STARTER_HEADERS } });
-      const j = await r.json().catch(() => ({}));
-      const data = Array.isArray(j.data) ? j.data.filter((m) => /:free$/.test(m.id || "")) : [];
-      return json(res, 200, { data });
-    } catch (e) { return json(res, 502, { error: "starter upstream", detail: String((e && e.message) || e) }); }
+    if (!STARTER_KEY && !STARTER_NIM_KEY) return json(res, 503, { error: "Starter models aren't configured on this server." });
+    if (!(await starterEligible(pl))) return json(res, 200, { data: [] }); // not on trial → Starter offers no models
+    const data = [];
+    if (STARTER_KEY) {
+      try {
+        const r = await fetch("https://openrouter.ai/api/v1/models", { headers: { Authorization: "Bearer " + STARTER_KEY, ...STARTER_HEADERS } });
+        const j = await r.json().catch(() => ({}));
+        for (const m of (Array.isArray(j.data) ? j.data : [])) if (/:free$/.test(m.id || "")) data.push(m); // OpenRouter free only
+      } catch {}
+    }
+    if (STARTER_NIM_KEY) {
+      try {
+        const r = await fetch(NIM_BASE + "/models", { headers: { Authorization: "Bearer " + STARTER_NIM_KEY } });
+        const j = await r.json().catch(() => ({}));
+        for (const m of (Array.isArray(j.data) ? j.data : [])) if (m && m.id) data.push({ ...m, id: "nim/" + m.id }); // namespaced so chat routes to NIM
+      } catch {}
+    }
+    return json(res, 200, { data });
   }
   if (p === "/starter/v1/chat/completions" && req.method === "POST") {
     if (rateLimited(req, "starter", 30, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "Sign in to Madav to use the Starter models." });
-    if (!STARTER_KEY) return json(res, 503, { error: "Starter models aren't configured on this server." });
+    if (!STARTER_KEY && !STARTER_NIM_KEY) return json(res, 503, { error: "Starter models aren't configured on this server." });
+    if (!(await starterEligible(pl))) return json(res, 403, { error: "Madav Starter is available during your free trial. You're on a paid or complimentary plan — add your own provider key in Settings → Model configuration to keep using models." });
     const raw = await rawBody(req, res, 8 * 1024 * 1024); if (raw === null) return; // vision payloads
     let b = {}; try { b = JSON.parse(raw || "{}"); } catch {}
-    if (!/:free$/.test(String(b.model || ""))) return json(res, 400, { error: "Madav Starter serves free models only (ids ending in :free). Add your own API key in Settings → Model configuration for everything else." });
+    const model = String(b.model || "");
+    // Route by source: "nim/<model>" → NVIDIA NIM (free tier); "<id>:free" → OpenRouter free. Nothing else.
+    let upstreamUrl, upstreamKey, upstreamHeaders, payload;
+    if (model.startsWith("nim/")) {
+      if (!STARTER_NIM_KEY) return json(res, 503, { error: "The NVIDIA Starter source isn't configured on this server." });
+      upstreamUrl = NIM_BASE + "/chat/completions"; upstreamKey = STARTER_NIM_KEY; upstreamHeaders = {};
+      payload = JSON.stringify({ ...b, model: model.slice(4) }); // strip the "nim/" namespace before forwarding
+    } else if (/:free$/.test(model)) {
+      if (!STARTER_KEY) return json(res, 503, { error: "Starter models aren't configured on this server." });
+      upstreamUrl = "https://openrouter.ai/api/v1/chat/completions"; upstreamKey = STARTER_KEY; upstreamHeaders = STARTER_HEADERS;
+      payload = raw;
+    } else {
+      return json(res, 400, { error: "Madav Starter serves free models only (OpenRouter :free or NVIDIA NIM). Add your own API key in Settings → Model configuration for everything else." });
+    }
     // Admins ride without limits; everyone else gets the daily Starter quota.
     if (!(await adminOk(req)) && !starterQuota((pl.sub || pl.uid || pl.email || "anon") + "")) return json(res, 429, { error: `Daily Starter limit reached (${STARTER_DAILY} requests). For unlimited use, add your own API key in Settings → Model configuration — it takes two minutes.` });
     try {
-      const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const upstream = await fetch(upstreamUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer " + STARTER_KEY, ...STARTER_HEADERS },
-        body: raw,
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + upstreamKey, ...upstreamHeaders },
+        body: payload,
       });
       res.writeHead(upstream.status, { "Content-Type": upstream.headers.get("content-type") || "text/event-stream", "Cache-Control": "no-cache" });
       if (upstream.body) { const reader = upstream.body.getReader(); while (true) { const { done, value } = await reader.read(); if (done) break; res.write(Buffer.from(value)); } }

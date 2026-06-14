@@ -103,11 +103,12 @@ export default function ModelConfig({ onChanged }) {
   const [view, setView] = useState("grid"); // "grid" = provider gallery · "edit" = inside one provider's setup
   const [status, setStatus] = useState("");
   const [isPriv, setIsPriv] = useState(false); // admin OR creator — Anthropic is gated to them only
+  const [acctStatus, setAcctStatus] = useState(""); // billing status (trialing/active/expired…) — Madav Starter is trial-only
   const restoreRef = useRef(null); // backup-restore file input (must sit above the early return — hooks rule)
 
   useEffect(() => { bridge.getSettings().then((cfg) => { setS(cfg); setSelId(cfg.activeProfileId); }); }, []);
   useEffect(() => { bridge.authMe?.().then((r) => {
-    if (r && !r.error) { const role = r.role || (((r.subscription || {}).plan === "Complimentary") ? "complimentary" : null); setIsPriv(!!r.admin || role === "creator"); }
+    if (r && !r.error) { const role = r.role || (((r.subscription || {}).plan === "Complimentary") ? "complimentary" : null); setIsPriv(!!r.admin || role === "creator"); setAcctStatus(r.status || ""); }
   }).catch(() => {}); }, []);
   if (!s || !selId) return (
     <div className="skel-page">
@@ -241,6 +242,11 @@ export default function ModelConfig({ onChanged }) {
         <b style={{ color: "var(--text-1)" }}>Madav Starter (free)</b> works the moment you sign in — no API key needed, with a daily limit on free models.
         For long-term use we recommend adding your own provider key (OpenRouter is the easiest: one key, hundreds of models, pay only for what you use) — pick a provider below, paste the key, and every model unlocks with no daily cap.
       </p>
+      {(acctStatus && acctStatus !== "trialing" && !isPriv) && (
+        <div className="cdir-msg" style={{ margin: "0 0 10px", padding: "10px 12px", border: "1px solid var(--line)", borderRadius: 10, background: "var(--bg-1)" }}>
+          Madav Starter (free) is available during your free trial. You're on a paid or complimentary plan — add your own provider key below and pick its model to keep working.
+        </div>
+      )}
       {/* Provider gallery — every configured provider plus one-click presets, as cards. */}
       <div className="mc-pgrid">
         {/* Custom provider — a TEMPLATE: "Set up" creates a NEW (deletable) provider; this card itself never changes. Highlighted + first, as the entry point to add your own provider. */}
@@ -252,7 +258,7 @@ export default function ModelConfig({ onChanged }) {
           </span>
           <span className="mc-pact">Set up</span>
         </button>
-        {profiles.filter((p) => isPriv || p.kind !== "anthropic").slice().sort((a, b) => readyOf(b) - readyOf(a)).map((p) => {
+        {profiles.filter((p) => (isPriv || p.kind !== "anthropic") && !(/\/starter\b/.test(p.baseUrl || "") && acctStatus && acctStatus !== "trialing" && !isPriv)).slice().sort((a, b) => readyOf(b) - readyOf(a)).map((p) => {
           const local = /localhost|127\.0\.0\.1/i.test(p.baseUrl || "");
           const starter = /\/starter\b/.test(p.baseUrl || "");
           const subMode = p.kind === "anthropic" && p.useSubscription;
