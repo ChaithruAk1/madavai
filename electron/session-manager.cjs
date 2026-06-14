@@ -438,7 +438,7 @@ class SessionManager {
 
   // Run one member to completion, capturing its final text. Member tool calls and
   // permission prompts are forwarded to the UI; its prose is captured, not streamed.
-  async _runMember(member, task, profile, cfg, emit, signal, s) {
+  async _runMember(member, task, profile, cfg, emit, signal, s, depth = 1) {
     const prof = this._memberProfile(member, profile);
     const t = member.tools || {};
     let buf = "";
@@ -446,6 +446,17 @@ class SessionManager {
       const { text } = await streamChat(prof, [{ role: "system", content: this._memberSys(member, task, s.team) }, { role: "user", content: task }], { signal, onDelta: () => {} });
       return text || "";
     }
+    // Full multi-agent ecosystem: a delegated agent may itself delegate, capped at MAX_DEPTH so a
+    // loop can't run away. At the cap no roster is offered, so delegation stops cleanly.
+    const MAX_DEPTH = 3;
+    const memberRoster = depth < MAX_DEPTH ? this._rosterFor({ ...s, agent: member }, cfg) : [];
+    const memberCallAgent = (depth < MAX_DEPTH && memberRoster.length) ? async (name, subtask) => {
+      const target = memberRoster.find((a) => (a.name || "").toLowerCase() === String(name || "").toLowerCase())
+        || memberRoster.find((a) => String(name || "").toLowerCase().includes((a.name || "§").toLowerCase()));
+      if (!target) return `(no agent named "${name}" on the roster)`;
+      try { return await this._runMember(target, String(subtask || ""), profile, cfg, emit, signal, s, depth + 1); }
+      catch (e) { if (e.name === "AbortError") throw e; return "(handoff failed: " + String((e && e.message) || e) + ")"; }
+    } : null;
     const innerEmit = (e) => {
       if (e.kind === "assistant_delta") { buf += (e.data && e.data.text) || ""; return; }
       if (e.kind === "assistant_message" || e.kind === "result" || e.kind === "init") return; // member lifecycle stays internal
@@ -461,6 +472,7 @@ class SessionManager {
       connectors: t.connectors ? (cfg.connectors || []) : [],
       skillsDir: t.skills ? (cfg.skillsDirs || []) : [],
       disabledSkills: cfg.disabledSkills || [],
+      roster: memberRoster, callAgent: memberCallAgent, // full multi-agent — members may delegate onward (depth-capped)
       systemOverride: this._memberSys(member, task, s.team),
       allowAskUser: true, // members can pause the mission with a question for the user
       browser: this._browserFor(member),

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder, Volume2, VolumeX } from "lucide-react";
+import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder, Volume2, VolumeX, Search, Users } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { madavAlert } from "../dialogs.jsx";
 // Two-channel build flag: public builds without Voice fold this to false and the mic code drops out.
@@ -41,6 +41,9 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
 
   // ---- @-mention (files + connectors) menu ----
   const [connectors, setConnectors] = useState([]);
+  const [skillSurfaces, setSkillSurfaces] = useState({});       // per-process skill enablement map
+  const [researchSurfaces, setResearchSurfaces] = useState({}); // per-process Deep Research toggle
+  const [agentSurfaces, setAgentSurfaces] = useState({});       // per-process "Use Agents" toggle
   const [dirFiles, setDirFiles] = useState([]);
   const [atOpen, setAtOpen] = useState(false);
   const [atQuery, setAtQuery] = useState("");
@@ -58,7 +61,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   }, []);
 
   const loadSkills = () => { bridge.listSkills && bridge.listSkills().then((l) => setSkills((l || []).filter((s) => s.enabled !== false))).catch(() => {}); };
-  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || [])); setVoiceOn(FEAT_VOICE && ((s && s.extras) || {}).voice !== false); setSpeakOn(!!(s && s.voiceSpeak)); }).catch(() => {}); };
+  const loadConnectors = () => { bridge.getSettings && bridge.getSettings().then((s) => { setConnectors(((s && s.connectors) || [])); setSkillSurfaces((s && s.skillSurfaces) || {}); setResearchSurfaces((s && s.researchSurfaces) || {}); setAgentSurfaces((s && s.agentSurfaces) || {}); setVoiceOn(FEAT_VOICE && ((s && s.extras) || {}).voice !== false); setSpeakOn(!!(s && s.voiceSpeak)); }).catch(() => {}); };
   const [voiceOn, setVoiceOn] = useState(FEAT_VOICE); // Extras switchboard: hide the mic when voice input is off
   // Spoken replies (agent voice): speaker button next to the mic toggles settings.voiceSpeak.
   // Muting also silences any reply currently being read aloud. Both composer instances and
@@ -268,6 +271,32 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
       setConnectors(list);
     } catch {}
   };
+  // Per-process SKILL toggles (mirror connectors): each skill on/off for THIS process via
+  // skillSurfaces[skillDir][surface]. Default on everywhere except plain chat. load_skill stays
+  // available for explicit /attach regardless — this only scopes what the model auto-discovers.
+  const skillKey = (sk) => sk.dir || sk.name;
+  const skillOnHere = (sk) => { const su = surfaceOf(); const m = skillSurfaces[skillKey(sk)]; return (m && (su in m)) ? m[su] !== false : su !== "chat"; };
+  const toggleSkill = async (sk) => {
+    try { const su = surfaceOf(); const next = !skillOnHere(sk); const k = skillKey(sk);
+      const cfg = await bridge.getSettings(); const map = { ...(cfg.skillSurfaces || {}) }; map[k] = { ...(map[k] || {}), [su]: next };
+      await bridge.saveSettings({ ...cfg, skillSurfaces: map }); setSkillSurfaces(map); } catch {}
+  };
+  // Per-process DEEP RESEARCH toggle. Opt-in per process; when on, Madav may run deep_research here
+  // and its research skills are surfaced. Agents keep research via their own gate.
+  const researchOnHere = () => researchSurfaces[surfaceOf()] === true;
+  const toggleResearch = async () => {
+    try { const su = surfaceOf(); const next = !researchOnHere();
+      const cfg = await bridge.getSettings(); const map = { ...(cfg.researchSurfaces || {}), [su]: next };
+      await bridge.saveSettings({ ...cfg, researchSurfaces: map }); setResearchSurfaces(map); } catch {}
+  };
+  // Per-process "Use Agents" toggle. On → Madav may delegate to your agent roster (multi-agent
+  // handoffs). Off → a direct plain-text answer. Default: on everywhere except plain chat.
+  const agentsOnHere = () => { const su = surfaceOf(); const v = agentSurfaces[su]; return v != null ? v !== false : su !== "chat"; };
+  const toggleAgents = async () => {
+    try { const su = surfaceOf(); const next = !agentsOnHere();
+      const cfg = await bridge.getSettings(); const map = { ...(cfg.agentSurfaces || {}), [su]: next };
+      await bridge.saveSettings({ ...cfg, agentSurfaces: map }); setAgentSurfaces(map); } catch {}
+  };
 
   // Push-to-talk: click to record, click again to stop → transcribed through the
   // user's own Whisper-capable key (OpenAI/Groq) in the main process. Falls back to
@@ -430,6 +459,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                       {skills.map((s) => (
                         <button key={s.name || s.dir} className="plus-flyrow" title={s.description || ""} onClick={() => { setSkill({ name: s.name, description: s.description }); setSkillsSub(false); setMenuOpen(false); }}>
                           <Puzzle size={14} /> <span className="plus-subname">{s.name}</span>
+                          <span className={`plus-switch ${skillOnHere(s) ? "on" : ""}`} title={`${skillOnHere(s) ? "On" : "Off"} for this process — click to toggle`} onClick={(e) => { e.stopPropagation(); toggleSkill(s); }}><span className="plus-knob" /></span>
                         </button>
                       ))}
                       <div className="plus-sep" />
@@ -462,6 +492,15 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                     </div>
                   )}
                 </div>
+                <div className="plus-sep" />
+                <button className="plus-item" onClick={toggleResearch} title="Deep Research — multi-source web research with cited reports. When on for this process, Madav can run it and its research skills are surfaced.">
+                  <Search size={15} /> Deep Research
+                  <span className={`plus-switch ${researchOnHere() ? "on" : ""}`} style={{ marginLeft: "auto" }}><span className="plus-knob" /></span>
+                </button>
+                <button className="plus-item" onClick={toggleAgents} title="Use Agents — let Madav delegate to your agent roster (full multi-agent handoffs). Off = a direct plain-text answer for this process.">
+                  <Users size={15} /> Use Agents
+                  <span className={`plus-switch ${agentsOnHere() ? "on" : ""}`} style={{ marginLeft: "auto" }}><span className="plus-knob" /></span>
+                </button>
               </div>
             )}
           </div>

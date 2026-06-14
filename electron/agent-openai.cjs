@@ -135,7 +135,7 @@ const ARTIFACT_RULE = ARTIFACT_RULE_BASE; // kept for any external references; o
 const SYSTEM = (mode) =>
   mode === "chat"
     ? `You are Madav, a helpful AI assistant. Use a skill or connector tool when it fits the user's request; otherwise just answer. ` +
-      `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.` + ARTIFACT_RULE_BASE + officeRulePart()
+      `Reply in clear, natural language; never paste raw JSON, tool-call syntax, or machine field names.`
     : mode === "code"
     ? `You are Madav, an expert software engineer working in the user's repository. ` +
       `Always explore before editing: use find_files and search_text to locate code, read_file to understand it, then make minimal, correct edits with edit_file/write_file. ` +
@@ -331,6 +331,24 @@ function askUserQuestion(emit, permissions, toolUseId, question, options) {
 
 async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, desktop = null, noShell = false, agentName = "", agentOpts = {} }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
+  // ---- Per-PROCESS scoping (read from settings here so callers don't thread it through). ----
+  // surface = the process this turn runs in. Agents keep their own gates (full skills + research).
+  let _pcfg = {}; try { _pcfg = require("./settings.cjs").load() || {}; } catch {}
+  const surface = agentName ? "agents" : (mode || "chat");
+  const skillSurfaces = _pcfg.skillSurfaces || {};       // { skillDir: { chat,cowork,code,project: bool } }
+  const researchSurfaces = _pcfg.researchSurfaces || {}; // { chat,cowork,code,project: bool } — Deep Research is opt-in per process
+  const researchOn = agentName ? true : researchSurfaces[surface] === true;
+  const agentSurfaces = _pcfg.agentSurfaces || {}; // per-process "Use Agents" toggle (auto-delegation / call_agent)
+  const agentsOn = agentName ? true : (agentSurfaces[surface] != null ? agentSurfaces[surface] !== false : surface !== "chat");
+  // promptSkills = what the model SEES in its catalog for THIS process. load_skill stays available for
+  // every enabled skill (explicit /attach always works); this only scopes autonomous discovery.
+  // Default: on everywhere except plain chat. When Deep Research is on, research skills are included.
+  const promptSkills = skills.filter((s) => {
+    const key = s.dir || s.name; const m = skillSurfaces[key];
+    let on = (m && (surface in m)) ? m[surface] !== false : surface !== "chat";
+    if (!on && researchOn && /research/i.test(String(key) + " " + (s.name || ""))) on = true;
+    return on;
+  });
   // ---- Mission state (the harness's memory for this conversation) ----
   // Attached to the history array: custom props on arrays survive in RAM across turns
   // of the same session and are invisible to JSON persistence. Reset on app restart.
@@ -365,7 +383,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   }
   const methodRules = mode !== "chat" ? harness.METHOD_RULES : "";
   const tierNote = tier === "B" ? harness.FEWSHOT_NOTE : "";
-  const sys = (systemOverride || SYSTEM(mode)) + methodRules + tierNote + gi + browserNote + repoMapText + (skills.length ? "\n\n" + skillsMgr.indexText(skills) : "");
+  // Artifact + office rules are appended for EVERY mode AND every agent (systemOverride). Previously
+  // they lived only inside SYSTEM("chat") and were lost when an agent's instructions replaced it —
+  // which is why a delegated agent insisted it "can't create a .pptx" instead of emitting officedoc.
+  const sys = (systemOverride || SYSTEM(mode)) + ARTIFACT_RULE_BASE + officeRulePart() + methodRules + tierNote + gi + browserNote + repoMapText + (promptSkills.length ? "\n\n" + skillsMgr.indexText(promptSkills) : "");
   if (history.length === 0) history.push({ role: "system", content: sys });
   else if (history[0] && history[0].role === "system") history[0].content = sys; // refresh index live
   history.push({ role: "user", content: prompt });
@@ -382,7 +403,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   if (noShell) tools = tools.filter((t) => t.function.name !== "run_bash");
   if (skills.length) tools.push(LOAD_SKILL_TOOL);
   if (allowAskUser) tools.push(ASK_USER_TOOL);
-  if (callAgent && Array.isArray(roster) && roster.length) tools.push(callAgentTool(roster));
+  // "Use Agents" gate — auto-delegation (call_agent) is opt-in per process. OFF in plain chat by
+  // default → no handoffs, just a direct plain-text answer. A running agent (agentName) keeps it so
+  // the full multi-agent ecosystem can delegate onward.
+  if (agentsOn && callAgent && Array.isArray(roster) && roster.length) tools.push(callAgentTool(roster));
   if (browser) tools = [...tools, ...BROWSER_TOOLS(browser.allow || [])];
   // Desktop Applications Driver — native Windows apps via UI Automation (text-mode, like the browser).
   let dd = null;
@@ -397,7 +421,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     // Deep Research is a heavyweight, multi-step web-research agent that always prompts for
     // approval — it should NOT be offered in plain "Let's Chat" (it was firing permission
     // popups on simple chat messages). Keep it for Collaborate / Build / Agents work only.
-    if ((mode !== "chat" || agentName) && require("./features.cjs").builtIn("research") && (require("./settings.cjs").load().extras || {}).research !== false) {
+    if (researchOn && require("./features.cjs").builtIn("research") && (require("./settings.cjs").load().extras || {}).research !== false) {
       research = require("./research.cjs");
       tools.push(research.RESEARCH_TOOL);
     }

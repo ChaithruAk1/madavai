@@ -64,10 +64,18 @@ function edgetraderOn() {
   return true;
 }
 
+// Short-TTL cache: discover() runs on every turn and walks the skills tree (readdir + read each
+// SKILL.md + parse frontmatter). The skill set rarely changes mid-session, so cache by
+// (dir-set + edgetrader flag) for a few seconds. Newly added/removed skills still appear within the
+// TTL, and a restart is always fresh. Mirrors the mtime cache settings.cjs already uses.
+let _discCache = new Map();
 function discover(dirs) {
+  const et = edgetraderOn();
+  const key = JSON.stringify(roots(dirs)) + "|" + (et ? 1 : 0);
+  const hit = _discCache.get(key);
+  if (hit && Date.now() - hit.at < 8000) return hit.out;
   const acc = [];
   for (const r of new Set([...builtinSkillDirs(), ...roots(dirs)])) walk(r, MAX_DEPTH, acc);
-  const et = edgetraderOn();
   const seen = new Set();
   const out = [];
   for (const s of acc) {
@@ -75,6 +83,8 @@ function discover(dirs) {
     if (seen.has(s.name)) continue;
     seen.add(s.name); out.push(s);
   }
+  _discCache.set(key, { at: Date.now(), out });
+  if (_discCache.size > 16) _discCache.clear(); // tiny bound — keys are per dir-set
   return out;
 }
 
