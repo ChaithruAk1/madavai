@@ -145,6 +145,8 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
       )}
       {open && (
         <div className="model-menu mp-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: 560, ...(openUp ? { top: "auto", bottom: 46 } : {}) }}>
+          {/* Sticky header — search + maker + filter chips stay put; only the model list scrolls. */}
+          <div className="mp-head" style={{ position: "sticky", top: 0, zIndex: 3, background: "var(--bg-1)", borderBottom: "1px solid var(--line)", paddingBottom: 8, marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <div style={{ position: "relative", flex: 1 }}>
               <Search size={14} style={{ position: "absolute", left: 11, top: 10, color: "var(--text-2)" }} />
@@ -182,6 +184,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
             )}
             <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-3)", fontVariantNumeric: "tabular-nums" }}>{shown} of {total}</span>
           </div>
+          </div>{/* /mp-head */}
 
           {groups.length === 0 && (
             <div className="model-group" style={{ textTransform: "none", color: "var(--text-2)", padding: 12 }}>

@@ -1167,11 +1167,12 @@ Sequence small→big, 3+4 parallel agents on disjoint files + my wiring pass. NO
 - ⚠️ host Edit truncated screens.js tail (lost account/extras + TOURS/WHATS_NEW/exports) on the agents-sections edit — reconstructed in sandbox from known content. Agents.jsx all edits done via sandbox python (parse-verified each step). Gate: npm run build → FULL restart.
 
 ### ⛔ STANDING RULE (user mandate 2026-06-13): EVERY NEW FEATURE SHIPS WITH HELP.
-Whenever a new feature/screen/attribute is added, it is NOT done until ALL THREE are updated in the same change:
-1. A "?" HelpDot is placed next to the new control(s) — `<HelpDot mode="<screen>" section="<id>" />`.
-2. Its entry is added to `src/help/screens.js` SCREEN_HELP (the ONE source) with rich `what` + full `more` paragraph + `when`. This auto-feeds the User Guide's "Every control, explained" chapter.
-3. Sage automatically inherits it (it reads SCREEN_HELP via helpContext in SageDock) — so verify the section is reachable; if the feature is conceptually new, also add a short entry to sage-knowledge/*.md. New top-level screens get added to TOURS/WHATS_NEW too.
-Treat a feature PR without all three as incomplete. This is how Madav stays self-documenting and Sage stays omniscient.
+Whenever ANY control, field, attribute, feature, or screen is added OR changed, it is NOT done until ALL of the following are updated in the SAME change — no exceptions, now and for EVERY future enhancement:
+1. A "?" HelpDot sits next to the new/changed control(s) — `<HelpDot mode="<screen>" section="<id>" />`. EVERY control gets one.
+2. Its entry is added/updated in `src/help/screens.js` SCREEN_HELP (the ONE source) with rich `what` + full `more` paragraph + `when`. This auto-feeds the User Guide's "Every control, explained" chapter AND Sage's "Explain this screen".
+3. The matching `sage-knowledge/*.md` entry is added/updated too — MANDATORY, not optional. Keep the deep KB in sync with screens.js. New top-level screens get a `09-<area>.md` (+ TOURS / WHATS_NEW).
+4. Verify Sage reaches it (SageDock `helpContext` reads SCREEN_HELP) so Sage answers at the same depth as the dot.
+Treat any change missing ANY of the above as INCOMPLETE. (THUMB RULE reaffirmed by user 2026-06-13: "every time you add help, update Sage AND the knowledgebase; every control explained — mandatory forever, including future enhancements.") This is how Madav stays self-documenting and Sage stays omniscient.
 
 ### 14z14. WHOLE-APP ATTRIBUTE HELP — every field dotted, Sage answers at full depth (2026-06-13, user "i want it in every window/attribute across application, donot stop until done… Sage should say same or more, end-to-end")
 - **Depth upgrade:** SCREEN_HELP sections gained an optional `more` field — a full explanatory paragraph beyond `what`/`when`. HelpDot renders `what` (bold lead) + `more` (paragraph) + `When`; popover widened to 320px + scroll; the "?" icon is now DIM (opacity .35, brightens on hover). CRITICAL CSS: `.hd-pop, .hd-pop * { text-transform:none; letter-spacing:normal; }` — dots sit inside uppercase headers/labels and were inheriting ALL-CAPS (user complaint).

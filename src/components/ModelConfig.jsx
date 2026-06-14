@@ -15,7 +15,7 @@ const PROVIDER_PRESETS = [
   { name: "Anthropic", kind: "anthropic", baseUrl: "https://api.anthropic.com" },
   { name: "OpenRouter", kind: "openai", baseUrl: "https://openrouter.ai/api/v1" },
   { name: "Google Gemini", kind: "openai", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
-  { name: "NVIDIA NIM", kind: "openai", baseUrl: "https://integrate.api.nvidia.com/v1" },
+  { name: "Nvidia", kind: "openai", baseUrl: "https://integrate.api.nvidia.com/v1" },
   { name: "DeepSeek", kind: "openai", baseUrl: "https://api.deepseek.com/v1" },
   { name: "Mistral", kind: "openai", baseUrl: "https://api.mistral.ai/v1" },
   { name: "xAI (Grok)", kind: "openai", baseUrl: "https://api.x.ai/v1" },
@@ -31,12 +31,34 @@ const PROVIDER_PRESETS = [
   { name: "llama.cpp (local)", kind: "openai", baseUrl: "http://localhost:8080/v1" },
 ];
 
+// Where to get an API key for each default provider (matched by base-URL host or name).
+const KEY_URLS = [
+  [/openrouter\.ai/i, "https://openrouter.ai/keys"],
+  [/api\.openai\.com/i, "https://platform.openai.com/api-keys"],
+  [/api\.anthropic\.com/i, "https://console.anthropic.com/settings/keys"],
+  [/nvidia\.com/i, "https://build.nvidia.com/models"],
+  [/googleapis|gemini/i, "https://aistudio.google.com/app/apikey"],
+  [/deepseek\.com/i, "https://platform.deepseek.com/api_keys"],
+  [/mistral\.ai/i, "https://console.mistral.ai/api-keys"],
+  [/(^|[^a-z])x\.ai/i, "https://console.x.ai"],
+  [/groq\.com/i, "https://console.groq.com/keys"],
+  [/together\.(xyz|ai)/i, "https://api.together.xyz/settings/api-keys"],
+  [/fireworks\.ai/i, "https://fireworks.ai/account/api-keys"],
+  [/perplexity\.ai/i, "https://www.perplexity.ai/settings/api"],
+  [/cerebras\.ai/i, "https://cloud.cerebras.ai"],
+  [/deepinfra\.com/i, "https://deepinfra.com/dash/api_keys"],
+  [/hyperbolic\.xyz/i, "https://app.hyperbolic.xyz/settings"],
+];
+const keyUrlFor = (p) => { const s = `${(p && p.baseUrl) || ""} ${(p && p.name) || ""}`; for (const [re, url] of KEY_URLS) if (re.test(s)) return url; return null; };
+// "Connected" = free Starter, a local endpoint, an Anthropic subscription, or a saved API key.
+const readyOf = (p) => /\/starter\b/.test(p.baseUrl || "") || /localhost|127\.0\.0\.1/i.test(p.baseUrl || "") || (p.kind === "anthropic" && p.useSubscription) || !!(p.apiKey || "").trim();
+
 // Provider chip — REAL brand icons via the Simple Icons CDN (brand-colored SVGs),
 // with the Madav M for Starter and a deterministic hue-letter fallback when a brand
 // has no icon or the machine is offline (img onError swaps the letter back in).
 const BRAND_SLUG = {
   "OpenAI": "openai", "Anthropic": "anthropic", "OpenRouter": "openrouter",
-  "Google Gemini": "googlegemini", "NVIDIA NIM": "nvidia", "DeepSeek": "deepseek",
+  "Google Gemini": "googlegemini", "Nvidia": "nvidia", "NVIDIA NIM": "nvidia", "DeepSeek": "deepseek",
   "Mistral": "mistralai", "xAI (Grok)": "x", "Groq": "groq", "Together AI": "togetherai",
   "Fireworks AI": "fireworksai", "Perplexity": "perplexity", "Cerebras": "cerebras",
   "Ollama (local)": "ollama", "LM Studio (local)": "lmstudio", "llama.cpp (local)": "llamacpp",
@@ -156,7 +178,7 @@ export default function ModelConfig({ onChanged }) {
   };
   const patch = (field, val) => persist({ ...s, profiles: { ...s.profiles, [selId]: { ...sel, [field]: val } } });
   const setField = (k, v) => persist({ ...s, [k]: v });
-  const addProfile = () => { const id = "p_" + Math.random().toString(36).slice(2, 7); persist({ ...s, profiles: { ...s.profiles, [id]: BLANK(id) } }); setSelId(id); setView("edit"); };
+  const addProfile = () => { const id = "p_" + Math.random().toString(36).slice(2, 7); persist({ ...s, profiles: { ...s.profiles, [id]: { ...BLANK(id), custom: true } } }); setSelId(id); setView("edit"); };
   const addPreset = (name) => {
     const id = "p_" + Math.random().toString(36).slice(2, 7);
     const pr = PROVIDER_PRESETS.find((x) => x.name === name);
@@ -164,6 +186,8 @@ export default function ModelConfig({ onChanged }) {
     persist({ ...s, profiles: { ...s.profiles, [id]: prof } }); setSelId(id); setView("edit");
   };
   const delProfile = () => {
+    const cur = s.profiles[selId];
+    if (!cur || !cur.custom) return; // only user-created custom providers can be deleted; defaults are locked
     if (profiles.length <= 1) return;
     const rest = { ...s.profiles }; delete rest[selId];
     persist({ ...s, profiles: rest, activeProfileId: s.activeProfileId === selId ? Object.keys(rest)[0] : s.activeProfileId });
@@ -195,7 +219,7 @@ export default function ModelConfig({ onChanged }) {
       {/* top: default model + proxy as responsive side-by-side cards */}
       <div className="mc-top">
         <div className="mc-card">
-          <div className="nav-label" style={{ paddingLeft: 0 }}>Default model</div>
+          <div className="nav-label" style={{ paddingLeft: 0 }}>Default model<HelpDot mode="models" section="defaultmodel" /></div>
           <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
             Applied every time the app starts. You can still switch models live in the top bar during a session — it resets to this on next launch.
           </p>
@@ -203,7 +227,7 @@ export default function ModelConfig({ onChanged }) {
           {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
         </div>
         <div className="mc-card">
-          <div className="nav-label" style={{ paddingLeft: 0 }}>Corporate proxy (optional)</div>
+          <div className="nav-label" style={{ paddingLeft: 0 }}>Corporate proxy (optional)<HelpDot mode="models" section="proxy" /></div>
           <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
             Route all LLM, MCP, and Telegram traffic through your company's approved proxy/gateway. Local models bypass it automatically. <b>Restart the app</b> after changing this.
           </p>
@@ -212,25 +236,35 @@ export default function ModelConfig({ onChanged }) {
         </div>
       </div>
 
-      <div className="nav-label" style={{ paddingLeft: 0 }}>Providers &amp; models<HelpDot mode="models" section="provider" /></div>
+      <div className="nav-label" style={{ paddingLeft: 0 }}>Model Providers<HelpDot mode="models" section="provider" /></div>
       <p style={{ color: "var(--text-2)", fontSize: 12.5, margin: "2px 0 10px" }}>
         <b style={{ color: "var(--text-1)" }}>Madav Starter (free)</b> works the moment you sign in — no API key needed, with a daily limit on free models.
         For long-term use we recommend adding your own provider key (OpenRouter is the easiest: one key, hundreds of models, pay only for what you use) — pick a provider below, paste the key, and every model unlocks with no daily cap.
       </p>
       {/* Provider gallery — every configured provider plus one-click presets, as cards. */}
       <div className="mc-pgrid">
-        {profiles.filter((p) => isPriv || p.kind !== "anthropic").map((p) => {
+        {/* Custom provider — a TEMPLATE: "Set up" creates a NEW (deletable) provider; this card itself never changes. Highlighted + first, as the entry point to add your own provider. */}
+        <button className="mc-pcard" onClick={addProfile} style={{ background: "var(--accent-weak)", borderColor: "var(--accent-line)" }}>
+          <PChip name="+" />
+          <span className="mc-pmain">
+            <b>Custom provider</b>
+            <small>Add your own OpenAI/Anthropic endpoint</small>
+          </span>
+          <span className="mc-pact">Set up</span>
+        </button>
+        {profiles.filter((p) => isPriv || p.kind !== "anthropic").slice().sort((a, b) => readyOf(b) - readyOf(a)).map((p) => {
           const local = /localhost|127\.0\.0\.1/i.test(p.baseUrl || "");
           const starter = /\/starter\b/.test(p.baseUrl || "");
-          const ready = starter || local || !!(p.apiKey || "").trim();
+          const subMode = p.kind === "anthropic" && p.useSubscription;
+          const ready = starter || local || subMode || !!(p.apiKey || "").trim();
           return (
             <button key={p.id} className={`mc-pcard ${p.id === selId ? "sel" : ""}`} onClick={() => { setSelId(p.id); setView("edit"); setStatus(""); }}>
               <PChip name={p.name} />
               <span className="mc-pmain">
                 <b>{p.name}</b>
-                <small>{starter ? "free · no key needed" : local ? "runs on this computer" : p.kind === "anthropic" ? "Anthropic API" : "OpenAI-compatible"}</small>
+                <small>{starter ? "free · no key needed" : local ? "runs on this computer" : subMode ? "Claude subscription" : p.kind === "anthropic" ? "Anthropic API" : "OpenAI-compatible"}</small>
               </span>
-              <span className={`mc-pact ${ready ? "ok" : ""}`}>{ready ? <><Check size={13} /> Connected</> : "Add key"}</span>
+              <span className={`mc-pact ${ready ? "ok" : ""}`}>{ready ? <><Check size={13} /> {subMode ? "Subscription" : "Connected"}</> : "Add key"}</span>
             </button>
           );
         })}
@@ -244,14 +278,6 @@ export default function ModelConfig({ onChanged }) {
             <span className="mc-pact">Connect</span>
           </button>
         ))}
-        <button className="mc-pcard" onClick={addProfile}>
-          <PChip name="+" />
-          <span className="mc-pmain">
-            <b>Custom provider</b>
-            <small>any OpenAI- or Anthropic-compatible endpoint</small>
-          </span>
-          <span className="mc-pact">Set up</span>
-        </button>
       </div>
 
       </>}
@@ -265,7 +291,7 @@ export default function ModelConfig({ onChanged }) {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
             <h3 style={{ margin: 0, fontSize: 16 }}>{sel.name}</h3>
             <span style={{ flex: 1 }} />
-            <button className="btn ghost danger" onClick={delProfile}><Trash2 size={14} /></button>
+            {sel.custom && <button className="btn ghost danger" onClick={delProfile} title="Delete this custom provider"><Trash2 size={14} /></button>}
           </div>
           <div className="mc-fields">
             <div className="nav-label" style={{ paddingLeft: 0, gridColumn: "1 / -1" }}>Connection</div>
@@ -289,6 +315,11 @@ export default function ModelConfig({ onChanged }) {
               <Field label="API key" help={<HelpDot mode="models" section="key" />}><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder={sel.kind === "anthropic" ? "sk-ant-…" : "leave blank for local"} /></Field>
             )}
           </div>
+          {keyUrlFor(sel) && !(sel.kind === "anthropic" && sel.useSubscription) && (
+            <p style={{ fontSize: 12, margin: "8px 0 0" }}>
+              <a className="conn-link" href="#" onClick={(e) => { e.preventDefault(); try { (bridge.openExternal || window.open)(keyUrlFor(sel)); } catch {} }}>Get an API key for {sel.name} ↗</a>
+            </p>
+          )}
           {isWeb && (
             <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 0" }}>
               🔒 Your API keys stay in <b>this browser's storage</b> and go only to the provider — Madav servers never see them.
@@ -304,8 +335,8 @@ export default function ModelConfig({ onChanged }) {
           )}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
-            <button className="btn primary" onClick={saveProvider}><Save size={14} /> Save &amp; load models</button><HelpDot mode="models" section="modellist" />
-            <button className="btn" onClick={test}><RefreshCw size={14} /> Test only</button>
+            <button className="btn primary" onClick={saveProvider}><Save size={14} /> Save</button><HelpDot mode="models" section="modellist" />
+            <button className="btn" onClick={test}><RefreshCw size={14} /> Load Models</button>
             <span style={{ color: status.startsWith("Saved") ? "var(--ok)" : "var(--text-2)", fontSize: 12 }}>{status}</span>
           </div>
           <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 14 }}>
