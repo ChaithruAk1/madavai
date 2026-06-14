@@ -26,14 +26,8 @@ function runInWorker(code, timeoutMs) {
 async function runOnMainThread(code) {
   const mod = await import("pptxgenjs/dist/pptxgen.es.js");
   const Pptx = mod.default || mod;
-  const pptx = new Pptx();
-  pptx.layout = "LAYOUT_WIDE";
-  try { pptx.author = "Madav"; pptx.company = "Madav"; } catch {}
-  const helpers = { hex: (c) => String(c == null ? "" : c).replace(/^#/, "") };
-  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-  const fn = new AsyncFunction("pptx", "helpers", "ShapeType", "ChartType", String(code || ""));
-  await fn(pptx, helpers, pptx.ShapeType, pptx.ChartType);
-  return await pptx.write({ outputType: "blob" });
+  const { buildDeck } = await import("./deckBuild.js");
+  return await buildDeck(Pptx, code, "blob"); // same forgiving builder as the worker
 }
 
 export async function runDeckCode(code, { timeoutMs = 20000 } = {}) {
