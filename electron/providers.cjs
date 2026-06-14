@@ -42,8 +42,26 @@ async function ensureOk(res, provider) {
     err.code = "no_vision";
     throw err;
   }
-  const err = new Error(`${provider} ${res.status}: ${detail || res.statusText}`);
-  err.code = res.status === 429 ? "rate_limit" : res.status === 401 ? "auth" : "http_error";
+  // Map provider HTTP errors to clean, key-free messages. Never surface the raw body — it can carry
+  // the API key inside a URL and is "technical stuff" the user shouldn't see.
+  const st = res.status;
+  let msg;
+  if (st === 402 || /requires more credits|insufficient|payment required|quota|billing|afford/i.test(detail)) {
+    msg = "This model needs more credits than your provider key currently allows. Add credits with your provider, pick a less expensive model, or ask for a shorter result.";
+  } else if (st === 401 || st === 403) {
+    msg = "Your API key for this provider was rejected. Open Settings and re-check the key.";
+  } else if (st === 429) {
+    msg = "The provider is busy right now (rate limit). Wait a few seconds and try again.";
+  } else if (st === 404) {
+    msg = "That model isn't available on this provider. Pick a different model.";
+  } else if (st >= 500) {
+    msg = "The model provider had a server error. Please try again in a moment.";
+  } else {
+    msg = "Couldn't complete that request with the current model. Try again, or switch models.";
+  }
+  const err = new Error(msg);
+  err.code = st === 429 ? "rate_limit" : (st === 401 || st === 403) ? "auth" : st === 402 ? "credits" : "http_error";
+  err.status = st; err.raw = detail; // raw kept for logs only, never shown
   throw err;
 }
 
@@ -57,7 +75,7 @@ const chatUrl = (b) => apiBase(b) + "/chat/completions";
 const modelsUrl = (b) => apiBase(b) + "/models";
 
 // OpenAI-compatible: POST {base}/chat/completions
-async function streamOpenAI(profile, messages, { onDelta, signal }) {
+async function streamOpenAI(profile, messages, { onDelta, signal, maxTokens }) {
   const url = chatUrl(profile.baseUrl);
   const res = await fetch(url, {
     method: "POST",
@@ -66,7 +84,7 @@ async function streamOpenAI(profile, messages, { onDelta, signal }) {
       "Content-Type": "application/json",
       ...(profile.apiKey ? { Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
-    body: JSON.stringify({ model: profile.model, messages, stream: true }),
+    body: JSON.stringify({ model: profile.model, messages, stream: true, max_tokens: maxTokens || 8192 }),
   });
   await ensureOk(res, "OpenAI-compatible");
 
@@ -99,7 +117,7 @@ async function streamAnthropic(profile, messages, { onDelta, signal }) {
       "anthropic-version": "2023-06-01",
       ...(profile.apiKey ? { "x-api-key": (profile.apiKey || "").trim(), Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
-    body: JSON.stringify({ model: profile.model, max_tokens: 4096, system, messages: turns, stream: true }),
+    body: JSON.stringify({ model: profile.model, max_tokens: 8192, system, messages: turns, stream: true }),
   });
   await ensureOk(res, "Anthropic-compatible");
 
@@ -151,7 +169,7 @@ async function listModels(profile) {
 }
 
 // OpenAI-compatible streaming WITH tools — streams text deltas and accumulates tool_calls.
-async function streamChatTools(profile, messages, tools, { onDelta, signal }) {
+async function streamChatTools(profile, messages, tools, { onDelta, signal, maxTokens }) {
   const url = chatUrl(profile.baseUrl);
   const res = await fetch(url, {
     method: "POST",
@@ -160,7 +178,7 @@ async function streamChatTools(profile, messages, tools, { onDelta, signal }) {
       "Content-Type": "application/json",
       ...(profile.apiKey ? { Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
-    body: JSON.stringify({ model: profile.model, messages, tools, tool_choice: "auto", stream: true }),
+    body: JSON.stringify({ model: profile.model, messages, tools, tool_choice: "auto", stream: true, max_tokens: maxTokens || 8192 }),
   });
   await ensureOk(res, "OpenAI-compatible");
 
