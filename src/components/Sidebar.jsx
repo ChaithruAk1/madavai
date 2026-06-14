@@ -28,7 +28,7 @@ const TAIL = [
 const TERMINAL_ITEM = { id: "terminal", label: "Terminal", icon: TerminalSquare };
 const ADMIN_ITEM = { id: "testcenter", label: "Test Center", icon: FlaskConical };
 
-export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, extras = {} }) {
+export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, extras = {}, soloRun, teamRun, onOpenRun }) {
   const [recents, setRecents] = useState([]);
   const [q, setQ] = useState("");
   const [shareState, setShareState] = useState({}); // { [id]: "sharing" | "copied" | "error" }
@@ -208,6 +208,33 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
       {isAdmin && qaHere && navBtn(ADMIN_ITEM)}
       {!extraOff("terminal") && navBtn(TERMINAL_ITEM)}
 
+      {(() => {
+        // Live "Active agents" strip — avatars + status while a solo agent or a team mission runs.
+        // Reads the same soloRun/teamRun state the run panels use; click jumps to the conversation.
+        const team = teamRun && !teamRun.finished ? teamRun : null;
+        const solo = !team && soloRun && !soloRun.finished ? soloRun : null;
+        if (!team && !solo) return null;
+        const dotColor = (st) => st === "working" ? "var(--accent)" : st === "done" ? "var(--ok)" : st === "deny" ? "var(--danger)" : "var(--text-3)";
+        const dotSym = (st) => st === "working" ? "●" : st === "done" ? "✓" : st === "deny" ? "✕" : "○";
+        return (
+          <div className="sb-agents" style={{ margin: "6px 4px 2px", padding: "8px 10px", border: "1px solid var(--line)", borderRadius: 10, background: "var(--bg-2)", cursor: "pointer" }} onClick={() => onOpenRun && onOpenRun()} title="Open the running conversation">
+            <div className="nav-label" style={{ margin: "0 0 6px" }}>Active agents</div>
+            {team && team.steps.map((m, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 0" }} title={`${m.name} · ${m.status}`}>
+                <span style={{ width: 20, height: 20, borderRadius: 6, display: "grid", placeItems: "center", flex: "none", fontSize: 12, background: (m.identity && m.identity.color) ? `color-mix(in srgb, ${m.identity.color} 22%, transparent)` : "var(--bg-3)", color: (m.identity && m.identity.color) || "var(--text-2)" }}>{(m.identity && m.identity.glyph) || (m.name || "?")[0].toUpperCase()}</span>
+                <span className="sb-t" style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12.5 }}>{m.name}</span>
+                <span className="sb-t" style={{ fontSize: 11, color: dotColor(m.status) }}>{dotSym(m.status)}</span>
+              </div>
+            ))}
+            {solo && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 0" }} title="An agent is working">
+                <span style={{ width: 20, height: 20, borderRadius: 6, display: "grid", placeItems: "center", flex: "none", fontSize: 12, background: "var(--bg-3)", color: "var(--accent)" }}>●</span>
+                <span className="sb-t" style={{ flex: 1, fontSize: 12.5 }}>Working · {solo.steps.length} step{solo.steps.length === 1 ? "" : "s"}</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
       <div className="sb-expand">
         <div className="nav-label" style={{ marginTop: 10 }}>Recents</div>
         <div className="sb-search">

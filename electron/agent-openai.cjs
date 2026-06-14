@@ -42,6 +42,16 @@ const CREATE_IMAGE_TOOL = {
   },
 };
 
+// Lightweight web search (quick, no approval) — for current info without the heavyweight Deep Research.
+const WEB_SEARCH_TOOL = {
+  type: "function",
+  function: {
+    name: "web_search",
+    description: "Search the web and return the top results (title + URL) for a query. Use this for ANYTHING current or beyond your training data — news, recent events, latest releases, current prices, 'today'/'now'/'latest'. Quick and lightweight (no approval needed). For an in-depth multi-source cited report use deep_research instead. After searching, answer from the results and cite the URLs — never claim you cannot access the internet.",
+    parameters: { type: "object", properties: { query: { type: "string", description: "the search query" } }, required: ["query"] },
+  },
+};
+
 // Mid-mission "ask the human": the mission pauses, the user answers, work resumes.
 const ASK_USER_TOOL = {
   type: "function",
@@ -128,9 +138,12 @@ const ARTIFACT_RULE_BASE = " When you build or change something runnable — an 
 function officeRulePart() {
   try { if (!require("./features.cjs").builtIn("office")) return ""; } catch {}
   try { if ((require("./settings.cjs").load().extras || {}).office === false) return ""; } catch {}
-  return " When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns it into a downloadable file. On change requests, re-emit the whole updated spec.";
+  return " You CAN create real, downloadable office files. NEVER tell the user you cannot create a file, never say the document 'isn't stored here', and never tell them to copy text into PowerPoint / Word / Excel / Google Slides — that is wrong. The ONLY way to deliver the file is to output ONE fenced block tagged officedoc containing ONLY the JSON spec; describing the content in prose WITHOUT the block produces no file. When the user asks for a spreadsheet/Excel, Word document, PowerPoint deck, or PDF, emit it exactly like:\n```officedoc\n{\"type\":\"xlsx\",\"name\":\"sales.xlsx\",\"sheets\":[{\"name\":\"Q1\",\"rows\":[[\"Region\",\"Sales\"],[\"NA\",1200]]}]}\n```\nTypes: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,sections:[{heading,text,bullets?}]} · pptx {title,subtitle?,slides:[{title,bullets?|text?}]} · pdf {title,sections:[{heading,text,bullets?}]}. Fill it with COMPLETE real content (never placeholders); the app turns the block into a downloadable file card. On change requests, re-emit the whole updated spec.";
 }
 const ARTIFACT_RULE = ARTIFACT_RULE_BASE; // kept for any external references; office part is appended at use time
+// Deliver the answer — don't narrate the machinery. Weak models love to say "let me load my X skill"
+// or "I don't have access to …"; this forbids that and tells them to just use tools silently and answer.
+const ANSWER_DIRECT_RULE = " Answer the user's request directly and naturally. NEVER narrate your internal process, tools, or skills — do not say things like \"let me load my web search skill\", \"I'll use the web_search tool\", \"I don't have access to …\", or describe what you are about to do. If a tool helps, call it silently and present only the result. Don't apologize for limitations or list what you cannot do — give the best possible answer to what was actually asked.";
 
 const SYSTEM = (mode) =>
   mode === "chat"
@@ -345,10 +358,17 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // Default: on everywhere except plain chat. When Deep Research is on, research skills are included.
   const promptSkills = skills.filter((s) => {
     const key = s.dir || s.name; const m = skillSurfaces[key];
-    let on = (m && (surface in m)) ? m[surface] !== false : surface !== "chat";
+    // Default on everywhere except plain chat — EXCEPT the document skills, which are useful in chat
+    // (people make decks/sheets/docs there) so they default on in chat too. Explicit toggles still win.
+    let on = (m && (surface in m)) ? m[surface] !== false : true; // default ON in every process (chat included); trim per-process with the + menu Skills toggles
     if (!on && researchOn && /research/i.test(String(key) + " " + (s.name || ""))) on = true;
     return on;
   });
+  // Lightweight web search — on by default in every process (incl. plain chat). Quick + no approval,
+  // unlike heavyweight Deep Research. Reuses research.cjs's search; gated by the same build flag.
+  let websearchOn = false;
+  try { websearchOn = require("./features.cjs").builtIn("research") && (_pcfg.extras || {}).websearch !== false; } catch {}
+  const webSearchNote = websearchOn ? "\n\nYou can search the web: call the web_search tool for anything current or beyond your training data — news, latest releases, prices, 'today'/'now', recent events. Do NOT say you cannot access the internet or browse; search first, then answer with what you find and cite the sources." : "";
   // ---- Mission state (the harness's memory for this conversation) ----
   // Attached to the history array: custom props on arrays survive in RAM across turns
   // of the same session and are invisible to JSON persistence. Reset on app restart.
@@ -386,7 +406,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // Artifact + office rules are appended for EVERY mode AND every agent (systemOverride). Previously
   // they lived only inside SYSTEM("chat") and were lost when an agent's instructions replaced it —
   // which is why a delegated agent insisted it "can't create a .pptx" instead of emitting officedoc.
-  const sys = (systemOverride || SYSTEM(mode)) + ARTIFACT_RULE_BASE + officeRulePart() + methodRules + tierNote + gi + browserNote + repoMapText + (promptSkills.length ? "\n\n" + skillsMgr.indexText(promptSkills) : "");
+  const sys = (systemOverride || SYSTEM(mode)) + ARTIFACT_RULE_BASE + officeRulePart() + webSearchNote + ANSWER_DIRECT_RULE + methodRules + tierNote + gi + browserNote + repoMapText + (promptSkills.length ? "\n\n" + skillsMgr.indexText(promptSkills) : "");
   if (history.length === 0) history.push({ role: "system", content: sys });
   else if (history[0] && history[0].role === "system") history[0].content = sys; // refresh index live
   history.push({ role: "user", content: prompt });
@@ -434,6 +454,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   let imagegenOn = true;
   try { imagegenOn = require("./features.cjs").builtIn("imagegen") && (require("./settings.cjs").load().extras || {}).imagegen !== false; } catch {}
   if (imagegenOn) tools.push(CREATE_IMAGE_TOOL);
+  if (websearchOn) tools.push(WEB_SEARCH_TOOL);
   // Connector (MCP) tools — the caller (session-manager) already scoped these to the process/
   // surface (plain chat is empty unless the user turned connectors on for chat from its + menu),
   // so just load whatever we were given. Empty list = no per-turn connect = fast.
@@ -623,6 +644,15 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         continue;
       }
 
+      // Lightweight web search — quick, no approval. Returns top results (title + URL).
+      if (tc.name === "web_search") {
+        emit({ kind: "tool_use", data: { id: tc.id, name: "web_search", input: { query: String(args.query || "").slice(0, 200) }, auto: true } });
+        let out;
+        try { out = await require("./research.cjs").quickSearch(String(args.query || ""), signal); } catch { out = "(web search failed)"; }
+        emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+        pushToolResult(tc, String(out).slice(0, 8000));
+        continue;
+      }
       // Text→image: generate with the active profile/model, show the image in the
       // tool card (data.image), give the model only a tiny confirmation string.
       if (tc.name === "create_image") {

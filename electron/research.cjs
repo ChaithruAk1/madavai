@@ -253,4 +253,15 @@ async function runDeepResearch(profile, args, opts = {}) {
   }
 }
 
-module.exports = { RESEARCH_TOOL, runDeepResearch, isForbiddenTarget };
+// Lightweight single-pass web search — for the in-chat web_search tool (no plan, no model calls, no
+// report). One DuckDuckGo lookup → top results as title + URL. Never throws.
+async function quickSearch(query, signal, limit = 6) {
+  try {
+    const html = await fetchGuarded("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(String(query || "")), signal);
+    const hits = parseDuckResults(html).slice(0, Math.max(1, limit));
+    if (!hits.length) return "(no web results)";
+    return hits.map((h, i) => `${i + 1}. ${h.title}\n   ${h.url}`).join("\n");
+  } catch (e) { return "(web search failed: " + String((e && e.message) || e).slice(0, 120) + ")"; }
+}
+
+module.exports = { RESEARCH_TOOL, runDeepResearch, isForbiddenTarget, quickSearch };

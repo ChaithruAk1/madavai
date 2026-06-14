@@ -5,6 +5,7 @@ import { madavAlert } from "../dialogs.jsx";
 // Two-channel build flag: public builds without Voice fold this to false and the mic code drops out.
 const FEAT_VOICE = import.meta.env.VITE_FEAT_VOICE !== "0";
 import GithubContent from "./GithubContent.jsx";
+import HelpDot from "./HelpDot.jsx";
 import { iconUrlFor } from "../connectorIcons.js";
 
 // Side-flyout placement (Claude-style): open the panel downward from the item, or FLIP it upward
@@ -493,14 +494,20 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                   )}
                 </div>
                 <div className="plus-sep" />
-                <button className="plus-item" onClick={toggleResearch} title="Deep Research — multi-source web research with cited reports. When on for this process, Madav can run it and its research skills are surfaced.">
-                  <Search size={15} /> Deep Research
-                  <span className={`plus-switch ${researchOnHere() ? "on" : ""}`} style={{ marginLeft: "auto" }}><span className="plus-knob" /></span>
-                </button>
-                <button className="plus-item" onClick={toggleAgents} title="Use Agents — let Madav delegate to your agent roster (full multi-agent handoffs). Off = a direct plain-text answer for this process.">
-                  <Users size={15} /> Use Agents
-                  <span className={`plus-switch ${agentsOnHere() ? "on" : ""}`} style={{ marginLeft: "auto" }}><span className="plus-knob" /></span>
-                </button>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <button className="plus-item" style={{ flex: 1 }} onClick={toggleResearch} title="Deep Research — multi-source web research with cited reports.">
+                    <Search size={15} /> Deep Research
+                    <span className={`plus-switch ${researchOnHere() ? "on" : ""}`} style={{ marginLeft: "auto" }}><span className="plus-knob" /></span>
+                  </button>
+                  <HelpDot mode="chat" section="deepresearch" />
+                </div>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <button className="plus-item" style={{ flex: 1 }} onClick={toggleAgents} title="Use Agents — let Madav delegate to your agent roster (multi-agent handoffs). Off = a direct plain-text answer for this process.">
+                    <Users size={15} /> Use Agents
+                    <span className={`plus-switch ${agentsOnHere() ? "on" : ""}`} style={{ marginLeft: "auto" }}><span className="plus-knob" /></span>
+                  </button>
+                  <HelpDot mode="chat" section="useagents" />
+                </div>
               </div>
             )}
           </div>

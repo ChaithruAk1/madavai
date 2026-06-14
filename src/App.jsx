@@ -11,6 +11,8 @@ import Connectors from "./components/Connectors.jsx";
 import Skills from "./components/Skills.jsx";
 import Plugins from "./components/Plugins.jsx";
 import Workrooms from "./components/Workrooms.jsx";
+import { pickModel, routeReason } from "./modelRouter.js";
+import { startOverlayGuard } from "./overlayGuard.js";
 import Consumption from "./components/Consumption.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
@@ -97,6 +99,9 @@ export default function App() {
   const [botRunning, setBotRunning] = useState(false); // Telegram bot online?
   const [histRefresh, setHistRefresh] = useState(0);
   const [chatMode, setChatMode] = useState("chat"); // last primary mode → drives the Recents list
+  // Per-PROCESS model choice (chat/cowork/code/project): a picker value, or "auto" to route per request.
+  // Persisted in localStorage; unset = use the global default model (fully backward compatible).
+  const [surfaceModel, setSurfaceModel] = useState(() => { try { return JSON.parse(localStorage.getItem("madav.surfaceModel") || "{}"); } catch { return {}; } });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [agentCtx, setAgentCtx] = useState(null); // active custom agent for this session ({id,name,instructions,tools,model})
   const [teamCtx, setTeamCtx] = useState(null);   // active agent team ({name,mode,members:[agents]})
@@ -356,9 +361,20 @@ export default function App() {
   const send = async (text, images = [], agentOv = null, teamOv = null, opts = {}) => {
     const ag = agentOv || agentCtx; // explicit override beats state (avoids a stale closure on seeded launches)
     const tm = teamOv || teamCtx;
+    // Auto model routing — only for a plain (non-agent/team) send on a surface set to "Auto". Picks the
+    // best keyed model for THIS request, applies it, and notes it on the message. Fail-open: any
+    // problem leaves the current model untouched, so a send can never break here.
+    let routed = null;
+    try {
+      const surf = ["chat", "cowork", "code", "project"].includes(mode) ? mode : "chat";
+      if (!ag && !tm && (surfaceModel || {})[surf] === "auto") {
+        const picked = pickModel({ prompt: text, images, mode, groups: pickerGroups });
+        if (picked) { if (picked !== activeValue) await selectModel(picked); routed = picked.slice(picked.indexOf("::") + 2) + " · " + routeReason({ prompt: text, images, mode }); }
+      }
+    } catch {}
     if (tm) setTeamRun({ startedAt: Date.now(), steps: tm.members.map((m) => ({ name: m.name, status: "queued", identity: m.identity })), plan: tm.mode === "manager" ? { status: "queued" } : null, synth: null, finished: false });
     setSoloRun(ag && !tm ? { startedAt: Date.now(), finished: false, steps: [] } : null); // solo agents get their own live panel
-    setTimeline((tl) => [...tl, { type: "message", role: "user", text, images }]);
+    setTimeline((tl) => [...tl, { type: "message", role: "user", text, images, routed }]);
     setBusy(true);
     streamOpen.current = false;
     replyBufRef.current = "";
@@ -574,6 +590,8 @@ export default function App() {
     // (Previously this reset busy + dropped the permission request, which orphaned
     // the engine mid-task: the agent waited forever on a question nobody could see.)
     setMode(m); streamOpen.current = false;
+    // Per-surface model: re-apply this surface's pinned model when returning to it (Auto resolves at send).
+    try { const _sm = (surfaceModel || {})[m]; if (["chat", "cowork", "code", "project"].includes(m) && _sm && _sm !== "auto") selectModel(_sm); } catch {}
     if (PRIMARY.includes(m)) setChatMode(m);
     if (PRIMARY.includes(m)) {
       const c = modeCacheRef.current[m];
@@ -626,6 +644,9 @@ export default function App() {
     return () => { alive = false; clearInterval(t); };
   }, [activeProfile && activeProfile.id, activeProfile && activeProfile.baseUrl]);
 
+  // App-wide: keep every floating menu/flyout/popover inside the viewport (never past any edge).
+  useEffect(() => { startOverlayGuard(); }, []);
+
   // Selecting a model sets BOTH the active provider and that provider's model.
   // Re-read from disk first so we never clobber a profile added in the Settings panel.
   const selectModel = async (value) => {
@@ -638,6 +659,18 @@ export default function App() {
     setSettings(next); await bridge.saveSettings(next);
   };
   const refreshModels = () => loadModelsFor(settings);
+  // Per-surface model + Auto. The dock shows "auto" when this surface is set to Auto; otherwise the
+  // real active model. Picking a concrete model also applies it globally (selectModel); picking Auto
+  // just records the preference — routing happens at send time.
+  const curSurface = ["chat", "cowork", "code", "project"].includes(mode) ? mode : "chat";
+  const dockValue = surfaceModel[curSurface] === "auto" ? "auto" : activeValue;
+  const onPickModel = (value) => {
+    let v = value;
+    // Clicking Auto again DESELECTS it → revert this surface to a concrete model (the active/default).
+    if (v === "auto" && surfaceModel[curSurface] === "auto") v = activeValue || null;
+    setSurfaceModel((prev) => { const next = { ...prev }; if (v) next[curSurface] = v; else delete next[curSurface]; try { localStorage.setItem("madav.surfaceModel", JSON.stringify(next)); } catch {} return next; });
+    if (v && v !== "auto") selectModel(v);
+  };
 
   const _hour = new Date().getHours();
   const _part = _hour < 12 ? "Morning" : _hour < 18 ? "Afternoon" : "Evening";
@@ -747,7 +780,7 @@ export default function App() {
   const modelRow = (
     <div className="model-dock">
       {isAgentMode && <EnvPicker cwd={cwd} onPickFolder={pickFolder} onUseFolder={useFolder} onAddRepoUrl={addRepo} github={mode !== "cowork"} />}
-      <ModelPicker value={activeValue} groups={pickerGroups} onChange={selectModel} onRefresh={refreshModels} />
+      <ModelPicker value={dockValue} groups={pickerGroups} onChange={onPickModel} onRefresh={refreshModels} />
       {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
     </div>
   );
@@ -758,9 +791,9 @@ export default function App() {
       <TopNav
         mode={mode}
         onSelect={switchMode}
-        model={activeValue}
+        model={dockValue}
         groups={pickerGroups}
-        onModel={selectModel}
+        onModel={onPickModel}
         onRefresh={refreshModels}
         permissionMode={permissionMode}
         onPermissionChange={changePermission}
@@ -788,6 +821,7 @@ export default function App() {
       <Sidebar active={mode} onSelect={switchMode}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
         onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession}
+        soloRun={soloRun} teamRun={teamRun} onOpenRun={() => switchMode(chatMode)}
         extras={{ ...((settings && settings.extras) || {}), ...Object.fromEntries(BUILD_OFF.map((k) => [k, false])) }} />
       <div className="main">
         {isSettings ? (
@@ -999,6 +1033,18 @@ export default function App() {
                         flush();
                         return out;
                       })()}
+                      {busy && !streaming && (
+                        <div className="msg assistant">
+                          <div className="avatar" />
+                          <div className="body">
+                            <div className="who">Madav</div>
+                            <div style={{ display: "flex", gap: 5, alignItems: "center", padding: "6px 2px" }} title="Working…">
+                              <style>{`@keyframes madavThink{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}`}</style>
+                              {[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: `madavThink 1.1s ${d * 0.16}s infinite ease-in-out` }} />)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} />

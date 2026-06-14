@@ -156,3 +156,21 @@ aliases: mission interrupted, continue team mission, checkpoint
 What: A banner offering to resume an interrupted team mission.
 Why: Long team missions checkpoint, so you don’t lose finished work.
 Behavior: Appears on a team conversation that has an unfinished checkpoint while idle, noting how many steps were already done. “Resume mission” continues from the checkpoint; the × dismisses the banner.
+
+### Add menu · Use Agents (per‑process toggle)
+aliases: use agents, agent handoff, delegate to agents, multi‑agent, auto delegate, why did an agent take over, briefly took over my chat
+What: A switch in the "+" menu that decides whether Madav may hand your request off to your agent roster for THIS surface, or just answer you directly.
+Why: Agent delegation is powerful for multi‑step work but heavy and surprising for a quick question — so it is opt‑in per surface.
+Behavior: When ON, the model is given a call_agent tool listing your agents; it can delegate to a specialist (for example a "Briefly" summariser or a "Code Reviewer"), and a delegated agent can itself delegate onward — the full multi‑agent ecosystem, capped at three levels deep so a loop cannot run away. Each handoff, and any question a delegated agent asks, appears inline in the conversation. When OFF, no delegation tool is offered at all, so you get one direct, plain‑text answer from the model you selected — faster and more predictable. The setting is remembered PER surface: default OFF in Let's Chat (so chat stays a direct conversation), and default ON in Let's Collaborate and Let's Build (where orchestrating specialists across many steps is the point). Agents keep their own file, connector and skill capabilities regardless of this switch; and because the office/artifact rules now travel with every agent, a delegated agent can build a real .pptx/.docx/.xlsx/PDF too — previously agents wrongly insisted they could not create files, which was a bug, now fixed.
+
+### Add menu · Deep Research (per‑process toggle)
+aliases: deep research, web research, cited report, research toggle, latest news in chat
+What: A switch in the "+" menu that lets Madav run multi‑source web research with a cited write‑up for this surface.
+Why: Deep Research spends many model calls and fetches the web, so it is opt‑in rather than always on.
+Behavior: When ON for a surface, the model may run deep_research (it fans out across several web searches, reads the sources, and synthesises a cited report) and your research‑related skills are surfaced there. Default OFF in plain chat, so a casual question is never met with a surprise approval prompt. Remembered per surface like the other "+" menu switches. Turn it on for "what's the latest on…" questions that need current, sourced research; leave it off for everyday answers the model already knows.
+
+### Model row · ✨ Auto (model routing)
+aliases: auto model, automatic model, best model, route model, model router, let madav pick the model, which model is best, unselect auto, turn off auto
+What: The entry at the top of the model picker — lets Madav choose the best model for each request instead of you picking one.
+Why: Different requests want different models; Auto matches the model to the request so you don't have to think about it.
+Behavior: With Auto selected, each message is routed by what it needs — an image → a vision model; code → a coding model; a document/deck/spreadsheet or other structured output → a stronger model (and away from tiny free models that can't reliably emit files); a complex/analytical ask → a reasoning‑tier model; a casual question → a small, fast, cheap one. It only chooses among models you've keyed and shows the pick under each message ("✨ routed to …"). If it can't decide it uses your Default Model, so a run never breaks. Auto is PER PROCESS — Let's Chat, Let's Collaborate, Let's Build and Projects each remember their own choice, so you can run Auto in Chat while pinning a strong coder in Build. Click Auto again to deselect it and return to a fixed model. Best when several models are keyed (a fast one + a strong one + maybe a vision one); little benefit with only one model.

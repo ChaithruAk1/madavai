@@ -3,6 +3,7 @@ import { ChevronDown, Check, Search, RefreshCw } from "lucide-react";
 import { MODELS } from "../bridge/contract.js";
 import { bridge } from "../bridge/index.js";
 import { localCaps } from "../data/localModels.js";
+import HelpDot from "./HelpDot.jsx";
 
 // Best-guess of a model's core purpose from its name (no universal API exposes this).
 export function classify(id) {
@@ -101,6 +102,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   useEffect(() => { if ((open || agenticOnly) && !orCat && bridge.getOpenRouterCatalog) bridge.getOpenRouterCatalog().then(setOrCat).catch(() => {}); }, [open, agenticOnly]); // eslint-disable-line
 
   const current = useMemo(() => {
+    if (value === "auto") return { id: "auto", name: "✨ Auto", prov: "" };
     for (const g of source) for (const it of g.items) if (it.id === value) return it;
     if (value && value.includes("::")) { const mid = value.slice(value.indexOf("::") + 2); return { id: value, name: mid || "select model", prov: "" }; }
     return source[0]?.items[0] || { name: "no models", prov: "" };
@@ -206,6 +208,13 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
             </div>
           )}
 
+          {/* Auto routing — top of the list, above the real models. Madav picks the best keyed model per request. */}
+          <div title="Auto — Madav picks the best keyed model for each request" className={`model-row ${value === "auto" ? "sel" : ""}`} onClick={() => { onChange("auto"); setOpen(false); }} style={{ gap: 9 }}>
+            <span style={{ flex: "none", width: 16, textAlign: "center" }}>✨</span>
+            <span style={{ flex: 1, minWidth: 0 }}>Auto <span style={{ color: "var(--text-3)", fontSize: 11 }}>· best model per request{value === "auto" ? " · click to unselect" : ""}</span></span>
+            <span onClick={(e) => e.stopPropagation()} style={{ flex: "none" }}><HelpDot mode="chat" section="automodel" /></span>
+            {value === "auto" && <Check size={15} className="check" style={{ flex: "none" }} />}
+          </div>
           {renderGroups.map((g) => (
             <div key={g.group}>
               <div className="model-group" style={{ display: "flex", alignItems: "center", gap: 7 }}>

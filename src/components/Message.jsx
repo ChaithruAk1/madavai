@@ -80,6 +80,7 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
             {streaming && <span className="cursor" />}
           </div>
         )}
+        {isUser && item.routed && <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }} title="Auto routing chose this model for your request">✨ routed to {item.routed}</div>}
 
         {artifacts.map((a, i) => (
           <span key={i} className="artifact-pill" onClick={() => onOpenArtifact && onOpenArtifact(a)}>
