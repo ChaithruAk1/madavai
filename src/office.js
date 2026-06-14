@@ -51,7 +51,10 @@ async function buildDocx(spec) {
 }
 
 async function buildPptx(spec) {
-  const mod = await import("pptxgenjs");
+  // Import the concrete browser ESM build, not the bare package specifier — pptxgenjs's package
+  // entry doesn't resolve as a runtime ES module in the web bundle ("Failed to resolve module
+  // specifier 'pptxgenjs'"); the explicit dist path bundles cleanly on web and desktop.
+  const mod = await import("pptxgenjs/dist/pptxgen.es.js");
   const Pptx = mod.default || mod;
   const p = new Pptx();
   if (spec.title) { const s = p.addSlide(); s.addText(String(spec.title), { x: 0.5, y: 1.8, w: 9, h: 1.5, fontSize: 34, bold: true }); if (spec.subtitle) s.addText(String(spec.subtitle), { x: 0.5, y: 3.2, w: 9, h: 0.8, fontSize: 16, color: "666666" }); }
