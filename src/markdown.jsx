@@ -6,6 +6,7 @@
 // bullet/numbered lists, blockquotes, horizontal rules, tables (basic).
 import { Fragment, useState } from "react";
 import { parseOfficeSpec, downloadOffice } from "./office.js";
+import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
 
 // ---- inline parsing: code spans first (their content is literal), then links/emphasis ----
 function inline(text, keyBase = "i") {
@@ -52,7 +53,17 @@ const OFFICE_LABEL = { xlsx: "Excel spreadsheet", docx: "Word document", pptx: "
 function OfficeCard({ code }) {
   const [state, setState] = useState(""); // "" | building | done | error:<msg>
   const parsed = parseOfficeSpec(code);
-  if (!parsed) return <CodeBlock lang="officedoc" code={code} />; // mid-stream or invalid → raw view
+  if (!parsed) {
+    // Mid-stream (or not-yet-valid JSON): NEVER show the raw spec. A quiet placeholder until it's ready —
+    // the model's JSON is plumbing the user shouldn't see.
+    const t = (/"type"\s*:\s*"(xlsx|docx|pptx|pdf)"/.exec(code) || [])[1];
+    return (
+      <div className="md-office md-office-pending">
+        <span className="md-office-ico">{t === "xlsx" ? "📊" : t === "pptx" ? "📽" : t === "pdf" ? "📕" : "📄"}</span>
+        <span className="md-office-meta"><b>Preparing your {t ? OFFICE_LABEL[t] : "document"}…</b><i>building it on your device</i></span>
+      </div>
+    );
+  }
   const dl = async () => {
     setState("building");
     try { await downloadOffice(parsed); setState("done"); setTimeout(() => setState(""), 2500); }
@@ -72,6 +83,33 @@ function OfficeCard({ code }) {
       <button className="md-office-btn" disabled={state === "building"} onClick={dl}>
         {state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}
       </button>
+      {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
+    </div>
+  );
+}
+
+// A ```deckjs block is a model-written pptxgenjs build script — full bespoke design, composed
+// per-slide by the model (this is what reaches Claude-grade quality). We NEVER show the raw code;
+// Download builds a real .pptx on this device in a sandboxed worker.
+function DeckCard({ code }) {
+  const [state, setState] = useState("");
+  const ready = /addSlide/.test(code);            // the script has begun producing slides
+  const name = deckNameFrom(code);
+  const build = async () => {
+    setState("building");
+    try {
+      const blob = await runDeckCode(code);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setState("done"); setTimeout(() => setState(""), 2500);
+    } catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 140)); }
+  };
+  return (
+    <div className={"md-office" + (ready ? "" : " md-office-pending")}>
+      <span className="md-office-ico">📽</span>
+      <span className="md-office-meta"><b>{ready ? name : "Composing your deck…"}</b><i>{ready ? "PowerPoint deck · designed on your device" : "building it on your device"}</i></span>
+      {ready && <button className="md-office-btn" disabled={state === "building"} onClick={build}>{state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
     </div>
   );
@@ -98,6 +136,7 @@ export default function Markdown({ text }) {
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
       if (fence[1] === "officedoc" && FEAT_OFFICE) blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
+      else if (fence[1] === "deckjs" && FEAT_OFFICE) blocks.push(<DeckCard key={key()} code={buf.join("\n")} />);
       else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
       continue;
     }

@@ -948,7 +948,7 @@ input, textarea, select { font-family: inherit; }
 .slash-link { background: transparent; border: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 12.5px; padding: 0; }
 .skill-chip { color: var(--text-0); background: var(--accent-weak); border-color: var(--accent-line) !important; }
 /* per-response action (3-dot) menu */
-.msg-actions { position: relative; margin-top: 6px; opacity: 0; transition: opacity .12s; }
+.msg-actions { position: relative; margin-top: 6px; opacity: .5; transition: opacity .12s; }
 .msg:hover .msg-actions, .msg-actions:focus-within { opacity: 1; }
 .msg-act { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: transparent; border: 1px solid transparent; color: var(--text-2); cursor: pointer; transition: background .12s, color .12s, border-color .12s; }
 .msg-act:hover, .msg-act.open { background: var(--bg-2); border-color: var(--line); color: var(--text-0); }
@@ -1242,7 +1242,7 @@ input, textarea, select { font-family: inherit; }
 .conn-customrow:hover { color: var(--text-0); border-color: var(--accent-line); }
 
 /* message hover actions (Save / Copy) */
-.msg-actions { display: flex; gap: 6px; margin-top: 6px; opacity: 0; transition: opacity .12s; }
+.msg-actions { display: flex; gap: 6px; margin-top: 6px; opacity: .5; transition: opacity .12s; }
 .msg:hover .msg-actions { opacity: 1; }
 .msg-act { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-2); background: transparent; border: 1px solid var(--line); border-radius: 7px; padding: 3px 9px; cursor: pointer; }
 .msg-act:hover { color: var(--text-0); border-color: var(--line-2); background: var(--bg-2); }
@@ -2254,6 +2254,9 @@ svg.lucide { color: var(--accent); }
 .md-office-open:hover { background: var(--accent-weak, rgba(127,127,127,0.12)); }
 .md-office-btn:disabled { opacity: 0.6; cursor: default; }
 .md-office-err { font-size: 11px; color: var(--danger, #e5736f); }
+.md-office-pending { opacity: 0.72; }
+.md-office-pending .md-office-meta b { animation: madavOfficePulse 1.4s ease-in-out infinite; }
+@keyframes madavOfficePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* Layout guard: a single unbroken string (binary dump, base64, giant URL) must
    never stretch a chat bubble past its container — wrap anywhere instead. */

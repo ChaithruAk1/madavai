@@ -9,7 +9,7 @@ export function extractArtifacts(text) {
   let m;
   while ((m = re.exec(text))) {
     const lang = (m[1] || "").toLowerCase();
-    if (lang === "officedoc") continue; // already shown as a downloadable file card — never a raw "snippet" pill
+    if (lang === "officedoc") continue; if (lang === "deckjs") continue; // already shown as a downloadable file card — never a raw "snippet" pill
     const code = m[2].replace(/\s+$/, "");
     const looksSvg = /^\s*<svg/i.test(code);
     const looksHtml = /^\s*<(!doctype|html|body|div|section|main|head)/i.test(code);

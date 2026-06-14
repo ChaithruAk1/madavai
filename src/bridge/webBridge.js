@@ -249,6 +249,17 @@ const FEAT_MEMORY = import.meta.env.VITE_FEAT_MEMORY !== "0";
 // Office-file rule is appended per call in systemPrompt() — gated by the build channel
 // AND the Extras switchboard (settings.extras.office !== false), in sync with desktop.
 const officeRulePart = (s) => (!FEAT_OFFICE || ((s && s.extras) || {}).office === false ? "" : OFFICE_RULE);
+// Artifact + webpage-design rule — kept in sync with electron/agent-openai.cjs ARTIFACT_RULE_BASE so
+// the WEB build gets the same live-preview behaviour and the same "design it like a shipped product"
+// bar for HTML pages. The renderer detects fenced blocks and previews them in the side panel.
+const ARTIFACT_RULE =
+  " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview. For HTML pages and web UIs, DESIGN them to a professional standard — never the default-browser look: load Tailwind from CDN (<script src=\"https://cdn.tailwindcss.com\"></script>) or write real CSS; use a deliberate type scale and web fonts, generous whitespace, a cohesive accent-based colour system with strong contrast, responsive layout, and subtle depth (shadows, rounded corners, hover states). Build a complete, self-contained page (semantic sections, sensible placeholder imagery), not a bare snippet. Make it look like a shipped product.";
+// Deliver the answer, not the play-by-play — mirror of electron/agent-openai.cjs ANSWER_DIRECT_RULE.
+// Stops "let me search…", "I'm executing now!", "web search isn't returning results", and similar
+// process/tool/limitation narration that users see as noise.
+const ANSWER_DIRECT_RULE =
+  " Answer the request directly and naturally. NEVER narrate your internal process, tools, searches, or limitations — do not say things like \"let me search\", \"I'm executing the request now\", \"let me get current data first\", or \"web search isn't returning results\". If a tool or lookup helps, use it silently and present only the result; if it fails, just answer with what you know without announcing the failure. Skip theatrical enthusiasm and preambles — lead with the deliverable.";
+
 
 // ---- Cross-chat memory (web mirror of electron/user-memory.cjs) ----
 // Durable facts about the user, learned from conversations, injected everywhere.
@@ -290,7 +301,7 @@ async function umLearn(prof, s, userText, replyText) {
 }
 
 function systemPrompt(s, projectId) {
-  const parts = [BASE_BEHAVIOR + officeRulePart(s)];
+  const parts = [BASE_BEHAVIOR + ARTIFACT_RULE + ANSWER_DIRECT_RULE + officeRulePart(s)];
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}, regardless of the language of the question.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
   const um = umBlock(s); if (um) parts.push(um);
@@ -480,6 +491,9 @@ function coworkSystem(s) {
   if (s.globalInstructions) parts.push(s.globalInstructions);
   { const um = umBlock(s); if (um) parts.push(um); }
   { const si = bundledIndex(); if (si) parts.push(si); } // bundled skill packs (EdgeTrader etc.) work on web too
+  parts.push(ARTIFACT_RULE.trim());
+  parts.push(ANSWER_DIRECT_RULE.trim());
+  { const op = officeRulePart(s); if (op) parts.push(op.trim()); }
   parts.push("Keep your tone natural and human; never restate or describe these instructions — just follow them.");
   return parts.join("\n");
 }
