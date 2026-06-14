@@ -1,23 +1,52 @@
 // © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
-// Front-end wrapper around the sandboxed deck worker. Runs the model's pptxgenjs build script
-// and resolves to a real .pptx Blob. A timeout + termination guards against a runaway script.
+// Front-end wrapper around the deck engine. Preferred path: a sandboxed Web Worker (no DOM, no
+// network). If a Worker can't be constructed or errors at the INFRASTRUCTURE level (some Electron /
+// renderer setups don't allow module workers), we fall back to running the script on the main
+// thread — the deck still builds. A genuine bug in the model's script is surfaced, not retried.
 const PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
-export function runDeckCode(code, { timeoutMs = 20000 } = {}) {
+function runInWorker(code, timeoutMs) {
   return new Promise((resolve, reject) => {
     let worker;
     try { worker = new Worker(new URL("./deckWorker.js", import.meta.url), { type: "module" }); }
-    catch (e) { return reject(new Error("deck sandbox unavailable: " + ((e && e.message) || e))); }
-    const t = setTimeout(() => { try { worker.terminate(); } catch {} reject(new Error("deck build timed out")); }, timeoutMs);
+    catch (e) { return reject(new Error("WORKER_INFRA: " + ((e && e.message) || e))); }
+    let settled = false;
+    const finish = (fn, arg) => { if (settled) return; settled = true; clearTimeout(t); try { worker.terminate(); } catch {} fn(arg); };
+    const t = setTimeout(() => finish(reject, new Error("deck build timed out")), timeoutMs);
     worker.onmessage = (e) => {
-      clearTimeout(t); try { worker.terminate(); } catch {}
       const d = e.data || {};
-      if (d.ok && d.buf) resolve(new Blob([d.buf], { type: PPTX_MIME }));
-      else reject(new Error(d.error || "deck build failed"));
+      if (d.ok && d.buf) finish(resolve, new Blob([d.buf], { type: PPTX_MIME }));
+      else finish(reject, new Error(d.error || "deck build failed")); // code-level error from the script
     };
-    worker.onerror = (ev) => { clearTimeout(t); try { worker.terminate(); } catch {} reject(new Error((ev && ev.message) || "deck worker error")); };
+    worker.onerror = (ev) => finish(reject, new Error("WORKER_INFRA: " + ((ev && ev.message) || "worker error")));
     worker.postMessage({ code: String(code || "") });
   });
+}
+
+async function runOnMainThread(code) {
+  const mod = await import("pptxgenjs/dist/pptxgen.es.js");
+  const Pptx = mod.default || mod;
+  const pptx = new Pptx();
+  pptx.layout = "LAYOUT_WIDE";
+  try { pptx.author = "Madav"; pptx.company = "Madav"; } catch {}
+  const helpers = { hex: (c) => String(c == null ? "" : c).replace(/^#/, "") };
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const fn = new AsyncFunction("pptx", "helpers", "ShapeType", "ChartType", String(code || ""));
+  await fn(pptx, helpers, pptx.ShapeType, pptx.ChartType);
+  return await pptx.write({ outputType: "blob" });
+}
+
+export async function runDeckCode(code, { timeoutMs = 20000 } = {}) {
+  try {
+    return await runInWorker(code, timeoutMs);
+  } catch (e) {
+    const msg = String((e && e.message) || e);
+    if (msg.startsWith("WORKER_INFRA")) {
+      // Sandbox unavailable in this runtime — build on the main thread instead.
+      return await runOnMainThread(code);
+    }
+    throw e; // genuine script error or timeout — let the card show it
+  }
 }
 
 // Optional "// name: My Deck.pptx" hint in the script; otherwise a sensible default.
