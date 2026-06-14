@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { ChevronDown, Check, Search, RefreshCw } from "lucide-react";
 import { MODELS } from "../bridge/contract.js";
 import { bridge } from "../bridge/index.js";
@@ -49,10 +49,12 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false); // bottom half of the screen → the menu opens upward
-  const toggleOpen = () => {
+  const [maxH, setMaxH] = useState(520); // measured height cap so the menu never overruns the window (set after render)
+  const menuRef = useRef(null);
+  const measure = () => { // choose the open direction from the trigger's position in the window
     try { const r = ref.current && ref.current.getBoundingClientRect(); setOpenUp(!!r && r.top > window.innerHeight * 0.55); } catch {}
-    setOpen((o) => !o);
   };
+  const toggleOpen = () => { if (!open) measure(); setOpen((o) => !o); };
   const [q, setQ] = useState("");
   const [cost, setCost] = useState("all");       // all | free | paid
   const [host, setHost] = useState("all");       // all | cloud | local (where the model runs)
@@ -61,6 +63,18 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const [orCat, setOrCat] = useState(null);
   const [maker, setMaker] = useState("all"); // filter by model maker (nvidia, meta, qwen…) within a router
   const ref = useRef(null);
+  // After the menu renders, measure where it ACTUALLY sits and clamp its height so the search
+  // header stays on-screen below the top tabs — regardless of window size or which ancestor the
+  // menu anchors to. Placed after the filter state it reads (deps run during render → no TDZ).
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = menuRef.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    const topSafe = 92, botSafe = 10; // clear the mode tabs (top) / window edge (bottom)
+    const avail = openUp ? (r.bottom - topSafe) : (window.innerHeight - r.top - botSafe);
+    const v = Math.max(220, Math.min(560, Math.floor(avail)));
+    if (Math.abs(v - r.height) > 2) setMaxH(v);
+  }, [open, openUp, q, maker, cost, host, caps]);
   const isFree = (it, groupName) => /local/i.test(it.prov || groupName || "") || /:free\b/.test((it.name || "").toLowerCase());
   const makerOf = (it, group) => ((it.name || "").includes("/") ? it.name.split("/")[0] : (it.prov || group || "")).toLowerCase().trim();
   const ormOf = (it) => { if (!orCat) return null; const id = it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name; return orCat[id] || null; };
@@ -144,7 +158,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
         </button>
       )}
       {open && (
-        <div className="model-menu mp-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: 560, ...(openUp ? { top: "auto", bottom: 46 } : {}) }}>
+        <div ref={menuRef} className="model-menu mp-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: maxH, ...(openUp ? { top: "auto", bottom: 46 } : {}) }}>
           {/* Sticky header — search + maker + filter chips stay put; only the model list scrolls. */}
           <div className="mp-head" style={{ position: "sticky", top: 0, zIndex: 3, background: "var(--bg-1)", borderBottom: "1px solid var(--line)", paddingBottom: 8, marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>

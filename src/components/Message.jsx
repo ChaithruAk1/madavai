@@ -11,6 +11,35 @@ function cleanAssistant(t) {
   return t.replace(/^\s*\{[^{}]*\}\s*(?=[A-Za-z("'])/, "");
 }
 
+// A user message can carry attached files inline (Composer wraps them in
+// "--- Attached file: NAME ---\n…content…\n--- end of file: NAME ---"). The model
+// reads the full content, but here we collapse each block to a compact 📎 chip so
+// the file body never floods the chat. Returns { body, chips }.
+function splitAttachments(text) {
+  const chips = [];
+  const body = String(text || "").replace(
+    /\n*--- Attached file: (.+?) ---\n([\s\S]*?)\n--- end of file: .*? ---\n*/g,
+    (_, name, content) => { chips.push({ name, chars: (content || "").length }); return "\n"; }
+  ).trim();
+  return { body, chips };
+}
+const ATT_CHIP = { display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", margin: "6px 6px 0 0", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg-2)", fontSize: 12, opacity: 0.92 };
+// User bubble body: the typed text, then a compact 📎 chip per attached file (the file's
+// content stays in the message for the model but is hidden from the chat view).
+function UserBody({ text }) {
+  const { body, chips } = splitAttachments(text);
+  return (
+    <>
+      {body}
+      {chips.length > 0 && (
+        <div style={{ marginTop: body ? 8 : 0 }}>
+          {chips.map((c, i) => <span key={i} style={ATT_CHIP} title={`${c.chars.toLocaleString()} characters included for the model`}>📎 {c.name}</span>)}
+        </div>
+      )}
+    </>
+  );
+}
+
 function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit }) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -47,7 +76,7 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
           </div>
         ) : (
           <div className="content">
-            {isUser ? text : <Markdown text={text} />}
+            {isUser ? <UserBody text={text} /> : <Markdown text={text} />}
             {streaming && <span className="cursor" />}
           </div>
         )}

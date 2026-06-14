@@ -15,6 +15,7 @@ import { bridge } from "../bridge/index.js";
 import { madavAlert, madavConfirm } from "../dialogs.jsx";
 import Composer from "./Composer.jsx";
 import Portrait from "./Portrait.jsx";
+import ModelPicker from "./ModelPicker.jsx";
 
 const DAY = 86400000;
 function rel(ts) {
@@ -203,7 +204,7 @@ function moodFor(agentId, roomHist) {
   return "idle";
 }
 
-export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTask, onPutToWork, onPutTeamToWork, openId }) {
+export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTask, onPutToWork, onPutTeamToWork, openId, groups, activeValue, onSelectModel, onRefresh }) {
   const [rooms, setRooms] = useState([]);
   const [agents, setAgents] = useState([]);      // full roster from settings
   const [teams, setTeams] = useState([]);        // saved teams from settings
@@ -846,6 +847,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
           {/* CENTER — the work feed */}
           <main className="wr-feed">
             <Composer mode="project" busy={false} onSend={(text) => onStartChat && onStartChat(room, text)} onStop={() => {}} />
+            {onSelectModel && <div className="model-dock"><ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} /></div>}
             <button className="pjd-cowork" onClick={() => onStartCowork && onStartCowork(room)}>
               <Users size={15} /> Work in the room's folder (Let's Collaborate)
             </button>

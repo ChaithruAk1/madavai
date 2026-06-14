@@ -165,13 +165,23 @@ async function streamChatTools(profile, messages, tools, { onDelta, signal }) {
   await ensureOk(res, "OpenAI-compatible");
 
   let content = "";
+  let emittedClean = ""; // stream only reasoning-stripped text to the UI (never leak <think> mid-stream)
   const calls = {}; // index -> { id, name, arguments }
   for await (const data of sseLines(res)) {
     if (data === "[DONE]") break;
     let json; try { json = JSON.parse(data); } catch { continue; }
     const delta = json.choices && json.choices[0] && json.choices[0].delta;
     if (!delta) continue;
-    if (delta.content) { content += delta.content; onDelta(delta.content); }
+    if (delta.content) {
+      content += delta.content;
+      // Emit only the clean (reasoning-stripped) text gained since the last delta. While inside a
+      // <think> block stripReasoning() yields "" so nothing leaks; once it closes, the answer flows.
+      const clean = stripReasoning(content);
+      if (clean.length > emittedClean.length && clean.startsWith(emittedClean)) {
+        onDelta(clean.slice(emittedClean.length));
+        emittedClean = clean;
+      }
+    }
     if (delta.tool_calls) {
       for (const tc of delta.tool_calls) {
         const i = tc.index != null ? tc.index : 0;

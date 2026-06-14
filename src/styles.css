@@ -783,7 +783,7 @@ input, textarea, select { font-family: inherit; }
 .plus-subempty { color: var(--text-3); font-size: 12px; padding: 6px 9px; }
 /* Connectors side-flyout (Claude-style) — appears beside the menu item, with toggles */
 .plus-flywrap { position: relative; }
-.plus-fly { position: absolute; left: calc(100% + 8px); top: -6px; width: 252px; background: rgba(13,15,20,0.98); backdrop-filter: blur(16px); border: 1px solid var(--line-2); border-radius: 12px; padding: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); z-index: 60; max-height: min(58vh, calc(100vh - 160px)); overflow-y: auto; overscroll-behavior: contain; animation: pop-in var(--dur-2) var(--ease) both; transform-origin: top left; }
+.plus-fly { position: absolute; left: 100%; top: -6px; width: 252px; background: rgba(13,15,20,0.98); backdrop-filter: blur(16px); border: 1px solid var(--line-2); border-radius: 12px; padding: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); z-index: 60; max-height: min(58vh, calc(100vh - 160px)); overflow-y: auto; overscroll-behavior: contain; animation: pop-in var(--dur-2) var(--ease) both; transform-origin: top left; }
 .plus-flyrow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; border: none; background: transparent; color: var(--text-0); font-size: 13.5px; border-radius: 8px; cursor: pointer; }
 .plus-flyrow:hover { background: var(--bg-2); }
 .plus-flyico { width: 22px; height: 22px; border-radius: 6px; background: #fff; display: grid; place-items: center; flex: none; }

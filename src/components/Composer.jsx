@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { ArrowUp, Square, Paperclip, X, FileText, Plus, Mic, Github, Puzzle, Plug, Palette, FolderKanban, ChevronRight, Zap, Terminal, AtSign, Folder, Volume2, VolumeX } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { madavAlert } from "../dialogs.jsx";
@@ -6,6 +6,22 @@ import { madavAlert } from "../dialogs.jsx";
 const FEAT_VOICE = import.meta.env.VITE_FEAT_VOICE !== "0";
 import GithubContent from "./GithubContent.jsx";
 import { iconUrlFor } from "../connectorIcons.js";
+
+// Side-flyout placement (Claude-style): open the panel downward from the item, or FLIP it upward
+// when there isn't enough room below — and cap its height to the chosen side so it ALWAYS shows in
+// full (scrolls only if the content is taller than the whole side, which is rare).
+function placeFlyout(fly, wrap) {
+  if (!fly || !wrap) return;
+  fly.style.maxHeight = "none"; // measure full content first
+  const m = 12;
+  const w = wrap.getBoundingClientRect();
+  const need = fly.scrollHeight;
+  const below = window.innerHeight - w.top - m;   // room growing down from the item's top
+  const above = w.bottom - m;                     // room growing up from the item's bottom
+  const up = need > below && above > below;        // flip up only when it actually helps
+  if (up) { fly.style.top = "auto"; fly.style.bottom = "-6px"; fly.style.maxHeight = Math.max(160, above) + "px"; }
+  else { fly.style.bottom = "auto"; fly.style.top = "-6px"; fly.style.maxHeight = Math.max(160, below) + "px"; }
+}
 
 export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNewChat, onPickFolder, onAddRepo, cwd, controls }) {
   const [text, setText] = useState("");
@@ -61,6 +77,15 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
     return () => window.removeEventListener("madav:voicespeak", sync);
   }, []);
   useEffect(() => { loadSkills(); loadConnectors(); }, []);
+  // "+" menu side-flyouts (Skills / Connectors): hover with a close-delay so crossing into the
+  // panel never dismisses it, and flip up/down based on available room so it always shows full.
+  const skillWrapRef = useRef(null), skillFlyRef = useRef(null);
+  const connWrapRef = useRef(null), connFlyRef = useRef(null);
+  const flyTimer = useRef(null);
+  const openFly = (kind) => { clearTimeout(flyTimer.current); if (kind === "conn") { setConnectorsSub(true); loadConnectors(); } else { setSkillsSub(true); loadSkills(); } };
+  const closeFlySoon = (kind) => { clearTimeout(flyTimer.current); flyTimer.current = setTimeout(() => { if (kind === "conn") setConnectorsSub(false); else setSkillsSub(false); }, 180); };
+  useLayoutEffect(() => { if (connectorsSub) placeFlyout(connFlyRef.current, connWrapRef.current); }, [connectorsSub, connectors.length]);
+  useLayoutEffect(() => { if (skillsSub) placeFlyout(skillFlyRef.current, skillWrapRef.current); }, [skillsSub, skills.length]);
   useEffect(() => { if (cwd && bridge.listDir) bridge.listDir(cwd).then((l) => setDirFiles(l || [])).catch(() => setDirFiles([])); else setDirFiles([]); }, [cwd]);
 
   // Built-in slash commands — inline ACTIONS you use in place, not navigation away.
@@ -178,9 +203,12 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
     if ((!t && files.length === 0 && !skill) || busy) return;
     const textFiles = files.filter((f) => !f.image);
     const images = files.filter((f) => f.image).map((f) => ({ name: f.name, dataUrl: f.dataUrl }));
-    const attached = textFiles.map((f) => `--- Attached file: ${f.name} ---\n${f.content}`).join("\n\n");
+    // Wrap each attached file in begin/end markers and place them AFTER the user's text.
+    // The model still receives the full content; the chat bubble (Message.jsx) collapses
+    // each marked block into a compact 📎 chip so the file body never floods the view.
+    const attached = textFiles.map((f) => `--- Attached file: ${f.name} ---\n${f.content}\n--- end of file: ${f.name} ---`).join("\n\n");
     const skillLine = skill ? `Use the "${skill.name}" skill to handle this request. Load it first, then follow its instructions.\n\n` : "";
-    const body = attached ? `${attached}\n\n${t}` : t;
+    const body = attached ? `${t}\n\n${attached}` : t;
     const full = `${skillLine}${body}`.trim();
     onSend(full, images);
     setText(""); setFiles([]); setSkill(null); closeSlash(); closeAt();
@@ -384,10 +412,10 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                 <button className="plus-item" onClick={() => { setMenuOpen(false); setText((v) => (v ? v + " @" : "@")); setAtOpen(true); setAtQuery(""); setAtIdx(0); loadConnectors(); ref.current && ref.current.focus(); }}><AtSign size={15} /> Mention file / connector <span className="kbd">@</span></button>
                 <button className="plus-item" onClick={() => { setMenuOpen(false); setGhOpen(true); }}><Github size={15} /> Add from GitHub</button>
                 <div className="plus-sep" />
-                <div className="plus-flywrap" onMouseEnter={() => { setSkillsSub(true); loadSkills(); }} onMouseLeave={() => setSkillsSub(false)}>
+                <div className="plus-flywrap" ref={skillWrapRef} onMouseEnter={() => openFly("skill")} onMouseLeave={() => closeFlySoon("skill")}>
                   <button className="plus-item" onClick={() => { setSkillsSub((v) => !v); loadSkills(); }}><Puzzle size={15} /> Skills <ChevronRight size={14} className="pm-chev" /></button>
                   {skillsSub && (
-                    <div className="plus-fly">
+                    <div className="plus-fly" ref={skillFlyRef} onMouseEnter={() => clearTimeout(flyTimer.current)}>
                       {skills.length === 0 && <div className="plus-subempty">No skills installed yet</div>}
                       {skills.map((s) => (
                         <button key={s.name || s.dir} className="plus-flyrow" title={s.description || ""} onClick={() => { setSkill({ name: s.name, description: s.description }); setSkillsSub(false); setMenuOpen(false); }}>
@@ -401,10 +429,10 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                 </div>
                 <button className="plus-item" onClick={() => nav("project")}><FolderKanban size={15} /> Add to project <ChevronRight size={14} className="pm-chev" /></button>
                 <div className="plus-sep" />
-                <div className="plus-flywrap" onMouseEnter={() => { setConnectorsSub(true); loadConnectors(); }} onMouseLeave={() => setConnectorsSub(false)}>
+                <div className="plus-flywrap" ref={connWrapRef} onMouseEnter={() => openFly("conn")} onMouseLeave={() => closeFlySoon("conn")}>
                   <button className="plus-item" onClick={() => { setConnectorsSub((v) => !v); loadConnectors(); }}><Plug size={15} /> Connectors <ChevronRight size={14} className="pm-chev" /></button>
                   {connectorsSub && (
-                    <div className="plus-fly">
+                    <div className="plus-fly" ref={connFlyRef} onMouseEnter={() => clearTimeout(flyTimer.current)}>
                       {connectors.length === 0 && <div className="plus-subempty">No connectors yet</div>}
                       {connectors.map((c) => {
                         const on = c.enabled !== false; const ic = iconUrlFor(c.name || "");

@@ -64,14 +64,27 @@ async function connect(server) {
   return entry;
 }
 
+// A connector that just failed or timed out is skipped for a cooldown, so one cold/broken
+// server (e.g. a sleeping Render free-tier MCP that cold-starts in ~30-60s) can't stall EVERY
+// chat turn — that was adding up to a minute of latency before the model was even called.
+const failedUntil = new Map(); // serverId -> timestamp to skip until
+
 // Return all enabled connectors' tools as OpenAI function schemas (+ populate the route map).
 async function openAiTools(connectors) {
   const out = [];
   route.clear();
+  const now = Date.now();
   for (const s of connectors || []) {
     if (!s.enabled) continue;
+    if (!clients.has(s.id) && (failedUntil.get(s.id) || 0) > now) continue; // recently failed → don't re-hang the turn
     let entry;
-    try { entry = await connect(s); } catch { continue; }
+    try {
+      // Time-box the connect — a slow/cold MCP server must never block the chat turn.
+      entry = await Promise.race([
+        connect(s),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("mcp connect timeout")), 6000)),
+      ]);
+    } catch { failedUntil.set(s.id, now + 60000); continue; } // cool down 60s before retrying this server
     for (const t of entry.tools) {
       const name = fnName(s.id, t.name);
       route.set(name, { serverId: s.id, toolName: t.name });

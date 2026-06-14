@@ -37,7 +37,7 @@ const CREATE_IMAGE_TOOL = {
   type: "function",
   function: {
     name: "create_image",
-    description: "Generate an image from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user and saved automatically. Call this whenever the user asks for a picture, illustration, logo, diagram-as-image, or photo-style image.",
+    description: "Generate an IMAGE (raster picture) from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user and saved automatically. Use ONLY for actual pictures: photos, illustrations, logos, artwork, or a diagram rendered as a picture. NEVER call this for a document, spreadsheet, slide deck, presentation, or PDF — those are produced with a fenced ```officedoc block, not with create_image. If unsure, do not call it.",
     parameters: { type: "object", properties: { prompt: { type: "string", description: "a vivid, complete description of the image" } }, required: ["prompt"] },
   },
 };
@@ -394,7 +394,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // running it always asks the user first (it spends model calls + fetches the web).
   let research = null;
   try {
-    if (require("./features.cjs").builtIn("research") && (require("./settings.cjs").load().extras || {}).research !== false) {
+    // Deep Research is a heavyweight, multi-step web-research agent that always prompts for
+    // approval — it should NOT be offered in plain "Let's Chat" (it was firing permission
+    // popups on simple chat messages). Keep it for Collaborate / Build / Agents work only.
+    if (mode !== "chat" && require("./features.cjs").builtIn("research") && (require("./settings.cjs").load().extras || {}).research !== false) {
       research = require("./research.cjs");
       tools.push(research.RESEARCH_TOOL);
     }
@@ -407,14 +410,21 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   let imagegenOn = true;
   try { imagegenOn = require("./features.cjs").builtIn("imagegen") && (require("./settings.cjs").load().extras || {}).imagegen !== false; } catch {}
   if (imagegenOn) tools.push(CREATE_IMAGE_TOOL);
-  try {
-    const mcpTools = await mcp.openAiTools(connectors);
-    if (mcpTools.length) tools = [...tools, ...mcpTools];
-  } catch {}
+  // Plain "Let's Chat" is conversation-only — external connector (MCP) tools are NOT offered here.
+  // They require per-tool approval, weak models misfire them, and loading them adds per-turn latency
+  // when a connector is cold. Use connectors in Let's Collaborate or Agents instead.
+  if (mode !== "chat") {
+    try {
+      const mcpTools = await mcp.openAiTools(connectors);
+      if (mcpTools.length) tools = [...tools, ...mcpTools];
+    } catch {}
+  }
 
-  // Always buffer: reasoning models emit chain-of-thought (often a bare </think>
-  // with no opener) into content, which must be stripped before it reaches the UI.
-  const streamLive = false;
+  // Live token streaming for CHAT: streamChatTools strips reasoning on the fly, so <think>
+  // never reaches the UI, and the user sees tokens as they arrive instead of waiting for the
+  // whole reply. Agent/cowork/code stay buffered — their pre-tool narration is deliberately
+  // hidden behind tool cards (streaming it would let a model "narrate success" before approval).
+  const streamLive = mode === "chat";
 
   const started = Date.now();
   const MAX_STEPS = agentOpts.thorough ? 14 : 12;
@@ -512,9 +522,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         history.push({ role: "user", content: "[final self-review — not the user] Re-read the ORIGINAL request and your answer above. If anything is missing, wrong, or incomplete, produce the corrected COMPLETE answer now. If it is already complete, repeat it verbatim." });
         continue;
       }
-      // Final answer — strip any chain-of-thought, then reveal the clean text.
+      // Final answer — strip any chain-of-thought, then reveal the clean text. When we already
+      // streamed it live (chat), it's on screen — re-emitting would duplicate it, so skip.
       const clean = stripReasoning(content);
-      if (clean) emit({ kind: "assistant_delta", data: { text: clean } });
+      if (clean && !(streamLive && !textMode)) emit({ kind: "assistant_delta", data: { text: clean } });
       emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
       emit({ kind: "result", data: { subtype: "success", num_turns: step + 1, duration_ms: Date.now() - started } });
       modelStats.bump(model, "success");

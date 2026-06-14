@@ -84,10 +84,13 @@ export default function Markdown({ text }) {
   while (i < lines.length) {
     const line = lines[i];
 
-    // fenced code block
-    const fence = /^```(\w*)\s*$/.exec(line);
+    // fenced code block — tolerate content glued to the opening fence line, e.g.
+    // weak models emit ```officedoc{...} with the JSON brace on the language tag line.
+    const fence = /^```([\w-]*)(.*)$/.exec(line);
     if (fence) {
-      const buf = []; i++;
+      const buf = []; const head = fence[2];
+      if (head && head.trim()) buf.push(head); // first content line was glued to the fence
+      i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
       if (fence[1] === "officedoc" && FEAT_OFFICE) blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
