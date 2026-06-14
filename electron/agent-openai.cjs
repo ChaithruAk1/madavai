@@ -397,7 +397,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     // Deep Research is a heavyweight, multi-step web-research agent that always prompts for
     // approval — it should NOT be offered in plain "Let's Chat" (it was firing permission
     // popups on simple chat messages). Keep it for Collaborate / Build / Agents work only.
-    if (mode !== "chat" && require("./features.cjs").builtIn("research") && (require("./settings.cjs").load().extras || {}).research !== false) {
+    if ((mode !== "chat" || agentName) && require("./features.cjs").builtIn("research") && (require("./settings.cjs").load().extras || {}).research !== false) {
       research = require("./research.cjs");
       tools.push(research.RESEARCH_TOOL);
     }
@@ -413,7 +413,9 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // Plain "Let's Chat" is conversation-only — external connector (MCP) tools are NOT offered here.
   // They require per-tool approval, weak models misfire them, and loading them adds per-turn latency
   // when a connector is cold. Use connectors in Let's Collaborate or Agents instead.
-  if (mode !== "chat") {
+  // NOTE: agents that have no file/shell tools run in "chat" mode internally — they still need
+  // their connectors, so the gate is "plain user chat only" (mode === "chat" AND no agentName).
+  if (mode !== "chat" || agentName) {
     try {
       const mcpTools = await mcp.openAiTools(connectors);
       if (mcpTools.length) tools = [...tools, ...mcpTools];
