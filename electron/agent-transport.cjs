@@ -31,10 +31,14 @@ function buildOptions(mode, cwd, profile, canUseTool, permMode) {
 // Export the active profile to the env the bundled Agent SDK binary reads.
 function applyEnv(profile) {
   if (profile.kind !== "anthropic") return false;
-  // API-key access only — the subscription/`claude login` path was removed pre-launch
-  // (billing a Claude consumer plan from third-party software breaches Anthropic's ToS).
+  // Anthropic auth: an API key, OR (admin/creator) the user's Claude subscription via the
+  // SDK's logged-in `claude login` session. Using a consumer Claude plan from third-party
+  // software may breach Anthropic's ToS — gated to admin/creator for the operator's own use.
   if (profile.baseUrl) process.env.ANTHROPIC_BASE_URL = profile.baseUrl.replace(/\/$/, "");
-  if (profile.apiKey) {
+  if (profile.useSubscription) {
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_AUTH_TOKEN;
+  } else if (profile.apiKey) {
     process.env.ANTHROPIC_AUTH_TOKEN = profile.apiKey;
     process.env.ANTHROPIC_API_KEY = profile.apiKey;
   }

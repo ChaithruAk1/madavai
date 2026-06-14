@@ -7,7 +7,7 @@
 //   <HelpDot mode="project" section="goals" />
 //
 // If `section` is omitted, the dot explains the whole screen (title + blurb).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { HelpCircle, X } from "lucide-react";
 import { SCREEN_HELP } from "../help/screens.js";
 import "../helpdot.css";
@@ -15,6 +15,7 @@ import "../helpdot.css";
 export default function HelpDot({ mode, section, label }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
+  const popRef = useRef(null);
 
   // Resolve the content once per render — cheap object lookup.
   const screen = SCREEN_HELP[mode] || null;
@@ -34,6 +35,30 @@ export default function HelpDot({ mode, section, label }) {
     return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
   }, [open]);
 
+  // Dynamic placement — the popover is viewport-fixed; size comes from CSS (wide on big windows,
+  // shrinks on small). Here we just clamp it inside the viewport and flip above the dot if there's
+  // no room below, so it never runs off-screen regardless of where the "?" sits or the window size.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const btn = wrapRef.current && wrapRef.current.querySelector(".hd-btn");
+      const pop = popRef.current;
+      if (!btn || !pop) return;
+      const d = btn.getBoundingClientRect();
+      const pw = pop.offsetWidth, ph = pop.offsetHeight, M = 8;
+      let left = d.left + d.width / 2 - pw / 2;
+      left = Math.max(M, Math.min(left, window.innerWidth - pw - M));
+      let top = d.bottom + 6;
+      if (top + ph > window.innerHeight - M) top = Math.max(M, d.top - ph - 6); // flip above
+      pop.style.left = left + "px";
+      pop.style.top = top + "px";
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => { window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
+  }, [open]);
+
   if (!screen && !label) return null; // nothing to explain — render nothing
 
   return (
@@ -48,7 +73,7 @@ export default function HelpDot({ mode, section, label }) {
         <HelpCircle size={13} />
       </button>
       {open && (
-        <div className="hd-pop" role="dialog">
+        <div className="hd-pop" role="dialog" ref={popRef}>
           <div className="hd-pop-head">
             <span className="hd-pop-title">{title}</span>
             <button className="hd-pop-x" onClick={() => setOpen(false)} aria-label="Close"><X size={12} /></button>

@@ -12,6 +12,9 @@ const file = () => path.join(app.getPath("userData"), "traces.jsonl");
 const MAX_BYTES = 8 * 1024 * 1024, KEEP_LINES = 5000;
 
 const open = new Map(); // sessionId -> live run being assembled (in-memory only until finalized)
+// Friendly source category, derived from the run mode (used by the Activity filter chips).
+const CATEGORY = { chat: "Let's Chat", cowork: "Let's Collaborate", code: "Let's Build", project: "Projects", team: "Agents" };
+const categoryFor = (mode) => CATEGORY[mode] || (mode ? mode[0].toUpperCase() + mode.slice(1) : "Other");
 
 function appendLine(obj) {
   try {
@@ -113,6 +116,7 @@ function finalize(sessionId, status, turn, data) {
   run.tokensIn = inTok; run.tokensOut = outTok; run.tokens = inTok + outTok;
   const isLocal = /localhost|127\.0\.0\.1/i.test(run.provider) || /(ollama|lm ?studio|local)/i.test(run.provider);
   run.local = isLocal;
+  run.category = categoryFor(run.mode);
   run.costUSD = costUSD(model, inTok, outTok, isLocal);
   run.error = status === "error" ? trunc(data && (data.message || data.code), 400) : null;
   for (const st of run.steps) if (!st.endedAt) { st.endedAt = run.endedAt; st.durationMs = st.endedAt - st.startedAt; }

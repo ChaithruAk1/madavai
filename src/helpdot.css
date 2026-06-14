@@ -10,17 +10,20 @@
 .hd-btn:hover, .hd-btn.on { opacity: .95; color: var(--accent); background: var(--bg-2); }
 
 .hd-pop {
-  position: absolute; top: 24px; left: 50%; transform: translateX(-50%);
-  z-index: 60; width: 320px; max-width: 82vw; max-height: 60vh; overflow-y: auto;
+  /* Viewport-fixed; HelpDot.jsx positions it right next to the "?" and clamps it on-screen
+     (flips above if needed). Responsive width: wide on big windows (fewer lines, less scroll),
+     shrinks on small ones. Applies app-wide since every "?" uses this one component. */
+  position: fixed; left: 0; top: 0;
+  z-index: 60; width: min(34rem, 92vw); max-height: min(74vh, 640px); overflow-y: auto;
   background: var(--bg-1); border: 1px solid var(--line);
-  border-radius: 12px; padding: 12px 14px; text-align: left;
-  box-shadow: 0 12px 38px rgba(0,0,0,.30);
+  border-radius: 12px; padding: 13px 16px; text-align: left;
+  box-shadow: 0 14px 44px rgba(0,0,0,.34);
   animation: hd-in .12s ease-out;
   /* section headers/labels use uppercase + letter-spacing — reset so the popover reads normally */
   text-transform: none; letter-spacing: normal; font-weight: 400;
 }
 .hd-pop, .hd-pop * { text-transform: none; letter-spacing: normal; }
-@keyframes hd-in { from { opacity: 0; transform: translateX(-50%) translateY(-3px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes hd-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
 .hd-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .hd-pop-title { font-weight: 700; font-size: 13px; color: var(--text-0, var(--text-1)); }
 .hd-pop-x { border: none; background: transparent; color: var(--text-3, var(--text-2)); cursor: pointer; padding: 2px; border-radius: 6px; display: inline-flex; }

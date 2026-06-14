@@ -8,6 +8,8 @@ import { costUSD } from "../shared/pricing.js";
 const KEY = "madav.traces";
 const CAP = 200;
 const open = new Map(); // sessionId -> live run
+const CATEGORY = { chat: "Let's Chat", cowork: "Let's Collaborate", code: "Let's Build", project: "Projects", team: "Agents" };
+const categoryFor = (mode) => CATEGORY[mode] || (mode ? mode[0].toUpperCase() + mode.slice(1) : "Other");
 
 function readAll() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; } }
 function writeAll(arr) { try { localStorage.setItem(KEY, JSON.stringify(arr.slice(-CAP))); } catch {} }
@@ -69,6 +71,7 @@ function finalize(sessionId, status, sess) {
   const baseUrl = (sess && sess.profile && sess.profile.baseUrl) || "";
   const isLocal = /localhost|127\.0\.0\.1/i.test(baseUrl) || /(ollama|lm ?studio|local)/i.test(run.provider);
   run.local = isLocal;
+  run.category = categoryFor(run.mode);
   run.costUSD = costUSD(run.model, inTok, outTok, isLocal, settings().pricing || {});
   run.error = status === "error" ? trunc(run._err || "error", 400) : null;
   for (const st of run.steps) if (!st.endedAt) { st.endedAt = run.endedAt; st.durationMs = st.endedAt - st.startedAt; }

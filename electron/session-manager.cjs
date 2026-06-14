@@ -308,7 +308,10 @@ class SessionManager {
 
     // Clear guard instead of a cryptic upstream 401.
     const isLocal = /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(profile.baseUrl || "");
-    if (!isLocal && keyLen === 0) {
+    // Anthropic "use my Claude subscription" (admin/creator) needs no key — the Agent SDK
+    // uses the logged-in `claude login` session instead.
+    const subAuth = profile.kind === "anthropic" && profile.useSubscription;
+    if (!isLocal && keyLen === 0 && !subAuth) {
       this._send(sessionId, "error", {
         code: "no_key",
         message: `No API key on the ACTIVE provider "${profile.name}". Open Settings, click "${profile.name}", paste its key, and make sure it's the one selected in the top-bar model picker.`,

@@ -226,8 +226,8 @@ input, textarea, select { font-family: inherit; }
 
 /* ---------- Model configuration (responsive, full-width) ---------- */
 .mc-wrap { max-width: 1080px; margin: 0 auto; }
-.mc-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; margin-bottom: 20px; }
-.mc-card { background: var(--bg-1); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.mc-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; margin-bottom: 16px; align-items: start; }
+.mc-card { background: var(--bg-1); border: 1px solid var(--line); border-radius: 14px; padding: 13px 16px; }
 .mc-providers { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: start; margin-top: 14px; }
 /* Provider gallery cards (Onyx-style: chip · name/sub · action). */
 .mc-pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; margin-top: 6px; }
@@ -1337,12 +1337,12 @@ input, textarea, select { font-family: inherit; }
 
 /* ---------- Permission modal ---------- */
 .scrim { position: fixed; inset: 0; background: rgba(3,4,7,0.66); backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 50; }
-.modal { width: 470px; background: rgba(13,15,20,0.98); border: 1px solid var(--line-2); border-radius: var(--radius); box-shadow: 0 30px 80px rgba(0,0,0,0.7); overflow: hidden; }
+.modal { width: 470px; background: var(--bg-1); border: 1px solid var(--line-2); border-radius: var(--radius); box-shadow: 0 30px 80px rgba(0,0,0,0.35); overflow: hidden; }
 .modal-head { padding: 18px 20px 6px; display: flex; align-items: center; gap: 11px; }
 .modal-head .ic { color: var(--warn); }
 .modal-head h3 { margin: 0; font-size: 15px; font-weight: 600; }
 .modal-body { padding: 6px 20px 15px; color: var(--text-1); font-size: 13px; }
-.modal-body .tcall { font-family: var(--mono); font-size: 12px; color: var(--text-0); background: #050608; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 11px 13px; margin-top: 11px; white-space: pre-wrap; }
+.modal-body .tcall { font-family: var(--mono); font-size: 12px; color: var(--text-0); background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 11px 13px; margin-top: 11px; white-space: pre-wrap; }
 .modal-actions { display: flex; gap: 8px; padding: 13px 20px 18px; border-top: 1px solid var(--line); }
 .modal-actions .spacer { flex: 1; }
 

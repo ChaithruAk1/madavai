@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, Activity, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen, Share2 } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen, Share2 } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 // Nav order (user-set 2026-06-12): Models · Agents · Projects · Studio · Scheduler ·
@@ -23,7 +23,6 @@ const MODELS = [
   { id: "models-speed", label: "Models speed check", icon: Gauge },
 ];
 const TAIL = [
-  { id: "activity", label: "Activity", icon: Activity },
   { id: "consumption", label: "Consumption", icon: BarChart3 },
 ];
 const TERMINAL_ITEM = { id: "terminal", label: "Terminal", icon: TerminalSquare };

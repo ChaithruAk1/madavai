@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { MessageSquare, Hash, Layers, CalendarDays, Flame, Clock, Cpu, Award, TrendingUp, DollarSign } from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
+import Activity from "./Activity.jsx";
 import { bridge } from "../bridge/index.js";
 
 const RANGES = [{ label: "7 days", days: 7 }, { label: "30 days", days: 30 }, { label: "All time", days: 0 }];
@@ -8,7 +9,7 @@ const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? (n / 1e3)
 const shortModel = (s) => { const x = String(s || ""); const i = x.lastIndexOf("/"); return i >= 0 ? x.slice(i + 1) : x; };
 const DONUT_COLORS = ["#13c2d6", "#6e7bff", "#22a06b", "#e8893a", "#d6597b", "#b88cff", "#2b8fd6", "#e0433f"];
 
-export default function Consumption() {
+export default function Consumption({ onOpenSession, onNavigate } = {}) {
   const [days, setDays] = useState(7);
   const [d, setD] = useState(null);
   const [prices, setPrices] = useState(null); // model id -> { prompt, completion } USD per token (OpenRouter catalog)
@@ -42,7 +43,6 @@ export default function Consumption() {
   const cards = [
     { k: "Messages", v: fmt(d.messages), icon: MessageSquare, accent: true },
     { k: "Tokens (est.)", v: fmt(d.tokens), icon: Hash },
-    ...(spend && spend.pct > 0 ? [{ k: `Est. spend (${spend.pct}% priced)`, v: "$" + (spend.usd < 0.01 && spend.usd > 0 ? spend.usd.toFixed(4) : spend.usd.toFixed(2)), icon: DollarSign }] : []),
     { k: "Sessions", v: fmt(d.sessions), icon: Layers },
     { k: "Active days", v: fmt(d.activeDays), icon: CalendarDays },
     { k: "Current streak", v: d.currentStreak + "d", icon: Flame, accent: true },
@@ -95,18 +95,17 @@ export default function Consumption() {
             <div className="cons-panel">
               <div className="cons-panel-h"><Award size={14} /> Highlights</div>
               <div className="cons-highlights">
-                <Highlight icon={Cpu} label="Top model" value={shortModel(d.favoriteModel)} />
                 <Highlight icon={Clock} label="Peak hour" value={d.peakHour} />
                 <Highlight icon={Flame} label="Longest streak" value={d.longestStreak + " days"} />
                 <Highlight icon={MessageSquare} label="Avg / session" value={d.sessions ? Math.round(d.messages / d.sessions) + " msg" : "—"} />
               </div>
-              <ModelBars models={d.models} />
             </div>
           </div>
 
           <p className="cons-foot">Tokens are estimated from text length (~4 chars/token); not every provider reports exact usage.</p>
         </>
       )}
+      <Activity embedded days={days} onOpenSession={onOpenSession} onNavigate={onNavigate} />
     </div>
   );
 }

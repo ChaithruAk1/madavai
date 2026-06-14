@@ -184,6 +184,14 @@ export default function ModelConfig({ onChanged }) {
     <div className="mo scroll">
       <div className="mc-wrap">
       {view === "grid" && <>
+      {/* Top toolbar — backup/restore as icon-only buttons (hover shows the description). */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginBottom: 10 }}>
+        <button className="btn ghost" style={{ padding: "6px 9px" }} aria-label="Download backup"
+          title="Download backup — saves your providers, agents, teams & preferences (including API keys) to one JSON file. Keep it private." onClick={backupAll}><Download size={16} /></button>
+        <button className="btn ghost" style={{ padding: "6px 9px" }} aria-label="Restore from backup"
+          title="Restore from backup — replaces your current providers, agents, teams & preferences from a backup JSON file." onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={16} /></button>
+        <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
+      </div>
       {/* top: default model + proxy as responsive side-by-side cards */}
       <div className="mc-top">
         <div className="mc-card">
@@ -246,18 +254,6 @@ export default function ModelConfig({ onChanged }) {
         </button>
       </div>
 
-      {/* Backup & restore — global, lives on the gallery view. */}
-      <div className="mc-card" style={{ marginTop: 18 }}>
-        <div className="nav-label" style={{ paddingLeft: 0 }}>Backup &amp; restore<HelpDot mode="models" section="backup" /></div>
-        <p style={{ color: "var(--text-2)", fontSize: 12, margin: "6px 0 10px" }}>
-          One file holds your providers, agents, teams and preferences. ⚠ The backup contains your API keys in readable form — store it somewhere private.
-        </p>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button className="btn" onClick={backupAll}><Download size={14} /> Download backup</button>
-          <button className="btn" onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={14} /> Restore from backup</button>
-          <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
-        </div>
-      </div>
       </>}
 
       {view === "edit" && (
@@ -281,7 +277,17 @@ export default function ModelConfig({ onChanged }) {
               </select>
             </Field>
             <Field label="Base URL" help={<HelpDot mode="models" section="baseurl" />}><input className="model-search" value={sel.baseUrl} onChange={(e) => patch("baseUrl", e.target.value)} placeholder="https://openrouter.ai/api" /></Field>
-            <Field label="API key" help={<HelpDot mode="models" section="key" />}><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder={sel.kind === "anthropic" ? "sk-ant-…" : "leave blank for local"} /></Field>
+            {sel.kind === "anthropic" && isPriv && (
+              <Field label="Authentication">
+                <select className="model-search" value={sel.useSubscription ? "subscription" : "key"} onChange={(e) => patch("useSubscription", e.target.value === "subscription")}>
+                  <option value="key">API key (sk-ant-…)</option>
+                  <option value="subscription">My Claude subscription (sign in with the Claude CLI)</option>
+                </select>
+              </Field>
+            )}
+            {!(sel.kind === "anthropic" && sel.useSubscription) && (
+              <Field label="API key" help={<HelpDot mode="models" section="key" />}><input className="model-search" type="password" value={sel.apiKey} onChange={(e) => patch("apiKey", e.target.value)} placeholder={sel.kind === "anthropic" ? "sk-ant-…" : "leave blank for local"} /></Field>
+            )}
           </div>
           {isWeb && (
             <p style={{ color: "var(--text-2)", fontSize: 12, margin: "8px 0 0" }}>
@@ -290,8 +296,12 @@ export default function ModelConfig({ onChanged }) {
             </p>
           )}
 
-          {/* Anthropic is API-key only — the subscription/OAuth path was removed pre-launch
-              (billing a Claude consumer plan from third-party software breaches Anthropic's ToS). */}
+          {sel.kind === "anthropic" && sel.useSubscription && (
+            <p style={{ color: "var(--text-2)", fontSize: 12, margin: "10px 0 0" }}>
+              Using your <b>Claude subscription</b> (admins &amp; creators only). Sign in once with the Claude CLI — run <code>claude login</code> in a terminal — and Madav uses that session; no API key needed.
+              Note: using a Claude consumer plan from third-party software may be against Anthropic's terms.
+            </p>
+          )}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
             <button className="btn primary" onClick={saveProvider}><Save size={14} /> Save &amp; load models</button><HelpDot mode="models" section="modellist" />

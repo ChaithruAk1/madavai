@@ -5,12 +5,13 @@ function summarize(toolName, input = {}) {
   const p = input.path || input.file_path || input.filePath || "";
   switch (toolName) {
     case "run_bash":
-    case "Bash": return { icon: TerminalSquare, title: "Run a command", detail: input.command || "", mono: true };
+    case "Bash": return { icon: TerminalSquare, title: "Run a command", detail: input.command || "", mono: true, body: "Madav wants to run a command on your computer." };
     case "write_file":
-    case "Write": return { icon: FilePlus, title: p ? `Create ${p}` : "Create a file", detail: "" };
+    case "Write": return { icon: FilePlus, title: p ? `Create ${p}` : "Create a file", detail: "", body: "Madav wants to create a file in your folder." };
     case "edit_file":
-    case "Edit": return { icon: FilePen, title: p ? `Edit ${p}` : "Edit a file", detail: "" };
-    default: return { icon: ShieldAlert, title: toolName, detail: JSON.stringify(input) };
+    case "Edit": return { icon: FilePen, title: p ? `Edit ${p}` : "Edit a file", detail: "", body: "Madav wants to make a change in your folder." };
+    // Everything else (search, research, MCP/connector tools, etc.) is a tool call, not a folder change.
+    default: return { icon: ShieldAlert, title: toolName, detail: JSON.stringify(input), body: `Madav wants to run the “${toolName}” tool.` };
   }
 }
 
@@ -32,7 +33,7 @@ export default function PermissionModal({ req, onAllow, onAllowAlways, onDeny })
           <h3>{s.title}?</h3>
         </div>
         <div className="modal-body">
-          Madav wants to make a change in your folder.
+          {s.body || `Madav wants to run the “${req.toolName}” tool.`}
           {s.detail && <div className="tcall">{s.mono ? `$ ${s.detail}` : s.detail}</div>}
         </div>
         <div className="modal-actions">
