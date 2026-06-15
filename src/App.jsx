@@ -121,6 +121,7 @@ export default function App() {
   const lastInfoRef = useRef(null); // real {model, provider, kind} from the backend init event
   const replyBufRef = useRef("");   // current turn's assistant text (for spoken replies)
   const settingsRef = useRef(null); // settings mirror readable inside the stable onEvent callback
+  const sendRef = useRef(null);     // latest send() for the self-repair listener (stable across renders)
   const modeCacheRef = useRef({}); // per-mode {convId, timeline} so navigating away/back restores
 
   const PRIMARY = ["chat", "cowork", "code"];
@@ -348,6 +349,19 @@ export default function App() {
     window.addEventListener("madav:openhtml", oh);
     return () => window.removeEventListener("madav:openhtml", oh);
   }, []);
+  // Self-repair (Layer 3): a document card found broken output (e.g. invalid formulas) and asked for ONE
+  // corrected rebuild. We re-send through the normal turn so it works identically on web and desktop.
+  useEffect(() => {
+    const fix = (e) => {
+      const d = (e && e.detail) || {};
+      if (!d.code || !sendRef.current) return;
+      const list = (d.issues || []).slice(0, 8).map((i) => `${i.sheet}!${i.cell} (${i.formula})`).join("; ");
+      const kind = d.kind === "xlsx" ? "spreadsheet" : "document";
+      sendRef.current(`The ${kind} you just generated has formulas that error in Excel: ${list}. Regenerate the COMPLETE corrected block with the SAME data and styling \u2014 every formula must be a valid A1 cell reference and must NEVER contain the text "undefined" or "NaN". To reference the previous month/column use that column's real cell (in column C reference B, in D reference C). Begin the block with a "// repaired" comment.`);
+    };
+    window.addEventListener("madav:fixdoc", fix);
+    return () => window.removeEventListener("madav:fixdoc", fix);
+  }, []);
 
   const isAgentMode = mode === "cowork" || mode === "code";
 
@@ -420,6 +434,7 @@ export default function App() {
     }
   };
 
+  sendRef.current = send;
   // Answer (or skip) a mid-mission agent question — resumes the paused mission.
   const answerQuestion = (answer) => {
     if (!ask) return;

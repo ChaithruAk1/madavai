@@ -2244,7 +2244,7 @@ svg.lucide { color: var(--accent); }
 .sage-looks-row { max-height: 170px; overflow-y: auto; padding-right: 2px; }
 
 /* In-chat office file card (```officedoc → real downloadable document) */
-.md-office { display: flex; align-items: center; gap: 11px; margin: 10px 0; padding: 11px 14px; border: 1px solid var(--accent-line, var(--accent)); border-radius: 12px; background: var(--accent-weak, var(--bg-1)); max-width: 480px; }
+.md-office { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; margin: 10px 0; padding: 11px 14px; border: 1px solid var(--accent-line, var(--accent)); border-radius: 12px; background: var(--accent-weak, var(--bg-1)); max-width: 480px; }
 .md-office-ico { font-size: 22px; flex: none; }
 .md-office-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .md-office-meta b { font-size: 13px; color: var(--text-0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2253,7 +2253,7 @@ svg.lucide { color: var(--accent); }
 .md-office-open { flex: none; padding: 6px 12px; border-radius: 9px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .md-office-open:hover { background: var(--accent-weak, rgba(127,127,127,0.12)); }
 .md-office-btn:disabled { opacity: 0.6; cursor: default; }
-.md-office-err { font-size: 11px; color: var(--danger, #e5736f); }
+.md-office-err { font-size: 11px; color: var(--danger, #e5736f); flex-basis: 100%; width: 100%; overflow-wrap: anywhere; }
 .md-office-pending { opacity: 0.72; }
 .md-office-pending .md-office-meta b { animation: madavOfficePulse 1.4s ease-in-out infinite; }
 @keyframes madavOfficePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }

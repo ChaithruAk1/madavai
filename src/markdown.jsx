@@ -8,6 +8,7 @@ import { Fragment, useState, useEffect } from "react";
 import { parseOfficeSpec, downloadOffice } from "./office.js";
 import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
 import { deckPreviewHTML } from "./deck/deckPreview.js";
+import { runXlsxCode, xlsxNameFrom } from "./doc/xlsxRunner.js";
 
 // ---- inline parsing: code spans first (their content is literal), then links/emphasis ----
 function inline(text, keyBase = "i") {
@@ -131,6 +132,53 @@ function DeckCard({ code }) {
   );
 }
 
+// A ```xlsxjs block is model-written ExcelJS code — a bespoke, styled spreadsheet built in a sandboxed
+// worker. We never show the raw code; Download builds the real .xlsx on this device.
+function XlsxCard({ code }) {
+  const [state, setState] = useState(""); // "" | building | done | repairing | invalid | error:<msg>
+  const [issues, setIssues] = useState([]);
+  const ready = /addWorksheet/.test(code);
+  const name = xlsxNameFrom(code);
+  const isRepair = /\/\/\s*repaired/i.test(code); // a corrected block — never auto-repair again (bounds retries to one)
+  const save = (blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  };
+  const build = async (force) => {
+    setState("building");
+    try {
+      const { blob, issues: found } = await runXlsxCode(code);
+      if (found && found.length && !force) {
+        setIssues(found);
+        if (!isRepair) { // LAYER 3 — one automatic self-repair, triggered by the user's Download click
+          setState("repairing");
+          window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "xlsx", code, issues: found } }));
+          return;
+        }
+        setState("invalid"); return; // already a repaired block and still broken — stop, let the user choose
+      }
+      save(blob); setState("done"); setTimeout(() => setState(""), 2500);
+    } catch (e) {
+      const m = String((e && e.message) || e);
+      const midStream = /Unexpected end of input|Invalid or unexpected token|Unexpected token|Unexpected identifier/i.test(m);
+      setState("error:" + (midStream ? "Still finishing — wait for the reply to complete, then Download." : m.slice(0, 140)));
+    }
+  };
+  const sub = state === "repairing" ? `Found ${issues.length} formula issue(s) — Madav is rebuilding it…`
+    : state === "invalid" ? `${issues.length} formula(s) still need a fix${issues[0] ? " (e.g. " + issues[0].sheet + "!" + issues[0].cell + ")" : ""}`
+    : ready ? "Excel spreadsheet · designed on your device" : "building it on your device";
+  const label = state === "building" ? "Building…" : state === "done" ? "Saved ✓" : state === "invalid" ? "Download anyway" : "Download";
+  return (
+    <div className={"md-office" + (ready ? "" : " md-office-pending")}>
+      <span className="md-office-ico">📊</span>
+      <span className="md-office-meta"><b>{ready ? name : "Composing your spreadsheet…"}</b><i>{sub}</i></span>
+      {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
+      {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
+    </div>
+  );
+}
+
 // ---- block parsing ----
 export default function Markdown({ text }) {
   if (!text) return null;
@@ -151,7 +199,8 @@ export default function Markdown({ text }) {
       i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
-      if ((fence[1] === "officedoc" || fence[1] === "deckjs") && FEAT_OFFICE) {
+      if (fence[1] === "xlsxjs" && FEAT_OFFICE) blocks.push(<XlsxCard key={key()} code={buf.join("\n")} />);
+      else if ((fence[1] === "officedoc" || fence[1] === "deckjs") && FEAT_OFFICE) {
         // Route by CONTENT, not the fence tag — models sometimes put deck code in an officedoc fence
         // (or a JSON spec in deckjs). pptxgenjs build code → DeckCard; a JSON spec → OfficeCard.
         const _c = buf.join("\n");
