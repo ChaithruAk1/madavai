@@ -49,6 +49,12 @@ function CodeBlock({ lang, code }) {
   );
 }
 
+// A cheap SYNTAX-ONLY check (construct the function, never run it) so a card can auto-repair broken
+// code the moment the reply completes. Ignores CSP/EvalError (that is the unsafe-eval config, not the code).
+function _codeSyntaxError(code, params) {
+  try { const AF = Object.getPrototypeOf(async function () {}).constructor; new AF(...params, String(code || "")); return ""; }
+  catch (e) { const m = String((e && e.message) || e); if (/unsafe-eval|Content Security Policy|EvalError/i.test(m)) return ""; return /Unexpected|Invalid or unexpected|SyntaxError/i.test(m) ? m.slice(0, 160) : ""; }
+}
 // In-chat office files: an ```officedoc spec becomes a real downloadable file card.
 // The document is built ON THIS DEVICE when clicked (dynamic import keeps libs lazy).
 // Two-channel build flag: public builds without Office render the spec as a plain code block.
@@ -144,6 +150,11 @@ function XlsxCard({ code, streaming }) {
   const ready = !streaming && /addWorksheet/.test(code);
   const name = xlsxNameFrom(code);
   const isRepair = /\/\/\s*repaired/i.test(code); // a corrected block — never auto-repair again (bounds retries to one)
+  useEffect(() => {
+    if (!ready || isRepair || state) return; // freshly complete, not already a repair/action -> validate syntax once
+    const bad = _codeSyntaxError(code, ["wb", "ExcelJS", "helpers"]);
+    if (bad) { setState("repairing"); window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "xlsx", code, error: bad } })); }
+  }, [ready, isRepair]);
   const save = (blob) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -197,6 +208,11 @@ function DocxCard({ code, streaming }) {
   const ready = !streaming && (/new\s+(?:docx\.)?Document|return\s+new/.test(code));
   const name = docxNameFrom(code);
   const isRepair = /\/\/\s*repaired/i.test(code);
+  useEffect(() => {
+    if (!ready || isRepair || state) return; // freshly complete, not already a repair/action -> validate syntax once
+    const bad = _codeSyntaxError(code, ["docx", "helpers"]);
+    if (bad) { setState("repairing"); window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "docx", code, error: bad } })); }
+  }, [ready, isRepair]);
   const save = (blob) => { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); };
   const build = async (force) => {
     setState("building");
@@ -236,6 +252,11 @@ function PdfCard({ code, streaming }) {
   const ready = !streaming && /doc\s*\.\s*(text|rect|setFont|setFontSize|addPage|line|setFillColor)/.test(code);
   const name = pdfNameFrom(code);
   const isRepair = /\/\/\s*repaired/i.test(code);
+  useEffect(() => {
+    if (!ready || isRepair || state) return; // freshly complete, not already a repair/action -> validate syntax once
+    const bad = _codeSyntaxError(code, ["doc", "jsPDF", "helpers"]);
+    if (bad) { setState("repairing"); window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "pdf", code, error: bad } })); }
+  }, [ready, isRepair]);
   const save = (blob) => { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); };
   const build = async (force) => {
     setState("building");
