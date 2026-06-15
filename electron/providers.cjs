@@ -32,32 +32,49 @@ async function* sseLines(res) {
   }
 }
 
-async function ensureOk(res, provider) {
+// Map a provider profile (or a fallback label string) to a clean, user-facing provider name + where to top up.
+function providerInfo(prov) {
+  if (!prov) return { label: "your AI provider", topup: "" };
+  if (typeof prov === "string") return { label: prov, topup: "" };
+  const b = String(prov.baseUrl || "").toLowerCase(), nm = String(prov.name || "").trim();
+  if (/openrouter\.ai/.test(b)) return { label: "OpenRouter", topup: "openrouter.ai" };
+  if (/api\.anthropic\.com/.test(b)) return { label: "Anthropic", topup: "console.anthropic.com" };
+  if (/api\.openai\.com/.test(b)) return { label: "OpenAI", topup: "platform.openai.com" };
+  if (/integrate\.api\.nvidia|nvidia|\bnim\b/.test(b)) return { label: "NVIDIA NIM", topup: "build.nvidia.com" };
+  if (/generativelanguage|googleapis/.test(b)) return { label: "Google AI", topup: "aistudio.google.com" };
+  if (/groq\.com/.test(b)) return { label: "Groq", topup: "console.groq.com" };
+  if (/together\.(ai|xyz)/.test(b)) return { label: "Together AI", topup: "together.ai" };
+  if (/mistral\.ai/.test(b)) return { label: "Mistral", topup: "console.mistral.ai" };
+  if (/localhost|127\.0\.0\.1|0\.0\.0\.0|:11434|:1234|ollama|lm.?studio/.test(b)) return { label: "your local model", topup: "" };
+  return { label: nm || "your AI provider", topup: "" };
+}
+async function ensureOk(res, prov) {
   if (res.ok) return;
   let detail = "";
   try { detail = (await res.text()).slice(0, 400); } catch {}
   // Friendly message when the chosen model can't accept images (very common cause of confusion).
   if (/image input|support image|no endpoints found that support image|does not support image|vision/i.test(detail)) {
-    const err = new Error("This model doesn't support image handling. Switch to a vision-capable model (e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet, google/gemini-2.0-flash, or meta-llama/llama-3.2-90b-vision-instruct) and resend the image.");
+    const err = new Error("This model doesn't support image handling. Switch to a vision-capable model (e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet, google/gemini-2.0-flash) and resend the image.");
     err.code = "no_vision";
     throw err;
   }
-  // Map provider HTTP errors to clean, key-free messages. Never surface the raw body — it can carry
-  // the API key inside a URL and is "technical stuff" the user shouldn't see.
+  // Clean, key-free, provider-NAMED messages. Never surface the raw body — it can carry the API key in a URL.
+  const { label, topup } = providerInfo(prov);
+  const at = topup ? " at " + topup : "";
   const st = res.status;
   let msg;
   if (st === 402 || /requires more credits|insufficient|payment required|quota|billing|afford/i.test(detail)) {
-    msg = "This model needs more credits than your provider key currently allows. Add credits with your provider, pick a less expensive model, or ask for a shorter result.";
+    msg = "Your " + label + " balance is too low for this request. Add credits" + at + ", pick a less expensive model, or ask for a shorter result.";
   } else if (st === 401 || st === 403) {
-    msg = "Your API key for this provider was rejected. Open Settings and re-check the key.";
+    msg = "Your " + label + " sign-in was rejected. Open Settings and re-check your " + label + " key.";
   } else if (st === 429) {
-    msg = "The provider is busy right now (rate limit). Wait a few seconds and try again.";
+    msg = label + " is busy right now (rate limit). Wait a few seconds and try again.";
   } else if (st === 404) {
-    msg = "That model isn't available on this provider. Pick a different model.";
+    msg = "That model isn't available on " + label + ". Pick a different model.";
   } else if (st >= 500) {
-    msg = "The model provider had a server error. Please try again in a moment.";
+    msg = label + " had a server error. Please try again in a moment.";
   } else {
-    msg = "Couldn't complete that request with the current model. Try again, or switch models.";
+    msg = "Couldn't complete that request on " + label + ". Try again, or switch models.";
   }
   const err = new Error(msg);
   err.code = st === 429 ? "rate_limit" : (st === 401 || st === 403) ? "auth" : st === 402 ? "credits" : "http_error";
@@ -86,7 +103,7 @@ async function streamOpenAI(profile, messages, { onDelta, signal, maxTokens }) {
     },
     body: JSON.stringify({ model: profile.model, messages, stream: true, max_tokens: maxTokens || 8192 }),
   });
-  await ensureOk(res, "OpenAI-compatible");
+  await ensureOk(res, profile);
 
   // Buffer the whole reply, strip any chain-of-thought, then emit the clean text.
   // Reasoning models emit their monologue into `content` (often a bare </think> with
@@ -119,7 +136,7 @@ async function streamAnthropic(profile, messages, { onDelta, signal }) {
     },
     body: JSON.stringify({ model: profile.model, max_tokens: 8192, system, messages: turns, stream: true }),
   });
-  await ensureOk(res, "Anthropic-compatible");
+  await ensureOk(res, profile);
 
   let text = "";
   for await (const data of sseLines(res)) {
@@ -180,7 +197,7 @@ async function streamChatTools(profile, messages, tools, { onDelta, signal, maxT
     },
     body: JSON.stringify({ model: profile.model, messages, tools, tool_choice: "auto", stream: true, max_tokens: maxTokens || 8192 }),
   });
-  await ensureOk(res, "OpenAI-compatible");
+  await ensureOk(res, profile);
 
   let content = "";
   let emittedClean = ""; // stream only reasoning-stripped text to the UI (never leak <think> mid-stream)

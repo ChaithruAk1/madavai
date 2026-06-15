@@ -913,7 +913,7 @@ input, textarea, select { font-family: inherit; }
   position: relative;
   max-width: 975px; margin: 0 auto;
   background: var(--bg-1);
-  border: 1px solid var(--line-2); border-radius: 999px;
+  border: 1px solid var(--line-2); border-radius: 26px;
   padding: 7px 12px; display: flex; flex-direction: column; gap: 6px; transition: border-color .14s, box-shadow .14s, border-radius .14s;
 }
 /* Wide ambient ACCENT GLOW spreading behind the window (the Gemini deep-blue field). */
