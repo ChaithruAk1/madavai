@@ -28,7 +28,7 @@ const newUser = (idn) => ({
 });
 
 // Names of the generic id-keyed collections (stored as arrays in JSON, jsonb tables in Postgres).
-const COLLECTIONS = ["shares", "requests", "threads", "posts", "workspaces"]; // workspaces: per-user synced agents/teams/groups (record id = userId)
+const COLLECTIONS = ["shares", "requests", "threads", "posts", "workspaces", "conversations"]; // workspaces: per-user synced agents/teams/groups (record id = userId)
 
 // ---- JSON file backend ----
 function jsonStore(file) {

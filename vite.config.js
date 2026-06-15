@@ -30,5 +30,8 @@ const obfuscate = {
 export default defineConfig({
   base: "./",
   plugins: [react(), obfuscate],
+  // ES-format workers support code-splitting (jsPDF pulls a dynamic import); all our workers
+  // are instantiated with { type: "module" }, so ES is the correct + matching format.
+  worker: { format: "es" },
   server: { port: 5174, strictPort: true },
 });

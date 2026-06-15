@@ -103,6 +103,8 @@ export default function App() {
   // Persisted in localStorage; unset = use the global default model (fully backward compatible).
   const [surfaceModel, setSurfaceModel] = useState(() => { try { return JSON.parse(localStorage.getItem("madav.surfaceModel") || "{}"); } catch { return {}; } });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarW, setSidebarW] = useState(() => { try { const v = parseInt(localStorage.getItem("madav.sidebarW") || "", 10); return v >= 200 && v <= 460 ? v : 236; } catch { return 236; } });
+  const appBodyRef = useRef(null);
   const [agentCtx, setAgentCtx] = useState(null); // active custom agent for this session ({id,name,instructions,tools,model})
   const [teamCtx, setTeamCtx] = useState(null);   // active agent team ({name,mode,members:[agents]})
   const [teamRun, setTeamRun] = useState(null);   // live mission state for TeamOps: { startedAt, steps, plan, synth, finished, budget }
@@ -356,8 +358,8 @@ export default function App() {
       const d = (e && e.detail) || {};
       if (!d.code || !sendRef.current) return;
       const list = (d.issues || []).slice(0, 8).map((i) => `${i.sheet}!${i.cell} (${i.formula})`).join("; ");
-      const kind = d.kind === "xlsx" ? "spreadsheet" : "document";
-      sendRef.current(`The ${kind} you just generated has formulas that error in Excel: ${list}. Regenerate the COMPLETE corrected block with the SAME data and styling \u2014 every formula must be a valid A1 cell reference and must NEVER contain the text "undefined" or "NaN". To reference the previous month/column use that column's real cell (in column C reference B, in D reference C). Begin the block with a "// repaired" comment.`);
+      if (d.kind === "xlsx") sendRef.current(`The spreadsheet you just generated has formulas that error in Excel: ${list}. Regenerate the COMPLETE corrected xlsxjs block with the SAME data and styling. Every formula must be a valid A1 cell reference and must NEVER contain the text "undefined" or "NaN". To reference the previous month use that column's real cell (in column C reference B, in D reference C). Begin the block with a "// repaired" comment.`);
+      else sendRef.current(`The ${d.kind === "pdf" ? "PDF" : "document"} you just generated has invalid content (${list}). Regenerate the COMPLETE corrected block with the SAME content and design. Every piece of text must be a real string \u2014 NEVER the literal "undefined", "NaN", or "[object Object]" \u2014 and the document must not be empty. Begin the block with a "// repaired" comment.`);
     };
     window.addEventListener("madav:fixdoc", fix);
     return () => window.removeEventListener("madav:fixdoc", fix);
@@ -616,6 +618,14 @@ export default function App() {
     setPerm(permQueue.current.shift() || null); // next pending request, if a parallel member is waiting
   };
 
+  // Draggable sidebar width: mutate the CSS var live during drag (no App re-render), commit on release.
+  const startSidebarResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX, startW = sidebarW; const el = appBodyRef.current; let w = startW;
+    const move = (ev) => { w = Math.min(460, Math.max(200, startW + (ev.clientX - startX))); if (el) el.style.setProperty("--sb-w", w + "px"); };
+    const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); document.body.style.cursor = ""; document.body.style.userSelect = ""; setSidebarW(w); try { localStorage.setItem("madav.sidebarW", String(w)); } catch {} };
+    document.addEventListener("mousemove", move); document.addEventListener("mouseup", up); document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
+  };
   const switchMode = (m) => {
     // Snapshot the conversation of the mode we're leaving so we can restore it.
     if (PRIMARY.includes(mode)) modeCacheRef.current[mode] = { convId: activeConvId, timeline };
@@ -853,8 +863,8 @@ export default function App() {
           </div>
         </div>
       )}
-      <div className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`}>
-      <Sidebar active={mode} onSelect={switchMode}
+      <div ref={appBodyRef} className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`} style={{ "--sb-w": sidebarW + "px" }}>
+      <Sidebar active={mode} onSelect={switchMode} onResize={startSidebarResize}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
         onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession}
         soloRun={soloRun} teamRun={teamRun} onOpenRun={() => switchMode(chatMode)}

@@ -28,7 +28,7 @@ const TAIL = [
 const TERMINAL_ITEM = { id: "terminal", label: "Terminal", icon: TerminalSquare };
 const ADMIN_ITEM = { id: "testcenter", label: "Test Center", icon: FlaskConical };
 
-export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, extras = {}, soloRun, teamRun, onOpenRun }) {
+export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, extras = {}, soloRun, teamRun, onOpenRun, onResize }) {
   const [recents, setRecents] = useState([]);
   const [q, setQ] = useState("");
   const [shareState, setShareState] = useState({}); // { [id]: "sharing" | "copied" | "error" }
@@ -327,6 +327,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
         </button>
       </div>
       <div className="sb-copyright sb-t">© 2026 Madav · Proprietary</div>
+      <div className="sb-resize" onMouseDown={onResize} title="Drag to resize" />
     </aside>
   );
 }

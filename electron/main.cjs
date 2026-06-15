@@ -890,7 +890,7 @@ const auth = require("./auth.cjs");
 const authBase = () => (settings.load().authBaseUrl || "https://madav.ai");
 ipcMain.handle("madav:authSignIn", async (_e, provider) => {
   const r = await auth.signIn(provider === "github" ? "github" : provider === "dev" ? "dev" : "google", authBase());
-  try { require("./workspace-sync.cjs").pull(); } catch {} // fresh sign-in → fetch the account workspace
+  try { require("./workspace-sync.cjs").pull(); } catch {} try { require("./chat-sync.cjs").pull(); } catch {} // fresh sign-in → fetch the account workspace
   return r;
 });
 const roster = require("./roster.cjs");
@@ -1119,7 +1119,7 @@ app.whenReady().then(() => {
   if (features.builtIn("scheduler")) reconcileWebhooks();
   else console.log("[scheduler] not included in this build — webhook server not started.");
   setTimeout(autoEnableCli, 3000);
-  setTimeout(() => { try { require("./workspace-sync.cjs").pull(); } catch {} }, 2500); // account workspace → this device
+  setTimeout(() => { try { require("./workspace-sync.cjs").pull(); } catch {} try { require("./chat-sync.cjs").pull(); } catch {} }, 2500); // account workspace → this device
 });
 app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

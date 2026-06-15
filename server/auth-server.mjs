@@ -578,6 +578,30 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ok: true, updatedAt });
   }
 
+  // ---- Chat sync: conversations follow the account across devices (desktop <-> web) ----
+  if (p === "/conversations" && req.method === "GET") {
+    if (rateLimited(req, "conversations", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const rec = await store.col("conversations").get(user.id);
+    return json(res, 200, rec ? { data: rec.data || {}, updatedAt: rec.updatedAt || 0 } : { data: null, updatedAt: 0 });
+  }
+  if (p === "/conversations" && req.method === "PUT") {
+    if (rateLimited(req, "conversations-w", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const raw = await rawBody(req, res, 8 * 1024 * 1024); if (raw === null) return; // 8MB cap (chats can be large)
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const items = (Array.isArray(b.items) ? b.items : []).slice(0, 200).map((c) => ({
+      id: String(c.id || "").slice(0, 80), mode: String(c.mode || "chat").slice(0, 20), title: String(c.title || "Conversation").slice(0, 200),
+      projectId: c.projectId ? String(c.projectId).slice(0, 80) : null, createdAt: +c.createdAt || 0, updatedAt: +c.updatedAt || 0,
+      messages: Array.isArray(c.messages) ? c.messages.slice(-400) : [],
+    })).filter((c) => c.id);
+    const data = { items }; const updatedAt = Date.now();
+    const existing = await store.col("conversations").get(user.id);
+    if (existing) await store.col("conversations").update(user.id, { data, updatedAt });
+    else await store.col("conversations").insert({ id: user.id, data, updatedAt });
+    return json(res, 200, { ok: true, updatedAt, count: items.length });
+  }
+
   // ---- Madav Starter — zero-setup free models on the HOUSE key ----
   // The seeded "Madav Starter" profile points the standard OpenAI client here; the
   // bearer is the user's SESSION TOKEN (never an upstream key). The OpenRouter house

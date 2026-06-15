@@ -36,7 +36,9 @@ function listSessions(mode, agentScope) {
 }
 function getSession(id) { try { return JSON.parse(fs.readFileSync(file(id), "utf8")); } catch { return null; } }
 function createSession(mode, cwd, projectId) { const s = { id: rand("ses_"), mode, cwd: cwd || "", projectId: projectId || null, title: "New task", messages: [], createdAt: Date.now(), updatedAt: Date.now() }; saveSession(s); return s; }
-function saveSession(s) { ensure(); s.updatedAt = Date.now(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); return s; }
+function saveSession(s) { ensure(); s.updatedAt = Date.now(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); try { require("./chat-sync.cjs").maybePush(); } catch {} return s; }
+function saveSessionRaw(s) { ensure(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); return s; } // used by chat-sync pull (must NOT bump updatedAt or re-push)
+function allSessions() { try { return raw(); } catch { return []; } }
 function deleteSession(id) { try { fs.unlinkSync(file(id)); } catch {} return true; }
 
 // Global search: scan message CONTENT (not just titles) across all saved conversations.
@@ -62,4 +64,4 @@ function searchSessions(q, mode) {
   return out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
-module.exports = { listSessions, getSession, createSession, saveSession, deleteSession, searchSessions };
+module.exports = { listSessions, getSession, createSession, saveSession, saveSessionRaw, allSessions, deleteSession, searchSessions };

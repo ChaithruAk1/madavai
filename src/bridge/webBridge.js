@@ -21,7 +21,7 @@ import * as webfs from "./webfs.js";
 // head+tail truncation, stale-result squash, identical-call loop breaker.
 import { tolerantParse, headTail, squashStale, CallGuard } from "../shared/harness.js";
 // In-chat office files: the rule that teaches models the ```officedoc spec.
-import { OFFICE_RULE } from "../office.js";
+import { officeRule } from "../office.js";
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
@@ -222,7 +222,49 @@ function wsMaybePush() {
     }, 4000);
   } catch {}
 }
+// ---- Chat sync (mirror of electron/chat-sync.cjs) — conversations follow the account across devices ----
+let _chatLast = "", _chatTimer = null;
+const CHAT_MAX_CONVS = 100, CHAT_MAX_MSGS = 300;
+const chatHash = (items) => items.map((c) => c.id + ":" + (c.updatedAt || 0)).join("|");
+async function chatItems() {
+  const all = await idbAll();
+  return (all || [])
+    .filter((r) => r && r.id && Array.isArray(r.messages) && r.messages.length)
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    .slice(0, CHAT_MAX_CONVS)
+    .map((r) => ({ id: r.id, mode: r.mode || "chat", title: r.title || "Conversation", projectId: r.projectId || null, convId: r.convId || null, model: r.model || null, provider: r.provider || null, agent: r.agent || null, team: r.team || null, createdAt: r.createdAt || 0, updatedAt: r.updatedAt || 0, messages: r.messages.slice(-CHAT_MAX_MSGS) }));
+}
+async function chatPull() {
+  try {
+    const s = loadSettings();
+    if (s.chatSync === false || !getToken()) return;
+    const r = await fetch(api("/conversations"), { headers: authHeaders() }).then((x) => x.json()).catch(() => null);
+    if (!r || !r.data || !Array.isArray(r.data.items)) return;
+    let merged = 0;
+    for (const it of r.data.items) {
+      if (!it || !it.id || !Array.isArray(it.messages)) continue;
+      const local = await idbGet(it.id);
+      if (!local || (it.updatedAt || 0) > (local.updatedAt || 0)) { try { await idbPut(it); merged++; } catch {} }
+    }
+    _chatLast = chatHash(await chatItems());
+    if (merged) { try { window.dispatchEvent(new CustomEvent("madav:historychanged")); } catch {} }
+  } catch {}
+}
+function chatMaybePush() {
+  clearTimeout(_chatTimer);
+  _chatTimer = setTimeout(async () => {
+    try {
+      const s = loadSettings();
+      if (s.chatSync === false || !getToken()) return;
+      const items = await chatItems(); const h = chatHash(items);
+      if (h === _chatLast) return;
+      const r = await fetch(api("/conversations"), { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ items }) }).then((x) => x.json()).catch(() => null);
+      if (r && r.ok) _chatLast = h;
+    } catch {}
+  }, 4000);
+}
 setTimeout(wsPull, 1500); // account workspace → this browser, shortly after load
+setTimeout(chatPull, 1800); // pull synced conversations shortly after load
 // Starter profiles authenticate with the user's SESSION TOKEN as the bearer (the server
 // swaps in the house key upstream). Injected here so it's always current, never persisted.
 const resolveProfile = (p) => (p && !p.apiKey && /\/starter\b/.test(p.baseUrl || "") ? { ...p, apiKey: getToken() || "" } : p);
@@ -248,7 +290,7 @@ const FEAT_IMAGEGEN = import.meta.env.VITE_FEAT_IMAGEGEN !== "0";
 const FEAT_MEMORY = import.meta.env.VITE_FEAT_MEMORY !== "0";
 // Office-file rule is appended per call in systemPrompt() — gated by the build channel
 // AND the Extras switchboard (settings.extras.office !== false), in sync with desktop.
-const officeRulePart = (s) => (!FEAT_OFFICE || ((s && s.extras) || {}).office === false ? "" : OFFICE_RULE);
+const officeRulePart = (s) => { if (!FEAT_OFFICE || ((s && s.extras) || {}).office === false) return ""; const p = activeProfile(s); return officeRule((p && p.model) || ""); };
 // Artifact + webpage-design rule — kept in sync with electron/agent-openai.cjs ARTIFACT_RULE_BASE so
 // the WEB build gets the same live-preview behaviour and the same "design it like a shipped product"
 // bar for HTML pages. The renderer detects fenced blocks and previews them in the side panel.
@@ -737,6 +779,7 @@ function persistSession(sess) {
     }
   }).finally(() => { if (_persistChains.get(sess.id) === next) _persistChains.delete(sess.id); });
   _persistChains.set(sess.id, next);
+  try { chatMaybePush(); } catch {}
 }
 
 // Streaks (consecutive active calendar days) + a friendly peak-hour label, from a set of YYYY-MM-DD keys.

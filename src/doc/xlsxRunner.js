@@ -2,6 +2,7 @@
 // Front-end wrapper for the bespoke spreadsheet engine. Preferred: sandboxed Worker; main-thread
 // fallback if module workers aren't available. Returns { blob, issues } so callers can offer a self-repair.
 import { findFormulaIssues } from "./xlsxValidate.js";
+import { renderXlsxHTML } from "./xlsxPreview.js";
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 function runInWorker(code, timeoutMs) {
   return new Promise((resolve, reject) => {
@@ -11,7 +12,7 @@ function runInWorker(code, timeoutMs) {
     let settled = false;
     const finish = (fn, arg) => { if (settled) return; settled = true; clearTimeout(t); try { worker.terminate(); } catch {} fn(arg); };
     const t = setTimeout(() => finish(reject, new Error("spreadsheet build timed out")), timeoutMs);
-    worker.onmessage = (e) => { const d = e.data || {}; if (d.ok && d.buf) finish(resolve, { blob: new Blob([d.buf], { type: XLSX_MIME }), issues: d.issues || [] }); else finish(reject, new Error(d.error || "spreadsheet build failed")); };
+    worker.onmessage = (e) => { const d = e.data || {}; if (d.ok && d.buf) finish(resolve, { blob: new Blob([d.buf], { type: XLSX_MIME }), issues: d.issues || [], html: d.html || "" }); else finish(reject, new Error(d.error || "spreadsheet build failed")); };
     worker.onerror = (ev) => finish(reject, new Error("WORKER_INFRA: " + ((ev && ev.message) || "worker error")));
     worker.postMessage({ code: String(code || "") });
   });
@@ -24,8 +25,9 @@ async function runOnMainThread(code) {
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   await new AsyncFunction("wb", "ExcelJS", "helpers", String(code || ""))(wb, ExcelJS, helpers);
   const issues = findFormulaIssues(wb);
+  const html = renderXlsxHTML(wb);
   const buf = await wb.xlsx.writeBuffer();
-  return { blob: new Blob([buf], { type: XLSX_MIME }), issues };
+  return { blob: new Blob([buf], { type: XLSX_MIME }), issues, html };
 }
 export async function runXlsxCode(code, { timeoutMs = 20000 } = {}) {
   try { return await runInWorker(code, timeoutMs); }
