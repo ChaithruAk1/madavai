@@ -101,6 +101,7 @@ function OfficeCard({ code }) {
         {state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}
       </button>
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
+      {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
     </div>
   );
 }
@@ -108,9 +109,9 @@ function OfficeCard({ code }) {
 // A ```deckjs block is a model-written pptxgenjs build script — full bespoke design, composed
 // per-slide by the model (this is what reaches Claude-grade quality). We NEVER show the raw code;
 // Download builds a real .pptx on this device in a sandboxed worker.
-function DeckCard({ code }) {
+function DeckCard({ code, streaming }) {
   const [state, setState] = useState("");
-  const ready = /addSlide/.test(code);            // the script has begun producing slides
+  const ready = !streaming && /addSlide/.test(code);            // the script has begun producing slides
   const name = deckNameFrom(code);
   const view = async () => { try { const html = await deckPreviewHTML(code); window.dispatchEvent(new CustomEvent("madav:openhtml", { detail: { html, title: name } })); } catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 120)); } };
   const build = async () => {
@@ -130,16 +131,17 @@ function DeckCard({ code }) {
       {ready && <button className="md-office-open" onClick={view} title="Preview beside the chat">View</button>}
       {ready && <button className="md-office-btn" disabled={state === "building"} onClick={build}>{state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
+      {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
     </div>
   );
 }
 
 // A ```xlsxjs block is model-written ExcelJS code — a bespoke, styled spreadsheet built in a sandboxed
 // worker. We never show the raw code; Download builds the real .xlsx on this device.
-function XlsxCard({ code }) {
+function XlsxCard({ code, streaming }) {
   const [state, setState] = useState(""); // "" | building | done | repairing | invalid | error:<msg>
   const [issues, setIssues] = useState([]);
-  const ready = /addWorksheet/.test(code);
+  const ready = !streaming && /addWorksheet/.test(code);
   const name = xlsxNameFrom(code);
   const isRepair = /\/\/\s*repaired/i.test(code); // a corrected block — never auto-repair again (bounds retries to one)
   const save = (blob) => {
@@ -168,7 +170,7 @@ function XlsxCard({ code }) {
     } catch (e) {
       const m = String((e && e.message) || e);
       const midStream = /Unexpected end of input|Invalid or unexpected token|Unexpected token|Unexpected identifier/i.test(m);
-      setState("error:" + (midStream ? "Still finishing — wait for the reply to complete, then Download." : m.slice(0, 140)));
+      setState("error:" + (midStream ? "Couldn't build it — if the reply has finished, click Rebuild." : m.slice(0, 140)));
     }
   };
   const sub = state === "repairing" ? `Found ${issues.length} formula issue(s) — Madav is rebuilding it…`
@@ -182,16 +184,17 @@ function XlsxCard({ code }) {
       {ready && state !== "repairing" && <button className="md-office-open" onClick={view} title="Preview beside the chat">View</button>}
       {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
+      {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
     </div>
   );
 }
 
 // A ```docxjs block is model-written `docx`-library code that returns a Document — bespoke Word built
 // in a sandboxed worker, validated, with one auto-repair on the user's Download click.
-function DocxCard({ code }) {
+function DocxCard({ code, streaming }) {
   const [state, setState] = useState("");
   const [issues, setIssues] = useState([]);
-  const ready = /new\s+(?:docx\.)?Document|return\s+new/.test(code);
+  const ready = !streaming && (/new\s+(?:docx\.)?Document|return\s+new/.test(code));
   const name = docxNameFrom(code);
   const isRepair = /\/\/\s*repaired/i.test(code);
   const save = (blob) => { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); };
@@ -208,7 +211,7 @@ function DocxCard({ code }) {
     } catch (e) {
       const m = String((e && e.message) || e);
       const midStream = /Unexpected end of input|Invalid or unexpected token|Unexpected token|Unexpected identifier|must .?return/i.test(m);
-      setState("error:" + (midStream ? "Still finishing — wait for the reply to complete, then Download." : m.slice(0, 140)));
+      setState("error:" + (midStream ? "Couldn't build it — if the reply has finished, click Rebuild." : m.slice(0, 140)));
     }
   };
   const sub = state === "repairing" ? `Found ${issues.length} issue(s) — Madav is rebuilding it…`
@@ -220,16 +223,17 @@ function DocxCard({ code }) {
       <span className="md-office-meta"><b>{ready ? name : "Composing your document…"}</b><i>{sub}</i></span>
       {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
+      {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
     </div>
   );
 }
 
 // A ```pdfjs block is model-written jsPDF code that draws on `doc` — bespoke PDF in a sandboxed worker,
 // validated, with one auto-repair on Download.
-function PdfCard({ code }) {
+function PdfCard({ code, streaming }) {
   const [state, setState] = useState("");
   const [issues, setIssues] = useState([]);
-  const ready = /doc\s*\.\s*(text|rect|setFont|setFontSize|addPage|line|setFillColor)/.test(code);
+  const ready = !streaming && /doc\s*\.\s*(text|rect|setFont|setFontSize|addPage|line|setFillColor)/.test(code);
   const name = pdfNameFrom(code);
   const isRepair = /\/\/\s*repaired/i.test(code);
   const save = (blob) => { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); };
@@ -246,7 +250,7 @@ function PdfCard({ code }) {
     } catch (e) {
       const m = String((e && e.message) || e);
       const midStream = /Unexpected end of input|Invalid or unexpected token|Unexpected token|Unexpected identifier/i.test(m);
-      setState("error:" + (midStream ? "Still finishing — wait for the reply to complete, then Download." : m.slice(0, 140)));
+      setState("error:" + (midStream ? "Couldn't build it — if the reply has finished, click Rebuild." : m.slice(0, 140)));
     }
   };
   const sub = state === "repairing" ? `Found ${issues.length} issue(s) — Madav is rebuilding it…`
@@ -258,12 +262,13 @@ function PdfCard({ code }) {
       <span className="md-office-meta"><b>{ready ? name : "Composing your PDF…"}</b><i>{sub}</i></span>
       {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
+      {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
     </div>
   );
 }
 
 // ---- block parsing ----
-export default function Markdown({ text }) {
+export default function Markdown({ text, streaming }) {
   if (!text) return null;
   const lines = String(text).split("\n");
   const blocks = [];
@@ -282,15 +287,15 @@ export default function Markdown({ text }) {
       i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
-      if (fence[1] === "xlsxjs" && FEAT_OFFICE) blocks.push(<XlsxCard key={key()} code={buf.join("\n")} />);
-      else if (fence[1] === "docxjs" && FEAT_OFFICE) blocks.push(<DocxCard key={key()} code={buf.join("\n")} />);
-      else if (fence[1] === "pdfjs" && FEAT_OFFICE) blocks.push(<PdfCard key={key()} code={buf.join("\n")} />);
+      if (fence[1] === "xlsxjs" && FEAT_OFFICE) blocks.push(<XlsxCard key={key()} code={buf.join("\n")} streaming={streaming} />);
+      else if (fence[1] === "docxjs" && FEAT_OFFICE) blocks.push(<DocxCard key={key()} code={buf.join("\n")} streaming={streaming} />);
+      else if (fence[1] === "pdfjs" && FEAT_OFFICE) blocks.push(<PdfCard key={key()} code={buf.join("\n")} streaming={streaming} />);
       else if ((fence[1] === "officedoc" || fence[1] === "deckjs") && FEAT_OFFICE) {
         // Route by CONTENT, not the fence tag — models sometimes put deck code in an officedoc fence
         // (or a JSON spec in deckjs). pptxgenjs build code → DeckCard; a JSON spec → OfficeCard.
         const _c = buf.join("\n");
         const _isDeckCode = /\bpptx\s*\.\s*addSlide|\bpptx\s*\.\s*(?:ShapeType|ChartType)|\.\s*addSlide\s*\(/.test(_c);
-        if (_isDeckCode || (fence[1] === "deckjs" && !/^\s*\{/.test(_c.trim()))) blocks.push(<DeckCard key={key()} code={_c} />);
+        if (_isDeckCode || (fence[1] === "deckjs" && !/^\s*\{/.test(_c.trim()))) blocks.push(<DeckCard key={key()} code={_c} streaming={streaming} />);
         else blocks.push(<OfficeCard key={key()} code={_c} />);
       } else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
       continue;

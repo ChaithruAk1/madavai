@@ -76,7 +76,7 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
           </div>
         ) : (
           <div className="content">
-            {isUser ? <UserBody text={text} /> : <Markdown text={text} />}
+            {isUser ? <UserBody text={text} /> : <Markdown text={text} streaming={streaming} />}
             {streaming && <span className="cursor" />}
           </div>
         )}
