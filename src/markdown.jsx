@@ -4,7 +4,7 @@
 // output cannot inject markup or scripts. Covers the constructs models actually emit:
 // headings, bold/italic/strikethrough, inline code, fenced code blocks, links,
 // bullet/numbered lists, blockquotes, horizontal rules, tables (basic).
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { parseOfficeSpec, downloadOffice } from "./office.js";
 import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
 
@@ -52,8 +52,21 @@ const FEAT_OFFICE = import.meta.env.VITE_FEAT_OFFICE !== "0";
 const OFFICE_LABEL = { xlsx: "Excel spreadsheet", docx: "Word document", pptx: "PowerPoint deck", pdf: "PDF document" };
 function OfficeCard({ code }) {
   const [state, setState] = useState(""); // "" | building | done | error:<msg>
+  const [stuck, setStuck] = useState(false);
   const parsed = parseOfficeSpec(code);
+  // Don't hang on "Preparing…" forever: if the content never becomes a valid spec, surface a friendly dead-end.
+  useEffect(() => {
+    if (parsed) { setStuck(false); return; }
+    const id = setTimeout(() => setStuck(true), 6000);
+    return () => clearTimeout(id);
+  }, [code, !!parsed]);
   if (!parsed) {
+    if (stuck) return (
+      <div className="md-office md-office-pending">
+        <span className="md-office-ico">⚠️</span>
+        <span className="md-office-meta"><b>Couldn't build this document</b><i>the content wasn't complete — ask me to try again</i></span>
+      </div>
+    );
     // Mid-stream (or not-yet-valid JSON): NEVER show the raw spec. A quiet placeholder until it's ready —
     // the model's JSON is plumbing the user shouldn't see.
     const t = (/"type"\s*:\s*"(xlsx|docx|pptx|pdf)"/.exec(code) || [])[1];
@@ -135,9 +148,14 @@ export default function Markdown({ text }) {
       i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
-      if (fence[1] === "officedoc" && FEAT_OFFICE) blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
-      else if (fence[1] === "deckjs" && FEAT_OFFICE) blocks.push(<DeckCard key={key()} code={buf.join("\n")} />);
-      else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
+      if ((fence[1] === "officedoc" || fence[1] === "deckjs") && FEAT_OFFICE) {
+        // Route by CONTENT, not the fence tag — models sometimes put deck code in an officedoc fence
+        // (or a JSON spec in deckjs). pptxgenjs build code → DeckCard; a JSON spec → OfficeCard.
+        const _c = buf.join("\n");
+        const _isDeckCode = /\bpptx\s*\.\s*addSlide|\bpptx\s*\.\s*(?:ShapeType|ChartType)|\.\s*addSlide\s*\(/.test(_c);
+        if (_isDeckCode || (fence[1] === "deckjs" && !/^\s*\{/.test(_c.trim()))) blocks.push(<DeckCard key={key()} code={_c} />);
+        else blocks.push(<OfficeCard key={key()} code={_c} />);
+      } else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
       continue;
     }
     // heading
