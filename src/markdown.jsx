@@ -151,6 +151,7 @@ function DeckCard({ code, streaming }) {
       <span className="md-office-ico">📽</span>
       <span className="md-office-meta"><b>{ready ? name : "Composing your deck…"}</b><i>{state === "repairing" ? `Found ${issues.length || 1} issue(s) — Madav is rebuilding it…` : state === "invalid" ? `${issues.length} issue(s) in slide text — review before sending` : ready ? "PowerPoint deck · designed on your device" : "building it on your device"}</i></span>
       {ready && state !== "repairing" && <button className="md-office-open" onClick={view} title="Preview beside the chat">View</button>}
+      {ready && state === "" && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, polish: true } }))} title="Refine the design — one more pass">Polish ✨</button>}
       {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{state === "building" ? "Building…" : state === "done" ? "Saved ✓" : state === "invalid" ? "Download anyway" : "Download"}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
       {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
@@ -209,6 +210,7 @@ function XlsxCard({ code, streaming }) {
       <span className="md-office-ico">📊</span>
       <span className="md-office-meta"><b>{ready ? name : "Composing your spreadsheet…"}</b><i>{sub}</i></span>
       {ready && state !== "repairing" && <button className="md-office-open" onClick={view} title="Preview beside the chat">View</button>}
+      {ready && state === "" && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, polish: true } }))} title="Refine the design — one more pass">Polish ✨</button>}
       {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
       {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
@@ -253,6 +255,7 @@ function DocxCard({ code, streaming }) {
     <div className={"md-office" + (ready ? "" : " md-office-pending")}>
       <span className="md-office-ico">📄</span>
       <span className="md-office-meta"><b>{ready ? name : "Composing your document…"}</b><i>{sub}</i></span>
+      {ready && state === "" && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, polish: true } }))} title="Refine the design — one more pass">Polish ✨</button>}
       {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
       {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
@@ -297,6 +300,7 @@ function PdfCard({ code, streaming }) {
     <div className={"md-office" + (ready ? "" : " md-office-pending")}>
       <span className="md-office-ico">📕</span>
       <span className="md-office-meta"><b>{ready ? name : "Composing your PDF…"}</b><i>{sub}</i></span>
+      {ready && state === "" && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, polish: true } }))} title="Refine the design — one more pass">Polish ✨</button>}
       {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
       {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}

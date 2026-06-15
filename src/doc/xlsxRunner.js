@@ -3,6 +3,8 @@
 // fallback if module workers aren't available. Returns { blob, issues } so callers can offer a self-repair.
 import { findFormulaIssues } from "./xlsxValidate.js";
 import { renderXlsxHTML } from "./xlsxPreview.js";
+import { makeKit } from "./xlsxKit.js";
+import { injectCharts } from "./xlsxChart.js";
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 function runInWorker(code, timeoutMs) {
   return new Promise((resolve, reject) => {
@@ -20,13 +22,13 @@ function runInWorker(code, timeoutMs) {
 async function runOnMainThread(code) {
   const mod = await import("exceljs"); const ExcelJS = mod.default || mod;
   const wb = new ExcelJS.Workbook(); wb.creator = "Madav";
-  const colLetter = (n) => { let s = ""; n = Number(n) || 1; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s || "A"; };
-  const helpers = { hex: (c) => String(c == null ? "" : c).replace(/^#/, ""), col: colLetter };
+  const helpers = makeKit(ExcelJS);
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   await new AsyncFunction("wb", "ExcelJS", "helpers", String(code || ""))(wb, ExcelJS, helpers);
   const issues = findFormulaIssues(wb);
   const html = renderXlsxHTML(wb);
-  const buf = await wb.xlsx.writeBuffer();
+  let buf = await wb.xlsx.writeBuffer();
+  if (helpers._charts && helpers._charts.length) { try { buf = await injectCharts(buf, helpers._charts); } catch (e) {} }
   return { blob: new Blob([buf], { type: XLSX_MIME }), issues, html };
 }
 export async function runXlsxCode(code, { timeoutMs = 20000 } = {}) {
