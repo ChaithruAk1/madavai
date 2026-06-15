@@ -662,12 +662,12 @@ const server = http.createServer(async (req, res) => {
         const system = (messages || []).filter((m) => m.role === "system").map((m) => m.content).join("\n") || undefined;
         const turns = (messages || []).filter((m) => m.role !== "system");
         headers = { "Content-Type": "application/json", "anthropic-version": "2023-06-01", ...(apiKey ? { "x-api-key": apiKey } : {}) };
-        payload = { model, max_tokens: 8192, system, messages: turns, stream: true };
+        payload = { model, max_tokens: 16384, system, messages: turns, stream: true };
       } else {
         const bb = (baseUrl || "").replace(/\/$/, ""); const apib = /\/v\d|\/openai/.test(bb) ? bb : bb + "/v1";
         url = apib + "/chat/completions";
         headers = { "Content-Type": "application/json", ...(apiKey ? { Authorization: "Bearer " + apiKey } : {}) };
-        payload = { model, messages, stream: true, max_tokens: 8192 };
+        payload = { model, messages, stream: true, max_tokens: 16384 };
       }
       const upstream = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
       res.writeHead(upstream.status, { "Content-Type": upstream.headers.get("content-type") || "text/event-stream", "Cache-Control": "no-cache" });

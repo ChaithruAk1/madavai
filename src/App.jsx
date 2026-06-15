@@ -342,6 +342,12 @@ export default function App() {
     window.addEventListener("madav:openoffice", openOffice);
     return () => window.removeEventListener("madav:openoffice", openOffice);
   }, []);
+  // Deck "View": a code-built deck rendered to HTML opens in the same side panel.
+  useEffect(() => {
+    const oh = (e) => { const d = (e && e.detail) || {}; if (d.html) setArtifact({ kind: "html", code: d.html, title: d.title || "Deck preview", previewable: true }); };
+    window.addEventListener("madav:openhtml", oh);
+    return () => window.removeEventListener("madav:openhtml", oh);
+  }, []);
 
   const isAgentMode = mode === "cowork" || mode === "code";
 

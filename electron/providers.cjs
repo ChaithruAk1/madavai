@@ -101,7 +101,7 @@ async function streamOpenAI(profile, messages, { onDelta, signal, maxTokens }) {
       "Content-Type": "application/json",
       ...(profile.apiKey ? { Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
-    body: JSON.stringify({ model: profile.model, messages, stream: true, max_tokens: maxTokens || 8192 }),
+    body: JSON.stringify({ model: profile.model, messages, stream: true, max_tokens: maxTokens || 16384 }),
   });
   await ensureOk(res, profile);
 
@@ -134,7 +134,7 @@ async function streamAnthropic(profile, messages, { onDelta, signal }) {
       "anthropic-version": "2023-06-01",
       ...(profile.apiKey ? { "x-api-key": (profile.apiKey || "").trim(), Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
-    body: JSON.stringify({ model: profile.model, max_tokens: 8192, system, messages: turns, stream: true }),
+    body: JSON.stringify({ model: profile.model, max_tokens: 16384, system, messages: turns, stream: true }),
   });
   await ensureOk(res, profile);
 
@@ -195,7 +195,7 @@ async function streamChatTools(profile, messages, tools, { onDelta, signal, maxT
       "Content-Type": "application/json",
       ...(profile.apiKey ? { Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
-    body: JSON.stringify({ model: profile.model, messages, tools, tool_choice: "auto", stream: true, max_tokens: maxTokens || 8192 }),
+    body: JSON.stringify({ model: profile.model, messages, tools, tool_choice: "auto", stream: true, max_tokens: maxTokens || 16384 }),
   });
   await ensureOk(res, profile);
 

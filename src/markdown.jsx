@@ -7,6 +7,7 @@
 import { Fragment, useState, useEffect } from "react";
 import { parseOfficeSpec, downloadOffice } from "./office.js";
 import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
+import { deckPreviewHTML } from "./deck/deckPreview.js";
 
 // ---- inline parsing: code spans first (their content is literal), then links/emphasis ----
 function inline(text, keyBase = "i") {
@@ -108,6 +109,7 @@ function DeckCard({ code }) {
   const [state, setState] = useState("");
   const ready = /addSlide/.test(code);            // the script has begun producing slides
   const name = deckNameFrom(code);
+  const view = async () => { try { const html = await deckPreviewHTML(code); window.dispatchEvent(new CustomEvent("madav:openhtml", { detail: { html, title: name } })); } catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 120)); } };
   const build = async () => {
     setState("building");
     try {
@@ -122,6 +124,7 @@ function DeckCard({ code }) {
     <div className={"md-office" + (ready ? "" : " md-office-pending")}>
       <span className="md-office-ico">📽</span>
       <span className="md-office-meta"><b>{ready ? name : "Composing your deck…"}</b><i>{ready ? "PowerPoint deck · designed on your device" : "building it on your device"}</i></span>
+      {ready && <button className="md-office-open" onClick={view} title="Preview beside the chat">View</button>}
       {ready && <button className="md-office-btn" disabled={state === "building"} onClick={build}>{state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
     </div>
