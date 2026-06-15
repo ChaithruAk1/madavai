@@ -31,7 +31,7 @@ async function runOnMainThread(code) {
 }
 export async function runPdfCode(code, { timeoutMs = 20000 } = {}) {
   try { return await runInWorker(code, timeoutMs); }
-  catch (e) { const msg = String((e && e.message) || e); if (msg.startsWith("WORKER_INFRA")) return await runOnMainThread(code); throw e; }
+  catch (e) { const msg = String((e && e.message) || e); if (msg.startsWith("WORKER_INFRA") || /unsafe-eval|Content Security Policy|EvalError/i.test(msg)) return await runOnMainThread(code); throw e; }
 }
 export function pdfNameFrom(code) {
   const m = /(?:\/\/|\/\*)\s*name:\s*([^\n*]+)/i.exec(String(code || ""));

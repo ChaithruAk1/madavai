@@ -35,7 +35,7 @@ export async function runDeckCode(code, { timeoutMs = 20000 } = {}) {
     return await runInWorker(code, timeoutMs);
   } catch (e) {
     const msg = String((e && e.message) || e);
-    if (msg.startsWith("WORKER_INFRA")) {
+    if (msg.startsWith("WORKER_INFRA") || /unsafe-eval|Content Security Policy|EvalError/i.test(msg)) {
       // Sandbox unavailable in this runtime — build on the main thread instead.
       return await runOnMainThread(code);
     }

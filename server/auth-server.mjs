@@ -174,7 +174,7 @@ const ALLOWED_ORIGINS = new Set([
 // Security headers on every response (set via setHeader so later writeHead calls merge with them).
 // CSP defaults to the strict API policy; HTML responses override it with HTML_CSP below.
 const API_CSP = "default-src 'none'; frame-ancestors 'none'";
-const HTML_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https:; img-src * data: blob:; media-src blob: data:; connect-src *; frame-src 'self' blob: data: about:; worker-src blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+const HTML_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https:; img-src * data: blob:; media-src blob: data:; connect-src *; frame-src 'self' blob: data: about:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
 function baseHeaders(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
@@ -595,11 +595,16 @@ const server = http.createServer(async (req, res) => {
       projectId: c.projectId ? String(c.projectId).slice(0, 80) : null, createdAt: +c.createdAt || 0, updatedAt: +c.updatedAt || 0,
       messages: Array.isArray(c.messages) ? c.messages.slice(-400) : [],
     })).filter((c) => c.id);
-    const data = { items }; const updatedAt = Date.now();
     const existing = await store.col("conversations").get(user.id);
+    const prevItems = (existing && existing.data && Array.isArray(existing.data.items)) ? existing.data.items : [];
+    const byId = new Map();
+    for (const c of prevItems) byId.set(c.id, c);
+    for (const c of items) { const prev = byId.get(c.id); if (!prev || (c.updatedAt || 0) >= (prev.updatedAt || 0)) byId.set(c.id, c); } // last-write-wins per conversation
+    const mergedItems = [...byId.values()].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 500);
+    const data = { items: mergedItems }; const updatedAt = Date.now();
     if (existing) await store.col("conversations").update(user.id, { data, updatedAt });
     else await store.col("conversations").insert({ id: user.id, data, updatedAt });
-    return json(res, 200, { ok: true, updatedAt, count: items.length });
+    return json(res, 200, { ok: true, updatedAt, count: mergedItems.length });
   }
 
   // ---- Madav Starter — zero-setup free models on the HOUSE key ----
