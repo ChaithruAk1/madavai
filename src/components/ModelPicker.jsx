@@ -77,7 +77,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     if (Math.abs(v - r.height) > 2) setMaxH(v);
   }, [open, openUp, q, maker, cost, host, caps]);
   const isFree = (it, groupName) => /local/i.test(it.prov || groupName || "") || /:free\b/.test((it.name || "").toLowerCase());
-  const makerOf = (it, group) => ((it.name || "").includes("/") ? it.name.split("/")[0] : (it.prov || group || "")).toLowerCase().trim();
+  const makerOf = (it, group) => String(it.prov || (group || "").split(" · ")[0] || "").toLowerCase().trim(); // group by PROVIDER profile (OpenRouter/Anthropic/NIM), not model maker
   const ormOf = (it) => { if (!orCat) return null; const id = it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name; return orCat[id] || null; };
   // Local models have no catalog metadata — fall back to the curated family registry (localModels.js).
   const lcOf = (it, group) => (/local/i.test(it.prov || group || "") ? localCaps((it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name) || it.name) : null);
@@ -173,9 +173,9 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
 
           {makers.length > 1 && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 11, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".05em" }}>Maker</span>
+              <span style={{ fontSize: 11, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".05em" }}>Provider</span>
               <select value={maker} onChange={(e) => setMaker(e.target.value)} className="model-search" style={{ flex: 1, marginBottom: 0, padding: "7px 10px", cursor: "pointer" }}>
-                <option value="all">All makers · {total}</option>
+                <option value="all">All providers · {total}</option>
                 {makers.map(([k, n]) => <option key={k} value={k}>{k} · {n}</option>)}
               </select>
             </div>

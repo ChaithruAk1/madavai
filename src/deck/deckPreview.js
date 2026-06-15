@@ -2,6 +2,7 @@
 // In-chat PREVIEW for a code-built deck. We re-run the model's deckjs against a RECORDING shim
 // (no real pptx, no DOM, no I/O) that just captures every addText/addShape/addChart/addImage call,
 // then render those to scaled HTML slides — a faithful preview from the exact same code.
+import { icon } from "./deckIcons.js";
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const _hx = (c, d) => { const s = String(c == null ? "" : c).replace(/^#/, ""); return /^[0-9A-Fa-f]{6}$/.test(s) ? "#" + s : ("#" + (d || "0B0E15")); };
 const _esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -24,7 +25,7 @@ export async function deckPreviewHTML(code) {
     addSlide: () => { const s = mkSlide(); slides.push(s); return s; },
     write: async () => {}, writeFile: async () => {},
   };
-  const helpers = { hex: (c) => String(c == null ? "" : c).replace(/^#/, "") };
+  const helpers = { hex: (c) => String(c == null ? "" : c).replace(/^#/, ""), icon };
   try {
     let c = String(code || "").replace(/^\s*```[a-z]*\s*\n/i, "").replace(/\n```\s*$/i, "");
     const fn = new AsyncFunction("pptx", "helpers", "ShapeType", "ChartType", c);
@@ -66,7 +67,7 @@ function render(slides) {
         const bars = labels.map((lb, i) => { const v = Number(vals[i]) || 0; const bw = 100 / Math.max(1, labels.length); return "<div style='display:inline-flex;flex-direction:column;justify-content:flex-end;align-items:center;width:" + bw + "%;height:100%'><div style='width:55%;height:" + (v / max * 78).toFixed(0) + "%;background:" + cc + ";border-radius:3px 3px 0 0'></div><div style='font-size:" + lfs + "px;color:#9AA7BD;margin-top:3px'>" + _esc(lb) + "</div></div>"; }).join("");
         return "<div class='el' style='" + base + "display:flex;align-items:flex-end'>" + bars + "</div>";
       }
-      if (it.k === "image") return "<div class='el' style='" + base + "background:rgba(255,255,255,0.06);border:1px dashed rgba(255,255,255,0.2);border-radius:6px'></div>";
+      if (it.k === "image") { const dd = (it.o && it.o.data) ? String(it.o.data) : ""; return dd ? "<img class='el' src='" + dd + "' style='" + base + "object-fit:contain'/>" : "<div class='el' style='" + base + "background:rgba(255,255,255,0.06);border:1px dashed rgba(255,255,255,0.2);border-radius:6px'></div>"; }
       return "";
     }).join("");
     return "<div class='slide' style='background:" + bg + "'>" + els + "</div>";

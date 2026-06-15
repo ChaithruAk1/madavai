@@ -6,6 +6,7 @@
 //   • stray markdown fences and import/require lines are stripped
 //   • if the script throws PARTWAY, we still return the slides built so far (a partial deck beats an error)
 // Only a script that produces ZERO slides is treated as a failure.
+import { icon } from "./deckIcons.js";
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
 function sanitize(code) {
@@ -26,7 +27,7 @@ export async function buildDeck(Pptx, code, outputType) {
   const realWrite = pptx.write.bind(pptx);
   pptx.write = async () => {};       // model calling write/writeFile is a no-op; Madav does the real write
   pptx.writeFile = async () => "";
-  const helpers = { hex: (c) => String(c == null ? "" : c).replace(/^#/, "") };
+  const helpers = { hex: (c) => String(c == null ? "" : c).replace(/^#/, ""), icon };
   let runErr = null;
   try {
     const fn = new AsyncFunction("pptx", "helpers", "ShapeType", "ChartType", sanitize(code));
