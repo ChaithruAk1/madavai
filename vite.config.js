@@ -15,6 +15,8 @@ const obfuscate = {
     stringArrayThreshold: 0.75,
     rotateStringArray: true,
     splitStrings: true,
+    // Never string-array/split these — they are dynamic import() specifiers the bundler must resolve.
+    reservedStrings: ["exceljs", "docx", "jspdf", "pptxgenjs", "mammoth", "xlsx"],
     splitStringsChunkLength: 8,
     transformObjectKeys: false,
     numbersToExpressions: true,
