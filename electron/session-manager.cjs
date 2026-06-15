@@ -23,7 +23,7 @@ const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // cry
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
 // Artifact-iteration rule so the Studio "live preview" iterates in place:
 // emit the WHOLE file in one fenced block, and re-emit it whole when the user asks for a change.
-const ARTIFACT_RULE_BASE = ARTIFACT_RULE;
+const ARTIFACT_RULE_BASE = require("../shared/office-rules.cjs").ARTIFACT_RULE; // inline require — avoids TDZ vs the destructured import below
 // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js).
 // Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per turn.
 const { officeRule, isDeckCapable, ARTIFACT_RULE } = require("../shared/office-rules.cjs");

@@ -157,20 +157,7 @@ function applyPermissionPolicy() {
 let _cspDone = false;
 function applyCSP() {
   if (_cspDone) return; _cspDone = true;
-  const script = isDev ? "'self' 'unsafe-inline' 'unsafe-eval'" : "'self' 'unsafe-eval'";
-  const connect = isDev ? "'self' https: ws://localhost:5174 http://localhost:5174" : "'self' https:";
-  const csp = [
-    "default-src 'self'",
-    `script-src ${script}`,
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self' data:",
-    `connect-src ${connect}`,
-    "worker-src 'self' blob:",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "frame-ancestors 'none'",
-  ].join("; ");
+  const csp = require("../shared/csp.cjs").buildCSP({ isDev }); // single CSP source — web + desktop can't drift (CLAUDE.md)
   session.defaultSession.webRequest.onHeadersReceived((details, cb) => {
     cb({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } });
   });

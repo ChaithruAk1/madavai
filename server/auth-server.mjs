@@ -13,7 +13,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { URL } from "node:url";
 import { makeStore } from "./store.mjs";
-import webmd from "../electron/webmd.cjs"; // LLM-ready web extraction (CJS — Node imports it fine)
+import webmd from "../electron/webmd.cjs";
+import cspPolicy from "../shared/csp.cjs"; // single CSP source (web + desktop) // LLM-ready web extraction (CJS — Node imports it fine)
 import { scoreQuiz, scoreBatch } from "./quiz.mjs";
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
@@ -174,7 +175,7 @@ const ALLOWED_ORIGINS = new Set([
 // Security headers on every response (set via setHeader so later writeHead calls merge with them).
 // CSP defaults to the strict API policy; HTML responses override it with HTML_CSP below.
 const API_CSP = "default-src 'none'; frame-ancestors 'none'";
-const HTML_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https:; img-src * data: blob:; media-src blob: data:; connect-src *; frame-src 'self' blob: data: about:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+const HTML_CSP = cspPolicy.buildCSP({ web: true });
 function baseHeaders(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");

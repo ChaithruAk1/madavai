@@ -131,7 +131,7 @@ function isBlocked(permMode, name) {
 
 // Shared artifact-iteration rule (Studio "live preview" iterates in place like frontier chat products):
 // always emit the WHOLE file in one fenced block so it renders, and re-emit it whole on edits.
-const ARTIFACT_RULE_BASE = ARTIFACT_RULE;
+const ARTIFACT_RULE_BASE = require("../shared/office-rules.cjs").ARTIFACT_RULE; // inline require — avoids TDZ vs the destructured import below
 // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js).
 // Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per
 // turn, never at module load, so the toggle applies without a restart.

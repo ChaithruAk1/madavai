@@ -48,4 +48,6 @@ async function pull() {
     return { pulled: true, merged };
   } catch { return null; }
 }
-module.exports = { push, maybePush, pull };
+async function pushNow() { lastHash = ""; return push(); } // force an upload (ignores the no-change guard) — used on launch
+async function launchSync() { try { await pull(); } catch {} try { await pushNow(); } catch {} } // pull remote, then upload our full local store
+module.exports = { push, maybePush, pull, pushNow, launchSync };
