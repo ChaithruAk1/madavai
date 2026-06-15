@@ -22,8 +22,20 @@ export async function buildDeck(Pptx, code, outputType) {
   pptx.layout = "LAYOUT_WIDE";
   try { pptx.author = "Madav"; pptx.company = "Madav"; } catch {}
   let added = 0;
+  const seen = []; // slide text, for Layer-2 validation (parity with docx/pdf)
   const origAdd = pptx.addSlide.bind(pptx);
-  pptx.addSlide = (...a) => { added++; return origAdd(...a); };
+  pptx.addSlide = (...a) => {
+    added++;
+    const sl = origAdd(...a);
+    try {
+      const origAddText = sl.addText.bind(sl);
+      sl.addText = (t, ...rest) => {
+        try { if (typeof t === "string") seen.push(t); else if (Array.isArray(t)) t.forEach((x) => { if (x && x.text != null) seen.push(String(x.text)); }); } catch {}
+        return origAddText(t, ...rest);
+      };
+    } catch {}
+    return sl;
+  };
   const realWrite = pptx.write.bind(pptx);
   pptx.write = async () => {};       // model calling write/writeFile is a no-op; Madav does the real write
   pptx.writeFile = async () => "";
@@ -34,5 +46,9 @@ export async function buildDeck(Pptx, code, outputType) {
     await fn(pptx, helpers, pptx.ShapeType, pptx.ChartType);
   } catch (e) { runErr = e; }        // swallow — we still try to emit whatever slides exist
   if (!added) throw new Error(runErr ? ("deck script error: " + ((runErr && runErr.message) || runErr)) : "deck script produced no slides");
-  return await realWrite({ outputType });
+  const issues = []; const _j = seen.join("  ");
+  if (/\[object Object\]/.test(_j)) issues.push({ sheet: "slide", cell: "—", formula: "[object Object] appears in slide text" });
+  if (/\bNaN\b/.test(_j)) issues.push({ sheet: "slide", cell: "—", formula: "NaN appears in slide text" });
+  const buf = await realWrite({ outputType });
+  return { buf, issues };
 }

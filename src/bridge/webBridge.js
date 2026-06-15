@@ -21,7 +21,7 @@ import * as webfs from "./webfs.js";
 // head+tail truncation, stale-result squash, identical-call loop breaker.
 import { tolerantParse, headTail, squashStale, CallGuard } from "../shared/harness.js";
 // In-chat office files: the rule that teaches models the ```officedoc spec.
-import { officeRule } from "../office.js";
+import { officeRule, ARTIFACT_RULE } from "../office.js";
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
@@ -263,8 +263,18 @@ function chatMaybePush() {
     } catch {}
   }, 4000);
 }
+async function chatPushNow() {
+  try {
+    const s = loadSettings();
+    if (s.chatSync === false || !getToken()) return;
+    const items = await chatItems(); const h = chatHash(items);
+    const r = await fetch(api("/conversations"), { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ items }) }).then((x) => x.json()).catch(() => null);
+    if (r && r.ok) _chatLast = h;
+  } catch {}
+}
+async function chatLaunchSync() { await chatPull(); await chatPushNow(); } // download remote, then upload our local (old) chats
 setTimeout(wsPull, 1500); // account workspace → this browser, shortly after load
-setTimeout(chatPull, 1800); // pull synced conversations shortly after load
+setTimeout(chatLaunchSync, 1800); // pull synced conversations, then upload local (old) chats
 // Starter profiles authenticate with the user's SESSION TOKEN as the bearer (the server
 // swaps in the house key upstream). Injected here so it's always current, never persisted.
 const resolveProfile = (p) => (p && !p.apiKey && /\/starter\b/.test(p.baseUrl || "") ? { ...p, apiKey: getToken() || "" } : p);
@@ -294,8 +304,7 @@ const officeRulePart = (s) => { if (!FEAT_OFFICE || ((s && s.extras) || {}).offi
 // Artifact + webpage-design rule — kept in sync with electron/agent-openai.cjs ARTIFACT_RULE_BASE so
 // the WEB build gets the same live-preview behaviour and the same "design it like a shipped product"
 // bar for HTML pages. The renderer detects fenced blocks and previews them in the side panel.
-const ARTIFACT_RULE =
-  " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview. For HTML pages and web UIs, DESIGN them to a professional standard — never the default-browser look: load Tailwind from CDN (<script src=\"https://cdn.tailwindcss.com\"></script>) or write real CSS; use a deliberate type scale and web fonts, generous whitespace, a cohesive accent-based colour system with strong contrast, responsive layout, and subtle depth (shadows, rounded corners, hover states). Build a complete, self-contained page (semantic sections, sensible placeholder imagery), not a bare snippet. Make it look like a shipped product.";
+// ARTIFACT_RULE now comes from the shared single source (imported above).
 // Deliver the answer, not the play-by-play — mirror of electron/agent-openai.cjs ANSWER_DIRECT_RULE.
 // Stops "let me search…", "I'm executing now!", "web search isn't returning results", and similar
 // process/tool/limitation narration that users see as noise.

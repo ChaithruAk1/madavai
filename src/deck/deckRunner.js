@@ -15,7 +15,7 @@ function runInWorker(code, timeoutMs) {
     const t = setTimeout(() => finish(reject, new Error("deck build timed out")), timeoutMs);
     worker.onmessage = (e) => {
       const d = e.data || {};
-      if (d.ok && d.buf) finish(resolve, new Blob([d.buf], { type: PPTX_MIME }));
+      if (d.ok && d.buf) finish(resolve, { blob: new Blob([d.buf], { type: PPTX_MIME }), issues: d.issues || [] });
       else finish(reject, new Error(d.error || "deck build failed")); // code-level error from the script
     };
     worker.onerror = (ev) => finish(reject, new Error("WORKER_INFRA: " + ((ev && ev.message) || "worker error")));
@@ -27,7 +27,7 @@ async function runOnMainThread(code) {
   const mod = await import("pptxgenjs/dist/pptxgen.es.js");
   const Pptx = mod.default || mod;
   const { buildDeck } = await import("./deckBuild.js");
-  return await buildDeck(Pptx, code, "blob"); // same forgiving builder as the worker
+  const { buf, issues } = await buildDeck(Pptx, code, "blob"); return { blob: buf, issues }; // same forgiving builder as the worker
 }
 
 export async function runDeckCode(code, { timeoutMs = 20000 } = {}) {

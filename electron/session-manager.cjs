@@ -23,10 +23,10 @@ const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // cry
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
 // Artifact-iteration rule so the Studio "live preview" iterates in place:
 // emit the WHOLE file in one fenced block, and re-emit it whole when the user asks for a change.
-const ARTIFACT_RULE_BASE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview.";
+const ARTIFACT_RULE_BASE = ARTIFACT_RULE;
 // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js).
 // Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per turn.
-const { officeRule, isDeckCapable } = require("../shared/office-rules.cjs");
+const { officeRule, isDeckCapable, ARTIFACT_RULE } = require("../shared/office-rules.cjs");
 function officeRulePart() {
   try { if (!require("./features.cjs").builtIn("office")) return ""; } catch {}
   try { if ((settings.load().extras || {}).office === false) return ""; } catch {}
@@ -34,7 +34,6 @@ function officeRulePart() {
   try { const _c = settings.load(); _model = String(((_c.profiles || {})[_c.activeProfileId] || {}).model || ""); } catch {}
   return officeRule(_model);
 }
-const ARTIFACT_RULE = ARTIFACT_RULE_BASE; // office part appended at use time (see _chatTurn)
 function withLang(cfg) {
   const gi = cfg.globalInstructions || "";
   const lang = cfg.responseLanguage;

@@ -403,4 +403,4 @@ Types: xlsx {sheets:[{name,rows:[[…]]}]} · docx {title,subtitle?,accent?,sect
 
 // ---- Capability-gated office rule (parity with electron officeRulePart; consumed by the web bridge) ----
 // Single source of truth — web + desktop both consume shared/office-rules.cjs (see CLAUDE.md).
-export { officeRule, isDeckCapable } from "../shared/office-rules.cjs";
+export { officeRule, isDeckCapable, ARTIFACT_RULE } from "../shared/office-rules.cjs";

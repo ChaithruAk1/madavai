@@ -131,17 +131,16 @@ function isBlocked(permMode, name) {
 
 // Shared artifact-iteration rule (Studio "live preview" iterates in place like frontier chat products):
 // always emit the WHOLE file in one fenced block so it renders, and re-emit it whole on edits.
-const ARTIFACT_RULE_BASE = " When you build or change something runnable — an HTML page, web app, tool, game, SVG, Mermaid diagram, React/JSX component, or a document — put the ENTIRE file in ONE fenced code block tagged with its language (```html, ```jsx, ```svg, ```mermaid, ```markdown). When the user asks for a change to it, return the COMPLETE updated file again in a single block — never a diff, snippet, or partial edit — so it re-renders as a live preview. For HTML pages and web UIs, DESIGN them to a professional standard — never the default-browser look: load Tailwind from CDN (<script src=\"https://cdn.tailwindcss.com\"></script>) or write real CSS; use a deliberate type scale and web fonts, generous whitespace, a cohesive accent-based colour system with strong contrast, responsive layout, and subtle depth (shadows, rounded corners, hover states). Build a complete, self-contained page (semantic sections, sensible placeholder imagery), not a bare snippet. Make it look like a shipped product.";
+const ARTIFACT_RULE_BASE = ARTIFACT_RULE;
 // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js).
 // Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per
 // turn, never at module load, so the toggle applies without a restart.
-const { officeRule, isDeckCapable } = require("../shared/office-rules.cjs");
+const { officeRule, isDeckCapable, ARTIFACT_RULE } = require("../shared/office-rules.cjs");
 function officeRulePart(model) {
   try { if (!require("./features.cjs").builtIn("office")) return ""; } catch {}
   try { if ((require("./settings.cjs").load().extras || {}).office === false) return ""; } catch {}
   return officeRule(model);
 }
-const ARTIFACT_RULE = ARTIFACT_RULE_BASE; // kept for any external references; office part is appended at use time
 // Deliver the answer — don't narrate the machinery. Weak models love to say "let me load my X skill"
 // or "I don't have access to …"; this forbids that and tells them to just use tools silently and answer.
 const ANSWER_DIRECT_RULE = " Answer the user's request directly and naturally. NEVER narrate your internal process, tools, or skills — do not say things like \"let me load my web search skill\", \"I'll use the web_search tool\", \"I don't have access to …\", or describe what you are about to do. If a tool helps, call it silently and present only the result. Don't apologize for limitations or list what you cannot do — give the best possible answer to what was actually asked.";

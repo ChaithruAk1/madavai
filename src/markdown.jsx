@@ -116,26 +116,42 @@ function OfficeCard({ code }) {
 // per-slide by the model (this is what reaches Claude-grade quality). We NEVER show the raw code;
 // Download builds a real .pptx on this device in a sandboxed worker.
 function DeckCard({ code, streaming }) {
-  const [state, setState] = useState("");
+  const [state, setState] = useState(""); // "" | building | done | repairing | invalid | error:<msg>
+  const [issues, setIssues] = useState([]);
   const ready = !streaming && /addSlide/.test(code);            // the script has begun producing slides
   const name = deckNameFrom(code);
+  const isRepair = /\/\/\s*repaired/i.test(code);
+  useEffect(() => {
+    if (!ready || isRepair || state) return; // freshly complete -> validate syntax once (parity with xlsx/docx/pdf)
+    const bad = _codeSyntaxError(code, ["pptx", "helpers", "ShapeType", "ChartType"]);
+    if (bad) { setState("repairing"); window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "deck", code, error: bad } })); }
+  }, [ready, isRepair]);
   const view = async () => { try { const html = await deckPreviewHTML(code); window.dispatchEvent(new CustomEvent("madav:openhtml", { detail: { html, title: name } })); } catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 120)); } };
-  const build = async () => {
+  const build = async (force) => {
     setState("building");
     try {
-      const blob = await runDeckCode(code);
+      const { blob, issues: found } = await runDeckCode(code);
+      if (found && found.length && !force) {
+        setIssues(found);
+        if (!isRepair) { setState("repairing"); window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "deck", code, issues: found } })); return; }
+        setState("invalid"); return;
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 4000);
       setState("done"); setTimeout(() => setState(""), 2500);
-    } catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 140)); }
+    } catch (e) {
+      const m = String((e && e.message) || e);
+      const midStream = /Unexpected end of input|Invalid or unexpected token|Unexpected token|Unexpected identifier/i.test(m);
+      setState("error:" + (midStream ? "Couldn't build it — if the reply has finished, click Rebuild." : m.slice(0, 140)));
+    }
   };
   return (
     <div className={"md-office" + (ready ? "" : " md-office-pending")}>
       <span className="md-office-ico">📽</span>
-      <span className="md-office-meta"><b>{ready ? name : "Composing your deck…"}</b><i>{ready ? "PowerPoint deck · designed on your device" : "building it on your device"}</i></span>
-      {ready && <button className="md-office-open" onClick={view} title="Preview beside the chat">View</button>}
-      {ready && <button className="md-office-btn" disabled={state === "building"} onClick={build}>{state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}</button>}
+      <span className="md-office-meta"><b>{ready ? name : "Composing your deck…"}</b><i>{state === "repairing" ? `Found ${issues.length || 1} issue(s) — Madav is rebuilding it…` : state === "invalid" ? `${issues.length} issue(s) in slide text — review before sending` : ready ? "PowerPoint deck · designed on your device" : "building it on your device"}</i></span>
+      {ready && state !== "repairing" && <button className="md-office-open" onClick={view} title="Preview beside the chat">View</button>}
+      {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{state === "building" ? "Building…" : state === "done" ? "Saved ✓" : state === "invalid" ? "Download anyway" : "Download"}</button>}
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
       {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
     </div>

@@ -7,8 +7,8 @@ try { self.fetch = undefined; self.XMLHttpRequest = undefined; self.importScript
 
 self.onmessage = async (e) => {
   try {
-    const buf = await buildDeck(Pptx, (e.data || {}).code, "arraybuffer");
-    self.postMessage({ ok: true, buf }, [buf]);
+    const { buf, issues } = await buildDeck(Pptx, (e.data || {}).code, "arraybuffer");
+    self.postMessage({ ok: true, buf, issues }, [buf]);
   } catch (err) {
     self.postMessage({ ok: false, error: String((err && err.message) || err).slice(0, 400) });
   }
