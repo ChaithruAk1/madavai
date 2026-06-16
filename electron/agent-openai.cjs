@@ -202,6 +202,11 @@ async function execTool(cwd, name, args, mission) {
     }
     case "write_file": {
       const f = inside(cwd, args.path);
+      // Binary office formats can't be written as text — steer the agent to the right path instead of producing a corrupt file.
+      if (/\.(xlsx|xlsm|xls|docx|pptx|pdf)$/i.test(f)) {
+        const ext = (f.match(/\.([a-z]+)$/i) || [,"file"])[1].toLowerCase();
+        throw new Error("Cannot create " + args.path + " with write_file — ." + ext + " is a BINARY office format; write_file only writes text, so the result would be a corrupt file that won't open. To produce it: (1) PREFERRED — stop using file tools and reply with ONE fenced officedoc block (```officedoc) containing only the JSON spec; Madav builds the real file as a downloadable card. (2) If it must be saved into this folder, use run_bash with a script (e.g. python + openpyxl for xlsx).");
+      }
       if (readPaths && fs.existsSync(f) && !readPaths.has(f)) {
         throw new Error(`refusing to overwrite ${args.path} — read_file it first (it already exists and you have not read it this mission)`);
       }
