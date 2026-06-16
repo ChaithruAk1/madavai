@@ -46,6 +46,34 @@ const execAsync = (command, opts) => new Promise((resolve) => {
     resolve(String(stdout || "") + (stderr ? "\n[stderr] " + String(stderr).slice(0, 1000) : ""));
   });
 });
+// Review H3: hard deny-list for CATASTROPHIC shell commands, enforced even under auto-approve /
+// bypassPermissions. The weak-model office pipeline runs ONE python script, so this never trips it;
+// it is defense-in-depth against prompt-injection, NOT a replacement for the permission gate.
+function destructiveBashGuard(command) {
+  const c = String(command || "");
+  const DANGER = [
+    /\brm\b[^\n]*\s-[^\s]*(rf|fr)\b[^\n]*(\s\/(\s|$|\*)|\s~(\s|$)|\s\.(\s|$)|--no-preserve-root)/i,
+    /\brm\b[^\n]*--recursive[^\n]*--force[^\n]*(\s\/(\s|$|\*)|--no-preserve-root)/i,
+    /:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/,
+    /\bmkfs(\.\w+)?\b/i,
+    /\bdd\b[^\n]*\bof=\/dev\/(sd|nvme|hd|disk|vd)/i,
+    />\s*\/dev\/(sd|nvme|hd|disk|vd)\w*/i,
+    /\b(shutdown|reboot|halt|poweroff)\b/i,
+    /\b(diskpart|cipher\s+\/w)\b/i,
+    /\bformat\s+[a-z]:/i,
+    /\b(del|erase)\b[^\n]*\s\/[sS]\b[^\n]*[a-z]:\\/i,
+    /\b(rd|rmdir)\b[^\n]*\s\/[sS]\b[^\n]*[a-z]:\\/i,
+    /\breg\s+delete\b/i,
+    /\bRemove-Item\b[^\n]*-Recurse[^\n]*[a-z]:\\/i,
+    /\b(curl|wget|iwr|Invoke-WebRequest)\b[^\n|]*\|\s*(sudo\s+)?(ba|z|c|tc|k)?sh\b/i,
+    /\b(curl|wget|iwr|Invoke-WebRequest)\b[^\n|]*\|\s*(iex|Invoke-Expression)\b/i,
+    /\|\s*(iex|Invoke-Expression)\b/i,
+    /\bchmod\b[^\n]*\s-[^\s]*R[^\s]*\s+0?777\s+\/(\s|$)/i,
+  ];
+  if (DANGER.some((re) => re.test(c)))
+    return "ERROR: command blocked by Madav safety guard — it matches a catastrophic/irreversible pattern (mass delete, disk/registry wipe, power-off, or remote pipe-to-shell). If you truly intend this, run it yourself in a terminal; Madav will not auto-run it.";
+  return "";
+}
 const { streamChatTools, streamChat, stripReasoning } = require("./providers.cjs");
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
@@ -280,8 +308,11 @@ async function execTool(cwd, name, args, mission) {
       const region = lines.slice(lo, hi).map((l, i) => `${lo + i + 1}| ${l}`).join("\n");
       return `edited ${args.path} — the changed region now reads:\n${region}`;
     }
-    case "run_bash":
+    case "run_bash": {
+      const _blocked = destructiveBashGuard(args.command);
+      if (_blocked) return _blocked;
       return harness.headTail(await execAsync(args.command, { cwd, encoding: "utf8", timeout: 120000, maxBuffer: 8 * 1024 * 1024, env: runnerEnv() }), { maxChars: 8000 });
+    }
     case "find_files": {
       const out = [];
       walkFiles(cwd, cwd, 6, (rel) => { if (rel.toLowerCase().includes(String(args.pattern || "").toLowerCase())) out.push(rel); });

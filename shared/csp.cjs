@@ -9,11 +9,11 @@ function buildCSP(opts) {
   if (opts.web) {
     return [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' " + EVAL + " https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com",
+      "script-src 'self' " + EVAL + " https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com",
       "style-src 'self' 'unsafe-inline' https:",
-      "img-src * data: blob:",
+      "img-src 'self' data: blob: https:",
       "media-src blob: data:",
-      "connect-src *",
+      "connect-src 'self' https:",
       "frame-src 'self' blob: data: about:",
       WORKER,
       "object-src 'none'",

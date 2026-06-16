@@ -6,6 +6,21 @@ import { icon } from "./deckIcons.js";
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const _hx = (c, d) => { const s = String(c == null ? "" : c).replace(/^#/, ""); return /^[0-9A-Fa-f]{6}$/.test(s) ? "#" + s : ("#" + (d || "0B0E15")); };
 const _esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// Review M2: the preview re-runs MODEL-written code on the main thread. We cannot null window.fetch
+// globally (it is the app's own thread), so we SHADOW the dangerous globals as function parameters
+// bound to undefined — a casual fetch()/XHR/WebSocket exfil of the auth token or API keys throws.
+// (Defense-in-depth: the rendered output is also shown in a sandboxed, opaque-origin iframe. A fully
+// isolated preview Worker is the airtight follow-up.)
+const _BLOCK = ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","eval","Function",
+  "window","document","globalThis","self","top","parent","frames","navigator","location",
+  "localStorage","sessionStorage","indexedDB","caches","Worker","SharedWorker","postMessage","crypto"];
+// Only recognised inline image data (data:image/* base64, or http/https) reaches <img src>; strip
+// quotes/brackets so a crafted value cannot break out of the single-quoted attribute. Else placeholder.
+const _imgSrc = (v) => {
+  const x = String(v == null ? "" : v).trim();
+  const ok = /^data:image\/(png|jpe?g|gif|webp|bmp);base64,[a-z0-9+/=\s]+$/i.test(x) || /^https?:\/\/[^\s'"<>]+$/i.test(x);
+  return ok ? x.replace(/['"<>]/g, "") : "";
+};
 
 function mkSlide() {
   const sl = { _items: [] };
@@ -28,8 +43,8 @@ export async function deckPreviewHTML(code) {
   const helpers = { hex: (c) => String(c == null ? "" : c).replace(/^#/, ""), icon };
   try {
     let c = String(code || "").replace(/^\s*```[a-z]*\s*\n/i, "").replace(/\n```\s*$/i, "");
-    const fn = new AsyncFunction("pptx", "helpers", "ShapeType", "ChartType", c);
-    await fn(pptx, helpers, pptx.ShapeType, pptx.ChartType);
+    const fn = new AsyncFunction("pptx", "helpers", "ShapeType", "ChartType", ..._BLOCK, c);
+    await fn(pptx, helpers, pptx.ShapeType, pptx.ChartType, ..._BLOCK.map(() => undefined));
   } catch {}
   return render(slides);
 }
@@ -67,7 +82,7 @@ function render(slides) {
         const bars = labels.map((lb, i) => { const v = Number(vals[i]) || 0; const bw = 100 / Math.max(1, labels.length); return "<div style='display:inline-flex;flex-direction:column;justify-content:flex-end;align-items:center;width:" + bw + "%;height:100%'><div style='width:55%;height:" + (v / max * 78).toFixed(0) + "%;background:" + cc + ";border-radius:3px 3px 0 0'></div><div style='font-size:" + lfs + "px;color:#9AA7BD;margin-top:3px'>" + _esc(lb) + "</div></div>"; }).join("");
         return "<div class='el' style='" + base + "display:flex;align-items:flex-end'>" + bars + "</div>";
       }
-      if (it.k === "image") { const dd = (it.o && it.o.data) ? String(it.o.data) : ""; return dd ? "<img class='el' src='" + dd + "' style='" + base + "object-fit:contain'/>" : "<div class='el' style='" + base + "background:rgba(255,255,255,0.06);border:1px dashed rgba(255,255,255,0.2);border-radius:6px'></div>"; }
+      if (it.k === "image") { const dd = _imgSrc(it.o && it.o.data); return dd ? "<img class='el' src='" + dd + "' style='" + base + "object-fit:contain'/>" : "<div class='el' style='" + base + "background:rgba(255,255,255,0.06);border:1px dashed rgba(255,255,255,0.2);border-radius:6px'></div>"; }
       return "";
     }).join("");
     return "<div class='slide' style='background:" + bg + "'>" + els + "</div>";
