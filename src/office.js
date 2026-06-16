@@ -13,6 +13,12 @@
 
 import { renderTemplatePreview } from "./doc/xlsxTemplatePreview.js";
 
+// Office-suite brand colour (the navy in headers/titles). Settings → Office Suite Theme color
+// updates this via setOfficeAccent; a spec's own accent still overrides it. Financial cell
+// colours (blue inputs / black formulas / green links) are NOT themed.
+let _OFFICE_ACCENT = "1F3864";
+export function setOfficeAccent(hex) { try { _OFFICE_ACCENT = _hx(hex, "1F3864"); } catch { _OFFICE_ACCENT = "1F3864"; } }
+
 export function parseOfficeSpec(jsonText) {
   try {
     const spec = JSON.parse(String(jsonText || ""));
@@ -35,7 +41,7 @@ function _isRichXlsx(spec) {
 async function buildXlsxTemplate(spec) {
   const m = await import("exceljs"); const ExcelJS = m.default || m;
   const tpl = await import("./doc/xlsxTemplate.js");
-  const { wb, charts } = tpl.buildTemplateWorkbook(ExcelJS, spec);
+  const { wb, charts } = tpl.buildTemplateWorkbook(ExcelJS, spec, { accent: "FF" + _hx(spec.accent, _OFFICE_ACCENT) });
   let buf = await wb.xlsx.writeBuffer();
   if (charts && charts.length) { try { const ch = await import("./doc/xlsxChart.js"); buf = await ch.injectCharts(buf, charts); } catch (e) {} }
   return new Blob([buf], { type: _XLSX_MIME });
@@ -45,7 +51,7 @@ async function buildXlsx(spec) {
   let ExcelJS = null;
   try { const m = await import("exceljs"); ExcelJS = m.default || m; } catch { ExcelJS = null; }
   if (!ExcelJS) return buildXlsxBasic(spec);
-  const accent = _hx(spec.accent, "1F3864");
+  const accent = _hx(spec.accent, _OFFICE_ACCENT);
   const wb = new ExcelJS.Workbook(); wb.creator = "Madav"; wb.created = new Date();
   const sheets = Array.isArray(spec.sheets) && spec.sheets.length ? spec.sheets : [{ name: "Sheet1", rows: spec.rows || [] }];
   for (const sh of sheets.slice(0, 12)) {
@@ -97,7 +103,8 @@ async function buildXlsxBasic(spec) {
 const _DOCX = { NAVY: "1F3864", BODY: "1F2933", MUT: "6B7280", BAND: "F2F6FB", LINE: "D7DEEA", FONT: "Calibri" };
 function _docxTable(docx, rows, accent) {
   const { Table, TableRow, TableCell, Paragraph, TextRun, WidthType, BorderStyle, ShadingType } = docx;
-  const { NAVY, BODY, BAND, LINE, FONT } = _DOCX;
+  const { BODY, BAND, LINE, FONT } = _DOCX;
+  const NAVY = accent;
   const b = { style: BorderStyle.SINGLE, size: 2, color: LINE };
   const borders = { top: b, bottom: b, left: b, right: b };
   const trs = rows.slice(0, 120).map((r, ri) => new TableRow({
@@ -113,8 +120,9 @@ function _docxTable(docx, rows, accent) {
 async function buildDocx(spec) {
   const docx = await import("docx");
   const { Document, Packer, Paragraph, HeadingLevel, TextRun, BorderStyle, AlignmentType, ShadingType, Footer, PageNumber, LevelFormat } = docx;
-  const { NAVY, BODY, MUT, BAND, LINE, FONT } = _DOCX;
-  const accent = _hx(spec.accent, NAVY);
+  const { BODY, MUT, BAND, LINE, FONT } = _DOCX;
+  const accent = _hx(spec.accent, _OFFICE_ACCENT);
+  const NAVY = accent;
   const children = [];
   if (spec.title) {
     children.push(new Paragraph({ spacing: { after: spec.subtitle ? 40 : 60 }, children: [new TextRun({ text: String(spec.title), bold: true, color: NAVY, size: 52, font: FONT })] }));
@@ -361,7 +369,7 @@ function _previewPptx(spec) {
   return `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${slides.join("")}</body></html>`;
 }
 function _previewDoc(spec) {
-  const NAVY = "#1F3864", acc = "#" + _hx(spec.accent, "1F3864");
+  const acc = "#" + _hx(spec.accent, _OFFICE_ACCENT), NAVY = acc;
   const metaHtml = (Array.isArray(spec.meta) && spec.meta.length)
     ? `<div class="meta">${spec.meta.slice(0, 6).map((m) => `${m.label ? `<span class="ml">${_eh(m.label)}:</span> ` : ""}<b>${_eh(m.value)}</b>`).join('<span class="dot">·</span>')}</div>` : "";
   const secs = (spec.sections || []).slice(0, 120).map((sec) => {
@@ -414,7 +422,7 @@ export function renderOfficeHTML(specOrJson) {
   if (!spec || !spec.type) return "<!doctype html><meta charset='utf-8'><body style='font-family:system-ui;padding:30px;color:#666'>Nothing to preview yet.</body>";
   try {
     if (spec.type === "pptx") return _previewPptx(spec);
-    if (spec.type === "xlsx") return _isRichXlsx(spec) ? renderTemplatePreview(spec) : _previewXlsx(spec);
+    if (spec.type === "xlsx") return _isRichXlsx(spec) ? renderTemplatePreview(spec, { accent: _hx(spec.accent, _OFFICE_ACCENT) }) : _previewXlsx(spec);
     return _previewDoc(spec); // docx + pdf share a document page look
   } catch (e) {
     return "<!doctype html><meta charset='utf-8'><body style='font-family:system-ui;padding:30px;color:#a00'>Preview error: " + _eh((e && e.message) || e) + "</body>";

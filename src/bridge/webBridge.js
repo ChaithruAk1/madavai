@@ -165,7 +165,7 @@ function defaultSettings() {
       p_starter: { id: "p_starter", name: "Madav Starter (free)", kind: "openai", baseUrl: (AUTH_BASE || "") + "/starter", apiKey: "", model: "nvidia/nemotron-3-nano-30b-a3b:free", cachedModels: [] },
       p_openrouter: { id: "p_openrouter", name: "OpenRouter", kind: "openai", baseUrl: "https://openrouter.ai/api/v1", apiKey: "", model: "", cachedModels: [] },
     },
-    theme: "dark", accent: "#13c2d6", globalInstructions: "", responseLanguage: "model", defaultModel: "", authBaseUrl: AUTH_BASE || "",
+    theme: "dark", accent: "#13c2d6", officeAccent: "1F3864", globalInstructions: "", responseLanguage: "model", defaultModel: "", authBaseUrl: AUTH_BASE || "",
     account: { name: "", email: "", avatar: "" }, messaging: { autoContinue: true },
   };
 }

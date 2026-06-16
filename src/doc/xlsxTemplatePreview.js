@@ -78,7 +78,8 @@ function evaluate(spec) {
   return { inp, der, model, table };
 }
 
-export function renderTemplatePreview(spec) {
+export function renderTemplatePreview(spec, opts) {
+  const NAVY = "#" + ((opts && opts.accent) || "1F3864");
   let V; try { V = evaluate(spec); } catch (e) { V = { inp: {}, der: {}, model: {}, table: {} }; }
   const sheets = Array.isArray(spec.sheets) ? spec.sheets : [];
   let body = "";
@@ -131,18 +132,18 @@ export function renderTemplatePreview(spec) {
     body += `</div>`;
   }
   const css = `body{margin:0;background:#eef1f6;padding:22px;font-family:Arial,'Calibri',system-ui,sans-serif;color:#1f2933}
-  .sh{max-width:1000px;margin:0 auto 26px}.title{font-size:17px;font-weight:800;color:#1F3864;margin-bottom:2px}
+  .sh{max-width:1000px;margin:0 auto 26px}.title{font-size:17px;font-weight:800;color:${NAVY};margin-bottom:2px}
   .sname{font-size:12px;font-weight:700;color:#5B6B82;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px}
   .kpis{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
-  .tile{background:#F2F6FB;border:1px solid #1F3864;border-radius:8px;padding:14px 16px;text-align:center}
-  .tv{font-size:24px;font-weight:800;color:#1F3864}.tl{font-size:11px;font-weight:700;color:#5B6B82;margin-top:4px;letter-spacing:.4px}
+  .tile{background:#F2F6FB;border:1px solid ${NAVY};border-radius:8px;padding:14px 16px;text-align:center}
+  .tv{font-size:24px;font-weight:800;color:${NAVY}}.tl{font-size:11px;font-weight:700;color:#5B6B82;margin-top:4px;letter-spacing:.4px}
   .scroll{overflow:auto;border:1px solid #B7C4D6;border-radius:8px;background:#fff}
   table.grid{border-collapse:collapse;width:100%;background:#fff}
   .grid td,.grid th{border:1px solid #DCE3F0;padding:6px 12px;font-size:13px;white-space:nowrap}
-  .grid th{background:#1F3864;color:#fff;font-weight:700;text-align:left}
+  .grid th{background:${NAVY};color:#fff;font-weight:700;text-align:left}
   .grid .hd th.r,.grid td.r{text-align:right}
   .grid tr.band td{background:#F2F6FB}.grid tr.tot td{background:#EAF0FB;font-weight:700}
-  .grid tr.sec td{background:#F2F6FB;color:#1F3864;font-weight:700;font-size:12px;letter-spacing:.3px}
+  .grid tr.sec td{background:#F2F6FB;color:${NAVY};font-weight:700;font-size:12px;letter-spacing:.3px}
   .blue{color:#0000FF}.grn{color:#008000}.b{font-weight:700}.note{color:#8A8A9A;font-style:italic;font-size:12px}`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${body || "<p style='opacity:.6'>Nothing to preview yet.</p>"}</body></html>`;
 }

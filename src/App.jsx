@@ -317,6 +317,8 @@ export default function App() {
     if (raw === "default" || !m) { root.dataset.accent = "default"; clearVars(); return; }
     apply(m[1], m[1], null);
   }, [settings && settings.accent]);
+  // Office Suite theme colour -> the deterministic Word/Excel renderers (headers/titles).
+  useEffect(() => { let on = true; import("./office.js").then((m) => { if (on) { try { m.setOfficeAccent((settings && settings.officeAccent) || "1F3864"); } catch {} } }); return () => { on = false; }; }, [settings && settings.officeAccent]);
   useEffect(() => {
     const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) { e.preventDefault(); setSidebarOpen((v) => !v); } };
     window.addEventListener("keydown", onKey);

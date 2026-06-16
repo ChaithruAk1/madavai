@@ -71,6 +71,7 @@ const DEFAULTS = {
   responseLanguage: "model", // "model" = let the model decide; or a language name to force replies
   theme: "dark", // "dark" | "light" | "system"
   accent: "grad:#0ad0f5:#2196f8:#8b50f5", // Madav logo gradient (cyan->azure->violet) is the default accent
+  officeAccent: "1F3864", // Office Suite (Word/Excel) brand colour for headers/titles; 6-hex, custom overrides. Financial cell colours stay fixed.
   defaultModel: "", // "profileId::model" — applied on every app start
   proxyUrl: "", // optional corporate proxy, e.g. http://proxy.corp:8080 (applied on startup)
   noProxy: "", // optional comma-separated hosts to bypass the proxy (defaults to localhost)

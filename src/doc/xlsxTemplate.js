@@ -24,7 +24,8 @@ const allB = () => ({ top: thin(), left: thin(), bottom: thin(), right: thin() }
 function colLetters(n) { let s = ""; n = Number(n) || 1; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s || "A"; }
 const qsheet = (n) => (/[^A-Za-z0-9_]/.test(n) ? "'" + String(n).replace(/'/g, "''") + "'" : String(n));
 
-export function buildTemplateWorkbook(ExcelJS, spec) {
+export function buildTemplateWorkbook(ExcelJS, spec, opts) {
+  const ACCENT = (opts && opts.accent) || ACCENT;
   const wb = new ExcelJS.Workbook(); wb.creator = "Madav"; wb.created = new Date();
   const named = {};       // named[sheet][id] = "$B$7" (sheet-local absolute single cell)
   const metricRow = {};   // metricRow[sheet][id] = R
@@ -49,7 +50,7 @@ export function buildTemplateWorkbook(ExcelJS, spec) {
     const name = sh._name, ws = wsOf[name];
     let widthUsed = 3;
     // title
-    if (sh.title) { ws.getCell("A1").value = String(sh.title); ws.getCell("A1").font = f({ size: 15, bold: true, color: { argb: PAL.navy } }); ws.getRow(1).height = 24; }
+    if (sh.title) { ws.getCell("A1").value = String(sh.title); ws.getCell("A1").font = f({ size: 15, bold: true, color: { argb: ACCENT } }); ws.getRow(1).height = 24; }
     let r = 3;
 
     // KPI tiles (rendered as 2-wide merged blocks, two per row) — usually a summary sheet
@@ -63,7 +64,7 @@ export function buildTemplateWorkbook(ExcelJS, spec) {
         ws.mergeCells(`${c1}${rr}:${c2}${rr + 1}`); ws.mergeCells(`${c1}${rr + 2}:${c2}${rr + 2}`);
         const num = ws.getCell(`${c1}${rr}`);
         pending.push({ sheet: name, cellRef: `${c1}${rr}`, expr: k.ref || k.expr || "0", ctx: { kind: "cell", sheet: name } });
-        num.numFmt = fmtOf(k.fmt) || FMT.num; num.font = f({ size: 20, bold: true, color: { argb: PAL.navy } });
+        num.numFmt = fmtOf(k.fmt) || FMT.num; num.font = f({ size: 20, bold: true, color: { argb: ACCENT } });
         num.alignment = { horizontal: "center", vertical: "middle" };
         const lab = ws.getCell(`${c1}${rr + 2}`); lab.value = String(k.label || "").toUpperCase();
         lab.font = f({ size: 9, bold: true, color: { argb: PAL.gray } }); lab.alignment = { horizontal: "center" };
@@ -85,7 +86,7 @@ export function buildTemplateWorkbook(ExcelJS, spec) {
         if (inp.section && inp.section !== lastSec) {
           lastSec = inp.section; ws.mergeCells(`A${r}:C${r}`);
           const sc = ws.getCell(`A${r}`); sc.value = String(inp.section).toUpperCase();
-          sc.font = f({ bold: true, color: { argb: PAL.navy } }); for (const cc of "ABC") ws.getCell(`${cc}${r}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: PAL.band } };
+          sc.font = f({ bold: true, color: { argb: ACCENT } }); for (const cc of "ABC") ws.getCell(`${cc}${r}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: PAL.band } };
           ws.getRow(r).height = 18; r++;
         }
         ws.getCell(`A${r}`).value = String(inp.label || ""); ws.getCell(`A${r}`).font = f();
@@ -99,7 +100,7 @@ export function buildTemplateWorkbook(ExcelJS, spec) {
     }
     if (Array.isArray(sh.derived) && sh.derived.length) {
       ws.mergeCells(`A${r}:C${r}`); const sc = ws.getCell(`A${r}`); sc.value = "DERIVED METRICS";
-      sc.font = f({ bold: true, color: { argb: PAL.navy } }); for (const cc of "ABC") ws.getCell(`${cc}${r}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: PAL.band } }; r++;
+      sc.font = f({ bold: true, color: { argb: ACCENT } }); for (const cc of "ABC") ws.getCell(`${cc}${r}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: PAL.band } }; r++;
       for (const d of sh.derived) {
         ws.getCell(`A${r}`).value = String(d.label || ""); ws.getCell(`A${r}`).font = f();
         const vc = ws.getCell(`B${r}`); vc.font = f({ color: { argb: PAL.black } }); vc.alignment = { horizontal: "right" };
@@ -119,7 +120,7 @@ export function buildTemplateWorkbook(ExcelJS, spec) {
       const hdr = r; periodHdrRow[name] = hdr; periodCols[name] = [];
       ws.getCell(`A${hdr}`).value = sh.rowHeader || "Metric";
       for (let p = 0; p < count; p++) { const cn = 2 + p; periodCols[name].push(cn); ws.getCell(`${colLetters(cn)}${hdr}`).value = labels[p]; }
-      for (let cn = 1; cn <= 1 + count; cn++) { const c = ws.getCell(`${colLetters(cn)}${hdr}`); c.font = f({ bold: true, color: { argb: PAL.white } }); c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PAL.navy } }; c.alignment = { horizontal: cn === 1 ? "left" : "right" }; c.border = allB(); }
+      for (let cn = 1; cn <= 1 + count; cn++) { const c = ws.getCell(`${colLetters(cn)}${hdr}`); c.font = f({ bold: true, color: { argb: PAL.white } }); c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ACCENT } }; c.alignment = { horizontal: cn === 1 ? "left" : "right" }; c.border = allB(); }
       ws.getRow(hdr).height = 18; r = hdr + 1;
       sh.metrics.forEach((mt, mi) => {
         const row = r + mi; metricRow[name][mt.id] = row;
@@ -153,7 +154,7 @@ export function buildTemplateWorkbook(ExcelJS, spec) {
     // tall table (rows × columns) — e.g. a pivot rollup
     if (Array.isArray(sh.columns) && sh.columns.length) {
       const cols = sh.columns.slice(0, 26); const hdr = r; periodHdrRow[name] = periodHdrRow[name] || hdr;
-      cols.forEach((c, ci) => { const L = colLetters(1 + ci); colKeyLetter[name][c.key] = L; const cell = ws.getCell(`${L}${hdr}`); cell.value = String(c.header || c.key); cell.font = f({ bold: true, color: { argb: PAL.white } }); cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PAL.navy } }; cell.alignment = { horizontal: ci === 0 ? "left" : "right" }; cell.border = allB(); });
+      cols.forEach((c, ci) => { const L = colLetters(1 + ci); colKeyLetter[name][c.key] = L; const cell = ws.getCell(`${L}${hdr}`); cell.value = String(c.header || c.key); cell.font = f({ bold: true, color: { argb: PAL.white } }); cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ACCENT } }; cell.alignment = { horizontal: ci === 0 ? "left" : "right" }; cell.border = allB(); });
       ws.getRow(hdr).height = 18; const dataStart = hdr + 1; tableStart[name] = dataStart;
       const rows = Array.isArray(sh.rows) ? sh.rows : (Array.isArray(sh.data) ? sh.data.map((a) => { const o = {}; cols.forEach((c, ci) => { o[c.key] = Array.isArray(a) ? a[ci] : undefined; }); return o; }) : []);
       tableRowCount[name] = rows.length;

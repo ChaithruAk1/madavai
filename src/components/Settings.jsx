@@ -156,6 +156,27 @@ export default function Settings({ onChanged }) {
                   );
                 })()}
               </Field>
+              <Field label="Office Suite Theme color">
+                {(() => {
+                  const oa = (s.officeAccent || "1F3864").replace(/^#/, "");
+                  const isNavy = oa.toUpperCase() === "1F3864";
+                  return (
+                    <>
+                      <div className="prof-accents">
+                        <button className={`prof-acc ${isNavy ? "on" : ""}`} onClick={() => setField("officeAccent", "1F3864")} title="Default \u2014 Navy Blue">
+                          <span className="prof-acc-dot" style={{ background: "#1F3864" }} /> Navy Blue
+                        </button>
+                        <label className={`prof-acc ${!isNavy ? "on" : ""}`} title="Pick a custom header colour">
+                          <span className="prof-acc-dot" style={{ background: "#" + oa }} />
+                          Custom
+                          <input type="color" value={"#" + oa} onChange={(e) => setField("officeAccent", e.target.value.replace(/^#/, "").toUpperCase())} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
+                        </label>
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 6 }}>Header & title colour for the Word & Excel files Madav generates. Financial cell colours (blue inputs, black formulas, green links) stay fixed.</div>
+                    </>
+                  );
+                })()}
+              </Field>
             </div>
 
             <div className="prof-card">
