@@ -8,7 +8,6 @@ import { Fragment, useState, useEffect } from "react";
 import { parseOfficeSpec, downloadOffice } from "./office.js";
 import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
 import { deckPreviewHTML } from "./deck/deckPreview.js";
-import { runXlsxCode, xlsxNameFrom } from "./doc/xlsxRunner.js";
 import { runDocxCode, docxNameFrom } from "./doc/docxRunner.js";
 import { runPdfCode, pdfNameFrom } from "./doc/pdfRunner.js";
 
@@ -159,65 +158,6 @@ function DeckCard({ code, streaming }) {
   );
 }
 
-// A ```xlsxjs block is model-written ExcelJS code — a bespoke, styled spreadsheet built in a sandboxed
-// worker. We never show the raw code; Download builds the real .xlsx on this device.
-function XlsxCard({ code, streaming }) {
-  const [state, setState] = useState(""); // "" | building | done | repairing | invalid | error:<msg>
-  const [issues, setIssues] = useState([]);
-  const ready = !streaming && /addWorksheet/.test(code);
-  const name = xlsxNameFrom(code);
-  const isRepair = /\/\/\s*repaired/i.test(code); // a corrected block — never auto-repair again (bounds retries to one)
-  useEffect(() => {
-    if (!ready || isRepair || state) return; // freshly complete, not already a repair/action -> validate syntax once
-    const bad = _codeSyntaxError(code, ["wb", "ExcelJS", "helpers"]);
-    if (bad) { setState("repairing"); window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "xlsx", code, error: bad } })); }
-  }, [ready, isRepair]);
-  const save = (blob) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-  };
-  const view = async () => {
-    try { const { html } = await runXlsxCode(code); if (html) window.dispatchEvent(new CustomEvent("madav:openhtml", { detail: { html, title: name } })); }
-    catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 120)); }
-  };
-  const build = async (force) => {
-    setState("building");
-    try {
-      const { blob, issues: found } = await runXlsxCode(code);
-      if (found && found.length && !force) {
-        setIssues(found);
-        if (!isRepair) { // LAYER 3 — one automatic self-repair, triggered by the user's Download click
-          setState("repairing");
-          window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "xlsx", code, issues: found } }));
-          return;
-        }
-        setState("invalid"); return; // already a repaired block and still broken — stop, let the user choose
-      }
-      save(blob); setState("done"); setTimeout(() => setState(""), 2500);
-    } catch (e) {
-      const m = String((e && e.message) || e);
-      const midStream = /Unexpected end of input|Invalid or unexpected token|Unexpected token|Unexpected identifier/i.test(m);
-      setState("error:" + (midStream ? "Couldn't build it — if the reply has finished, click Rebuild." : m.slice(0, 140)));
-    }
-  };
-  const sub = state === "repairing" ? `Found ${issues.length} formula issue(s) — Madav is rebuilding it…`
-    : state === "invalid" ? `${issues.length} formula(s) still need a fix${issues[0] ? " (e.g. " + issues[0].sheet + "!" + issues[0].cell + ")" : ""}`
-    : ready ? "Excel spreadsheet · designed on your device" : "building it on your device";
-  const label = state === "building" ? "Building…" : state === "done" ? "Saved ✓" : state === "invalid" ? "Download anyway" : "Download";
-  return (
-    <div className={"md-office" + (ready ? "" : " md-office-pending")}>
-      <span className="md-office-ico">📊</span>
-      <span className="md-office-meta"><b>{ready ? name : "Composing your spreadsheet…"}</b><i>{sub}</i></span>
-      {ready && state !== "repairing" && <button className="md-office-open" onClick={view} title="Preview beside the chat">View</button>}
-      {ready && state === "" && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, polish: true } }))} title="Refine the design — one more pass">Polish ✨</button>}
-      {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
-      {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
-      {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
-    </div>
-  );
-}
-
 // A ```docxjs block is model-written `docx`-library code that returns a Document — bespoke Word built
 // in a sandboxed worker, validated, with one auto-repair on the user's Download click.
 function DocxCard({ code, streaming }) {
@@ -328,8 +268,7 @@ export default function Markdown({ text, streaming }) {
       i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
-      if (fence[1] === "xlsxjs" && FEAT_OFFICE) blocks.push(<XlsxCard key={key()} code={buf.join("\n")} streaming={streaming} />);
-      else if (fence[1] === "docxjs" && FEAT_OFFICE) blocks.push(<DocxCard key={key()} code={buf.join("\n")} streaming={streaming} />);
+      if (fence[1] === "docxjs" && FEAT_OFFICE) blocks.push(<DocxCard key={key()} code={buf.join("\n")} streaming={streaming} />);
       else if (fence[1] === "pdfjs" && FEAT_OFFICE) blocks.push(<PdfCard key={key()} code={buf.join("\n")} streaming={streaming} />);
       else if ((fence[1] === "officedoc" || fence[1] === "deckjs") && FEAT_OFFICE) {
         // Route by CONTENT, not the fence tag — models sometimes put deck code in an officedoc fence
