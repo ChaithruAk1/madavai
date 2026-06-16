@@ -25,6 +25,7 @@ export default function Settings({ onChanged }) {
   const [busy, setBusy] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [extrasOk, setExtrasOk] = useState(false); // Extras switchboard: Creator + Complimentary accounts only
+  const [pyMsg, setPyMsg] = useState("");
 
   useEffect(() => { bridge.getSettings().then((cfg) => { setS(cfg); setSelId(cfg.activeProfileId); }); }, []);
   useEffect(() => { bridge.authMe?.().then((r) => {
@@ -176,6 +177,13 @@ export default function Settings({ onChanged }) {
                     </>
                   );
                 })()}
+              </Field>
+              <Field label="Python data tools (optional)">
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <button className="btn" onClick={async () => { setPyMsg("Installing…"); try { const r = await bridge.ensurePythonTools?.(); setPyMsg(r && r.ok ? "Installed ✓ — pandas + openpyxl ready" : (r && r.error) || "Couldn't install"); } catch { setPyMsg("Couldn't install"); } }}>Install pandas + openpyxl</button>
+                  <span style={{ fontSize: 12, color: "var(--text-2)" }}>{pyMsg}</span>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 6 }}>Optional speed-up for big spreadsheets (Python/pandas). Not required — Madav uses its built-in Node engine when Python isn't installed.</div>
               </Field>
             </div>
 

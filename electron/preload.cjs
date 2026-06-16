@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld("madav", {
 
   // --- settings / models ---
   getSettings: () => ipcRenderer.invoke("madav:getSettings"),
+  ensurePythonTools: () => ipcRenderer.invoke("madav:ensurePythonTools"),
   saveSettings: (next) => ipcRenderer.invoke("madav:saveSettings", next),
   listModels: (profileId) => ipcRenderer.invoke("madav:listModels", profileId),
   pingProvider: (profileId) => ipcRenderer.invoke("madav:pingProvider", profileId),
@@ -32,6 +33,8 @@ contextBridge.exposeInMainWorld("madav", {
   chooseFolder: () => ipcRenderer.invoke("madav:chooseFolder"),
   listDir: (dir) => ipcRenderer.invoke("madav:listDir", dir),
   openExternal: (url) => ipcRenderer.invoke("madav:openExternal", url),
+  openPath: (p) => ipcRenderer.invoke("madav:openPath", p),
+  showInFolder: (p) => ipcRenderer.invoke("madav:showInFolder", p),
 
   // --- model speed check ---
   runSpeedTest: (args) => ipcRenderer.invoke("madav:runSpeedTest", args),

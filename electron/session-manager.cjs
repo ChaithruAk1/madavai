@@ -19,6 +19,18 @@ const os = require("os");
 const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
 
+// After a folder-linked run, surface any office files the agent produced as Open/Download cards in
+// the chat (works for any model — detects by mtime, so Claude SDK and the OpenAI loop both covered).
+function emitNewOutputs(emit, folder, sinceMs) {
+  try {
+    for (const name of fs.readdirSync(folder)) {
+      if (!/\.(xlsx|xlsm|xls|docx|pptx|pdf|csv)$/i.test(name)) continue;
+      const p = require("path").join(folder, name);
+      try { const st = fs.statSync(p); if (st.isFile() && st.mtimeMs >= sinceMs - 1500) emit({ kind: "file_output", data: { path: p, name } }); } catch {}
+    }
+  } catch {}
+}
+
 // Detect a usable Python (+ pandas/openpyxl) ONCE so room runs can lean on code execution for
 // spreadsheet/data work (the reliable, weak-model-friendly path, like free-claude-code) and the
 // prompt can tell the model exactly what is available. Cached; failures resolve to "not available".
@@ -405,6 +417,7 @@ class SessionManager {
   async _chatDataTurn(sessionId, userText, profile, cfg, images) {
     const s = this.sessions.get(sessionId);
     if (!s.cwd) { try { const d = require("path").join(os.tmpdir(), "madav-chat-" + sessionId); fs.mkdirSync(d, { recursive: true }); s.cwd = d; } catch {} }
+    const _t0 = Date.now();
     const emit = (e) => this._send(sessionId, e.kind, e.data);
     const text = (userText || "") + materializeImages(images);
     const controller = new AbortController(); s.controller = controller;
@@ -415,7 +428,7 @@ class SessionManager {
         await runOpenAIAgentTurn({ prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
       }
     } catch (e) { if (e && e.name === "AbortError") emit({ kind: "result", data: { subtype: "interrupted" } }); else emit({ kind: "error", data: await this._friendlyError(e) }); }
-    finally { s.controller = null; }
+    finally { s.controller = null; if (s.cwd) emitNewOutputs(emit, s.cwd, _t0); }
   }
 
   // Chat enriched with skills + connectors (OpenAI-compatible providers).
@@ -802,6 +815,7 @@ class SessionManager {
     const project = store.getProject(s.projectId);
     if (!project) { this._send(sessionId, "error", { code: "no_project", message: "Project not found." }); return; }
     const useFolder = !!project.folder;
+    const t0 = Date.now();
     const pe = useFolder ? await pyEnv().catch(() => ({})) : null;
     let pyNote = "";
     if (useFolder) {
@@ -859,6 +873,7 @@ class SessionManager {
       else emit({ kind: "error", data: await this._friendlyError(e) });
     } finally {
       s.controller = null;
+      if (useFolder && project.folder) emitNewOutputs(emit, project.folder, t0);
       const msgs = s.history.filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.length);
       const conv = store.getConversation(s.conversationId) || { id: s.conversationId, projectId: s.projectId, title: "New conversation", createdAt: Date.now() };
       conv.messages = msgs;

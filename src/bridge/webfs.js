@@ -75,6 +75,24 @@ export async function writeFile(path, content) {
   return true;
 }
 
+// Binary I/O (base64) for non-text files like .xlsx — used by the in-browser Python runner.
+export async function readBinaryB64(path) {
+  if (!root) throw new Error("No folder selected");
+  const { dir, leaf } = await resolveParent(path);
+  const fh = await dir.getFileHandle(leaf);
+  const buf = new Uint8Array(await (await fh.getFile()).arrayBuffer());
+  let str = ""; const CH = 0x8000; for (let i = 0; i < buf.length; i += CH) str += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+  return btoa(str);
+}
+export async function writeBinaryB64(path, b64) {
+  if (!root) throw new Error("No folder selected");
+  const { dir, leaf } = await resolveParent(path, true);
+  const bin = atob(b64 || ""); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const fh = await dir.getFileHandle(leaf, { create: true });
+  const w = await fh.createWritable(); await w.write(u); await w.close();
+  return true;
+}
+
 // Replace the first occurrence of `find` with `replace` in a file (errors if not found / not unique-ish).
 export async function editFile(path, find, replace) {
   const text = await readFile(path);

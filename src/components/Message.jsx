@@ -1,6 +1,7 @@
 import { useState, memo } from "react";
 import { LayoutTemplate, Copy, Check, Pencil, RotateCcw } from "lucide-react";
 import ToolCard from "./ToolCard.jsx";
+import { bridge } from "../bridge/index.js";
 import ThinkLogo from "./ThinkLogo.jsx";
 import Markdown from "../markdown.jsx";
 import { extractArtifacts } from "../artifacts.js";
@@ -40,12 +41,25 @@ function UserBody({ text }) {
   );
 }
 
+function FileOutCard({ name, path }) {
+  const ext = String(name || "").split(".").pop().toLowerCase();
+  const ico = (ext === "xlsx" || ext === "xls" || ext === "csv") ? "📊" : ext === "pdf" ? "📕" : ext === "pptx" ? "📽" : "📄";
+  return (
+    <div className="md-office">
+      <span className="md-office-ico">{ico}</span>
+      <span className="md-office-meta"><b>{name}</b><i>produced by the run · saved in your folder</i></span>
+      <button className="md-office-open" title="Open the file" onClick={() => { try { bridge.openPath ? bridge.openPath(path) : bridge.openExternal && bridge.openExternal(path); } catch {} }}>Open</button>
+      <button className="md-office-btn" title="Show in folder" onClick={() => { try { bridge.showInFolder && bridge.showInFolder(path); } catch {} }}>Folder</button>
+    </div>
+  );
+}
 function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit }) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
 
   if (item.type === "tool") return <ToolCard {...item} />;
+  if (item.type === "fileout") return <FileOutCard {...item} />;
 
   const isUser = item.role === "user";
   const text = isUser ? item.text : cleanAssistant(item.text);

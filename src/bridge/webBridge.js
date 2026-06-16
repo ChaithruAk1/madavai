@@ -17,6 +17,7 @@ const bundledOn = () => { try { return FEAT_EDGETRADER && ((loadSettings().extra
 const listBundled = () => (bundledOn() ? _listBundled() : []);
 const bundledIndex = () => (bundledOn() ? _bundledIndex() : "");
 import * as webfs from "./webfs.js";
+import { runPython } from "./pyodideRunner.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
 // head+tail truncation, stale-result squash, identical-call loop breaker.
 import { tolerantParse, headTail, squashStale, CallGuard } from "../shared/harness.js";
@@ -541,7 +542,7 @@ function coworkSystem(s) {
   const parts = [
     `You are Madav, collaborating on the user's local folder "${webfs.rootLabel()}" directly from their browser.`,
     `Use the provided tools to list, read, write, and edit files. All paths are relative to the folder root (use "" for the root).`,
-    `There is NO terminal on the web: you cannot run shell commands, install packages, run tests, or execute code. Make every change by reading and writing files.`,
+    `You CAN run Python in the browser with run_python (pandas + openpyxl available) — use it for DATA work: read the project files by name (e.g. pandas.read_excel("Backlog.xlsx")), compute, and write the result (e.g. an .xlsx report) back into the folder. Let Python do the joins and math rather than computing by hand. There is no system shell or pip — only run_python. NEVER name a script or output file after a Python standard-library module (inspect/code/test/json/random/string) — it breaks imports.`,
     `You CAN access the web: use web_fetch(url) to read a page and web_search(query) to look things up (docs, APIs, references).`,
     `For large independent chunks of work you may call spawn_subagent(task) to delegate to a focused helper that works on the same project and reports back.`,
     `Every file change is checkpointed automatically, so the user can undo your edits — work confidently, but still inspect with list_dir/read_file before editing.`,
@@ -569,6 +570,7 @@ const COWORK_TOOLS = [
   { type: "function", function: { name: "web_search", description: "Search the web and return result snippets for a query.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
   { type: "function", function: { name: "spawn_subagent", description: "Delegate a focused sub-task to a helper agent that works on the same project and returns a summary. Use for independent chunks of work (e.g. 'write tests for X').", parameters: { type: "object", properties: { task: { type: "string", description: "Clear, self-contained instructions for the sub-agent." } }, required: ["task"] } } },
   { type: "function", function: { name: "create_image", description: "Generate an IMAGE (raster picture) from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user automatically. Use ONLY for actual pictures: photos, illustrations, logos, artwork, or a diagram rendered as a picture. NEVER call this for a document, spreadsheet, slide deck, presentation, or PDF — those are produced with a fenced officedoc block, not with create_image. If unsure, do not call it.", parameters: { type: "object", properties: { prompt: { type: "string" } }, required: ["prompt"] } } },
+  { type: "function", function: { name: "run_python", description: "Run a Python script IN THE BROWSER (pandas + openpyxl available) — the web equivalent of a terminal, for DATA work. The project's files are mounted in the working directory, so read them by name (e.g. pandas.read_excel(\"Backlog.xlsx\")). Any file the script writes (e.g. an .xlsx report) is saved back into the project folder. Use this to join/aggregate spreadsheets and build .xlsx/.csv outputs instead of computing by hand.", parameters: { type: "object", properties: { code: { type: "string", description: "Python source to run." } }, required: ["code"] } } },
   { type: "function", function: { name: "load_skill", description: "Load a skill's full instructions by its exact name (from the SKILLS list in your instructions), then follow them.", parameters: { type: "object", properties: { name: { type: "string" } }, required: ["name"] } } },
 ];
 
@@ -651,6 +653,25 @@ async function executeTool(name, args, ctx) {
     case "list_dir": return JSON.stringify(await webfs.listDir(args.path || ""));
     case "list_files": { const f = await webfs.walk(); return f.length ? f.join("\n") : "(empty)"; }
     case "read_file": { const t = await webfs.readFile(args.path); return t.length > 60000 ? t.slice(0, 60000) + "\n…(truncated)" : t; }
+    case "run_python": {
+      const files = [];
+      try {
+        for (const e of await webfs.listDir("")) {
+          if (e.type === "dir") continue;
+          try {
+            if (/\.(xlsx|xlsm|xls|png|jpe?g|gif|pdf|zip|parquet|bin)$/i.test(e.name)) files.push({ name: e.name, encoding: "base64", content: await webfs.readBinaryB64(e.name) });
+            else { const t = await webfs.readFile(e.name); if (t.length < 2000000) files.push({ name: e.name, encoding: "utf8", content: t }); }
+          } catch {}
+        }
+      } catch {}
+      const r = await runPython(args.code || "", files);
+      const written = [];
+      for (const fl of (r.files || [])) { try { await webfs.writeBinaryB64(fl.name, fl.base64); written.push(fl.name); if (sess) recordCheckpoint(sess, "create", fl.name, "", "(binary file)"); } catch {} }
+      let msg = (r.stdout || "").trim();
+      if (!r.ok && r.stderr) msg += (msg ? "\n" : "") + "ERROR:\n" + r.stderr.trim();
+      if (written.length) msg += (msg ? "\n\n" : "") + "Saved to the folder: " + written.join(", ");
+      return msg || (r.ok ? "(ran — no output)" : "(failed)");
+    }
     case "search": { const r = await webfs.search(args.query || ""); return r.length ? r.map((x) => `${x.path}:${x.line}: ${x.text}`).join("\n") : "No matches."; }
     case "write_file": { let old = ""; try { old = await webfs.readFile(args.path); } catch {} await webfs.writeFile(args.path, args.content ?? ""); recordCheckpoint(sess, old ? "edit" : "create", args.path, old, args.content ?? ""); return makeDiff(args.path, old, args.content ?? ""); }
     case "edit_file": { const before = await webfs.readFile(args.path); await webfs.editFile(args.path, args.find, args.replace); const after = await webfs.readFile(args.path); recordCheckpoint(sess, "edit", args.path, before, after); return makeDiff(args.path, before, after); }

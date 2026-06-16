@@ -37,3 +37,10 @@ dist_v*/
 vite.fast.config.mjs
 vite.fast.config.mjs.timestamp-*
 .playwright-mcp/
+
+# Catch-all for build/run scratch the mount couldn't delete (never source-controlled)
+*.timestamp-*.mjs
+vite.fast2.config.mjs
+.__scratch_probe
+_mdv_cleanup.bat
+_z_clean.bat

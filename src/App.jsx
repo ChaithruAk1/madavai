@@ -299,6 +299,9 @@ export default function App() {
         }
         replyBufRef.current = "";
         break;
+      case "file_output":
+        setTimeline((tl) => tl.some((it) => it.type === "fileout" && it.path === e.data.path) ? tl : [...tl, { type: "fileout", name: e.data.name, path: e.data.path }]);
+        break;
       case "error":
         streamOpen.current = false; setStreaming(false); setBusy(false);
         if (sessionRef.current) runBusy.current.set(sessionRef.current, false);

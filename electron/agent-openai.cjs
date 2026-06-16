@@ -22,18 +22,16 @@ function runnerEnv() {
   const env = { ...process.env };
   const nm = appNodeModules();
   env.NODE_PATH = nm + (env.NODE_PATH ? path.delimiter + env.NODE_PATH : "");
-  let hasNode = false;
-  try { require("child_process").execSync(process.platform === "win32" ? "where node" : "command -v node", { stdio: "ignore", timeout: 5000 }); hasNode = true; } catch {}
-  if (!hasNode) {
-    try {
-      const binDir = path.join(require("electron").app.getPath("userData"), "bin");
-      fs.mkdirSync(binDir, { recursive: true });
-      const exe = process.execPath;
-      if (process.platform === "win32") fs.writeFileSync(path.join(binDir, "node.cmd"), "@echo off\r\nset ELECTRON_RUN_AS_NODE=1\r\n\"" + exe + "\" %*\r\n");
-      else { const sh = path.join(binDir, "node"); fs.writeFileSync(sh, "#!/bin/sh\nELECTRON_RUN_AS_NODE=1 \"" + exe + "\" \"$@\"\n"); try { fs.chmodSync(sh, 0o755); } catch {} }
-      env.PATH = binDir + path.delimiter + (env.PATH || env.Path || "");
-    } catch {}
-  }
+  // Provide an Electron-as-Node shim, APPENDED to PATH so a real system `node` (dev) is preferred and
+  // the shim is only the fallback on machines without Node. No execSync — that would freeze the main process.
+  try {
+    const binDir = path.join(require("electron").app.getPath("userData"), "bin");
+    fs.mkdirSync(binDir, { recursive: true });
+    const exe = process.execPath;
+    if (process.platform === "win32") fs.writeFileSync(path.join(binDir, "node.cmd"), "@echo off\r\nset ELECTRON_RUN_AS_NODE=1\r\n\"" + exe + "\" %*\r\n");
+    else { const sh = path.join(binDir, "node"); fs.writeFileSync(sh, "#!/bin/sh\nELECTRON_RUN_AS_NODE=1 \"" + exe + "\" \"$@\"\n"); try { fs.chmodSync(sh, 0o755); } catch {} }
+    env.PATH = (env.PATH || env.Path || "") + path.delimiter + binDir;
+  } catch {}
   _runnerEnv = env;
   return _runnerEnv;
 }

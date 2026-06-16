@@ -356,6 +356,14 @@ ipcMain.handle("madav:removeSaved", (_e, id) => {
 
 // ---- IPC: settings + models ----
 ipcMain.handle("madav:getSettings", () => settings.load());
+ipcMain.handle("madav:ensurePythonTools", async () => {
+  const { exec } = require("child_process");
+  const run = (cmd) => new Promise((res) => { try { exec(cmd, { timeout: 180000, windowsHide: true }, (e, so, se) => res({ ok: !e, out: (so || "") + (se || "") })); } catch (er) { res({ ok: false, out: String((er && er.message) || er) }); } });
+  let py = (await run('python -c "import sys"')).ok ? "python" : ((await run('py -3 -c "import sys"')).ok ? "py -3" : null);
+  if (!py) return { ok: false, error: "Python 3 isn't installed — Madav will use its built-in Node engine for spreadsheets instead (no action needed). To enable pandas, install Python from python.org, then click this again." };
+  const r = await run(py + " -m pip install --user pandas openpyxl");
+  return r.ok ? { ok: true, py } : { ok: false, error: "pip install didn't complete — Madav will use its built-in Node engine instead.", output: (r.out || "").slice(-1200) };
+});
 ipcMain.handle("madav:saveSettings", (_e, next) => {
   const saved = settings.save(next);
   try { require("./workspace-sync.cjs").maybePush(); } catch {} // agents/teams/folders follow the account
@@ -378,6 +386,8 @@ ipcMain.handle("madav:chooseFolder", async () => {
   return r.canceled ? null : r.filePaths[0];
 });
 ipcMain.handle("madav:openExternal", (_e, url) => { try { if (/^(https?:\/\/|mailto:)/i.test(String(url || ""))) { shell.openExternal(String(url)); return true; } return false; } catch { return false; } });
+ipcMain.handle("madav:openPath", (_e, p) => { try { require("electron").shell.openPath(String(p || "")); return true; } catch { return false; } });
+ipcMain.handle("madav:showInFolder", (_e, p) => { try { require("electron").shell.showItemInFolder(String(p || "")); return true; } catch { return false; } });
 
 // ---- IPC: shallow directory listing (for @-mention file picker) ----
 const DIR_SKIP = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", "dist", "build", ".next", ".cache"]);
