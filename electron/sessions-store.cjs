@@ -8,6 +8,10 @@ const rand = (p) => p + Math.random().toString(36).slice(2, 9);
 const dir = () => path.join(app.getPath("userData"), "sessions-data");
 const file = (id) => path.join(dir(), id + ".json");
 const ensure = () => fs.mkdirSync(dir(), { recursive: true });
+const tombFile = () => path.join(app.getPath("userData"), "chat-tombstones.json");
+function getTombstones() { try { const a = JSON.parse(fs.readFileSync(tombFile(), "utf8")); return Array.isArray(a) ? a : []; } catch { return []; } }
+function setTombstones(arr) { try { fs.writeFileSync(tombFile(), JSON.stringify((arr || []).slice(-1000))); } catch {} }
+function addTombstone(id) { if (!id) return; const t = getTombstones().filter((x) => x && x.id !== id); t.push({ id, deletedAt: Date.now() }); setTombstones(t); }
 
 function raw() {
   ensure(); const out = [];
@@ -39,7 +43,8 @@ function createSession(mode, cwd, projectId) { const s = { id: rand("ses_"), mod
 function saveSession(s) { ensure(); s.updatedAt = Date.now(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); try { require("./chat-sync.cjs").maybePush(); } catch {} return s; }
 function saveSessionRaw(s) { ensure(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); return s; } // used by chat-sync pull (must NOT bump updatedAt or re-push)
 function allSessions() { try { return raw(); } catch { return []; } }
-function deleteSession(id) { try { fs.unlinkSync(file(id)); } catch {} return true; }
+function deleteSession(id) { try { fs.unlinkSync(file(id)); } catch {} try { addTombstone(id); } catch {} try { require("./chat-sync.cjs").maybePush(); } catch {} return true; }
+function purgeSession(id) { try { fs.unlinkSync(file(id)); } catch {} return true; } // unlink WITHOUT a tombstone/push (used by chat-sync pull applying a remote deletion)
 
 // Global search: scan message CONTENT (not just titles) across all saved conversations.
 // Returns matches with a short snippet around the first hit. Case-insensitive.
@@ -64,4 +69,4 @@ function searchSessions(q, mode) {
   return out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
-module.exports = { listSessions, getSession, createSession, saveSession, saveSessionRaw, allSessions, deleteSession, searchSessions };
+module.exports = { listSessions, getSession, createSession, saveSession, saveSessionRaw, allSessions, deleteSession, purgeSession, getTombstones, setTombstones, addTombstone, searchSessions };

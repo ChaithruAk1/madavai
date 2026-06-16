@@ -225,7 +225,9 @@ function wsMaybePush() {
 // ---- Chat sync (mirror of electron/chat-sync.cjs) — conversations follow the account across devices ----
 let _chatLast = "", _chatTimer = null;
 const CHAT_MAX_CONVS = 100, CHAT_MAX_MSGS = 300;
-const chatHash = (items) => items.map((c) => c.id + ":" + (c.updatedAt || 0)).join("|");
+const chatHash = (items, tomb) => items.map((c) => c.id + ":" + (c.updatedAt || 0)).join("|") + "#" + (tomb || []).map((t) => t.id + ":" + (t.deletedAt || 0)).join("|");
+function getChatTombstones() { const a = LS.get("be.chatTomb", []); return Array.isArray(a) ? a : []; }
+function recordChatTombstone(id) { if (!id) return; const t = getChatTombstones().filter((x) => x && x.id !== id); t.push({ id, deletedAt: Date.now() }); LS.set("be.chatTomb", t.slice(-1000)); }
 async function chatItems() {
   const all = await idbAll();
   return (all || [])
@@ -240,14 +242,21 @@ async function chatPull() {
     if (s.chatSync === false || !getToken()) return;
     const r = await fetch(api("/conversations"), { headers: authHeaders() }).then((x) => x.json()).catch(() => null);
     if (!r || !r.data || !Array.isArray(r.data.items)) return;
+    const remoteTomb = Array.isArray(r.data.tombstones) ? r.data.tombstones : [];
+    const tmap = new Map();
+    for (const t of [...getChatTombstones(), ...remoteTomb]) { if (!t || !t.id) continue; const p = tmap.get(t.id); if (!p || (t.deletedAt || 0) > (p.deletedAt || 0)) tmap.set(t.id, { id: t.id, deletedAt: t.deletedAt || 0 }); }
     let merged = 0;
     for (const it of r.data.items) {
       if (!it || !it.id || !Array.isArray(it.messages)) continue;
+      const tb = tmap.get(it.id); if (tb && (tb.deletedAt || 0) >= (it.updatedAt || 0)) continue; // suppressed by a newer deletion
       const local = await idbGet(it.id);
       if (!local || (it.updatedAt || 0) > (local.updatedAt || 0)) { try { await idbPut(it); merged++; } catch {} }
     }
-    _chatLast = chatHash(await chatItems());
-    if (merged) { try { window.dispatchEvent(new CustomEvent("madav:historychanged")); } catch {} }
+    let purged = 0;
+    for (const [id, t] of [...tmap]) { const local = await idbGet(id); if (local && (t.deletedAt || 0) >= (local.updatedAt || 0)) { try { await idbDel(id); purged++; } catch {} } else if (local && (local.updatedAt || 0) > (t.deletedAt || 0)) { tmap.delete(id); } }
+    LS.set("be.chatTomb", [...tmap.values()].slice(-1000));
+    _chatLast = chatHash(await chatItems(), getChatTombstones());
+    if (merged || purged) { try { window.dispatchEvent(new CustomEvent("madav:historychanged")); } catch {} }
   } catch {}
 }
 function chatMaybePush() {
@@ -256,9 +265,9 @@ function chatMaybePush() {
     try {
       const s = loadSettings();
       if (s.chatSync === false || !getToken()) return;
-      const items = await chatItems(); const h = chatHash(items);
+      const items = await chatItems(); const tombstones = getChatTombstones(); const h = chatHash(items, tombstones);
       if (h === _chatLast) return;
-      const r = await fetch(api("/conversations"), { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ items }) }).then((x) => x.json()).catch(() => null);
+      const r = await fetch(api("/conversations"), { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ items, tombstones }) }).then((x) => x.json()).catch(() => null);
       if (r && r.ok) _chatLast = h;
     } catch {}
   }, 4000);
@@ -267,8 +276,8 @@ async function chatPushNow() {
   try {
     const s = loadSettings();
     if (s.chatSync === false || !getToken()) return;
-    const items = await chatItems(); const h = chatHash(items);
-    const r = await fetch(api("/conversations"), { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ items }) }).then((x) => x.json()).catch(() => null);
+    const items = await chatItems(); const tombstones = getChatTombstones(); const h = chatHash(items, tombstones);
+    const r = await fetch(api("/conversations"), { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ items, tombstones }) }).then((x) => x.json()).catch(() => null);
     if (r && r.ok) _chatLast = h;
   } catch {}
 }
@@ -937,7 +946,7 @@ export const webBridge = {
     const messages = (rec.messages || []).filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: asText(m.content) }));
     return { id: rec.id, mode: rec.mode, title: rec.title, messages, projectId: rec.projectId || null, cwd: rec.cwd || null };
   },
-  async deleteSession(id) { await idbDel(id); return true; },
+  async deleteSession(id) { await idbDel(id); try { recordChatTombstone(id); chatMaybePush(); } catch {} return true; },
   // Global search across message CONTENT (parity with desktop).
   async searchSessions(q, mode) {
     const needle = String(q || "").toLowerCase();

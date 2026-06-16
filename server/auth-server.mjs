@@ -596,16 +596,26 @@ const server = http.createServer(async (req, res) => {
       projectId: c.projectId ? String(c.projectId).slice(0, 80) : null, createdAt: +c.createdAt || 0, updatedAt: +c.updatedAt || 0,
       messages: Array.isArray(c.messages) ? c.messages.slice(-400) : [],
     })).filter((c) => c.id);
+    const inTomb = (Array.isArray(b.tombstones) ? b.tombstones : []).slice(0, 1000)
+      .map((t) => ({ id: String((t && t.id) || "").slice(0, 80), deletedAt: +((t && t.deletedAt)) || 0 })).filter((t) => t.id && t.deletedAt);
     const existing = await store.col("conversations").get(user.id);
     const prevItems = (existing && existing.data && Array.isArray(existing.data.items)) ? existing.data.items : [];
+    const prevTomb = (existing && existing.data && Array.isArray(existing.data.tombstones)) ? existing.data.tombstones : [];
+    // merge tombstones: keep the latest deletedAt per id
+    const tomb = new Map();
+    for (const t of [...prevTomb, ...inTomb]) { if (!t || !t.id) continue; const p = tomb.get(t.id); if (!p || (t.deletedAt || 0) > (p.deletedAt || 0)) tomb.set(t.id, { id: t.id, deletedAt: t.deletedAt || 0 }); }
     const byId = new Map();
     for (const c of prevItems) byId.set(c.id, c);
     for (const c of items) { const prev = byId.get(c.id); if (!prev || (c.updatedAt || 0) >= (prev.updatedAt || 0)) byId.set(c.id, c); } // last-write-wins per conversation
+    // apply tombstones: drop a conversation deleted at/after its last edit; if it was edited LATER, it wins and the tombstone is cleared
+    for (const [id, t] of tomb) { const it = byId.get(id); if (it && (it.updatedAt || 0) > (t.deletedAt || 0)) tomb.delete(id); else byId.delete(id); }
     const mergedItems = [...byId.values()].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 500);
-    const data = { items: mergedItems }; const updatedAt = Date.now();
+    const TOMB_TTL = 120 * 24 * 3600 * 1000, now = Date.now();
+    const mergedTomb = [...tomb.values()].filter((t) => now - (t.deletedAt || 0) < TOMB_TTL).sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)).slice(0, 1000);
+    const data = { items: mergedItems, tombstones: mergedTomb }; const updatedAt = Date.now();
     if (existing) await store.col("conversations").update(user.id, { data, updatedAt });
     else await store.col("conversations").insert({ id: user.id, data, updatedAt });
-    return json(res, 200, { ok: true, updatedAt, count: mergedItems.length });
+    return json(res, 200, { ok: true, updatedAt, count: mergedItems.length, tombstones: mergedTomb.length });
   }
 
   // ---- Madav Starter — zero-setup free models on the HOUSE key ----
