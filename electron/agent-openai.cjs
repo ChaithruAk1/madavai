@@ -144,6 +144,7 @@ function officeRulePart(model) {
 // Deliver the answer — don't narrate the machinery. Weak models love to say "let me load my X skill"
 // or "I don't have access to …"; this forbids that and tells them to just use tools silently and answer.
 const ANSWER_DIRECT_RULE = " Answer the user's request directly and naturally. NEVER narrate your internal process, tools, or skills — do not say things like \"let me load my web search skill\", \"I'll use the web_search tool\", \"I don't have access to …\", or describe what you are about to do. If a tool helps, call it silently and present only the result. Don't apologize for limitations or list what you cannot do — give the best possible answer to what was actually asked.";
+const DATA_TOOLS_RULE = " DATA & SPREADSHEETS: when a task means processing data files (xlsx/csv) or producing an office file, PREFER writing and running a Python script with run_bash (pandas + openpyxl) — let code do the joins and the math; do NOT compute large aggregations by hand. NEVER name a script after a Python standard-library module (inspect.py, code.py, test.py, json.py, string.py, random.py, etc.) — it shadows the stdlib and breaks pandas with a 'partially initialized module / circular import' error; use a unique name like build_report.py. read_file already returns spreadsheets as readable rows. When you produce a spreadsheet, document, deck, or PDF, deliver it as ONE officedoc block so the user gets a card to open and download it right here.";
 
 const SYSTEM = (mode) =>
   mode === "chat"
@@ -245,7 +246,7 @@ async function execTool(cwd, name, args, mission) {
       return `edited ${args.path} — the changed region now reads:\n${region}`;
     }
     case "run_bash":
-      return harness.headTail(await execAsync(args.command, { cwd, encoding: "utf8", timeout: 30000 }), { maxChars: 8000 });
+      return harness.headTail(await execAsync(args.command, { cwd, encoding: "utf8", timeout: 120000, maxBuffer: 8 * 1024 * 1024 }), { maxChars: 8000 });
     case "find_files": {
       const out = [];
       walkFiles(cwd, cwd, 6, (rel) => { if (rel.toLowerCase().includes(String(args.pattern || "").toLowerCase())) out.push(rel); });
@@ -429,7 +430,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // Artifact + office rules are appended for EVERY mode AND every agent (systemOverride). Previously
   // they lived only inside SYSTEM("chat") and were lost when an agent's instructions replaced it —
   // which is why a delegated agent insisted it "can't create a .pptx" instead of emitting officedoc.
-  const sys = (systemOverride || SYSTEM(mode)) + ARTIFACT_RULE_BASE + officeRulePart(model) + webSearchNote + ANSWER_DIRECT_RULE + methodRules + tierNote + gi + browserNote + repoMapText + (promptSkills.length ? "\n\n" + skillsMgr.indexText(promptSkills) : "");
+  const sys = (systemOverride || SYSTEM(mode)) + ARTIFACT_RULE_BASE + officeRulePart(model) + webSearchNote + ANSWER_DIRECT_RULE + (noShell ? "" : DATA_TOOLS_RULE) + methodRules + tierNote + gi + browserNote + repoMapText + (promptSkills.length ? "\n\n" + skillsMgr.indexText(promptSkills) : "");
   if (history.length === 0) history.push({ role: "system", content: sys });
   else if (history[0] && history[0].role === "system") history[0].content = sys; // refresh index live
   history.push({ role: "user", content: prompt });

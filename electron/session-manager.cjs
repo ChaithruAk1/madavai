@@ -19,6 +19,21 @@ const os = require("os");
 const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
 
+// Detect a usable Python (+ pandas/openpyxl) ONCE so room runs can lean on code execution for
+// spreadsheet/data work (the reliable, weak-model-friendly path, like free-claude-code) and the
+// prompt can tell the model exactly what is available. Cached; failures resolve to "not available".
+let _pyEnvCache = null;
+async function pyEnv() {
+  if (_pyEnvCache) return _pyEnvCache;
+  const { exec } = require("child_process");
+  const ok = (cmd) => new Promise((res) => { try { exec(cmd, { timeout: 8000, windowsHide: true }, (e) => res(!e)); } catch { res(false); } });
+  let py = (await ok('python -c "import sys"')) ? "python" : ((await ok('py -3 -c "import sys"')) ? "py -3" : null);
+  let pandas = false, openpyxl = false;
+  if (py) { pandas = await ok(py + ' -c "import pandas"'); openpyxl = await ok(py + ' -c "import openpyxl"'); }
+  _pyEnvCache = { py, pandas, openpyxl };
+  return _pyEnvCache;
+}
+
 // Combine a natural-tone safeguard + the user's custom instructions + the chosen response language.
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
 // Artifact-iteration rule so the Studio "live preview" iterates in place:
@@ -753,9 +768,15 @@ class SessionManager {
     const project = store.getProject(s.projectId);
     if (!project) { this._send(sessionId, "error", { code: "no_project", message: "Project not found." }); return; }
     const useFolder = !!project.folder;
+    const pe = useFolder ? await pyEnv().catch(() => ({})) : null;
+    let pyNote = "";
+    if (useFolder) {
+      if (pe && pe.py) { pyNote = 'Python is available as "' + pe.py + '" (pandas: ' + (pe.pandas ? "yes" : "no") + ", openpyxl: " + (pe.openpyxl ? "yes" : "no") + ")."; if (!pe.pandas || !pe.openpyxl) pyNote += " Install the missing libraries first: " + pe.py + " -m pip install --user pandas openpyxl."; }
+      else { pyNote = "No Python was detected on this machine — install Python 3 with pandas + openpyxl, or compute the result inline without scripts."; }
+    }
     const gi = settings.load().globalInstructions;
     const sys = store.projectSystem(project) + ARTIFACT_RULE_BASE + officeRulePart() +
-      (useFolder ? `\n\nThis project is linked to a folder of files at: ${project.folder}. Use the file tools (read_file, list_dir, edit_file, run_bash) to inspect or modify those files when relevant.` : "") +
+      (useFolder ? `\n\nThis room is linked to a folder at: ${project.folder}.\n- READ the source files there with read_file / list_dir.\n- For DATA work (joining or aggregating spreadsheets, large calculations) PREFER writing and running a Python script via run_bash. ${pyNote} Let Python do the math — do NOT compute large aggregations by hand.\n- Name your scripts UNIQUELY (e.g. build_report.py). NEVER name one inspect.py, code.py, test.py, json.py, string.py, random.py or any Python standard-library name — that shadows the stdlib and breaks pandas with a "partially initialized module / circular import" error.\n- DELIVER the finished spreadsheet, document, deck or PDF as ONE officedoc block so the user gets a card to open and download it right here. Compute the numbers with Python first, then put the finished values into the officedoc block — do not leave the result only as a file in the folder.` : "") +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const cfg = settings.load();
     const emit = (e) => this._send(sessionId, e.kind, e.data);
