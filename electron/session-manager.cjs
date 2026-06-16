@@ -768,7 +768,19 @@ class SessionManager {
     else s.history.unshift({ role: "system", content: sys });
 
     try {
-      if (profile.kind === "anthropic") {
+      if (profile.kind === "anthropic" && useFolder) {
+        // Folder-linked room with Claude: use the Agent SDK so it gets real file tools
+        // (read_file/list_dir/run_bash) over the room's folder — not a tool-less Q&A.
+        s.history.push({ role: "user", content: userText });
+        let acc = "";
+        const emitAcc = (ev) => { if (ev.kind === "assistant_delta") acc += (ev.data && ev.data.text) || ""; emit(ev); };
+        s.sdkSessionId = await runAgentTurn({
+          sessionId, prompt: `${sys}\n\n----- TASK -----\n${userText}`, mode: "cowork", cwd: project.folder, profile,
+          permMode: project.autoApprove ? "bypassPermissions" : (s.permMode || "default"),
+          resume: s.sdkSessionId, emit: emitAcc, permissions: this.permissions, holds: this.holds,
+        });
+        if (acc) s.history.push({ role: "assistant", content: acc });
+      } else if (profile.kind === "anthropic") {
         s.history.push({ role: "user", content: inlineContent(userText, images, "anthropic") });
         emit({ kind: "init", data: { model: profile.model, mode: "project", provider: profile.name } });
         const started = Date.now();
