@@ -5,6 +5,38 @@ const fs = require("fs");
 const path = require("path");
 const { execSync, exec } = require("child_process");
 // Async shell runner — keeps the main process responsive (execSync froze the whole app for up to 30s).
+// Guarantee a Node + exceljs runtime for the agent's run_bash data work even on machines with no
+// system Node/Python: make the app's node_modules resolvable via NODE_PATH, and (only if there is
+// no real `node` on PATH) expose Electron-as-Node as a `node` shim. exceljs ships with the app, so
+// "node build_report.js" with require("exceljs") always works. Cached.
+let _runnerEnv = null;
+function appNodeModules() {
+  const cands = [];
+  try { if (process.resourcesPath) cands.push(path.join(process.resourcesPath, "app.asar.unpacked", "node_modules")); } catch {}
+  cands.push(path.join(__dirname, "..", "node_modules"));
+  for (const c of cands) { try { if (fs.existsSync(path.join(c, "exceljs"))) return c; } catch {} }
+  return path.join(__dirname, "..", "node_modules");
+}
+function runnerEnv() {
+  if (_runnerEnv) return _runnerEnv;
+  const env = { ...process.env };
+  const nm = appNodeModules();
+  env.NODE_PATH = nm + (env.NODE_PATH ? path.delimiter + env.NODE_PATH : "");
+  let hasNode = false;
+  try { require("child_process").execSync(process.platform === "win32" ? "where node" : "command -v node", { stdio: "ignore", timeout: 5000 }); hasNode = true; } catch {}
+  if (!hasNode) {
+    try {
+      const binDir = path.join(require("electron").app.getPath("userData"), "bin");
+      fs.mkdirSync(binDir, { recursive: true });
+      const exe = process.execPath;
+      if (process.platform === "win32") fs.writeFileSync(path.join(binDir, "node.cmd"), "@echo off\r\nset ELECTRON_RUN_AS_NODE=1\r\n\"" + exe + "\" %*\r\n");
+      else { const sh = path.join(binDir, "node"); fs.writeFileSync(sh, "#!/bin/sh\nELECTRON_RUN_AS_NODE=1 \"" + exe + "\" \"$@\"\n"); try { fs.chmodSync(sh, 0o755); } catch {} }
+      env.PATH = binDir + path.delimiter + (env.PATH || env.Path || "");
+    } catch {}
+  }
+  _runnerEnv = env;
+  return _runnerEnv;
+}
 const execAsync = (command, opts) => new Promise((resolve) => {
   exec(command, opts, (err, stdout, stderr) => {
     if (err && !stdout) return resolve("ERROR: " + String((stderr || err.message || err)).slice(0, 4000));
@@ -144,7 +176,7 @@ function officeRulePart(model) {
 // Deliver the answer — don't narrate the machinery. Weak models love to say "let me load my X skill"
 // or "I don't have access to …"; this forbids that and tells them to just use tools silently and answer.
 const ANSWER_DIRECT_RULE = " Answer the user's request directly and naturally. NEVER narrate your internal process, tools, or skills — do not say things like \"let me load my web search skill\", \"I'll use the web_search tool\", \"I don't have access to …\", or describe what you are about to do. If a tool helps, call it silently and present only the result. Don't apologize for limitations or list what you cannot do — give the best possible answer to what was actually asked.";
-const DATA_TOOLS_RULE = " DATA & SPREADSHEETS: when a task means processing data files (xlsx/csv) or producing an office file, PREFER writing and running a Python script with run_bash (pandas + openpyxl) — let code do the joins and the math; do NOT compute large aggregations by hand. NEVER name a script after a Python standard-library module (inspect.py, code.py, test.py, json.py, string.py, random.py, etc.) — it shadows the stdlib and breaks pandas with a 'partially initialized module / circular import' error; use a unique name like build_report.py. read_file already returns spreadsheets as readable rows. When you produce a spreadsheet, document, deck, or PDF, deliver it as ONE officedoc block so the user gets a card to open and download it right here.";
+const DATA_TOOLS_RULE = " DATA & SPREADSHEETS: when a task means processing data files (xlsx/csv) or producing an office file, PREFER writing and running a Python script with run_bash (pandas + openpyxl) — let code do the joins and the math; do NOT compute large aggregations by hand. NEVER name a script after a Python standard-library module (inspect.py, code.py, test.py, json.py, string.py, random.py, etc.) — it shadows the stdlib and breaks pandas with a 'partially initialized module / circular import' error; use a unique name like build_report.py. If Python is unavailable, use Node instead — it is ALWAYS available: write a uniquely-named .js script and run it with \"node build_report.js\"; the exceljs library is bundled (const ExcelJS = require(\"exceljs\")) for reading and writing .xlsx. read_file already returns spreadsheets as readable rows. When you produce a spreadsheet, document, deck, or PDF, deliver it as ONE officedoc block so the user gets a card to open and download it right here.";
 
 const SYSTEM = (mode) =>
   mode === "chat"
@@ -246,7 +278,7 @@ async function execTool(cwd, name, args, mission) {
       return `edited ${args.path} — the changed region now reads:\n${region}`;
     }
     case "run_bash":
-      return harness.headTail(await execAsync(args.command, { cwd, encoding: "utf8", timeout: 120000, maxBuffer: 8 * 1024 * 1024 }), { maxChars: 8000 });
+      return harness.headTail(await execAsync(args.command, { cwd, encoding: "utf8", timeout: 120000, maxBuffer: 8 * 1024 * 1024, env: runnerEnv() }), { maxChars: 8000 });
     case "find_files": {
       const out = [];
       walkFiles(cwd, cwd, 6, (rel) => { if (rel.toLowerCase().includes(String(args.pattern || "").toLowerCase())) out.push(rel); });

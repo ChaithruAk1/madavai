@@ -34,6 +34,16 @@ async function pyEnv() {
   return _pyEnvCache;
 }
 
+// Smart-detect: does a Let's Chat message need real file/spreadsheet work? If so we run it with a
+// scratch workspace + tools (code-execution) so even weak models produce a real file reliably.
+function needsDataTools(text) {
+  const t = String(text || "").toLowerCase();
+  if (/\b(xlsx|\.xls\b|excel|spreadsheet|workbook|\.csv\b|csv file|pivot)\b/.test(t)) return true;
+  if (/\b(build|make|generate|create|produce|export|compute|calculate|analy[sz]e|reconcile|aggregate|summari[sz]e|tabulate)\b/.test(t)
+      && /\b(report|model|dashboard|chart|projection|forecast|kpi|metric|metrics|dataset|data|sheet|table|workbook)\b/.test(t)) return true;
+  return false;
+}
+
 // Combine a natural-tone safeguard + the user's custom instructions + the chosen response language.
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
 // Artifact-iteration rule so the Studio "live preview" iterates in place:
@@ -378,10 +388,34 @@ class SessionManager {
     const cfg = settings.load();
     const agentExtras = s.agent && s.agent.tools && (s.agent.tools.connectors || s.agent.tools.skills || s.agent.tools.browser);
     const hasExtras = agentExtras || (cfg.skillsDirs || []).length > 0 || (cfg.connectors || []).some((c) => c.enabled);
+    // Smart-detect: a chat turn that needs spreadsheet/data work gets a scratch workspace + tools
+    // (code-execution) so even weak models produce a real file; plain chat stays fast.
+    if (cleanImgs(images).length === 0 && (cfg.extras || {}).office !== false && needsDataTools(userText)) {
+      return this._chatDataTurn(sessionId, userText, profile, cfg, images);
+    }
     if (profile.kind !== "anthropic" && hasExtras && cleanImgs(images).length === 0) {
       return this._chatAgentTurn(sessionId, userText, profile, cfg, images);
     }
     return this._chatTurn(sessionId, userText, profile, images);
+  }
+
+  // Smart data chat: a Let's Chat turn that needs file/spreadsheet work runs the full tool loop in a
+  // scratch temp workspace (cowork-grade) so even weak models compute with a script and return a
+  // download card — no folder to link. Auto-approved since the workspace is a throwaway temp dir.
+  async _chatDataTurn(sessionId, userText, profile, cfg, images) {
+    const s = this.sessions.get(sessionId);
+    if (!s.cwd) { try { const d = require("path").join(os.tmpdir(), "madav-chat-" + sessionId); fs.mkdirSync(d, { recursive: true }); s.cwd = d; } catch {} }
+    const emit = (e) => this._send(sessionId, e.kind, e.data);
+    const text = (userText || "") + materializeImages(images);
+    const controller = new AbortController(); s.controller = controller;
+    try {
+      if (profile.kind === "anthropic") {
+        s.sdkSessionId = await runAgentTurn({ sessionId, prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds });
+      } else {
+        await runOpenAIAgentTurn({ prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
+      }
+    } catch (e) { if (e && e.name === "AbortError") emit({ kind: "result", data: { subtype: "interrupted" } }); else emit({ kind: "error", data: await this._friendlyError(e) }); }
+    finally { s.controller = null; }
   }
 
   // Chat enriched with skills + connectors (OpenAI-compatible providers).

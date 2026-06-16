@@ -17,6 +17,16 @@
 const pkg = require("./package.json");
 const build = { ...pkg.build, win: { ...pkg.build.win } };
 
+// Unpack exceljs + its FULL dependency tree from the asar so the agent's run_bash data scripts
+// ("node build_report.js" -> require("exceljs")) can load it as a spawned process — a child node
+// cannot require modules from inside an asar archive. Computed dynamically so deps stay in sync.
+try {
+  const seen = new Set();
+  (function walk(name) { if (seen.has(name)) return; seen.add(name); let p; try { p = require("./node_modules/" + name + "/package.json"); } catch { return; } for (const d of Object.keys(p.dependencies || {})) walk(d); })("exceljs");
+  const globs = [...seen].map((n) => "node_modules/" + n + "/**/*");
+  build.asarUnpack = [...(build.asarUnpack || []), ...globs];
+} catch {}
+
 // ---- Two-channel installers (see scripts/build-features.mjs) ----
 // The manifest decides the channel: ADMIN ships everything; PUBLIC physically
 // excludes the module files of features the owner switched off in Settings → Extras.
