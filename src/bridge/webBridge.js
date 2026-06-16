@@ -947,6 +947,7 @@ export const webBridge = {
     return { id: rec.id, mode: rec.mode, title: rec.title, messages, projectId: rec.projectId || null, cwd: rec.cwd || null };
   },
   async deleteSession(id) { await idbDel(id); try { recordChatTombstone(id); chatMaybePush(); } catch {} return true; },
+  async renameSession(id, title) { try { const rec = await idbGet(id); if (rec) { const t = String(title || "").slice(0, 200); if (t) { rec.title = t; rec.updatedAt = Date.now(); await idbPut(rec); try { chatMaybePush(); } catch {} } } } catch {} return true; },
   // Global search across message CONTENT (parity with desktop).
   async searchSessions(q, mode) {
     const needle = String(q || "").toLowerCase();

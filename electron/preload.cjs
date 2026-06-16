@@ -69,6 +69,7 @@ contextBridge.exposeInMainWorld("madav", {
   recordFlowStatus: () => ipcRenderer.invoke("madav:recordFlowStatus"),
   getSession: (id) => ipcRenderer.invoke("madav:getSession", id),
   deleteSession: (id) => ipcRenderer.invoke("madav:deleteSession", id),
+  renameSession: (id, title) => ipcRenderer.invoke("madav:renameSession", { id, title }),
 
   // --- saved library (bookmarked responses) ---
   listSaved: () => ipcRenderer.invoke("madav:listSaved"),

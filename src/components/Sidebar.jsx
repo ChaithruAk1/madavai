@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen, Share2 } from "lucide-react";
+import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen, Share2, Pencil } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
 // Nav order (user-set 2026-06-12): Models · Agents · Projects · Studio · Scheduler ·
@@ -28,10 +28,13 @@ const TAIL = [
 const TERMINAL_ITEM = { id: "terminal", label: "Terminal", icon: TerminalSquare };
 const ADMIN_ITEM = { id: "testcenter", label: "Test Center", icon: FlaskConical };
 
-export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, extras = {}, soloRun, teamRun, onOpenRun, onResize }) {
+export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, onRenameSession, extras = {}, soloRun, teamRun, onOpenRun, onResize }) {
   const [recents, setRecents] = useState([]);
   const [q, setQ] = useState("");
   const [shareState, setShareState] = useState({}); // { [id]: "sharing" | "copied" | "error" }
+  const [editId, setEditId] = useState(null);
+  const [editVal, setEditVal] = useState("");
+  const commitRename = (it) => { const v = editVal.trim(); setEditId(null); if (v && v !== (it.title || "")) onRenameSession && onRenameSession(it.id, v); };
   const [ifaceOpen, setIfaceOpen] = useState(false);
   const [modelsOpen, setModelsOpen] = useState(false);
   // Extras switchboard (Settings → Extras): an entry whose feature is switched off
@@ -245,20 +248,30 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
           {recents.length === 0 && <div className="sb-empty">Nothing here yet — your conversations will live here. Start one above ↑</div>}
           {recents.length > 0 && shown.length === 0 && <div className="sb-empty">No matches{q.trim().length >= 3 ? " anywhere in your chats" : ""} — try different words.</div>}
           {shown.slice(0, 100).map((it) => (
-            <div key={it.id} className={`sb-rec ${it.id === activeConvId ? "active" : ""}`} onClick={() => onOpenSession(it.id)} title={it.title}>
-              <span className="sb-rec-main">
-                <span className="sb-rec-title">{it.title || "Untitled"}</span>
-                {deep !== null && it.snippet && it.snippet !== it.title && <span className="sb-rec-snip">…{it.snippet}…</span>}
-              </span>
-              <button className="sb-rec-del" title="Export as Markdown" onClick={(e) => { e.stopPropagation(); exportConv(it.id, it.title); }}><Download size={12} /></button>
-              {shareState[it.id] === "copied" ? (
-                <span className="sb-rec-share-msg ok" title="Link copied">Link copied ✓</span>
-              ) : shareState[it.id] === "error" ? (
-                <span className="sb-rec-share-msg err" title="Couldn't share">Couldn't share</span>
-              ) : (
-                <button className="sb-rec-del" title="Share to community" disabled={shareState[it.id] === "sharing"} onClick={(e) => { e.stopPropagation(); shareConv(it.id, it.title); }}><Share2 size={12} /></button>
-              )}
-              <button className="sb-rec-del" title="Delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(it.id); }}><Trash2 size={12} /></button>
+            <div key={it.id} className={`sb-rec ${it.id === activeConvId ? "active" : ""}`} onClick={() => { if (editId !== it.id) onOpenSession(it.id); }} title={it.title}>
+              {editId === it.id ? (
+                <input className="sb-rec-edit" autoFocus value={editVal}
+                  style={{ flex: 1, minWidth: 0, background: "var(--bg-2, #1b1b1b)", color: "inherit", border: "1px solid var(--accent, #2F6FED)", borderRadius: 5, padding: "2px 6px", font: "inherit" }}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setEditVal(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitRename(it); } else if (e.key === "Escape") { e.stopPropagation(); setEditId(null); } }}
+                  onBlur={() => commitRename(it)} />
+              ) : (<>
+                <span className="sb-rec-main">
+                  <span className="sb-rec-title">{it.title || "Untitled"}</span>
+                  {deep !== null && it.snippet && it.snippet !== it.title && <span className="sb-rec-snip">…{it.snippet}…</span>}
+                </span>
+                <button className="sb-rec-del" title="Rename" onClick={(e) => { e.stopPropagation(); setEditId(it.id); setEditVal(it.title || ""); }}><Pencil size={12} /></button>
+                <button className="sb-rec-del" title="Export as Markdown" onClick={(e) => { e.stopPropagation(); exportConv(it.id, it.title); }}><Download size={12} /></button>
+                {shareState[it.id] === "copied" ? (
+                  <span className="sb-rec-share-msg ok" title="Link copied">Link copied ✓</span>
+                ) : shareState[it.id] === "error" ? (
+                  <span className="sb-rec-share-msg err" title="Couldn't share">Couldn't share</span>
+                ) : (
+                  <button className="sb-rec-del" title="Share to community" disabled={shareState[it.id] === "sharing"} onClick={(e) => { e.stopPropagation(); shareConv(it.id, it.title); }}><Share2 size={12} /></button>
+                )}
+                <button className="sb-rec-del" title="Delete" onClick={(e) => { e.stopPropagation(); onDeleteSession(it.id); }}><Trash2 size={12} /></button>
+              </>)}
             </div>
           ))}
         </div>

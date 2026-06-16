@@ -489,6 +489,10 @@ export default function App() {
     if (id === activeConvId) newSession();
     setHistRefresh((n) => n + 1);
   };
+  const renameSession = async (id, title) => {
+    try { await bridge.renameSession?.(id, title); } catch {}
+    setHistRefresh((n) => n + 1);
+  };
 
   // ---- Continue on phone (bind a Cowork session to the Telegram bot) ----
   useEffect(() => { bridge.getMobileLink && bridge.getMobileLink().then(setMobileLink).catch(() => {}); }, []);
@@ -870,7 +874,7 @@ export default function App() {
       <div ref={appBodyRef} className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`} style={{ "--sb-w": sidebarW + "px" }}>
       <Sidebar active={mode} onSelect={switchMode} onResize={startSidebarResize}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
-        onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession}
+        onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession} onRenameSession={renameSession}
         soloRun={soloRun} teamRun={teamRun} onOpenRun={() => switchMode(chatMode)}
         extras={{ ...((settings && settings.extras) || {}), ...Object.fromEntries(BUILD_OFF.map((k) => [k, false])) }} />
       <div className="main">

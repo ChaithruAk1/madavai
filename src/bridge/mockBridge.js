@@ -114,6 +114,7 @@ export const mockBridge = {
   async listSessions() { return []; },
   async getSession() { return null; },
   async deleteSession() { return true; },
+  async renameSession() { return true; },
   async runSpeedTest() { return { at: Date.now(), prompt: "", results: [] }; },
   async cancelSpeedTest() { return true; },
   async getSpeedTestLast() { return null; },

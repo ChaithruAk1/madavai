@@ -45,6 +45,7 @@ function saveSessionRaw(s) { ensure(); fs.writeFileSync(file(s.id), JSON.stringi
 function allSessions() { try { return raw(); } catch { return []; } }
 function deleteSession(id) { try { fs.unlinkSync(file(id)); } catch {} try { addTombstone(id); } catch {} try { require("./chat-sync.cjs").maybePush(); } catch {} return true; }
 function purgeSession(id) { try { fs.unlinkSync(file(id)); } catch {} return true; } // unlink WITHOUT a tombstone/push (used by chat-sync pull applying a remote deletion)
+function renameSession(id, title) { const s = getSession(id); if (!s) return false; const t = String(title || "").slice(0, 200); if (t) { s.title = t; saveSession(s); } return true; }
 
 // Global search: scan message CONTENT (not just titles) across all saved conversations.
 // Returns matches with a short snippet around the first hit. Case-insensitive.
@@ -69,4 +70,4 @@ function searchSessions(q, mode) {
   return out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
-module.exports = { listSessions, getSession, createSession, saveSession, saveSessionRaw, allSessions, deleteSession, purgeSession, getTombstones, setTombstones, addTombstone, searchSessions };
+module.exports = { listSessions, getSession, createSession, saveSession, saveSessionRaw, allSessions, deleteSession, purgeSession, renameSession, getTombstones, setTombstones, addTombstone, searchSessions };

@@ -271,6 +271,7 @@ const sstore = require("./sessions-store.cjs");
 ipcMain.handle("madav:listSessions", (_e, mode, agentScope) => sstore.listSessions(mode, agentScope));
 ipcMain.handle("madav:getSession", (_e, id) => sstore.getSession(id));
 ipcMain.handle("madav:deleteSession", (_e, id) => sstore.deleteSession(id));
+ipcMain.handle("madav:renameSession", (_e, { id, title }) => sstore.renameSession(id, title));
 ipcMain.handle("madav:searchSessions", (_e, { q, mode }) => sstore.searchSessions(q, mode));
 // Update check: compares this build against a version JSON served by the auth server (or any URL).
 ipcMain.handle("madav:getAppVersion", () => { try { return app.getVersion(); } catch { return "0.0.0"; } });
