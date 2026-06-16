@@ -862,6 +862,13 @@ export const webBridge = {
     const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, convId: id, title, agentic, cwd: req.cwd || null, agent,
       team: (req.team && Array.isArray(req.team.members) && req.team.members.length) ? req.team : null };
     sessions.set(id, sess);
+    // Claude-like: title the chat from the FIRST message and announce it NOW so it appears in the
+    // sidebar the instant the user hits Enter (not after the reply). New chats only.
+    if (!prior && req.prompt && !sess.title) {
+      sess.title = String(req.prompt).slice(0, 60);
+      try { persistSession(sess); } catch {}
+      emit(id, "chat_started", { conversationId: id, title: sess.title });
+    }
     runTurn(sess, req.prompt || "", req.images); // fire and forget; streams events
     return { sessionId: id, conversationId: id };
   },

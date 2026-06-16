@@ -195,6 +195,10 @@ export default function App() {
     // synchronously inside bridge.start() — before the caller's await resolves
     // and assigns sessionRef — so a strict guard alone would drop it.
     if (e.kind === "init" && e.sessionId && !sessionRef.current) sessionRef.current = e.sessionId;
+    // A new chat just started: show it in the sidebar immediately (titled from the first message),
+    // before the session is bound and before any reply — Claude-like. Handled BEFORE the foreign-
+    // session guard below because sessionRef isn't set yet for this brand-new session.
+    if (e.kind === "chat_started") { if (e.data && e.data.conversationId) setActiveConvId(e.data.conversationId); setHistRefresh((n) => n + 1); return; }
     // Events from a PREVIOUS session (e.g. one detached by navigation) must not
     // mutate the conversation currently on screen. Strict: when no session is
     // bound (after a detach), foreign events are ignored instead of passing through.
@@ -306,6 +310,7 @@ export default function App() {
         streamOpen.current = false; setStreaming(false); setBusy(false);
         if (sessionRef.current) runBusy.current.set(sessionRef.current, false);
         setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ ${e.data?.message || "Error"}` }]);
+        setHistRefresh((n) => n + 1); // keep the saved-chat list fresh even if the first turn errors
         break;
       default: break;
     }

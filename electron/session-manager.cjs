@@ -248,6 +248,13 @@ class SessionManager {
       // Seed the model context from saved messages so reopened chats continue coherently.
       // Cap at the newest 200 messages — a giant history would balloon RAM and every request.
       if (conv.messages && conv.messages.length) s.history = conv.messages.slice(-200).map((m) => ({ role: m.role, content: m.content }));
+      // Claude-like: title the chat from the FIRST message and announce it NOW (before the model
+      // runs) so it appears in the sidebar the instant the user hits Enter — not after the reply.
+      if (req.prompt && (!conv.title || conv.title === "New task")) {
+        conv.title = String(req.prompt).slice(0, 60);
+        try { sstore.saveSession(conv); } catch {}
+        this._send(sessionId, "chat_started", { conversationId: conv.id, title: conv.title });
+      }
     }
     this.sessions.set(sessionId, s);
     await this._turn(sessionId, req.prompt, req.images);
