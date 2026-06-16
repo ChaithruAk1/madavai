@@ -160,6 +160,36 @@ export default function App() {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [timeline, streaming]);
 
+  // ---- Live run buffers (reconnect-on-reopen) -------------------------------------------------
+  // A run started in a room/conversation keeps streaming server-side after you navigate away.
+  // We buffer each running session's timeline by id so re-opening that conversation re-attaches
+  // and shows the live work-in-progress instead of a blank. The ACTIVE path below is unchanged;
+  // these only mirror it and capture backgrounded runs.
+  const timelineRef = useRef([]);
+  const runBuffers = useRef(new Map());    // sessionId -> timeline items (kept live in the background)
+  const runStreamOpen = useRef(new Map()); // sessionId -> delta-merge open flag
+  const runBusy = useRef(new Map());       // sessionId -> running?
+  const convSession = useRef(new Map());   // conversationId -> sessionId (to reconnect on re-open)
+  const projectCtxRef = useRef(null);
+  const activeConvIdRef = useRef(null);
+  useEffect(() => { timelineRef.current = timeline; const sid = sessionRef.current; if (sid && runBusy.current.get(sid) !== false) runBuffers.current.set(sid, timeline); }, [timeline]);
+  useEffect(() => { projectCtxRef.current = projectCtx; activeConvIdRef.current = activeConvId; }, [projectCtx, activeConvId]);
+  const bufferBg = (e, sid) => {
+    const so = runStreamOpen.current, get = () => runBuffers.current.get(sid) || [], set = (n) => runBuffers.current.set(sid, n);
+    switch (e.kind) {
+      case "init": runBusy.current.set(sid, true); break;
+      case "assistant_delta": { const t = e.data.text ?? ""; if (!t) break; const tl = get(); const last = tl[tl.length - 1];
+        if (so.get(sid) && last && last.type === "message" && last.role === "assistant") set([...tl.slice(0, -1), { ...last, text: last.text + t }]);
+        else { so.set(sid, true); set([...tl, { type: "message", role: "assistant", text: t, meta: lastInfoRef.current }]); } break; }
+      case "assistant_message": so.set(sid, false); break;
+      case "tool_use": so.set(sid, false); if (HIDDEN_TOOLS.has(e.data.name)) break; set([...get(), { type: "tool", id: e.data.id, name: e.data.name, input: e.data.input, auto: e.data.auto, status: "run" }]); break;
+      case "tool_result": set(get().map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, output: e.data.output, image: e.data.image || it.image, status: "ok" } : it)); break;
+      case "permission_denied": set(get().map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, status: "deny" } : it)); break;
+      case "result": runBusy.current.set(sid, false); so.set(sid, false); break;
+      case "error": runBusy.current.set(sid, false); so.set(sid, false); set([...get(), { type: "message", role: "assistant", text: `⚠ ${e.data?.message || "Error"}` }]); break;
+      default: break;
+    }
+  };
   const onEvent = useCallback((e) => {
     // Bind the session from the FIRST init event: the web bridge emits `init`
     // synchronously inside bridge.start() — before the caller's await resolves
@@ -168,9 +198,18 @@ export default function App() {
     // Events from a PREVIOUS session (e.g. one detached by navigation) must not
     // mutate the conversation currently on screen. Strict: when no session is
     // bound (after a detach), foreign events are ignored instead of passing through.
-    if (e.sessionId && e.sessionId !== sessionRef.current) return;
+    if (e.sessionId && e.sessionId !== sessionRef.current) {
+      // Approval prompts must surface no matter which conversation is on screen, else a
+      // backgrounded run stalls forever waiting for a click. Everything else feeds the buffer.
+      if (e.kind === "permission_request") { setPerm((cur) => { if (cur) { permQueue.current.push(e.data); return cur; } return e.data; }); return; }
+      if (e.kind === "user_question") { setAsk((cur) => { if (cur) { askQueue.current.push(e.data); return cur; } return e.data; }); return; }
+      if (e.kind === "permission_denied") { setPerm((cur) => (cur && cur.toolUseId === e.data.id) ? (permQueue.current.shift() || null) : cur); }
+      bufferBg(e, e.sessionId); return;
+    }
     switch (e.kind) {
       case "init":
+        if (sessionRef.current) runBusy.current.set(sessionRef.current, true);
+        try { const cid = (projectCtxRef.current && projectCtxRef.current.conversationId) || activeConvIdRef.current; if (cid && sessionRef.current) convSession.current.set(cid, sessionRef.current); } catch {}
         if (e.data.permissionMode) setPermissionMode(e.data.permissionMode);
         if (e.data.model || e.data.provider) lastInfoRef.current = { model: e.data.model, provider: e.data.provider, kind: e.data.kind };
         break;
@@ -244,6 +283,7 @@ export default function App() {
         break;
       case "result":
         streamOpen.current = false; setStreaming(false); setBusy(false);
+        if (sessionRef.current) runBusy.current.set(sessionRef.current, false);
         setTeamRun((r) => r ? { ...r, finished: true, synth: r.synth === "working" ? "done" : r.synth } : r);
         setSoloRun((r) => r ? { ...r, finished: true, endedAt: Date.now(), steps: r.steps.map((s) => s.status === "run" ? { ...s, status: "done" } : s) } : r);
         setHistRefresh((n) => n + 1); // refresh the saved-chat list (new title / new convo)
@@ -261,6 +301,7 @@ export default function App() {
         break;
       case "error":
         streamOpen.current = false; setStreaming(false); setBusy(false);
+        if (sessionRef.current) runBusy.current.set(sessionRef.current, false);
         setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ ${e.data?.message || "Error"}` }]);
         break;
       default: break;
@@ -430,6 +471,7 @@ export default function App() {
               projectId: opts.projectId || (coworkProj ? coworkProj.id : undefined) };
         const { sessionId, conversationId } = await bridge.start(req);
         sessionRef.current = sessionId;
+        try { const cid = (projectCtx && projectCtx.conversationId) || conversationId || activeConvId; if (cid) convSession.current.set(cid, sessionId); } catch {}
         if (!projectCtx && conversationId) setActiveConvId(conversationId);
       } else {
         bridge.sendInput(sessionRef.current, text, images);
@@ -459,6 +501,16 @@ export default function App() {
 
   // ---- persisted chat history (Talk / Collaborate / Build) ----
   const openSession = async (id) => {
+    const sid0 = convSession.current.get(id);
+    if (sid0 && runBuffers.current.has(sid0) && runBusy.current.get(sid0) === true) {
+      // A run is still streaming for this chat — re-attach instead of reloading a stale/blank view.
+      const conv0 = await bridge.getSession(id);
+      setMode((conv0 && conv0.mode) || chatMode); setChatMode((conv0 && conv0.mode) || chatMode); setActiveConvId(id);
+      setTimeline(runBuffers.current.get(sid0) || []);
+      sessionRef.current = sid0; streamOpen.current = !!runStreamOpen.current.get(sid0); setBusy(true);
+      setProjectCtx(null); setCoworkProj(null);
+      return;
+    }
     const conv = await bridge.getSession(id);
     if (!conv) return;
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
@@ -530,6 +582,15 @@ export default function App() {
 
   // Open a saved project conversation into the chat surface.
   const openConversation = async (project, convMeta) => {
+    const sid = convSession.current.get(convMeta.id);
+    if (sid && runBuffers.current.has(sid)) {
+      const running = runBusy.current.get(sid) === true;
+      setTimeline(runBuffers.current.get(sid) || []);
+      setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: convMeta.title });
+      if (running) { sessionRef.current = sid; streamOpen.current = !!runStreamOpen.current.get(sid); setBusy(true); }
+      else { sessionRef.current = null; streamOpen.current = false; setBusy(false); }
+      return;
+    }
     const full = await bridge.getConversation(convMeta.id);
     const msgs = ((full && full.messages) || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
     setTimeline(msgs);
@@ -556,6 +617,7 @@ export default function App() {
       try {
         const { sessionId } = await bridge.start({ mode: "project", prompt: text, projectId: project.id, conversationId: conv.id });
         sessionRef.current = sessionId;
+        convSession.current.set(conv.id, sessionId);
       } catch (e) {
         setBusy(false);
         setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ Couldn't start: ${(e && e.message) || e}` }]);
