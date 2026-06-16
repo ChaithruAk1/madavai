@@ -11,6 +11,7 @@ export function extractArtifacts(text) {
     const lang = (m[1] || "").toLowerCase();
     if (lang === "officedoc") continue; if (lang === "deckjs") continue; if (lang === "xlsxjs") continue; if (lang === "docxjs") continue; if (lang === "pdfjs") continue; // already shown as a downloadable file card — never a raw "snippet" pill
     const code = m[2].replace(/\s+$/, "");
+    if (/"type"\s*:\s*"(?:xlsx|docx|pptx|pdf)"/.test(code)) continue; // an office spec emitted with a non-officedoc fence is a file card, not a snippet pill
     const looksSvg = /^\s*<svg/i.test(code);
     const looksHtml = /^\s*<(!doctype|html|body|div|section|main|head)/i.test(code);
     let kind = "code";

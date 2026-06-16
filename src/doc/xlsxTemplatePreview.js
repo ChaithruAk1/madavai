@@ -35,7 +35,7 @@ function evaluate(spec) {
   const resolveCell = (curSheet) => (tok) => {
     let sheetPart = null, body = tok; const b = tok.indexOf("!"); if (b >= 0) { sheetPart = tok.slice(0, b); body = tok.slice(b + 1); }
     const sh = sheetPart || curSheet;
-    const rng = body.match(/^(.+?)#(\d+)(?::(\d+))?$/);
+    const rng = body.match(/^(.+?)#[pP]?(\d+)(?::[pP]?(\d+))?$/);
     if (rng) { const id = rng[1], a = +rng[2], e = rng[3] ? +rng[3] : a; let s = 0; for (let p = a; p <= e; p++) s += num((model[sh] || {})[id] && model[sh][id][p]); return s; }
     if (inp[sh] && inp[sh][body] != null) return inp[sh][body];
     if (der[sh] && der[sh][body] != null) return der[sh][body];
@@ -91,7 +91,7 @@ export function renderTemplatePreview(spec, opts) {
     // KPI tiles
     if (Array.isArray(sh.kpis) && sh.kpis.length) {
       body += `<div class="kpis">` + sh.kpis.map((k) => {
-        const resolve = (tok) => { let sp = null, bo = tok; const b = tok.indexOf("!"); if (b >= 0) { sp = tok.slice(0, b); bo = tok.slice(b + 1); } const sh2 = sp || nm; const rng = bo.match(/^(.+?)#(\d+)(?::(\d+))?$/); if (rng) { const id = rng[1], a = +rng[2], e = rng[3] ? +rng[3] : a; let s = 0; for (let p = a; p <= e; p++) s += (V.model[sh2] && V.model[sh2][id] && V.model[sh2][id][p]) || 0; return s; } return (V.inp[sh2] && V.inp[sh2][bo]) ?? (V.der[sh2] && V.der[sh2][bo]) ?? 0; };
+        const resolve = (tok) => { let sp = null, bo = tok; const b = tok.indexOf("!"); if (b >= 0) { sp = tok.slice(0, b); bo = tok.slice(b + 1); } const sh2 = sp || nm; const rng = bo.match(/^(.+?)#[pP]?(\d+)(?::[pP]?(\d+))?$/); if (rng) { const id = rng[1], a = +rng[2], e = rng[3] ? +rng[3] : a; let s = 0; for (let p = a; p <= e; p++) s += (V.model[sh2] && V.model[sh2][id] && V.model[sh2][id][p]) || 0; return s; } return (V.inp[sh2] && V.inp[sh2][bo]) ?? (V.der[sh2] && V.der[sh2][bo]) ?? 0; };
         let val = 0; try { val = Function('R','"use strict";return (' + String(k.ref || k.expr || "0").replace(/^=/, "").replace(/\[([^\]]+)\]/g, (_, t) => "(" + resolve(t.trim()) + ")").replace(/SUM/g, "") + ");")(); } catch { val = 0; }
         return `<div class="tile"><div class="tv">${esc(fmtVal(val, k.fmt))}</div><div class="tl">${esc(String(k.label || "").toUpperCase())}</div></div>`;
       }).join("") + `</div>`;

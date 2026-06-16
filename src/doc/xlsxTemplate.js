@@ -25,7 +25,7 @@ function colLetters(n) { let s = ""; n = Number(n) || 1; while (n > 0) { const m
 const qsheet = (n) => (/[^A-Za-z0-9_]/.test(n) ? "'" + String(n).replace(/'/g, "''") + "'" : String(n));
 
 export function buildTemplateWorkbook(ExcelJS, spec, opts) {
-  const ACCENT = (opts && opts.accent) || ACCENT;
+  const ACCENT = (opts && opts.accent) || PAL.navy;
   const wb = new ExcelJS.Workbook(); wb.creator = "Madav"; wb.created = new Date();
   const named = {};       // named[sheet][id] = "$B$7" (sheet-local absolute single cell)
   const metricRow = {};   // metricRow[sheet][id] = R
@@ -36,6 +36,7 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
   const tableRowCount = {};
   const pending = [];     // { sheet, cellRef, expr, ctx }
   const chartsRaw = [];   // { sheet, ...spec }
+  let _unresolved = 0;    // count of references that did not resolve (model spec incoherence)
 
   const sheets = (Array.isArray(spec.sheets) ? spec.sheets : []).slice(0, 12);
   const wsOf = {};
@@ -189,7 +190,7 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
     const bang = tok.indexOf("!");
     if (bang >= 0) { sheetPart = tok.slice(0, bang); body = tok.slice(bang + 1); }
     // range / period suffix #a:b or #p
-    let rangeM = body.match(/^(.+?)#(\d+)(?::(\d+))?$/);
+    let rangeM = body.match(/^(.+?)#[pP]?(\d+)(?::[pP]?(\d+))?$/);
     if (rangeM) {
       const id = rangeM[1], a = +rangeM[2], b = rangeM[3] ? +rangeM[3] : null;
       const sh = sheetPart || ctx.sheet; const row = metricRow[sh] && metricRow[sh][id];
@@ -223,7 +224,12 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
     return "#REF!";
   }
   function resolve(expr, ctx) {
-    return String(expr == null ? "" : expr).replace(/^=/, "").replace(/\[([^\]]+)\]/g, (_, t) => resolveToken(t, ctx));
+    let out = String(expr == null ? "" : expr).replace(/^=/, "").replace(/\[([^\]]+)\]/g, (_, t) => resolveToken(t, ctx));
+    // A model can reference an id/sheet/period that does not exist (resolveToken returns #REF! for those).
+    // NEVER let #REF!/#NAME?/undefined/NaN reach a saved formula — Excel flags such a workbook as corrupt.
+    // Neutralise to 0 so the file is ALWAYS valid and opens cleanly. (We also count these for validation.)
+    if (/#REF!|#NAME\?|\bundefined\b|\bNaN\b/.test(out)) { _unresolved++; out = out.replace(/#REF!|#NAME\?/g, "0").replace(/\bundefined\b|\bNaN\b/g, "0"); }
+    return out;
   }
   for (const pd of pending) {
     const ws = wsOf[pd.sheet]; const cell = ws.getCell(pd.cellRef);
@@ -253,5 +259,5 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
     if (colKeyLetter[sheet]) { const ds = tableStart[sheet] || 4; return `A${ds + 8}`; }
     return "H3";
   }
-  return { wb, charts };
+  return { wb, charts, unresolved: _unresolved };
 }

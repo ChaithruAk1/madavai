@@ -183,6 +183,10 @@ export default function Markdown({ text, streaming }) {
         const _isDeckCode = /\bpptx\s*\.\s*addSlide|\bpptx\s*\.\s*(?:ShapeType|ChartType)|\.\s*addSlide\s*\(/.test(_c);
         if (_isDeckCode || (fence[1] === "deckjs" && !/^\s*\{/.test(_c.trim()))) blocks.push(<DeckCard key={key()} code={_c} streaming={streaming} />);
         else blocks.push(<OfficeCard key={key()} code={_c} />);
+      } else if (FEAT_OFFICE && /"type"\s*:\s*"(?:xlsx|docx|pptx|pdf)"/.test(buf.join("\n")) && !/\bpptx\s*\.\s*addSlide|\.\s*addSlide\s*\(/.test(buf.join("\n"))) {
+        // A spreadsheet/Word/PDF spec emitted with the WRONG fence (```xlsx / ```json / untagged) is still
+        // a file, never a raw snippet — render it as the downloadable card with Open/Download.
+        blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
       } else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
       continue;
     }
