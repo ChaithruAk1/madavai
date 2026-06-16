@@ -598,7 +598,8 @@ export default function App() {
     }
     const full = await bridge.getConversation(convMeta.id);
     const msgs = ((full && full.messages) || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
-    setTimeline(msgs);
+    const outs = ((full && full.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path }));
+    setTimeline([...msgs, ...outs]);
     setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });
     sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };

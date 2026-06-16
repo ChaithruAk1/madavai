@@ -35844,3 +35844,63 @@ MADAV STARTER — 5 RULES (user spec)
 NEXT: npm run build + node --check server/electron + node test/observability.test.cjs once the sandbox
 is back; redeploy auth-server (Starter) and the gateway (Composio) on Render; commit + push.
 
+
+
+---
+## Session 2026-06-16 — weak-model office reliability, output-card persistence, navigation fixes, Claude isolation, chat REVERTED to standard
+
+### ROOT CAUSE of "project stops with no output" (cost hours): FOLDER POISONING
+A leftover `inspect.py` (a pandas script literally named after the stdlib `inspect` module) sat in the data folder C:\DTCKPI. Python imports the local file instead of the stdlib → pandas/numpy CRASH on import → every `python -c` and script silently fails → the weak model flails ~12 steps and produces nothing. NOT model weakness. User renamed inspect.py→inspect_old.py and it immediately worked. The good build_report.py even documented the trap at the top.
+- HARDENING SHIPPED: `env.PYTHONSAFEPATH = "1"` added to runnerEnv() in agent-openai.cjs — keeps cwd/script-dir OFF sys.path[0] (Python 3.11+), so a stray stdlib-named .py can NEVER shadow stdlib again. Covers the OpenAI run_bash path (weak models). NOT the Claude SDK bash (Claude avoids the trap anyway).
+- Other stdlib-name landmines: json.py, random.py, code.py, test.py, string.py.
+
+### Formula-as-TEXT bug (chat-generated xlsx had "no data")
+Weak model built a pandas DataFrame of "=..." formula strings and called df.to_excel() → pandas writes them as TEXT (t="s"), so Excel shows "=Inputs!$B$2" literally and NOTHING computes — dead file. Verified via openpyxl data_type='s'.
+- FIX SHIPPED: appended to DATA_TOOLS_RULE (agent-openai.cjs) — "the file must contain REAL DATA, not formula text: compute numbers in Python and write VALUES; do NOT put '=' strings in a DataFrame + df.to_excel (pandas saves as TEXT); for live formulas use openpyxl cell assignment; sanity-check every data cell holds a number." This rule is OpenAI-path ONLY → does NOT reach Claude (Claude uses runAgentTurn/agent-transport). GOOD: the rule would dumb Claude down (Claude writes live formulas correctly).
+- After the rule, weak model produced a CORRECT file (real values). But it is NONDETERMINISTIC — sometimes still slips.
+- PENDING (offered, NOT built): a deterministic POST-CHECK auto-fix — after a file is produced, scan the .xlsx; if data cells are '='-text, convert them to real openpyxl formula cells (+ fullCalcOnLoad) so Excel computes on open. Isolated to the output step, try/catch no-op on failure, only touches the just-produced file. User asked to explain it; decided to test standard first.
+
+### Claude vs weak-model CONTRAST (measured on uploaded files)
+Weak step-3.5-flash: 3 sheets, 0 live formulas (all static values), 0 charts, basic number formats. Claude: ~150 live formulas (interactive model), 3 charts, pro formats ($#,##0;(...);"-", 0.0"x"), more merged/structured layout. Gap = raw model capability/judgment. Harness can narrow the live-formula gap (post-check) but NOT charts/polish. For Claude-grade output, run Claude.
+
+### "Your fix impacts Claude" — the SHARED project folder recipe DOES reach Claude
+The directive project folder recipe (inspect ≤2 → write ONE script → save file → stop → brief reply) is in the _projectTurn `sys`, and `sys` IS passed to Claude at the anthropic+useFolder branch (`prompt: \`${sys}\n\n----- TASK -----\n${userText}\``, ~line 876). So it constrains Claude's natural rich workflow.
+- PENDING (NOT applied): gate the rigid recipe behind isDeckCapable(profile.model) so WEAK models get the rigid recipe and Claude gets a LIGHT folder note (read files, prefer Python, avoid stdlib script names, deliver by saving into the folder — free to use live formulas/charts). isDeckCapable is already imported in session-manager (line 92). I had read lines 854-857 to do this when the user redirected.
+
+### Chat data-path: REVERTED TO STANDARD (per user, for testing)
+needsDataTools was first over-tightened (broke "make me an excel") then rebalanced to trigger on bare excel|spreadsheet|workbook|xlsx|csv|pivot table (NOT ambiguous report|model|data|table). THEN user asked to remove the chat fix for BOTH Claude and weak models to test standard behavior.
+- STATE: the _chatDataTurn dispatch in _turn() (~line 429) is COMMENTED OUT. Chat now runs standard (_chatTurn / _chatAgentTurn) for everyone. Re-enable by uncommenting the block. needsDataTurn + _chatDataTurn code still present.
+- NOTE: Let's Chat has NO folder, so generative data prompts (e.g. "build a SaaS unit-economics model") have no source data — the model invents reasonable assumptions; that is expected, not a bug. For real data use a folder-linked Project.
+
+### Output-file card now PERSISTS on project conversations
+emitNewOutputs(emit, folder, before) rewritten: diff-based (scanOffice snapshot before vs after, recurses 1 subdir level), logs `[madav] emitNewOutputs folder=… scanned=N new=M`, and RETURNS the produced files. _projectTurn persists them to conv.outputs (dedup by path) via store.saveConversation. App.jsx openConversation rebuilds fileout cards from full.outputs → the Open/Download card survives reopen FOREVER (file is a real file in the linked folder). Applies to NEW runs only. _chatDataTurn also snapshots beforeFiles.
+
+### Navigation / "conversations vanish on go-back" FIXES (App.jsx switchMode)
+- Project mode was NEVER snapshotted (not in PRIMARY) and its return branch always blanked timeline → project conversation vanished to the list. FIX: snapshot {projectCtx,timeline}→modeCacheRef.project on leave; restore on return (consults runBuffers for a live run); backToProjects + newSession clear modeCacheRef.project.
+- Chat restore now consults convSession/runBuffers so a reply that finished while away is recovered (mirrors openSession), instead of showing the stale snapshot.
+- Context mutual-exclusivity: entering project mode (and openConversation/startProjectChat) now clears agentCtx/teamCtx/teamRun — fixes an AGENT (e.g. Pitchwright) bleeding its breadcrumb + hero on top of a Projects conversation (two breadcrumb rows, mixed messages).
+
+### Plain-English project reply line
+Reworded so it governs ONLY the chat message ("write a short 1-2 sentence summary; keep all detail INSIDE the file; this never reduces the file"). The earlier bad wording ("do NOT dump formulas/column lists/reconciliation math") made the weak model NOT build the spreadsheet at all — that was a self-inflicted regression, now fixed.
+
+### CLAUDE.md
+Added a 🔒 PROTECTED section documenting the working weak-model office pipeline + the two traps (folder-poisoning; brevity-wording suppressing the deliverable). Verified working 2026-06-16 on nvidia stepfun-ai/step-3.5-flash: Report_March.xlsx produced with real numbers (€585,025.8 cost, 1,596 incidents) + persistent Open/Download card.
+
+### EDIT-TOOL CORRUPTION incident
+The Edit tool appended 6 NUL bytes to session-manager.cjs (the CLAUDE.md-documented truncation failure). Stripped via python (content was intact, NULs only at EOF after module.exports). REMINDER: use python/heredoc writes on important files, NEVER the Edit tool.
+
+### PENDING / NOT DONE
+1. Post-check auto-fix for formula-as-text (deterministic safety net) — designed, not built.
+2. Capability gate (isDeckCapable) on the project folder recipe to fully isolate Claude — not applied.
+3. Web parity: run_python (Pyodide) only wired into Collaborate (COWORK_TOOLS); web Chat/Agents/Projects + web download card still TODO; UNTESTED in browser.
+4. The post-check / gate decisions were deferred so the user could test STANDARD chat first.
+
+### UNCOMMITTED FILES (commit when ready)
+electron/session-manager.cjs, electron/agent-openai.cjs, src/App.jsx, CLAUDE.md (+ MEMORY.md, CHAT.md after this entry).
+Suggested commit:
+  git add electron/session-manager.cjs electron/agent-openai.cjs src/App.jsx CLAUDE.md MEMORY.md CHAT.md
+  git commit -m "Weak-model office reliability: PYTHONSAFEPATH guard, real-values rule, persistent output cards, nav-restore + context-exclusivity fixes; chat data-path reverted to standard; protected note"
+Git nag: `error: improper chunk offset` = corrupted commit-graph; clean with `git commit-graph write --reachable` (harmless).
+
+### RESTART
+session-manager.cjs + agent-openai.cjs are MAIN-PROCESS → full `npm run electron:dev` restart (Ctrl+R won't load them). App.jsx is renderer (Ctrl+R / restart). App.jsx also ships to WEB via npm run build → redeploy to Render.

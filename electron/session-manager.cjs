@@ -41,16 +41,17 @@ function scanOffice(folder) {
   return out;
 }
 function emitNewOutputs(emit, folder, before) {
+  const out = [];
   try {
     const path = require("path");
     const after = scanOffice(folder);
-    let n = 0;
     for (const [p, mt] of after) {
       const prev = before && before.get(p);
-      if (prev === undefined || mt > prev) { emit({ kind: "file_output", data: { path: p, name: path.basename(p) } }); n++; }
+      if (prev === undefined || mt > prev) { const name = path.basename(p); emit({ kind: "file_output", data: { path: p, name } }); out.push({ path: p, name }); }
     }
-    console.log("[madav] emitNewOutputs folder=%s scanned=%d new=%d", folder, after.size, n);
+    console.log("[madav] emitNewOutputs folder=%s scanned=%d new=%d", folder, after.size, out.length);
   } catch (e) { console.log("[madav] emitNewOutputs error", (e && e.message) || e); }
+  return out;
 }
 
 // Detect a usable Python (+ pandas/openpyxl) ONCE so room runs can lean on code execution for
@@ -425,11 +426,11 @@ class SessionManager {
     const cfg = settings.load();
     const agentExtras = s.agent && s.agent.tools && (s.agent.tools.connectors || s.agent.tools.skills || s.agent.tools.browser);
     const hasExtras = agentExtras || (cfg.skillsDirs || []).length > 0 || (cfg.connectors || []).some((c) => c.enabled);
-    // Smart-detect: a chat turn that needs spreadsheet/data work gets a scratch workspace + tools
-    // (code-execution) so even weak models produce a real file; plain chat stays fast.
-    if (cleanImgs(images).length === 0 && (cfg.extras || {}).office !== false && needsDataTools(userText)) {
-      return this._chatDataTurn(sessionId, userText, profile, cfg, images);
-    }
+    // Smart-detect chat data-path DISABLED (testing standard chat for both Claude and weak models).
+    // To re-enable code-execution for data-ish chat turns, uncomment:
+    // if (cleanImgs(images).length === 0 && (cfg.extras || {}).office !== false && needsDataTools(userText)) {
+    //   return this._chatDataTurn(sessionId, userText, profile, cfg, images);
+    // }
     if (profile.kind !== "anthropic" && hasExtras && cleanImgs(images).length === 0) {
       return this._chatAgentTurn(sessionId, userText, profile, cfg, images);
     }
@@ -901,10 +902,16 @@ class SessionManager {
       else emit({ kind: "error", data: await this._friendlyError(e) });
     } finally {
       s.controller = null;
-      if (useFolder && project.folder) emitNewOutputs(emit, project.folder, beforeFiles);
+      const newOuts = (useFolder && project.folder) ? emitNewOutputs(emit, project.folder, beforeFiles) : [];
       const msgs = s.history.filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.length);
       const conv = store.getConversation(s.conversationId) || { id: s.conversationId, projectId: s.projectId, title: "New conversation", createdAt: Date.now() };
       conv.messages = msgs;
+      // Persist produced output files so their Open/Download cards survive reopen (the card is otherwise
+      // a live-only event). Keyed by path so re-runs that overwrite the same file don't duplicate it.
+      if (newOuts.length) {
+        const seen = new Set((conv.outputs || []).map((o) => o.path));
+        conv.outputs = [...(conv.outputs || []), ...newOuts.filter((o) => !seen.has(o.path))];
+      }
       if (conv.title === "New conversation") {
         const fu = msgs.find((m) => m.role === "user");
         if (fu) conv.title = String(fu.content).slice(0, 48);
