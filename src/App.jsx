@@ -537,6 +537,7 @@ export default function App() {
   // Start a fresh chat — also returns to the chat surface if we're in a tool/settings view.
   const newSession = () => {
     if (!PRIMARY.includes(mode)) setMode(chatMode);
+    modeCacheRef.current.project = null;
     setProjectCtx(null); setCoworkProj(null); setAgentCtx(null); setTeamCtx(null); setTeamRun(null); setMissionPending(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const removeSession = async (id) => {
@@ -585,6 +586,7 @@ export default function App() {
 
   // Open a saved project conversation into the chat surface.
   const openConversation = async (project, convMeta) => {
+    setAgentCtx(null); setTeamCtx(null); setTeamRun(null); // project context is exclusive with agent/team
     const sid = convSession.current.get(convMeta.id);
     if (sid && runBuffers.current.has(sid)) {
       const running = runBusy.current.get(sid) === true;
@@ -600,7 +602,7 @@ export default function App() {
     setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });
     sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
-  const backToProjects = () => { setProjectCtx(null); setTimeline([]); sessionRef.current = null; setBusy(false); };
+  const backToProjects = () => { modeCacheRef.current.project = null; setProjectCtx(null); setTimeline([]); sessionRef.current = null; setBusy(false); };
   // Back from a project-scoped Collaborate task to THAT project's page (not the projects list).
   const backToProject = () => {
     if (!coworkProj) return;
@@ -611,6 +613,7 @@ export default function App() {
 
   // Start a new project conversation from the Projects detail composer (opens the chat surface + sends).
   const startProjectChat = async (project, text) => {
+    setAgentCtx(null); setTeamCtx(null); setTeamRun(null); // project context is exclusive with agent/team
     const conv = await bridge.createConversation(project.id);
     setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: conv.id, title: (text || "").slice(0, 48) || "New conversation" });
     setTimeline(text ? [{ type: "message", role: "user", text }] : []);
@@ -702,6 +705,7 @@ export default function App() {
   const switchMode = (m) => {
     // Snapshot the conversation of the mode we're leaving so we can restore it.
     if (PRIMARY.includes(mode)) modeCacheRef.current[mode] = { convId: activeConvId, timeline };
+    if (mode === "project" && projectCtx) modeCacheRef.current.project = { projectCtx, timeline }; // remember the open project conversation too
     if (m !== mode) bridge.track?.("view", { section: m }); // analytics: which sections get used
     // A running turn KEEPS RUNNING when you navigate away: busy, the live session
     // binding and any pending permission request all survive — the permission modal
@@ -722,14 +726,41 @@ export default function App() {
         if (!agentSeed.current) setAgentCtx(null); // manual navigation drops the agent; a pending launch keeps it
         if (!teamSeed.current) { setTeamCtx(null); setTeamRun(null); }
         setSoloRun(null);
-        setTimeline(c ? c.timeline : []);
-        setActiveConvId(c ? c.convId : null);
-        sessionRef.current = null;
-        setBusy(false); // a restored (non-live) conversation is never mid-turn
+        const cid = c ? c.convId : null;
+        const sid = cid ? convSession.current.get(cid) : null;
+        if (sid && runBuffers.current.has(sid)) {
+          // A run streamed (or finished) in the background — show the buffered timeline, not a stale snapshot.
+          const running = runBusy.current.get(sid) === true;
+          setTimeline(runBuffers.current.get(sid) || (c ? c.timeline : []));
+          setActiveConvId(cid);
+          sessionRef.current = running ? sid : null;
+          streamOpen.current = running ? !!runStreamOpen.current.get(sid) : false;
+          setBusy(running);
+        } else {
+          setTimeline(c ? c.timeline : []);
+          setActiveConvId(cid);
+          sessionRef.current = null;
+          setBusy(false); // a restored (non-live) conversation is never mid-turn
+        }
       }
     } else if (m === "project") {
-      setProjOpenId(null); // sidebar navigation always lands on the projects LIST
-      setProjectCtx(null); setTimeline([]); setActiveConvId(null); sessionRef.current = null; setBusy(false); setSoloRun(null);
+      // Project context is mutually exclusive with agent/team — clear those either way.
+      setCoworkProj(null); setAgentCtx(null); setTeamCtx(null); setTeamRun(null); setSoloRun(null);
+      const pc = modeCacheRef.current.project;
+      if (pc && pc.projectCtx) {
+        // Returning to the project conversation that was open — restore it instead of dumping to the list.
+        setProjOpenId(null); setProjectCtx(pc.projectCtx);
+        const sid = convSession.current.get(pc.projectCtx.conversationId);
+        if (sid && runBuffers.current.has(sid)) {
+          const running = runBusy.current.get(sid) === true;
+          setTimeline(runBuffers.current.get(sid) || pc.timeline || []);
+          if (running) { sessionRef.current = sid; streamOpen.current = !!runStreamOpen.current.get(sid); setBusy(true); }
+          else { sessionRef.current = null; setBusy(false); }
+        } else { setTimeline(pc.timeline || []); sessionRef.current = null; setBusy(false); }
+      } else {
+        setProjOpenId(null); setProjectCtx(null); // no open conversation cached → the projects LIST
+        setTimeline([]); setActiveConvId(null); sessionRef.current = null; setBusy(false);
+      }
     }
     // Secondary views (settings/skills/connectors/viamobile/consumption): leave the
     // current conversation untouched so coming back restores it.

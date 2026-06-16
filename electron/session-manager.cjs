@@ -19,16 +19,38 @@ const os = require("os");
 const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
 
-// After a folder-linked run, surface any office files the agent produced as Open/Download cards in
-// the chat (works for any model — detects by mtime, so Claude SDK and the OpenAI loop both covered).
-function emitNewOutputs(emit, folder, sinceMs) {
-  try {
-    for (const name of fs.readdirSync(folder)) {
-      if (!/\.(xlsx|xlsm|xls|docx|pptx|pdf|csv)$/i.test(name)) continue;
-      const p = require("path").join(folder, name);
-      try { const st = fs.statSync(p); if (st.isFile() && st.mtimeMs >= sinceMs - 1500) emit({ kind: "file_output", data: { path: p, name } }); } catch {}
+// Surface office files the agent produced as Open/Download cards in the chat. Works for ANY model
+// (Claude SDK + the OpenAI loop both covered). Robust by DIFF: snapshot the folder before the run,
+// compare after — so it never depends on a fragile mtime/clock comparison. Recurses ONE level so a
+// file written into an "output/" subfolder is still caught.
+const OFFICE_RE = /\.(xlsx|xlsm|xls|docx|pptx|pdf|csv)$/i;
+function scanOffice(folder) {
+  const out = new Map(); // absolutePath -> mtimeMs
+  const path = require("path");
+  const walk = (dir, depth) => {
+    let ents = [];
+    try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const ent of ents) {
+      const p = path.join(dir, ent.name);
+      if (ent.isDirectory()) { if (depth > 0 && !/^(node_modules|\.git)$/i.test(ent.name)) walk(p, depth - 1); continue; }
+      if (!OFFICE_RE.test(ent.name)) continue;
+      try { out.set(p, fs.statSync(p).mtimeMs); } catch {}
     }
-  } catch {}
+  };
+  walk(folder, 1);
+  return out;
+}
+function emitNewOutputs(emit, folder, before) {
+  try {
+    const path = require("path");
+    const after = scanOffice(folder);
+    let n = 0;
+    for (const [p, mt] of after) {
+      const prev = before && before.get(p);
+      if (prev === undefined || mt > prev) { emit({ kind: "file_output", data: { path: p, name: path.basename(p) } }); n++; }
+    }
+    console.log("[madav] emitNewOutputs folder=%s scanned=%d new=%d", folder, after.size, n);
+  } catch (e) { console.log("[madav] emitNewOutputs error", (e && e.message) || e); }
 }
 
 // Detect a usable Python (+ pandas/openpyxl) ONCE so room runs can lean on code execution for
@@ -50,9 +72,12 @@ async function pyEnv() {
 // scratch workspace + tools (code-execution) so even weak models produce a real file reliably.
 function needsDataTools(text) {
   const t = String(text || "").toLowerCase();
-  if (/\b(xlsx|\.xls\b|excel|spreadsheet|workbook|\.csv\b|csv file|pivot)\b/.test(t)) return true;
-  if (/\b(build|make|generate|create|produce|export|compute|calculate|analy[sz]e|reconcile|aggregate|summari[sz]e|tabulate)\b/.test(t)
-      && /\b(report|model|dashboard|chart|projection|forecast|kpi|metric|metrics|dataset|data|sheet|table|workbook)\b/.test(t)) return true;
+  // Trigger on EXPLICIT spreadsheet vocabulary (these words almost never appear in plain chat),
+  // OR an analyse-my-files request. Deliberately excludes ambiguous words (report/model/data/table)
+  // so normal conversation, writing, and Q&A stay on the fast plain-chat path.
+  if (/\b(xlsx|xlsm|\.xls\b|excel|spreadsheet|workbook|\.csv\b|csv|pivot table)\b/.test(t)) return true;
+  if (/\b(analy[sz]e|process|aggregate|reconcile|summari[sz]e|tabulate|crunch)\b/.test(t)
+      && /\b(these files|the files|my data|the data|uploaded|attached|source files|raw data|dataset)\b/.test(t)) return true;
   return false;
 }
 
@@ -418,6 +443,7 @@ class SessionManager {
     const s = this.sessions.get(sessionId);
     if (!s.cwd) { try { const d = require("path").join(os.tmpdir(), "madav-chat-" + sessionId); fs.mkdirSync(d, { recursive: true }); s.cwd = d; } catch {} }
     const _t0 = Date.now();
+    const beforeFiles = s.cwd ? scanOffice(s.cwd) : null;
     const emit = (e) => this._send(sessionId, e.kind, e.data);
     const text = (userText || "") + materializeImages(images);
     const controller = new AbortController(); s.controller = controller;
@@ -428,7 +454,7 @@ class SessionManager {
         await runOpenAIAgentTurn({ prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
       }
     } catch (e) { if (e && e.name === "AbortError") emit({ kind: "result", data: { subtype: "interrupted" } }); else emit({ kind: "error", data: await this._friendlyError(e) }); }
-    finally { s.controller = null; if (s.cwd) emitNewOutputs(emit, s.cwd, _t0); }
+    finally { s.controller = null; if (s.cwd) emitNewOutputs(emit, s.cwd, beforeFiles); }
   }
 
   // Chat enriched with skills + connectors (OpenAI-compatible providers).
@@ -816,6 +842,7 @@ class SessionManager {
     if (!project) { this._send(sessionId, "error", { code: "no_project", message: "Project not found." }); return; }
     const useFolder = !!project.folder;
     const t0 = Date.now();
+    const beforeFiles = useFolder ? scanOffice(project.folder) : null;
     const pe = useFolder ? await pyEnv().catch(() => ({})) : null;
     let pyNote = "";
     if (useFolder) {
@@ -824,7 +851,8 @@ class SessionManager {
     }
     const gi = settings.load().globalInstructions;
     const sys = store.projectSystem(project) + ARTIFACT_RULE_BASE + officeRulePart() +
-      (useFolder ? `\n\nThis room is linked to a folder at: ${project.folder}.\n- READ the source files there with read_file / list_dir.\n- For DATA work (joining or aggregating spreadsheets, large calculations) PREFER writing and running a Python script via run_bash. ${pyNote} Let Python do the math — do NOT compute large aggregations by hand.\n- Name your scripts UNIQUELY (e.g. build_report.py). NEVER name one inspect.py, code.py, test.py, json.py, string.py, random.py or any Python standard-library name — that shadows the stdlib and breaks pandas with a "partially initialized module / circular import" error.\n- DELIVER the finished spreadsheet, document, deck or PDF as ONE officedoc block so the user gets a card to open and download it right here. Compute the numbers with Python first, then put the finished values into the officedoc block — do not leave the result only as a file in the folder.` : "") +
+      (useFolder ? `\n\nThis room is linked to a folder at: ${project.folder}, and that folder IS your working directory. Follow this WORKFLOW EXACTLY for any report / spreadsheet / data task \u2014 do not deviate:\n1. INSPECT briefly: at most TWO quick commands (list_dir, or ONE python -c to print column names / shape). Then stop inspecting \u2014 do not keep poking at the data.\n2. BUILD with ONE script. Write a single uniquely-named script file (e.g. build_report.py \u2014 NEVER a Python standard-library name like inspect.py, code.py, test.py, json.py, string.py, random.py, which shadows the stdlib and breaks pandas). That ONE script must read ALL the input files, do the FULL computation, and SAVE the finished spreadsheet into the working folder by name, for example:  result.to_excel(\"Operations_KPI_March.xlsx\", index=False).  Put ALL the work in that ONE script \u2014 do NOT spread it across many separate python -c commands. ${pyNote}\n3. RUN that script once with run_bash.\n4. VERIFY the output file now exists (list_dir), then STOP.\n5. Reply with ONE short, plain-English sentence naming the file you saved.\nThe SAVED FILE is the deliverable \u2014 it automatically becomes an Open / Download card in the chat. NEVER end your turn without having SAVED an output file (.xlsx / .docx / .pdf) into the folder.` : "") +
+      " After you have produced and saved the deliverable, write the user a short, friendly 1-2 sentence summary in plain everyday English of what you made and where it is. (Keep all the real numbers and detail INSIDE the spreadsheet/document/deck — only the chat message itself should be brief. This rule never reduces what goes into the file.)" +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const cfg = settings.load();
     const emit = (e) => this._send(sessionId, e.kind, e.data);
@@ -873,7 +901,7 @@ class SessionManager {
       else emit({ kind: "error", data: await this._friendlyError(e) });
     } finally {
       s.controller = null;
-      if (useFolder && project.folder) emitNewOutputs(emit, project.folder, t0);
+      if (useFolder && project.folder) emitNewOutputs(emit, project.folder, beforeFiles);
       const msgs = s.history.filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.length);
       const conv = store.getConversation(s.conversationId) || { id: s.conversationId, projectId: s.projectId, title: "New conversation", createdAt: Date.now() };
       conv.messages = msgs;
