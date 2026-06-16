@@ -781,7 +781,7 @@ class SessionManager {
         emit({ kind: "result", data: { subtype: "success", duration_ms: Date.now() - started } });
       } else {
         await runOpenAIAgentTurn({
-          prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: "default",
+          prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
           connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
           systemOverride: sys,

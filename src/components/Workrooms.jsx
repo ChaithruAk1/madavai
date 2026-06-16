@@ -767,6 +767,10 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
               <textarea className="model-search" rows={5} style={{ resize: "vertical", fontFamily: "inherit", width: "100%" }}
                 placeholder="Goals, tone, rules, context this room should always remember…" value={instr}
                 onChange={(e) => setInstr(e.target.value)} onBlur={saveInstr} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "8px 0 0", fontSize: 12.5, color: "var(--text-1)", cursor: "pointer" }} title="When on, runs in this room won't ask before reading files / running tools — no permission pop-ups.">
+                <input type="checkbox" checked={!!(room && room.autoApprove)} onChange={async (e) => { await bridge.updateProject(selId, { autoApprove: e.target.checked }); refreshRoom(); }} />
+                Auto-approve actions in this room (no permission pop-ups)
+              </label>
             </div>
 
             <div className="wr-sec">

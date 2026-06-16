@@ -1494,3 +1494,12 @@ Known limits: a backgrounded run that needs a permission prompt is ignored by bu
 ## Session 2026-06-15 (cont.) — live-WIP reconnect VERIFIED WORKING
 Diagnosed via [WIP] console logs (then removed). Root cause of the blank-on-reopen: convSession (conversationId->sessionId) was NEVER seeded for the run — the start path that created the session didn't hit the send()/startProjectChat seed points, so openConversation/openSession looked up the conv id and found nothing → fell through to a blank reload. FIX: seed convSession at the `init` event (fires for EVERY run regardless of start path) using projectCtxRef/activeConvIdRef mirrors. SECOND fix: a backgrounded run that hits permission_request/user_question would stall (bufferBg ignored them) — now those modal prompts surface GLOBALLY (in the onEvent foreign-session guard) so the run can be approved from any screen and keeps going. VERIFIED by user: start room run → approve permission → navigate away → return → live WIP shows. App.jsx only; active path still byte-unchanged.
 Limits unchanged: survives NAVIGATION, not a reload/restart (buffers are in-memory; tool steps still not persisted to disk). Real "survive reload" needs server-side run state (separate, planned).
+
+---
+## Session 2026-06-15 (cont.) — per-room AUTO-APPROVE (no permission pop-ups)
+User: room runs prompt for permission every time; wanted to stop pop-ups. permMode "bypassPermissions" auto-approves ALL tools (agent-openai isAuto() returns true first thing). _projectTurn hardcoded permMode:"default" → always prompted. FIX: per-room `autoApprove` flag.
+- electron/projects-store.cjs: normalize `autoApprove=false` default; listProjects serializes `autoApprove`.
+- electron/session-manager.cjs _projectTurn: permMode = project.autoApprove ? "bypassPermissions" : "default".
+- src/components/Workrooms.jsx: checkbox under Instructions ("Auto-approve actions in this room (no permission pop-ups)") → bridge.updateProject(selId,{autoApprove}) + refreshRoom. room.autoApprove read from getProject (raw field).
+node --check + esbuild parse OK. Main-process change → full electron:dev restart.
+CHAT reconnect confirmed by code analysis to also work: openSession has the reconnect; web start() returns sessionId==conversationId==id; desktop conversationId == the sstore id Recents passes to openSession → keys align. (Live-test if convenient.)

@@ -27,6 +27,7 @@ function normalize(p) {
   if (!Array.isArray(p.pinnedSkills)) p.pinnedSkills = []; // room playbook (signature plays)
   if (!Array.isArray(p.goals)) p.goals = [];              // room objectives: { id, text, done }
   if (typeof p.archived !== "boolean") p.archived = false; // archived rooms hide from the active shelf
+  if (typeof p.autoApprove !== "boolean") p.autoApprove = false; // skip permission prompts for runs in this room
   return p;
 }
 
@@ -45,7 +46,7 @@ function listProjects() {
     id: p.id, name: p.name, instructions: p.instructions, createdAt: p.createdAt, updatedAt: p.updatedAt,
     knowledgeCount: (p.knowledge || []).length,
     knowledgeBytes: (p.knowledge || []).reduce((n, k) => n + String(k.content || "").length, 0),
-    identity: p.identity, agentIds: p.agentIds, teamIds: p.teamIds, pinnedSkills: p.pinnedSkills, goals: p.goals, archived: p.archived, folder: p.folder || "", githubUrl: p.githubUrl || "",
+    identity: p.identity, agentIds: p.agentIds, teamIds: p.teamIds, pinnedSkills: p.pinnedSkills, goals: p.goals, archived: p.archived, autoApprove: !!p.autoApprove, folder: p.folder || "", githubUrl: p.githubUrl || "",
     sim: !!p.sim, // built-in Project Simulation room (Workrooms guide) — delete-protected in the UI
     convCount: (convMeta[p.id] || {}).count || 0, lastConvAt: (convMeta[p.id] || {}).lastAt || 0,
   }));
