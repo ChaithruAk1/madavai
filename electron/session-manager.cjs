@@ -727,7 +727,7 @@ class SessionManager {
     const now = new Date();
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Use this whenever a date is needed; never say you don't know it.`;
     const sysChat = (this._agentSys(s, userText) || ("You are Madav, a helpful assistant. " + dateLine +
-      " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence." + ARTIFACT_RULE_BASE + officeRulePart())) +
+      " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence.")) + ARTIFACT_RULE_BASE + officeRulePart() +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const messages = [{ role: "system", content: sysChat }, ...s.history];
     const started = Date.now();
@@ -754,7 +754,7 @@ class SessionManager {
     if (!project) { this._send(sessionId, "error", { code: "no_project", message: "Project not found." }); return; }
     const useFolder = !!project.folder;
     const gi = settings.load().globalInstructions;
-    const sys = store.projectSystem(project) +
+    const sys = store.projectSystem(project) + ARTIFACT_RULE_BASE + officeRulePart() +
       (useFolder ? `\n\nThis project is linked to a folder of files at: ${project.folder}. Use the file tools (read_file, list_dir, edit_file, run_bash) to inspect or modify those files when relevant.` : "") +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const cfg = settings.load();
