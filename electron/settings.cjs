@@ -19,9 +19,17 @@ function file() {
 
 const ENC_PREFIX = "enc:v1:";
 function canEncrypt() { try { return safeStorage && safeStorage.isEncryptionAvailable(); } catch { return false; } }
+let _encryptFailed = false;
 function encStr(v) {
   if (!v || typeof v !== "string" || v.startsWith(ENC_PREFIX) || !canEncrypt()) return v;
-  try { return ENC_PREFIX + safeStorage.encryptString(v).toString("base64"); } catch { return v; }
+  try { return ENC_PREFIX + safeStorage.encryptString(v).toString("base64"); }
+  catch (e) {
+    // Encryption was AVAILABLE but failed — never silently write the secret as plaintext (review M6).
+    // Flag it so save() keeps the prior on-disk ciphertext instead of persisting cleartext.
+    _encryptFailed = true;
+    try { console.warn("[settings] secret encryption failed; not writing plaintext:", (e && e.message) || e); } catch {}
+    return "";
+  }
 }
 // True when ANY secret failed to decrypt this run (different binary/fuses/OS user can't
 // read the old ciphertext). save() uses this to PRESERVE the on-disk ciphertext instead
@@ -165,7 +173,7 @@ function save(settings) {
   // deletion — keep the existing ciphertext on disk so the binary that CAN read it
   // (e.g. the dev app vs the packaged app) still has the key. Without this, the launch
   // auto-save of any app that can't decrypt would permanently destroy every API key.
-  if (_decryptFailed) {
+  if (_decryptFailed || _encryptFailed) {
     try {
       const prev = JSON.parse(fs.readFileSync(file(), "utf8"));
       const keep = (cur, old) => (cur === "" && typeof old === "string" && old.startsWith(ENC_PREFIX)) ? old : cur;

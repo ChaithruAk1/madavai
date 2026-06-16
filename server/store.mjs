@@ -68,7 +68,17 @@ function jsonStore(file) {
 // ---- Postgres backend (uses the optional `pg` package; install it in server/) ----
 async function pgStore(url) {
   const { default: pg } = await import("pg");
-  const pool = new pg.Pool({ connectionString: url, ssl: url.includes("localhost") ? false : { rejectUnauthorized: false } });
+  // TLS: localhost → none. Managed DB → VERIFY the server cert against the provider CA when
+  // PGSSLROOTCERT is set (PEM contents, or a path to a .pem); else keep the prior unverified mode but
+  // WARN, since rejectUnauthorized:false lets a network MITM impersonate the database. (review M7)
+  let ssl = false;
+  if (!url.includes("localhost")) {
+    let ca = process.env.PGSSLROOTCERT || "";
+    try { if (ca && !ca.includes("BEGIN CERTIFICATE") && fs.existsSync(ca)) ca = fs.readFileSync(ca, "utf8"); } catch {}
+    if (ca) ssl = { ca, rejectUnauthorized: true };
+    else { console.warn("[store] PGSSLROOTCERT not set — Postgres TLS is unauthenticated (rejectUnauthorized:false); set it to the provider CA to prevent MITM."); ssl = { rejectUnauthorized: false }; }
+  }
+  const pool = new pg.Pool({ connectionString: url, ssl });
   await pool.query(`create table if not exists users (
     id text primary key, provider text, email text, name text, avatar text,
     created_at timestamptz default now(), trial_ends_at timestamptz, last_seen_at timestamptz,

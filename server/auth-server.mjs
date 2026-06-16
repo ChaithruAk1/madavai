@@ -140,8 +140,8 @@ function statusOf(u) {
 
 // ---- session token: base64url(payload).hmac ----
 const b64u = (b) => Buffer.from(b).toString("base64url");
-function sign(sub) {
-  const payload = b64u(JSON.stringify({ sub, exp: Date.now() + SESSION_TTL_MS }));
+function sign(sub, ver) {
+  const payload = b64u(JSON.stringify({ sub, v: ver || 1, exp: Date.now() + SESSION_TTL_MS }));
   const mac = crypto.createHmac("sha256", SECRET).update(payload).digest("base64url");
   return payload + "." + mac;
 }
@@ -149,7 +149,11 @@ function verify(token) {
   if (!token || !token.includes(".")) return null;
   const [payload, mac] = token.split(".");
   const good = crypto.createHmac("sha256", SECRET).update(payload).digest("base64url");
-  if (!crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(good))) return null;
+  // timingSafeEqual THROWS on length-mismatched buffers (truncated/forged token); an uncaught throw
+  // in the async handler would hang the socket. Length-check first, then compare. (review M3)
+  let macBuf; try { macBuf = Buffer.from(String(mac || "")); } catch { return null; }
+  const goodBuf = Buffer.from(good);
+  if (macBuf.length !== goodBuf.length || !crypto.timingSafeEqual(macBuf, goodBuf)) return null;
   try { const p = JSON.parse(Buffer.from(payload, "base64url").toString()); return p.exp > Date.now() ? p : null; } catch { return null; }
 }
 // Long-lived token for the CLI (the terminal can't re-auth interactively often). Still re-validated
@@ -336,16 +340,32 @@ function verifyStripeSig(header, payload, secret) {
   } catch { return false; }
 }
 // A redirect target is allowed if it's loopback (desktop) or in the ALLOWED_REDIRECTS list (web).
-const isAllowedRedirect = (r) => /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(r) || ALLOWED_REDIRECTS.some((a) => r.startsWith(a));
+const isAllowedRedirect = (r) => {
+  // Loopback (desktop) — anchored, host-exact.
+  if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(r)) return true;
+  // Web — EXACT-ORIGIN match. A bare startsWith() let "https://madav.ai@evil.com" and
+  // "https://madav.ai.evil.com" pass and leak the session token (review H2). Compare real origins.
+  let ro; try { ro = new URL(r).origin; } catch { return false; }
+  return ALLOWED_REDIRECTS.some((a) => { try { return new URL(a).origin === ro; } catch { return false; } });
+};
 
 // OAuth state store with a 10-minute TTL (CSRF protection).
 const pending = new Map(); // state -> { provider, redirect, exp }
 setInterval(() => { const now = Date.now(); for (const [k, v] of pending) if (v.exp < now) pending.delete(k); }, 60000).unref?.();
 
+// Client IP for rate-limit keys. The LEFT-most X-Forwarded-For entry is client-controlled (spoofable to
+// rotate the key and defeat brute-force limits); the trusted proxy (Render) appends the real peer IP on
+// the right, so count TRUSTED_PROXY_HOPS in from the right. (review M5)
+const TRUSTED_HOPS = Math.max(1, parseInt(process.env.TRUSTED_PROXY_HOPS || "1", 10) || 1);
+function clientIp(req) {
+  const xff = String(req.headers["x-forwarded-for"] || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (xff.length) return xff[Math.max(0, xff.length - TRUSTED_HOPS)];
+  return req.socket.remoteAddress || "?";
+}
 // Simple in-memory rate limiter (per IP + bucket). Swap for a shared store if you run multiple instances.
 const hits = new Map();
 function rateLimited(req, bucket, max, windowMs) {
-  const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
+  const ip = clientIp(req);
   const key = bucket + ":" + ip; const now = Date.now();
   const rec = hits.get(key);
   if (!rec || now > rec.reset) { hits.set(key, { n: 1, reset: now + windowMs }); return false; }
@@ -358,10 +378,17 @@ const tooMany = (res, retryAfterSec) => { res.setHeader("Retry-After", String(re
 const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 // Strip control characters (keep \t \n \r) from stored text — community/request content is returned as JSON.
 const clean = (s) => String(s == null ? "" : s).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
-// (removed legacy clean impl) // [ --]/g, "");
+// (removed legacy clean impl)
 const newId = () => crypto.randomBytes(16).toString("hex"); // 32-hex random id
 // Resolve the Bearer session to a live user (or null). Centralises the verify(bearer(req)) + getUser dance.
-async function authUser(req) { const pl = verify(bearer(req)); if (!pl) return null; return (await store.getUser(pl.sub)) || null; }
+async function authUser(req) {
+  const pl = verify(bearer(req)); if (!pl) return null;
+  const u = await store.getUser(pl.sub); if (!u) return null;
+  // Web token revocation: tokens minted before /admin/users/:id/revoke-cli carry an older version;
+  // old tokens without `v` skip the check (valid until expiry). (review M3)
+  if (typeof pl.v === "number" && pl.v !== (u.tokenVersion || 1)) return null;
+  return u;
+}
 // "Paid" = an active subscription or comped/free-email account (statusOf -> "active"). Trial users are NOT paid.
 const isPaid = (u) => !!u && statusOf(u).status === "active";
 // Public author label — never leak a full email to other users. Prefer name; else email local-part, truncated.
@@ -424,7 +451,7 @@ const server = http.createServer(async (req, res) => {
       await store.patchUser(user.id, { lastSeenAt: new Date().toISOString() });
       // Private beta gate: only admins / free-access users may finish sign-in; everyone else gets no token.
       if (!betaAllowed(user)) return betaDenied(res);
-      const token = sign(user.id);
+      const token = sign(user.id, user.tokenVersion || 1);
       const redir = ctx.redirect;
       if (redir && isAllowedRedirect(redir)) {
         // Loopback (desktop): token as a query param so the app's local server receives it.
@@ -445,6 +472,7 @@ const server = http.createServer(async (req, res) => {
     const user = await store.getUser(pl.sub);
     if (!user) return json(res, 401, { error: "unknown user" });
     // Throttled last-seen so we don't write on every poll (poll is every ~3 min anyway).
+    if (typeof pl.v === "number" && pl.v !== (user.tokenVersion || 1)) return json(res, 401, { error: "token revoked" });
     const seen = user.lastSeenAt ? Date.parse(user.lastSeenAt) : 0;
     if (Date.now() - seen > 5 * 60000) store.patchUser(user.id, { lastSeenAt: new Date().toISOString() }).catch(() => {});
     const st = statusOf(user);
@@ -495,7 +523,7 @@ const server = http.createServer(async (req, res) => {
     await store.patchUser(user.id, { lastSeenAt: new Date().toISOString() });
     // Private beta gate (same as the OAuth callback): only admins / free-access users may finish sign-in.
     if (!betaAllowed(user)) return betaDenied(res);
-    const token = sign(user.id);
+    const token = sign(user.id, user.tokenVersion || 1);
     if (redirect && /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(redirect)) {
       const sep = redirect.includes("?") ? "&" : "?";
       res.writeHead(302, { Location: redirect + sep + "token=" + encodeURIComponent(token) }); return res.end();

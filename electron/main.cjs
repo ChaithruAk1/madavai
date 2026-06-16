@@ -386,7 +386,21 @@ ipcMain.handle("madav:chooseFolder", async () => {
   return r.canceled ? null : r.filePaths[0];
 });
 ipcMain.handle("madav:openExternal", (_e, url) => { try { if (/^(https?:\/\/|mailto:)/i.test(String(url || ""))) { shell.openExternal(String(url)); return true; } return false; } catch { return false; } });
-ipcMain.handle("madav:openPath", (_e, p) => { try { require("electron").shell.openPath(String(p || "")); return true; } catch { return false; } });
+ipcMain.handle("madav:openPath", (_e, p) => {
+  // Review H1: shell.openPath asks the OS to OPEN (possibly EXECUTE) the path. A model can write an
+  // output file into a linked folder, so only auto-open known-inert document/media types or a
+  // directory; anything else (.exe/.bat/.lnk/.html/.svg, no extension, UNC share) is REVEALED, not run.
+  try {
+    const shell = require("electron").shell, path = require("path");
+    const raw = String(p || ""); if (!raw) return false;
+    const SAFE_OPEN = new Set(["pdf","txt","md","rtf","csv","tsv","log","json","yaml","yml","doc","docx","xls","xlsx","ppt","pptx","odt","ods","odp","png","jpg","jpeg","gif","bmp","webp","tif","tiff","ico","mp4","mp3","wav","mov","m4a","zip"]);
+    let isDir = false; try { isDir = require("fs").statSync(raw).isDirectory(); } catch {}
+    const isUNC = /^\\\\|^\/\//.test(raw);
+    const ext = path.extname(raw).toLowerCase().replace(/^\./, "");
+    if (!isUNC && (isDir || SAFE_OPEN.has(ext))) { shell.openPath(raw); return true; }
+    shell.showItemInFolder(raw); return true;
+  } catch { return false; }
+});
 ipcMain.handle("madav:showInFolder", (_e, p) => { try { require("electron").shell.showItemInFolder(String(p || "")); return true; } catch { return false; } });
 
 // ---- IPC: shallow directory listing (for @-mention file picker) ----
@@ -1032,6 +1046,7 @@ ipcMain.handle("madav:googleSignIn", async () => {
   if (!clientId) return { error: "Add a Google OAuth Client ID (Account settings) first. Create one at console.cloud.google.com → Credentials → OAuth client → Desktop app." };
   const verifier = b64url(crypto.randomBytes(32));
   const challenge = b64url(crypto.createHash("sha256").update(verifier).digest());
+  const state = b64url(crypto.randomBytes(16)); // CSRF: bind the callback to THIS request (review M4)
   return await new Promise((resolve) => {
     let redirectUri = "";
     let done = false;
@@ -1040,9 +1055,11 @@ ipcMain.handle("madav:googleSignIn", async () => {
       try {
         const u = new URL(req.url, "http://127.0.0.1");
         const code = u.searchParams.get("code");
+        const retState = u.searchParams.get("state");
         res.writeHead(200, { "Content-Type": "text/html" });
         res.end("<html><body style='font-family:system-ui;background:#0b0d12;color:#eef;display:grid;place-items:center;height:100vh'><h2>Madav — signed in. You can close this window.</h2></body></html>");
         if (!code) return finish({ error: "No authorization code returned." });
+        if (retState !== state) return finish({ error: "OAuth state mismatch — sign-in aborted (possible CSRF)." });
         const body = new URLSearchParams({ code, client_id: clientId, redirect_uri: redirectUri, grant_type: "authorization_code", code_verifier: verifier });
         if (cfg.googleClientSecret) body.set("client_secret", cfg.googleClientSecret);
         const tk = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
@@ -1058,7 +1075,7 @@ ipcMain.handle("madav:googleSignIn", async () => {
       redirectUri = `http://127.0.0.1:${server.address().port}`;
       const authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
         client_id: clientId, redirect_uri: redirectUri, response_type: "code", scope: "openid email profile",
-        code_challenge: challenge, code_challenge_method: "S256", access_type: "offline", prompt: "consent",
+        code_challenge: challenge, code_challenge_method: "S256", access_type: "offline", prompt: "consent", state,
       }).toString();
       shell.openExternal(authUrl);
     });
