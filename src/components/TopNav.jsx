@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import MadavLogo from "./MadavLogo.jsx";
 import { MessageCircle, Users, Hammer, PanelLeft, CircleDot, Globe, AppWindow, Square } from "lucide-react";
 import { MODES } from "../bridge/contract.js";
@@ -16,10 +17,12 @@ const ICONS = { chat: MessageCircle, cowork: Users, code: Hammer };
 function RecordControl({ onSelect }) {
   const [open, setOpen] = useState(false);
   const [rec, setRec] = useState(null); // null | "web" | "desktop"
+  const [pos, setPos] = useState(null); // fixed-position coords for the portaled menu
   const wrapRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
-    const close = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    const close = (e) => { if (wrapRef.current && wrapRef.current.contains(e.target)) return; if (menuRef.current && menuRef.current.contains(e.target)) return; setOpen(false); };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
@@ -53,15 +56,23 @@ function RecordControl({ onSelect }) {
 
   const startWeb = async () => {
     setOpen(false);
-    await bridge.recordFlowStart();
-    setRec("web"); prevRef.current = "web";
-    madavAlert("Recording — do the workflow by hand in the new browser window, then CLOSE that window to finish. Credential fields are never recorded.");
+    try {
+      if (!bridge.recordFlowStart) return madavAlert("Web recording isn't available in this build.");
+      const r = await bridge.recordFlowStart();
+      if (r && r.error) return madavAlert(r.error);
+      setRec("web"); prevRef.current = "web";
+      madavAlert("Recording started — a browser window opened (check your other monitor if you don't see it). Do the workflow by hand, then CLOSE that window to finish. Credential fields are never recorded.");
+    } catch (e) { madavAlert("Couldn't start web recording: " + String((e && e.message) || e)); }
   };
   const startDesktop = async () => {
     setOpen(false);
-    const r = await bridge.recordDesktopStart();
-    if (r && r.error) { madavAlert(r.error); return; }
-    setRec("desktop"); prevRef.current = "desktop";
+    try {
+      if (!bridge.recordDesktopStart) return madavAlert("Desktop recording isn't available in this build.");
+      const r = await bridge.recordDesktopStart();
+      if (r && r.error) return madavAlert(r.error);
+      setRec("desktop"); prevRef.current = "desktop";
+      madavAlert("Desktop recording started — do the workflow in your Windows apps, then click Stop here when done.");
+    } catch (e) { madavAlert("Couldn't start desktop recording: " + String((e && e.message) || e)); }
   };
   const stop = async () => {
     if (rec === "desktop") {
@@ -74,6 +85,11 @@ function RecordControl({ onSelect }) {
       madavAlert("Close the recorder browser window to finish the web recording — the draft then appears in Skills.");
     }
   };
+  const toggleMenu = () => {
+    if (open) { setOpen(false); return; }
+    try { const r = wrapRef.current.getBoundingClientRect(); setPos({ top: Math.round(r.bottom + 8), right: Math.max(8, Math.round(window.innerWidth - r.right)) }); } catch { setPos({ top: 60, right: 16 }); }
+    setOpen(true);
+  };
 
   return (
     <div className="tn-recwrap" ref={wrapRef}>
@@ -82,12 +98,12 @@ function RecordControl({ onSelect }) {
           <span className="tn-recdot" /> Recording {rec === "desktop" ? "desktop" : "web"} · <Square size={10} style={{ verticalAlign: "-1px" }} /> Stop
         </button>
       ) : (
-        <button className="chip tn-rec" onClick={() => setOpen((o) => !o)} title="Record a workflow once — Madav turns what it watched into a skill draft you approve">
+        <button className="chip tn-rec" onClick={toggleMenu} style={{ borderColor: "var(--accent)", color: "var(--accent)", fontWeight: 600 }} title="Record a workflow once — Madav turns what it watched into a skill draft you approve">
           <CircleDot size={13} /> Record
         </button>
       )}
-      {open && !rec && (
-        <div className="plus-menu tn-recmenu">
+      {open && !rec && createPortal(
+        <div ref={menuRef} className="plus-menu tn-recmenu" style={{ position: "fixed", top: (pos && pos.top) || 60, right: (pos && pos.right) || 16, left: "auto", bottom: "auto", zIndex: 9999, animation: "none" }}>
           {bridge.recordFlowStart && (
             <button className="plus-item" onClick={startWeb} title="A browser window opens; do the task by hand; close the window — Madav drafts a skill from what it watched">
               <Globe size={15} /> Record a web workflow
@@ -99,7 +115,7 @@ function RecordControl({ onSelect }) {
             </button>
           )}
           <div className="mo-sub" style={{ padding: "6px 10px 4px", maxWidth: 240 }}>The result is a skill draft — approve it in Skills, then any Skills-capable agent can replay it.</div>
-        </div>
+        </div>, document.body
       )}
     </div>
   );

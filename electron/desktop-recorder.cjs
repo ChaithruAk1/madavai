@@ -63,14 +63,15 @@ $invokeHandler = [System.Windows.Automation.AutomationEventHandler]{
   [System.Windows.Automation.AutomationElement]::RootElement,
   [System.Windows.Automation.TreeScope]::Subtree, $invokeHandler)
 & $emit @{ t = "page"; url = "desktop"; title = "recording started" }
-while ($true) { Start-Sleep -Seconds 1 }
+Add-Type -AssemblyName System.Windows.Forms
+while ($true) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 80 }
 `;
 
 let active = null; // { proc, steps }
 
 function start() {
   if (active) return { already: true, recording: true };
-  const proc = spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", PS_SCRIPT], { windowsHide: true });
+  const proc = spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Sta", "-Command", PS_SCRIPT], { windowsHide: true });
   const steps = [];
   let buf = "";
   proc.stdout.on("data", (d) => {
@@ -101,17 +102,15 @@ async function stop() {
   const a = active; active = null;
   try { a.proc.kill(); } catch {}
   const steps = a.steps;
-  if (steps.length < 3) return { recording: false, error: "too little recorded (need at least 3 actions)" };
+  if (steps.length < 1) return { recording: false, error: "Nothing was captured — no UI actions were detected. Some apps (e.g. browsers) expose little accessibility data; try clicking real buttons/menu items, run Madav at the same privilege level as the target app, or use \"Record a web workflow\" instead." };
   await distillDesktop(steps).catch(() => {});
-  return { recording: false, steps: steps.length, note: "Draft created — approve it in Skills → Learned drafts (may take ~30s)." };
+  return { recording: false, steps: steps.length, note: "Captured " + steps.length + " action(s) — draft created; approve it in the Playbook (may take ~30s)." };
 }
 
 // Desktop-flavored distillation into the Skill Forge draft queue (approval mandatory).
 async function distillDesktop(steps) {
   const settings = require("./settings.cjs");
   const profile = settings.activeProfile();
-  if (!profile || !profile.baseUrl || !profile.model) return;
-  const { streamChat } = require("./providers.cjs");
   const lines = steps.map((s) =>
     s.t === "click" ? `CLICKED ${s.role} "${s.name}" in app "${s.app}"`
     : s.t === "fill" ? `FILLED "${s.field}" with "${s.value}" in app "${s.app}"`
@@ -125,23 +124,17 @@ description: <one sentence: when Madav should use this desktop workflow>
 
 # <Title>
 
-<Numbered steps an agent should follow to repeat this workflow: which application to focus (by the app names recorded), what to click (by the visible control names), what to type where. Generalize obvious specifics into <placeholders>. Note that credential fields must be left for the human, and that the agent needs the Desktop capability plus that app on its allowlist. Skip FOCUSED noise that wasn't meaningful. Max 300 words.>`;
-  const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 90000);
+<Numbered steps an agent should follow to repeat this workflow: which application to focus (by the app names recorded), what to click (by the visible control names), what to type where. Generalize obvious specifics into <placeholders>. Note that credential fields must be left for the human, and that the agent needs the Desktop capability plus that app on its allowlist. Skip FOCUSED noise that wasn't meaningful. Max 300 words.> CRITICAL — be FAITHFUL to the recording: use ONLY the apps, controls, clicks, and fields that appear in the RECORDED STEPS below. Do NOT invent, assume, or add any step, application, file type, button, menu, or value that isn't in the recording. If the capture is sparse or ambiguous, produce a SHORT skill describing only what was actually observed (and say so) — never fabricate a richer or more specific workflow than what was recorded.`;
   let text = "";
-  try { text = (await streamChat({ ...profile }, [{ role: "system", content: sys }, { role: "user", content: "RECORDED STEPS:\n" + lines.slice(0, 8000) }], { signal: ac.signal, onDelta: () => {} })).text || ""; }
-  catch { return; } finally { clearTimeout(to); }
-  const m = /^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/.exec(text.trim().replace(/^```[a-z]*\n|```$/g, ""));
-  if (!m) return;
-  const name = ((/name:\s*(.+)/.exec(m[1]) || [])[1] || "").trim().replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase();
-  const description = ((/description:\s*(.+)/.exec(m[1]) || [])[1] || "").trim();
-  if (!name || !description) return;
-  const fs = require("fs");
-  const path = require("path");
-  const dataFile = path.join(require("electron").app.getPath("userData"), "skill-forge.json");
-  let st; try { st = JSON.parse(fs.readFileSync(dataFile, "utf8")); } catch { st = { drafts: {} }; }
-  st.drafts = st.drafts || {};
-  st.drafts[name] = { name, description, body: text.trim(), evidence: ["(recorded by you on the desktop — " + steps.length + " UI events)"], at: Date.now() };
-  try { fs.writeFileSync(dataFile, JSON.stringify(st, null, 2)); } catch {}
+  if (profile && profile.baseUrl && profile.model) {
+    const { streamChat } = require("./providers.cjs");
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 90000);
+    try { text = (await streamChat({ ...profile }, [{ role: "system", content: sys }, { role: "user", content: "RECORDED STEPS:\n" + lines.slice(0, 8000) }], { signal: ac.signal, onDelta: () => {} })).text || ""; }
+    catch {} finally { clearTimeout(to); }
+  }
+  // ALWAYS produce a draft — fall back to the raw recorded steps if the model was unavailable or its output unusable.
+  if (!text.trim()) text = "---\nname: desktop-workflow\ndescription: Recorded desktop workflow (model unavailable — edit before use).\n---\n\n# Recorded desktop workflow\n\nSteps captured:\n\n" + lines;
+  require("./skill-draft.cjs").saveDraft({ text, fallbackName: "desktop-workflow", evidence: ["(recorded by you on the desktop — " + steps.length + " UI events)"] });
 }
 
 module.exports = { start, stop, status };

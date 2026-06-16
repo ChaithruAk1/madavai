@@ -88,8 +88,6 @@ async function distill(steps) {
   if (!steps || steps.length < 3) return;
   const settings = require("./settings.cjs");
   const profile = settings.activeProfile();
-  if (!profile || !profile.baseUrl || !profile.model) return;
-  const { streamChat } = require("./providers.cjs");
   const lines = steps.map((s) =>
     s.t === "page" ? `OPENED ${s.url} ("${s.title || ""}")`
     : s.t === "click" ? `CLICKED ${s.role} "${s.name}"`
@@ -102,24 +100,17 @@ description: <one sentence: when Madav should use this workflow>
 
 # <Title>
 
-<Numbered steps an agent should follow to repeat this workflow: which site to open, what to look for on each page (by the visible labels the user clicked), what to fill where. Generalize obvious specifics (search terms, dates) into <placeholders>. Note that credential fields must be left for the human. Max 300 words.>`;
-  const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 90000);
+<Numbered steps an agent should follow to repeat this workflow: which site to open, what to look for on each page (by the visible labels the user clicked), what to fill where. Generalize obvious specifics (search terms, dates) into <placeholders>. Note that credential fields must be left for the human. Max 300 words.> CRITICAL — be FAITHFUL to the recording: use ONLY the apps, controls, clicks, and fields that appear in the RECORDED STEPS below. Do NOT invent, assume, or add any step, application, file type, button, menu, or value that isn't in the recording. If the capture is sparse or ambiguous, produce a SHORT skill describing only what was actually observed (and say so) — never fabricate a richer or more specific workflow than what was recorded.`;
   let text = "";
-  try { text = (await streamChat({ ...profile }, [{ role: "system", content: sys }, { role: "user", content: "RECORDED STEPS:\n" + lines.slice(0, 8000) }], { signal: ac.signal, onDelta: () => {} })).text || ""; }
-  catch { return; } finally { clearTimeout(to); }
-  const m = /^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/.exec(text.trim().replace(/^```[a-z]*\n|```$/g, ""));
-  if (!m) return;
-  const name = ((/name:\s*(.+)/.exec(m[1]) || [])[1] || "").trim().replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase();
-  const description = ((/description:\s*(.+)/.exec(m[1]) || [])[1] || "").trim();
-  if (!name || !description) return;
-  // Reuse the Skill Forge draft queue + approval UI.
-  const fs = require("fs");
-  const path = require("path");
-  const dataFile = path.join(require("electron").app.getPath("userData"), "skill-forge.json");
-  let st; try { st = JSON.parse(fs.readFileSync(dataFile, "utf8")); } catch { st = { obs: [], drafts: {}, lastForge: 0 }; }
-  st.drafts = st.drafts || {};
-  st.drafts[name] = { name, description, body: text.trim(), evidence: ["(recorded by you in the Flow Recorder — " + steps.length + " steps)"], at: Date.now() };
-  try { fs.writeFileSync(dataFile, JSON.stringify(st, null, 2)); } catch {}
+  if (profile && profile.baseUrl && profile.model) {
+    const { streamChat } = require("./providers.cjs");
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 90000);
+    try { text = (await streamChat({ ...profile }, [{ role: "system", content: sys }, { role: "user", content: "RECORDED STEPS:\n" + lines.slice(0, 8000) }], { signal: ac.signal, onDelta: () => {} })).text || ""; }
+    catch {} finally { clearTimeout(to); }
+  }
+  // ALWAYS produce a draft — fall back to the raw recorded steps if the model was unavailable or its output unusable.
+  if (!text.trim()) text = "---\nname: web-workflow\ndescription: Recorded browser workflow (model unavailable — edit before use).\n---\n\n# Recorded web workflow\n\nSteps captured:\n\n" + lines;
+  require("./skill-draft.cjs").saveDraft({ text, fallbackName: "web-workflow", evidence: ["(recorded by you in the Flow Recorder — " + steps.length + " steps)"] });
 }
 
 module.exports = { start, stop, status, distill }; // distill is reused by /hook/flow (Chrome-extension recordings)
