@@ -180,6 +180,11 @@ function ThreadView({ id, isAdmin, onBack }) {
       load();
     }
   };
+  const delPost = async (postId) => {
+    if (!(await madavConfirm("Delete this post?", { okLabel: "Delete" }))) return;
+    const r = await (bridge.apiCall ? bridge.apiCall("DELETE", `/community/posts/${encodeURIComponent(postId)}`) : { error: "offline" });
+    if (r && !r.error) load();
+  };
 
   const locked = thread && thread.locked;
 
@@ -218,7 +223,9 @@ function ThreadView({ id, isAdmin, onBack }) {
             {posts.length === 0 && <div className="cmty-empty">No replies yet.</div>}
             {posts.map((p) => (
               <div key={p.id} className="cmty-post">
-                <div className="cmty-post-meta">{p.authorName || "Someone"} · {relTime(p.createdAt) || "recently"}</div>
+                <div className="cmty-post-meta">{p.authorName || "Someone"} · {relTime(p.createdAt) || "recently"}
+                  {isAdmin && <button title="Delete post" onClick={() => delPost(p.id)} style={{ marginLeft: 8, background: "none", border: "none", color: "var(--danger, #e5534b)", cursor: "pointer", padding: 0, verticalAlign: "middle" }}><Trash2 size={12} /></button>}
+                </div>
                 <div className="cmty-post-body" style={{ whiteSpace: "pre-wrap" }}>{p.body}</div>
               </div>
             ))}

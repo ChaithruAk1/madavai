@@ -8,7 +8,7 @@ import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug,
 import HelpDot from "./HelpDot.jsx";
 import Portrait from "./Portrait.jsx";
 import { bridge } from "../bridge/index.js";
-import { madavAlert } from "../dialogs.jsx";
+import { madavAlert, madavConfirm } from "../dialogs.jsx";
 import ModelPicker from "./ModelPicker.jsx";
 import "../studio-designer.css";
 // The mentor's knowledge = the real Agent Guide, bundled at build time. The guide is
@@ -620,6 +620,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   const [agentGroups, setAgentGroups] = useState([]);
   // EdgeTrader pack active (Settings → Extras) → its agents are delete-protected.
   const [etLocked, setEtLocked] = useState(false);
+  const [isCreator, setIsCreator] = useState(false); // creator/admin may delete built-in (Sim/EdgeTrader) agents, default folders & themes
   const [grpEdit, setGrpEdit] = useState(null);  // { id: groupId | "new", name } — inline name editor
   const [dragOver, setDragOver] = useState(null); // section currently hovered by a dragged agent
   // Roster navigation: "folders" (default — browse by folder, scales to 100s of agents) or
@@ -983,6 +984,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
       setTeams((s && s.teams) || []);
       setAgentGroups(groupsArr);
       const admin = !!(me && me.admin) || !!(s && s.account && s.account.admin);
+      setIsCreator(admin);
       // Admins always keep the Browser capability; others lose it when the master switch is off.
       setBrowserOn(admin || !s || !s.agentBrowser || s.agentBrowser.enabled !== false);
     }).catch(() => {});
@@ -1080,16 +1082,18 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 
   // Project Simulation agents (the Workrooms guide crew) are built-in — never deletable.
   const isSimAgent = (a) => (((a && a.id) || "")).startsWith("agent_sim_");
-  const canDelete = (a) => !(etLocked && isEtAgent(a)) && !isSimAgent(a);
+  const canDelete = (a) => isCreator || (!(etLocked && isEtAgent(a)) && !isSimAgent(a));
   const removeAgent = async (id) => {
     const a = agents.find((x) => x.id === id);
-    if (a && isSimAgent(a)) {
-      madavAlert("This agent is part of Madav's built-in Project Simulation (the Workrooms guide) and can't be deleted.");
-      return;
-    }
-    if (a && !canDelete(a)) {
-      madavAlert("This worker belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
-      return;
+    if (a && !isCreator) {
+      if (isSimAgent(a)) {
+        madavAlert("This agent is part of Madav's built-in Project Simulation (the Workrooms guide) and can't be deleted.");
+        return;
+      }
+      if (!canDelete(a)) {
+        madavAlert("This worker belongs to the EdgeTrader pack and can't be deleted while the pack is active. Turn off \"EdgeTrader analysis pack\" in Settings → Extras to manage it.");
+        return;
+      }
     }
     await persist(agents.filter((x) => x.id !== id));
   };
@@ -1111,6 +1115,13 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
   };
   const deleteGroup = async (id) => {
     await persistOrg(agentGroups.filter((g) => g.id !== id), agents.map((a) => (a.group === id ? { ...a, group: undefined } : a)));
+  };
+  const removeFolder = async (f) => {
+    if (!f || f.id === "none") return; // "Ungrouped" is the no-folder bucket, not a real folder
+    const n = (f.items || []).length;
+    const msg = n ? `Delete folder "${f.name}"? Its ${n} agent${n === 1 ? "" : "s"} move to Ungrouped (they are NOT deleted).` : `Delete folder "${f.name}"?`;
+    if (!(await madavConfirm(msg, { okLabel: "Delete folder" }))) return;
+    await deleteGroup(f.id);
   };
   const moveAgent = async (agentId, groupId) => {
     await persist(agents.map((a) => (a.id === agentId ? { ...a, group: groupId || undefined } : a)));
@@ -2157,11 +2168,12 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                 <div className="ags-folder-sub">Describe it, shape it, test it</div>
               </button>
               {folders.map((f) => (
-                <button key={f.id} className={`ags-folder ${dragOver === f.id ? "drop" : ""}`}
+                <button key={f.id} className={`ags-folder ${dragOver === f.id ? "drop" : ""}`} style={{ position: "relative" }}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(f.id); }}
                   onDragLeave={() => setDragOver(null)}
                   onDrop={(e) => { e.preventDefault(); setDragOver(null); const id = e.dataTransfer.getData("text/agent-id"); if (id) moveAgent(id, f.id === "none" ? null : f.id); }}
                   onClick={() => setOpenFolder(f.id)}>
+                  {f.id !== "none" && <span role="button" title="Delete folder" onClick={(e) => { e.stopPropagation(); removeFolder(f); }} style={{ position: "absolute", top: 8, right: 8, color: "var(--text-2)", cursor: "pointer", padding: 4, borderRadius: 6, display: "inline-flex" }}><Trash2 size={14} /></span>}
                   <span className="ags-folder-ic"><Folder size={22} /></span>
                   <span className="ags-folder-faces">
                     {f.items.slice(0, 4).map((a, i) => <span key={a.id} style={{ marginLeft: i ? -10 : 0 }}><Portrait seed={a.id} color={(a.identity || autoIdentity(a.id)).color} size={26} /></span>)}
@@ -2209,8 +2221,8 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                         onBlur={saveGroupEdit} />
                     : <span className="ags-group-name">{g.name}</span>}
                   <span className="ags-group-n">{g.items.length}</span>
-                  <button className="ags-group-act" title="Rename group" onClick={() => setGrpEdit({ id: g.id, name: g.name })}><Pencil size={11} /></button>
-                  <button className="ags-group-act ag-del" title="Delete group (its agents move back to the main list)" onClick={() => deleteGroup(g.id)}><Trash2 size={11} /></button>
+                  <button className="ags-group-act" title="Rename group" style={{ opacity: 1 }} onClick={() => setGrpEdit({ id: g.id, name: g.name })}><Pencil size={11} /></button>
+                  <button className="ags-group-act ag-del" title="Delete folder (its agents move back to Ungrouped)" style={{ opacity: 1 }} onClick={() => removeFolder(g)}><Trash2 size={11} /></button>
                 </div>
               )}
               {layout === "list" ? (

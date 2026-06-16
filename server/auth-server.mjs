@@ -1097,6 +1097,18 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ok: true, pinned: patch.pinned ?? !!t.pinned, locked: patch.locked ?? !!t.locked });
   }
 
+  // DELETE /community/posts/:id (Bearer) — creator/admin may delete ANY post; an author may delete their own.
+  let pdm = p.match(/^\/community\/posts\/([0-9a-f]{32})$/);
+  if (pdm && req.method === "DELETE") {
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const po = await store.col("posts").get(pdm[1]);
+    if (!po) return json(res, 404, { error: "not found" });
+    const admin = await adminOk(req);
+    if (!admin && po.userId !== user.id) return json(res, 403, { error: "forbidden" });
+    await store.col("posts").remove(po.id);
+    return json(res, 200, { ok: true });
+  }
+
   if (p === "/health") return json(res, 200, { ok: true });
 
   // GET /.well-known/security.txt — vulnerability disclosure contact (RFC 9116).

@@ -5,8 +5,9 @@
 // POST /requests/:id/vote (403 for trial); POST /requests/:id/status {status,adminNote} (admin).
 // Degrades gracefully to a friendly offline state when the server isn't reachable.
 import { useEffect, useState } from "react";
-import { ChevronUp, Plus } from "lucide-react";
+import { ChevronUp, Plus, Trash2 } from "lucide-react";
 import { bridge } from "../bridge/index.js";
+import { madavConfirm } from "../dialogs.jsx";
 
 const STATUSES = ["requested", "approved", "rejected", "building", "deployed"];
 const FILTERS = [
@@ -104,6 +105,13 @@ export default function ProductRequests({ isAdmin }) {
     if (!r || r.error) load(); // reconcile on failure
   };
 
+  const delRequest = async (it) => {
+    if (!(await madavConfirm(`Delete request "${it.title}"?`, { okLabel: "Delete" }))) return;
+    setItems((arr) => arr.filter((x) => x.id !== it.id)); // optimistic
+    const r = await (bridge.apiCall ? bridge.apiCall("DELETE", `/requests/${encodeURIComponent(it.id)}`) : { error: "offline" });
+    if (!r || r.error) load();
+  };
+
   const shown = items
     .filter((it) => filter === "all" || it.status === filter)
     .sort((a, b) => sort === "top" ? (b.votes - a.votes) : ((Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)));
@@ -189,6 +197,7 @@ export default function ProductRequests({ isAdmin }) {
                         <select className="pr-select" value={it.status || "requested"} onChange={(e) => setStatus(it, e.target.value)}>
                           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
+                        <button title="Delete request" onClick={() => delRequest(it)} style={{ marginLeft: 8, background: "none", border: "none", color: "var(--danger, #e5534b)", cursor: "pointer", padding: 0, display: "inline-flex", alignItems: "center" }}><Trash2 size={13} /></button>
                       </div>
                     )}
                   </div>
