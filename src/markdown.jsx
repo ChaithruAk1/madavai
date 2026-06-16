@@ -8,7 +8,6 @@ import { Fragment, useState, useEffect } from "react";
 import { parseOfficeSpec, downloadOffice } from "./office.js";
 import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
 import { deckPreviewHTML } from "./deck/deckPreview.js";
-import { runDocxCode, docxNameFrom } from "./doc/docxRunner.js";
 import { runPdfCode, pdfNameFrom } from "./doc/pdfRunner.js";
 
 // ---- inline parsing: code spans first (their content is literal), then links/emphasis ----
@@ -158,51 +157,6 @@ function DeckCard({ code, streaming }) {
   );
 }
 
-// A ```docxjs block is model-written `docx`-library code that returns a Document — bespoke Word built
-// in a sandboxed worker, validated, with one auto-repair on the user's Download click.
-function DocxCard({ code, streaming }) {
-  const [state, setState] = useState("");
-  const [issues, setIssues] = useState([]);
-  const ready = !streaming && (/new\s+(?:docx\.)?Document|return\s+new/.test(code));
-  const name = docxNameFrom(code);
-  const isRepair = /\/\/\s*repaired/i.test(code);
-  useEffect(() => {
-    if (!ready || isRepair || state) return; // freshly complete, not already a repair/action -> validate syntax once
-    const bad = _codeSyntaxError(code, ["docx", "helpers"]);
-    if (bad) { setState("repairing"); window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "docx", code, error: bad } })); }
-  }, [ready, isRepair]);
-  const save = (blob) => { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); };
-  const build = async (force) => {
-    setState("building");
-    try {
-      const { blob, issues: found } = await runDocxCode(code);
-      if (found && found.length && !force) {
-        setIssues(found);
-        if (!isRepair) { setState("repairing"); window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { kind: "docx", code, issues: found } })); return; }
-        setState("invalid"); return;
-      }
-      save(blob); setState("done"); setTimeout(() => setState(""), 2500);
-    } catch (e) {
-      const m = String((e && e.message) || e);
-      const midStream = /Unexpected end of input|Invalid or unexpected token|Unexpected token|Unexpected identifier|must .?return/i.test(m);
-      setState("error:" + (midStream ? "Couldn't build it — if the reply has finished, click Rebuild." : m.slice(0, 140)));
-    }
-  };
-  const sub = state === "repairing" ? `Found ${issues.length} issue(s) — Madav is rebuilding it…`
-    : state === "invalid" ? `${issues.length} issue(s) in the text — review before sending` : ready ? "Word document · designed on your device" : "building it on your device";
-  const label = state === "building" ? "Building…" : state === "done" ? "Saved ✓" : state === "invalid" ? "Download anyway" : "Download";
-  return (
-    <div className={"md-office" + (ready ? "" : " md-office-pending")}>
-      <span className="md-office-ico">📄</span>
-      <span className="md-office-meta"><b>{ready ? name : "Composing your document…"}</b><i>{sub}</i></span>
-      {ready && state === "" && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, polish: true } }))} title="Refine the design — one more pass">Polish ✨</button>}
-      {ready && state !== "repairing" && <button className="md-office-btn" disabled={state === "building"} onClick={() => build(state === "invalid")}>{label}</button>}
-      {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
-      {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
-    </div>
-  );
-}
-
 // A ```pdfjs block is model-written jsPDF code that draws on `doc` — bespoke PDF in a sandboxed worker,
 // validated, with one auto-repair on Download.
 function PdfCard({ code, streaming }) {
@@ -268,8 +222,7 @@ export default function Markdown({ text, streaming }) {
       i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i])) buf.push(lines[i++]);
       i++; // closing fence (or EOF — render what we have, mid-stream safe)
-      if (fence[1] === "docxjs" && FEAT_OFFICE) blocks.push(<DocxCard key={key()} code={buf.join("\n")} streaming={streaming} />);
-      else if (fence[1] === "pdfjs" && FEAT_OFFICE) blocks.push(<PdfCard key={key()} code={buf.join("\n")} streaming={streaming} />);
+      if (fence[1] === "pdfjs" && FEAT_OFFICE) blocks.push(<PdfCard key={key()} code={buf.join("\n")} streaming={streaming} />);
       else if ((fence[1] === "officedoc" || fence[1] === "deckjs") && FEAT_OFFICE) {
         // Route by CONTENT, not the fence tag — models sometimes put deck code in an officedoc fence
         // (or a JSON spec in deckjs). pptxgenjs build code → DeckCard; a JSON spec → OfficeCard.
