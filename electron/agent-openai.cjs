@@ -180,6 +180,24 @@ async function execTool(cwd, name, args, mission) {
     case "read_file": {
       const f = inside(cwd, args.path);
       if (readPaths) readPaths.add(f);
+      // Spreadsheets are binary (zip) — reading them as UTF-8 yields garbage. Parse to text rows so the agent can actually use the data.
+      if (/\.(xlsx|xlsm|xls)$/i.test(f)) {
+        try {
+          const ExcelJS = require("exceljs");
+          const wb = new ExcelJS.Workbook();
+          await wb.xlsx.readFile(f);
+          let out = "";
+          wb.eachSheet((ws) => {
+            out += `# Sheet: ${ws.name}\n`;
+            ws.eachRow({ includeEmpty: false }, (row) => {
+              const vals = (row.values || []).slice(1).map((v) => v == null ? "" : (typeof v === "object" ? (v.result !== undefined ? v.result : (v.text !== undefined ? v.text : (v.hyperlink || ""))) : v));
+              out += vals.join("\t") + "\n";
+            });
+            out += "\n";
+          });
+          return harness.headTail(out.trim() || "(empty workbook)", { maxChars: 16000 });
+        } catch (e) { return `(could not parse spreadsheet ${args.path}: ${(e && e.message) || e})`; }
+      }
       return harness.headTail(fs.readFileSync(f, "utf8"), { maxChars: 8000 });
     }
     case "write_file": {
