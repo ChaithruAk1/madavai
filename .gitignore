@@ -33,9 +33,7 @@ gateway/.gateway-store.json
 
 # Build-verification scratch (sandbox couldn't delete on the mount; not for source control)
 dist_fast/
-dist_v2/
-dist_v3/
-dist_v4/
+dist_v*/
 vite.fast.config.mjs
 vite.fast.config.mjs.timestamp-*
 .playwright-mcp/
