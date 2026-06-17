@@ -484,8 +484,9 @@ async function runTeamTurn(sess, text) {
       emit(sess.id, "assistant_delta", { text: finalText });
     }
     sess.messages.push({ role: "user", content: text });
-    sess.messages.push({ role: "assistant", content: finalText });
+    sess.messages.push({ role: "assistant", content: finalText, model: prof.model, provider: prof.name });
     emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
+    maybeAutoTitle(sess, text, finalText);
     emit(sess.id, "result", { subtype: "success", duration_ms: Date.now() - started });
     persistSession(sess);
   } catch (e) {
@@ -707,7 +708,7 @@ async function runAgentTurn(sess, text, images, prof) {
   try {
     for (let step = 0; step < 16; step++) {
       const { content, toolCalls } = await callTools(prof, sess.messages, (c) => emit(sess.id, "assistant_delta", { text: c }), sess.ac.signal);
-      if (!toolCalls || !toolCalls.length) { sess.messages.push({ role: "assistant", content: content || "" }); emit(sess.id, "assistant_message", { stop_reason: "end_turn" }); break; }
+      if (!toolCalls || !toolCalls.length) { sess.messages.push({ role: "assistant", content: content || "", model: prof.model, provider: prof.name }); emit(sess.id, "assistant_message", { stop_reason: "end_turn" }); maybeAutoTitle(sess, text, content || ""); break; }
       sess.messages.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
       for (const c of toolCalls) {
         // Wave 1.1 — tolerant JSON repair (weak models emit sloppy arguments).
