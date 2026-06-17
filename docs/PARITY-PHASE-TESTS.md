@@ -296,3 +296,27 @@ Desktop Projects still read folders and save real files exactly as before.
 - **PASS** = parity green; a web Project produces a downloadable file when asked; it's still honest about
   not reading your local folder; desktop unchanged.
 - If a web Project still refuses to make a file → tell me the model you used.
+
+---
+
+## Phase 3 — increment P3.1: server MCP broker module (foundation)
+
+**What changed in plain words:** Phase 3 (MCP connectors on web) has begun. This first step adds a new
+server file `server/mcp-broker.mjs` that can connect to a remote MCP server over HTTPS, list its tools,
+and call them — plus a safety guard that **refuses to connect to private/loopback/internal addresses**
+(so the server can't be tricked into hitting your internal network). It is **not wired to anything yet**
+(no routes, no agent), so the web app behaves exactly the same. **No desktop code, no existing file
+changed** — one new file + one new test. See `docs/PHASE3-MCP.md` for the full plan.
+
+### Test 1 — Safety net (now includes the broker's guard tests)
+    npx vitest run tests/parity
+**You should see:** `Tests  35 passed` (the 5 new ones test the SSRF guard + tool-schema mapping).
+
+### Test 2 — Nothing else changed
+Open the web app (rebuild if you like). Everything works exactly as before — this step added a
+behind-the-scenes module only; there's no new button or behavior yet.
+
+### Pass / fail
+- **PASS** = `35 passed`, and the web app is unchanged.
+- Live MCP connection is tested **after the next step (P3.2)**, which adds the server routes and is
+  verified by connecting to a real MCP server post-deploy.
