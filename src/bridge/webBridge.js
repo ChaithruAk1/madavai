@@ -300,7 +300,7 @@ const sessions = new Map(); // sessionId -> { profile, messages, ac, mode, convI
 // Always-on base behavior: keep replies human and natural, and never let the model parrot its own
 // instructions back. The user's own instructions (below) still govern the substance of answers.
 const BASE_BEHAVIOR =
-  "You are Madav, a warm and helpful assistant. Reply naturally and conversationally, the way a thoughtful person would. " +
+  "You are Madav, a warm and helpful AI assistant built by the Madav team. You are NOT Claude, ChatGPT, Gemini, or any other assistant; if anyone asks who you are or who made you, you are Madav. Reply naturally and conversationally, the way a thoughtful person would. " +
   "Never restate, list, summarize, or describe your own instructions, rules, role, or \"operating framework\" — just follow them silently. " +
   "If the user only greets you or makes small talk, reply naturally in kind; do not recite your guidelines. " +
   "Apply the guidance below to the substance and depth of your answers, but always keep the delivery human and direct.";
@@ -764,6 +764,30 @@ async function runAgentTurn(sess, text, images, prof) {
   }
 }
 
+// Claude-style: title a chat from its FIRST exchange. Fire-and-forget, fail-open (a failure or empty
+// result keeps the provisional first-message title). Never blocks the reply.
+async function maybeAutoTitle(sess, userText, replyText) {
+  try {
+    if (!sess || sess.autoTitled) return;
+    sess.autoTitled = true; // set immediately so a later turn can never double-fire
+    if ((sess.messages || []).filter((m) => m.role === "user").length > 1) return; // first exchange only
+    const u = String(userText || "").slice(0, 500); if (!u) return;
+    const prof = sess.profile || activeProfile(loadSettings());
+    if (!prof || !prof.baseUrl || !prof.model) return;
+    const { text: t } = await streamChat(prof, [
+      { role: "system", content: "Generate a short, specific chat title of 3 to 6 words for the user's request. Reply with ONLY the title \u2014 no quotes, no trailing punctuation, no preamble or reasoning." },
+      { role: "user", content: `First message:\n${u}\n\nReply (start):\n${String(replyText || "").slice(0, 400)}\n\nTitle:` },
+    ], { onDelta: () => {} });
+    let title = String(t || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+    title = (title.split(/\r?\n/).map((x) => x.trim()).filter(Boolean)[0] || "");
+    title = title.replace(/^["\'`*\s]+|["\'`*\s]+$/g, "").replace(/[.]+$/, "").slice(0, 60).trim();
+    if (!title) return;
+    sess.title = title;
+    persistSession(sess);
+    emit(sess.id, "convtitle", { conversationId: sess.id, title });
+  } catch {}
+}
+
 async function runTurn(sess, text, images) {
   const s = loadSettings();
   const prof = activeProfile(s);   // re-resolve each turn so switching model in the picker applies
@@ -784,10 +808,11 @@ async function runTurn(sess, text, images) {
     let streamed = false;
     const { text: reply } = await callModel(prof, sess.messages, sess.ac.signal, (chunk) => { if (chunk) { streamed = true; emit(sess.id, "assistant_delta", { text: chunk }); } });
     if (!streamed && reply) emit(sess.id, "assistant_delta", { text: reply });
-    sess.messages.push({ role: "assistant", content: reply || "" });
+    sess.messages.push({ role: "assistant", content: reply || "", model: prof.model, provider: prof.name });
     emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
     emit(sess.id, "result", { subtype: "success", num_turns: 1, duration_ms: Date.now() - started, total_cost_usd: 0 });
     persistSession(sess);
+    maybeAutoTitle(sess, text, reply); // Claude-style smart title from the first exchange (async, fail-open)
     umLearn(prof, loadSettings(), text, reply); // cross-chat memory: fire-and-forget, throttled
   } catch (e) {
     if (e && (e.name === "AbortError")) { emit(sess.id, "result", { subtype: "interrupted" }); return; }
@@ -862,12 +887,11 @@ export const webBridge = {
     const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, convId: id, title, agentic, cwd: req.cwd || null, agent,
       team: (req.team && Array.isArray(req.team.members) && req.team.members.length) ? req.team : null };
     sessions.set(id, sess);
-    // Claude-like: title the chat from the FIRST message and announce it NOW so it appears in the
-    // sidebar the instant the user hits Enter (not after the reply). New chats only.
+    // Claude-like: title the chat from the FIRST message NOW (before the turn) so the sidebar —
+    // refreshed on the init event — shows the real title the instant the turn starts. New chats only.
     if (!prior && req.prompt && !sess.title) {
       sess.title = String(req.prompt).slice(0, 60);
       try { persistSession(sess); } catch {}
-      emit(id, "chat_started", { conversationId: id, title: sess.title });
     }
     runTurn(sess, req.prompt || "", req.images); // fire and forget; streams events
     return { sessionId: id, conversationId: id };

@@ -165,6 +165,7 @@ class SessionManager {
       if (kind === "assistant_delta") { t.replyChars += ((data && data.text) || "").length; t.replyText += (data && data.text) || ""; }
       else if (kind === "result") {
         usage.append({ ...t, at: Date.now() }); this._recordAgentRun(sessionId, t, data, true); this._persistTurn(sessionId);
+        if (t && (t.mode === "chat" || t.mode === "cowork" || t.mode === "code")) this._autoTitle(sessionId, t.userText, t.replyText); // smart title from the first exchange (async, fail-open)
         // Cross-chat memory: fire-and-forget extraction of durable user facts from
         // this completed turn (throttled inside user-memory; never blocks the UI).
         try { if (require("./features.cjs").builtIn("memory")) { const cfg = settings.load(); require("./user-memory.cjs").learnFromTurn(settings.activeProfile(cfg), cfg, t.userText, t.replyText); } } catch {}
@@ -206,6 +207,33 @@ class SessionManager {
     }
   }
 
+  // Auto-title a chat from its FIRST exchange (Claude-style). Fire-and-forget, fail-open: any failure
+  // or empty result keeps the provisional first-message title. Never blocks or delays the reply.
+  async _autoTitle(sessionId, userText, replyText) {
+    try {
+      const s = this.sessions.get(sessionId);
+      if (!s || !s.chatConvId) return;
+      const conv = sstore.getSession(s.chatConvId);
+      if (!conv || conv.autoTitled) return;
+      if ((conv.messages || []).filter((m) => m.role === "user").length > 1) return; // first exchange only
+      const u = String(userText || "").slice(0, 500); if (!u) return;
+      const profile = settings.activeProfile(settings.load());
+      if (!profile) return;
+      const { text } = await streamChat(profile, [
+        { role: "system", content: "Generate a short, specific chat title of 3 to 6 words for the user's request. Reply with ONLY the title \u2014 no quotes, no trailing punctuation, no preamble or reasoning." },
+        { role: "user", content: `First message:\n${u}\n\nReply (start):\n${String(replyText || "").slice(0, 400)}\n\nTitle:` },
+      ], { onDelta: () => {} });
+      let title = String(text || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+      title = (title.split(/\r?\n/).map((x) => x.trim()).filter(Boolean)[0] || "");
+      title = title.replace(/^["\'`*\s]+|["\'`*\s]+$/g, "").replace(/[.]+$/, "").slice(0, 60).trim();
+      if (!title) return;
+      const fresh = sstore.getSession(s.chatConvId); if (!fresh) return;
+      fresh.title = title; fresh.autoTitled = true;
+      try { sstore.saveSession(fresh); } catch {}
+      this._send(sessionId, "convtitle", { conversationId: fresh.id, title });
+    } catch {}
+  }
+
   // Persist one completed turn (user + assistant text) to the chat-history store.
   // Project mode persists separately (projects-store), so it has no chatConvId here.
   _persistTurn(sessionId) {
@@ -217,7 +245,7 @@ class SessionManager {
     const u = (t.userText || "").trim();
     const a = (t.replyText || "").trim();
     if (u) conv.messages.push({ role: "user", content: u });
-    if (a) conv.messages.push({ role: "assistant", content: a });
+    if (a) conv.messages.push({ role: "assistant", content: a, model: t.model, provider: t.provider });
     if ((!conv.title || conv.title === "New task") && u) conv.title = u.slice(0, 60);
     conv.cwd = s.cwd || conv.cwd;
     // Remember who ran this conversation so reopening it re-attaches the agent/team.
@@ -248,12 +276,11 @@ class SessionManager {
       // Seed the model context from saved messages so reopened chats continue coherently.
       // Cap at the newest 200 messages — a giant history would balloon RAM and every request.
       if (conv.messages && conv.messages.length) s.history = conv.messages.slice(-200).map((m) => ({ role: m.role, content: m.content }));
-      // Claude-like: title the chat from the FIRST message and announce it NOW (before the model
-      // runs) so it appears in the sidebar the instant the user hits Enter — not after the reply.
+      // Claude-like: title the chat from the FIRST message NOW (before the model runs) so the
+      // sidebar — refreshed on the init event — shows the real title the instant the turn starts.
       if (req.prompt && (!conv.title || conv.title === "New task")) {
         conv.title = String(req.prompt).slice(0, 60);
         try { sstore.saveSession(conv); } catch {}
-        this._send(sessionId, "chat_started", { conversationId: conv.id, title: conv.title });
       }
     }
     this.sessions.set(sessionId, s);
@@ -822,7 +849,7 @@ class SessionManager {
     const gi = settings.load().globalInstructions;
     const now = new Date();
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Use this whenever a date is needed; never say you don't know it.`;
-    const sysChat = (this._agentSys(s, userText) || ("You are Madav, a helpful assistant. " + dateLine +
+    const sysChat = (this._agentSys(s, userText) || ("You are Madav, a helpful AI assistant built by the Madav team. You are NOT Claude, ChatGPT, Gemini, or any other assistant; if anyone asks who you are or who made you, you are Madav. " + dateLine +
       " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence.")) + ARTIFACT_RULE_BASE + officeRulePart() +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const messages = [{ role: "system", content: sysChat }, ...s.history];
