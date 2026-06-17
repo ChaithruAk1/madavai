@@ -927,8 +927,9 @@ input, textarea, select { font-family: inherit; }
 /* Attachment chips relax the full pill into a rounded card. */
 .composer:has(.composer-files) { border-radius: 26px; }
 /* Gemini pill: [+] [Ask Madav…] [mic · send] on a single row; the input grows downward. */
-.composer-pill { display: flex; align-items: flex-end; gap: 6px; }
-.composer-pill textarea { flex: 1; min-height: 24px !important; padding: 8px 4px; }
+.composer-pill { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.composer-pill textarea { flex: 1 1 100%; order: -1; min-height: 24px !important; padding: 8px 6px 2px; }
+.composer-pill .plus-wrap { margin-right: auto; }
 .composer-pill .plus-wrap, .composer-pill .icon-btn, .composer-pill .send { margin-bottom: 1px; }
 /* Naked icons (no background box), exactly like Gemini's bar. */
 .composer-pill .icon-btn.bare { background: transparent; border: none; box-shadow: none; width: 36px; height: 36px; color: var(--text-1); }
