@@ -17,6 +17,27 @@ The two surfaces share **one renderer** (`src/**`) but have **two completely sep
 
 ---
 
+## 0.1 STATUS UPDATE — after Phase 1 increments 1–6 (2026-06-17)
+
+All increments are web-only (`src/**`); **zero `electron/**` changes**; parity suite 30/30 green. Per-increment tests live in `docs/PARITY-PHASE-TESTS.md`. The ranked gaps below are the *original* analysis, kept as the record; this table is their **current** state:
+
+| Original gap | Status now | Increment |
+|---|---|---|
+| **P0-1** Web Projects silently degrade | **RESOLVED (web-feasible part)** — Projects are honest about the no-local-folder limit AND now produce **downloadable** files (xlsx/docx/pdf/pptx) via the office engine. Reading/saving a *linked local folder's* data stays desktop-only by design. | 2 + 6 |
+| **P0-2** File-output card buttons inert on web | **RESOLVED** — dead Folder/Open buttons hidden on web (`isWeb`-gated; desktop byte-identical). | 3 |
+| **P1-3** Plain chat / folderless agents have no tool loop | **RESOLVED** — web Let's Chat runs a lightweight tool loop (web_search/web_fetch/create_image) for OpenAI-style models, safe plain-chat fallback. | 4 |
+| **P1-4** Team members text-only | **RESOLVED** — web team members get the tool loop (tagged per member), plain fallback. | 5 |
+| **P2-11** Identity line missing in web team/coordinator prompts | **RESOLVED** — "not Claude" added to member + coordinator + synthesis prompts. | 1 |
+| Foundations (manifest / parity tests / CI / harness) | **DONE** | Phase 0 |
+
+**Still open — Phase 3 (managed-service; needs server work + explicit go-ahead):** MCP connectors (P1-5), scheduled/background execution (P1-6), GitHub clone/link (P1-8), Telegram/webhooks (P2-14), managed Whisper voice (P2-9), deep-research/RAG/agent-memory (P2-13), skill authoring (P1-7).
+
+**Won't build (inherently local / desktop-only by design):** terminal/shell, native-app automation, recorders, OS-native speech, native open-in-app (P2-10), QA/Repair/Librarian (P2-15). See `docs/adr/0001-architecture.md`.
+
+**Known non-bug:** free/truncated models (`:free` endpoints) can fail to emit a complete office spec → "Couldn't build this document"; a capable model builds it. The `isDeckCapable` gate that would route weak models to the simpler spec lives in shared `office-rules.cjs` (desktop-shared) → permission-gated.
+
+---
+
 # PART A — Ranked web gaps (what to expect when testing web today)
 
 Severity = impact on a web user. Every "missing-by-design" item is handled gracefully (guarded call → hidden affordance or explicit "desktop app" message) **except where noted as a silent degrade**.
