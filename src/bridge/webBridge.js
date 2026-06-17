@@ -765,6 +765,91 @@ async function runAgentTurn(sess, text, images, prof) {
   }
 }
 
+// ===== Web "Let's Chat" tool loop: web_search / web_fetch / create_image (no folder, no file tools) =====
+// Mirrors desktop's lightweight chat-agent path. Engaged only for OpenAI-style models on a plain
+// (non-project, non-team, non-folder) chat. Falls back to a normal streamed reply if the model can't
+// tool-call (and remembers that model so it won't retry-and-fail on every message).
+const CHAT_TOOLS = COWORK_TOOLS.filter((t) => ["web_fetch", "web_search", "create_image"].includes(t.function.name));
+const noToolModels = new Set(); // "baseUrl::model" that rejected a tools request -> use plain chat
+const modelKey = (prof) => (prof && (prof.baseUrl || "") + "::" + (prof.model || "")) || "";
+function activeChatTools() {
+  let on = true;
+  try { on = FEAT_IMAGEGEN && ((loadSettings().extras) || {}).imagegen !== false; } catch {}
+  return on ? CHAT_TOOLS : CHAT_TOOLS.filter((t) => t.function.name !== "create_image");
+}
+async function callChatTools(prof, messages, onDelta, signal) {
+  const tools = activeChatTools();
+  try { return await streamChatTools(prof, messages, tools, { onDelta, signal }); }
+  catch (e) { if (isNetworkErr(e) && getToken()) return await streamChatTools(prof, messages, tools, { onDelta, signal, proxy: proxyCfg() }); throw e; }
+}
+// Today's plain streamed reply — the safe fallback when tool-calling isn't supported. Assumes the
+// user message is already on sess.messages.
+async function plainReply(sess, text, prof, started) {
+  let streamed = false;
+  const { text: reply } = await callModel(prof, sess.messages, sess.ac.signal, (chunk) => { if (chunk) { streamed = true; emit(sess.id, "assistant_delta", { text: chunk }); } });
+  if (!streamed && reply) emit(sess.id, "assistant_delta", { text: reply });
+  sess.messages.push({ role: "assistant", content: reply || "", model: prof.model, provider: prof.name });
+  emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
+  emit(sess.id, "result", { subtype: "success", num_turns: 1, duration_ms: Date.now() - started, total_cost_usd: 0 });
+  persistSession(sess);
+  maybeAutoTitle(sess, text, reply);
+  umLearn(prof, loadSettings(), text, reply);
+}
+async function runChatAgentTurn(sess, text, images, prof) {
+  sess.messages.push({ role: "user", content: userContent(text, images) });
+  if (!sess.title) sess.title = text.slice(0, 60);
+  sess.ac = new AbortController();
+  emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind });
+  const started = Date.now();
+  let usedTools = false, streamedAny = false;
+  try {
+    for (let step = 0; step < 8; step++) {
+      let res;
+      try {
+        res = await callChatTools(prof, sess.messages, (c) => { if (c) { streamedAny = true; emit(sess.id, "assistant_delta", { text: c }); } }, sess.ac.signal);
+      } catch (e) {
+        if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
+        if (step === 0 && !usedTools && !streamedAny) { noToolModels.add(modelKey(prof)); return await plainReply(sess, text, prof, started); }
+        throw e;
+      }
+      const { content, toolCalls } = res;
+      if (!toolCalls || !toolCalls.length) {
+        if (!streamedAny && content) emit(sess.id, "assistant_delta", { text: content });
+        sess.messages.push({ role: "assistant", content: content || "", model: prof.model, provider: prof.name });
+        emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
+        maybeAutoTitle(sess, text, content || "");
+        umLearn(prof, loadSettings(), text, content || "");
+        break;
+      }
+      usedTools = true;
+      sess.messages.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
+      for (const c of toolCalls) {
+        const args = (tolerantParse(c.arguments || "{}").value) || {};
+        emit(sess.id, "tool_use", { id: c.id, name: c.name, input: args, auto: true });
+        if (c.name === "create_image") {
+          let out, image = null;
+          try { image = await webGenImage(prof, args.prompt); out = "Image generated and shown to the user. Describe it in one short sentence and continue."; }
+          catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+          emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: !!image, output: out, image });
+          sess.messages.push({ role: "tool", tool_call_id: c.id, content: out });
+          continue;
+        }
+        let out;
+        try { out = await executeTool(c.name, args, { sess }); }
+        catch (e) { out = "Error: " + String((e && e.message) || e); }
+        emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: true, output: headTail(String(out), { maxChars: 8000 }) });
+        sess.messages.push({ role: "tool", tool_call_id: c.id, content: headTail(String(out), { maxChars: 24000, headLines: 400, tailLines: 200 }) });
+      }
+    }
+    emit(sess.id, "result", { subtype: "success", duration_ms: Date.now() - started, total_cost_usd: 0 });
+    persistSession(sess);
+  } catch (e) {
+    if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
+    emit(sess.id, "error", { message: String((e && e.message) || e) });
+    emit(sess.id, "result", { subtype: "error" });
+  }
+}
+
 // Claude-style: title a chat from its FIRST exchange. Fire-and-forget, fail-open (a failure or empty
 // result keeps the provisional first-message title). Never blocks the reply.
 async function maybeAutoTitle(sess, userText, replyText) {
@@ -799,6 +884,16 @@ async function runTurn(sess, text, images) {
   if (sess.team) return runTeamTurn(sess, text);
   // Folder selected → run the file-tool agent (collaborate). Tool calling needs an OpenAI-style provider.
   if (sess.agentic && webfs.hasRoot() && prof.kind !== "anthropic") return runAgentTurn(sess, text, images, prof);
+  // Plain "Let's Chat" on web gets a lightweight tool loop (web_search/web_fetch/create_image) for
+  // OpenAI-style models, when no images, not a Project, and a tool is actually useful (signed in or
+  // image-gen on). Anthropic + tool-incapable models fall through to the normal reply below.
+  {
+    const imagegenOn = FEAT_IMAGEGEN && ((s.extras) || {}).imagegen !== false;
+    if (prof.kind !== "anthropic" && !sess.projectId && !(images && images.length)
+        && !noToolModels.has(modelKey(prof)) && (!!getToken() || imagegenOn)) {
+      return runChatAgentTurn(sess, text, images, prof);
+    }
+  }
   sess.messages.push({ role: "user", content: userContent(text, images) });
   if (!sess.title) sess.title = text.slice(0, 60);
   sess.ac = new AbortController();

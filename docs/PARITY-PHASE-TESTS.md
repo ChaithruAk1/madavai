@@ -179,3 +179,44 @@ show it in the folder) — **exactly like before**. If anything is different on 
 ### Pass / fail
 - **PASS** = parity tests green; desktop file card works exactly as before; web shows no dead buttons.
 - If PASS → commit. If desktop changed in any way → stop and tell me.
+
+---
+
+## Phase 1 — increment 4: web "Let's Chat" tools (web search + image)
+
+**What changed in plain words:** On web, plain **Let's Chat** could only talk — it couldn't search the
+web or make an image, while the desktop app could. Now web chat can do both (and use web_fetch) for
+normal chat models. It turns on only when: you're signed in (for web search) or image-gen is enabled,
+the model is an OpenAI-style model, you're not in a Project, and your message has no attached image.
+If a model can't do tools, chat **automatically falls back to the normal reply** (and remembers that
+model so it won't slow down later messages). Only `src/bridge/webBridge.js` changed. **No desktop code
+changed.**
+
+### Test 1 — Safety net still green
+    npx vitest run tests/parity
+**You should see:** `Tests  30 passed`.
+
+### Test 2 — Web chat can now search / make an image (needs a web rebuild + sign-in)
+1. Build + open web:
+
+       npm run build
+
+2. In **Let's Chat** (not a Project), signed in, ask something current, e.g.:
+   **"Search the web for the latest Node.js LTS version and tell me the number."**
+   → You should see a **web_search tool step** in the chat, then an answer using it.
+3. If you have an image model selected and image-gen on, ask: **"Make an image of a red bicycle."**
+   → You should see an image.
+
+### Test 3 — Normal chat still works (the important safety check)
+Ask a plain question with **no** web/image need, e.g. **"Explain recursion in two sentences."**
+→ You should get a normal answer, same as before. Try your usual models. If a model you use **can't**
+do tools, the reply should still come through normally (it quietly falls back).
+
+### Test 4 — Desktop unchanged
+Desktop wasn't touched — Let's Chat there behaves exactly as before.
+
+### Pass / fail
+- **PASS** = parity tests green; web chat can search/make images when relevant; **plain chat still works
+  for all your models**; desktop unchanged.
+- If any model's plain chat breaks or feels slower → tell me which model/provider and I'll tighten the
+  trigger (or gate it behind a setting).
