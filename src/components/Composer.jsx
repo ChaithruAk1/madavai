@@ -243,7 +243,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
     const v = e.target.value;
     setText(v);
     e.target.style.height = "auto";
-    e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px";
+    e.target.style.height = Math.min(e.target.scrollHeight, Math.round(window.innerHeight * 0.4)) + "px";
 
     const slashM = !skill && v.match(/^\/([\w-]*)$/);
     const atM = v.match(/(?:^|\s)@([\w./-]*)$/);

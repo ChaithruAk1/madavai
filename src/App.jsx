@@ -104,6 +104,7 @@ export default function App() {
   const [surfaceModel, setSurfaceModel] = useState(() => { try { return JSON.parse(localStorage.getItem("madav.surfaceModel") || "{}"); } catch { return {}; } });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarW, setSidebarW] = useState(() => { try { const v = parseInt(localStorage.getItem("madav.sidebarW") || "", 10); return v >= 200 && v <= 460 ? v : 236; } catch { return 236; } });
+  const [artifactW, setArtifactW] = useState(() => { try { const v = parseInt(localStorage.getItem("madav.artifactW") || "", 10); return v >= 360 && v <= 960 ? v : 560; } catch { return 560; } });
   const appBodyRef = useRef(null);
   const [agentCtx, setAgentCtx] = useState(null); // active custom agent for this session ({id,name,instructions,tools,model})
   const [teamCtx, setTeamCtx] = useState(null);   // active agent team ({name,mode,members:[agents]})
@@ -195,10 +196,9 @@ export default function App() {
     // synchronously inside bridge.start() — before the caller's await resolves
     // and assigns sessionRef — so a strict guard alone would drop it.
     if (e.kind === "init" && e.sessionId && !sessionRef.current) sessionRef.current = e.sessionId;
-    // A new chat just started: show it in the sidebar immediately (titled from the first message),
-    // before the session is bound and before any reply — Claude-like. Handled BEFORE the foreign-
-    // session guard below because sessionRef isn't set yet for this brand-new session.
-    if (e.kind === "chat_started") { if (e.data && e.data.conversationId) setActiveConvId(e.data.conversationId); setHistRefresh((n) => n + 1); return; }
+    // A chat was auto-titled after its first exchange: refresh the sidebar so the new title shows.
+    // Safe before the foreign-session guard (sidebar-only; no display or session side effects).
+    if (e.kind === "convtitle") { setHistRefresh((n) => n + 1); return; }
     // Events from a PREVIOUS session (e.g. one detached by navigation) must not
     // mutate the conversation currently on screen. Strict: when no session is
     // bound (after a detach), foreign events are ignored instead of passing through.
@@ -216,6 +216,7 @@ export default function App() {
         try { const cid = (projectCtxRef.current && projectCtxRef.current.conversationId) || activeConvIdRef.current; if (cid && sessionRef.current) convSession.current.set(cid, sessionRef.current); } catch {}
         if (e.data.permissionMode) setPermissionMode(e.data.permissionMode);
         if (e.data.model || e.data.provider) lastInfoRef.current = { model: e.data.model, provider: e.data.provider, kind: e.data.kind };
+        setHistRefresh((n) => n + 1); // new chat: surface it in the sidebar as soon as the turn starts (titled from the first message)
         break;
       case "assistant_delta": {
         const text = e.data.text ?? "";
@@ -448,6 +449,27 @@ export default function App() {
     [timeline, artifact]
   );
 
+  // Bind the side panel (office preview / artifact) to the conversation it was opened from, Claude-style:
+  // each conversation REMEMBERS its open panel. Switching chats stashes the leaving chat's panel and
+  // restores the entered chat's (or closes it if that chat had none) — it never lingers against the
+  // wrong chat, and returning to a chat reopens its file. We commit the leaving chat's panel from a ref
+  // (artifactRef), so the restore setArtifact() can't clobber it via effect ordering.
+  const artifactByConv = useRef(new Map());
+  const artifactRef = useRef(artifact);
+  artifactRef.current = artifact;
+  const artifactConvKey = activeConvId || (projectCtx && projectCtx.conversationId) || null;
+  const prevArtifactKeyRef = useRef(artifactConvKey);
+  useEffect(() => {
+    const prev = prevArtifactKeyRef.current;
+    if (prev === artifactConvKey) return;            // same conversation (initial mount / unrelated re-render)
+    if (prev != null) {                              // stash the conversation we are leaving
+      if (artifactRef.current) artifactByConv.current.set(prev, artifactRef.current);
+      else artifactByConv.current.delete(prev);
+    }
+    setArtifact(artifactByConv.current.get(artifactConvKey) || null); // restore the one we are entering
+    prevArtifactKeyRef.current = artifactConvKey;
+  }, [artifactConvKey]);
+
   const send = async (text, images = [], agentOv = null, teamOv = null, opts = {}) => {
     const ag = agentOv || agentCtx; // explicit override beats state (avoids a stale closure on seeded launches)
     const tm = teamOv || teamCtx;
@@ -521,7 +543,7 @@ export default function App() {
     }
     const conv = await bridge.getSession(id);
     if (!conv) return;
-    const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
+    const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
     setProjectCtx(null); setCoworkProj(null);
     // Re-attach the project scope this Collaborate task ran under (saved on the record).
@@ -602,7 +624,7 @@ export default function App() {
       return;
     }
     const full = await bridge.getConversation(convMeta.id);
-    const msgs = ((full && full.messages) || []).map((m) => ({ type: "message", role: m.role, text: m.content }));
+    const msgs = ((full && full.messages) || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined }));
     const outs = ((full && full.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path }));
     setTimeline([...msgs, ...outs]);
     setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });
@@ -707,6 +729,22 @@ export default function App() {
     const move = (ev) => { w = Math.min(460, Math.max(200, startW + (ev.clientX - startX))); if (el) el.style.setProperty("--sb-w", w + "px"); };
     const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); document.body.style.cursor = ""; document.body.style.userSelect = ""; setSidebarW(w); try { localStorage.setItem("madav.sidebarW", String(w)); } catch {} };
     document.addEventListener("mousemove", move); document.addEventListener("mouseup", up); document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
+  };
+  // Draggable artifact-panel width. The panel is anchored RIGHT, so dragging its left edge leftward
+  // widens it. Mutate the CSS var live during drag (no re-render); commit + persist on release.
+  const startArtifactResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX, startW = artifactW; const el = appBodyRef.current; let w = startW, raf = 0;
+    // Two things make an iframe-adjacent resize stutter, and we fix both: (1) a transparent full-window
+    // shield so the cursor never enters the preview <iframe> (an iframe swallows the parent's mousemove);
+    // (2) rAF-coalesced width writes so the heavy iframe reflows at most once per frame, not per event.
+    const shield = document.createElement("div");
+    shield.style.cssText = "position:fixed;inset:0;z-index:99999;cursor:col-resize";
+    document.body.appendChild(shield);
+    const apply = () => { raf = 0; if (el) el.style.setProperty("--art-w", w + "px"); };
+    const move = (ev) => { w = Math.min(960, Math.max(360, startW - (ev.clientX - startX))); if (!raf) raf = requestAnimationFrame(apply); };
+    const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); document.body.style.userSelect = ""; if (raf) cancelAnimationFrame(raf); if (el) el.style.setProperty("--art-w", w + "px"); try { shield.remove(); } catch {} setArtifactW(w); try { localStorage.setItem("madav.artifactW", String(w)); } catch {} };
+    document.addEventListener("mousemove", move); document.addEventListener("mouseup", up); document.body.style.userSelect = "none";
   };
   const switchMode = (m) => {
     // Snapshot the conversation of the mode we're leaving so we can restore it.
@@ -934,11 +972,14 @@ export default function App() {
   // Model selector lives OUTSIDE the chat window — centered on its own row below it.
   // In agent modes the row becomes [Select Folder] [model] [Permission].
   const modelRow = (
+    <>
     <div className="model-dock">
       {isAgentMode && <EnvPicker cwd={cwd} onPickFolder={pickFolder} onUseFolder={useFolder} onAddRepoUrl={addRepo} github={mode !== "cowork"} />}
       <ModelPicker value={dockValue} groups={pickerGroups} onChange={onPickModel} onRefresh={refreshModels} />
       {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
     </div>
+    <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-3, var(--text-2))", marginTop: 6, opacity: 0.72 }}>Madav is AI and can make mistakes. Please double-check responses.</div>
+    </>
   );
 
   return (
@@ -973,7 +1014,7 @@ export default function App() {
           </div>
         </div>
       )}
-      <div ref={appBodyRef} className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`} style={{ "--sb-w": sidebarW + "px" }}>
+      <div ref={appBodyRef} className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`} style={{ "--sb-w": sidebarW + "px", "--art-w": artifactW + "px" }}>
       <Sidebar active={mode} onSelect={switchMode} onResize={startSidebarResize}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
         onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession} onRenameSession={renameSession}
@@ -1215,6 +1256,7 @@ export default function App() {
             {artifact && <ArtifactPanel artifact={artifact}
               key={artifact.kind + ":" + (artifact.code || "").slice(0, 80)}
               versions={artifactVersions}
+              onResize={startArtifactResize}
               onClose={() => setArtifact(null)} />}
             {teamCtx && !artifact && <TeamOps team={teamCtx} run={teamRun} onClose={clearTeam} />}
             {agentCtx && !teamCtx && !artifact && soloRun && <AgentOps agent={agentCtx} run={soloRun} onClose={() => setSoloRun(null)} />}

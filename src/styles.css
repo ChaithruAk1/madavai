@@ -1265,7 +1265,7 @@ input, textarea, select { font-family: inherit; }
 .sv-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-1); background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
 .sv-note { font-size: 12px; color: var(--text-1); }
 .sv-edit { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-.composer textarea { width: 100%; resize: none; border: none; outline: none; background: transparent; color: var(--text-0); font-size: 15px; line-height: 1.55; min-height: 48px; max-height: 200px; }
+.composer textarea { width: 100%; resize: none; border: none; outline: none; background: transparent; color: var(--text-0); font-size: 15px; line-height: 1.55; min-height: 48px; max-height: 40vh; }
 .composer textarea::placeholder { color: var(--text-2); }
 .composer-row { display: flex; align-items: center; gap: 8px; }
 .chip {
@@ -1585,9 +1585,11 @@ textarea.model-search { line-height: 1.5; }
 .hist-del:hover { color: var(--danger); }
 
 /* ---------- artifacts panel ---------- */
-.artifact-wrap { border-left: 1px solid var(--line); background: var(--bg-1); display: flex; flex-direction: column; min-width: 0; }
+.artifact-wrap { border-left: 1px solid var(--line); background: var(--bg-1); display: flex; flex-direction: column; min-width: 0; width: var(--art-w, 560px); flex: none; position: relative; }
+.artifact-resize { position: absolute; top: 0; left: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 6; }
+.artifact-resize:hover { background: linear-gradient(270deg, transparent, rgba(var(--accent-rgb),0.30)); }
 .artifact-head { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); font-size: 13px; }
-.artifact-title { font-weight: 600; color: var(--text-0); white-space: nowrap; }
+.artifact-title { font-weight: 600; color: var(--text-0); white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .artifact-tabs { display: flex; gap: 4px; margin-left: 14px; }
 .artifact-actions { display: flex; gap: 2px; margin-left: auto; }
 .artifact-ico { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--text-2); cursor: pointer; transition: background .12s, color .12s; }
@@ -1636,7 +1638,7 @@ textarea.model-search { line-height: 1.5; }
 .mono-block.diff .d-del { color: #f08a86; }
 .mono-block.diff .d-hunk { color: var(--accent); opacity: 0.85; }
 .artifact-ver { background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; color: var(--text-1); font-size: 11.5px; padding: 3px 7px; margin-left: 8px; cursor: pointer; }
-.artifact-tab { padding: 5px 11px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text-2); font-size: 12.5px; }
+.artifact-tab { padding: 5px 11px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text-2); font-size: 12.5px; cursor: pointer; transition: background .12s, color .12s, border-color .12s; }
 .artifact-tab.active { background: var(--bg-2); color: var(--text-0); border-color: var(--line); }
 .artifact-body { flex: 1; overflow: auto; min-height: 0; }
 .artifact-frame { width: 100%; height: 100%; border: none; background: #fff; }
@@ -2247,14 +2249,20 @@ svg.lucide { color: var(--accent); }
 .sage-looks-row { max-height: 170px; overflow-y: auto; padding-right: 2px; }
 
 /* In-chat office file card (```officedoc → real downloadable document) */
-.md-office { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; margin: 10px 0; padding: 11px 14px; border: 1px solid var(--accent-line, var(--accent)); border-radius: 12px; background: var(--accent-weak, var(--bg-1)); max-width: 480px; }
-.md-office-ico { font-size: 22px; flex: none; }
+.md-office { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 10px 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-1); width: 100%; transition: border-color .12s, background .12s; }
+.md-office:hover { border-color: var(--accent-line, var(--line)); background: var(--bg-2); }
+.md-office-ico { width: 38px; height: 38px; flex: none; display: grid; place-items: center; font-size: 20px; border-radius: 9px; background: var(--accent-weak, var(--bg-2)); cursor: pointer; }
+/* Natural Microsoft/Adobe brand colors — fixed, NOT theme-accent; no background tile. */
+.md-office-ico--xlsx { background: none; color: #21A366; }
+.md-office-ico--docx { background: none; color: #2B7CD3; }
+.md-office-ico--pptx { background: none; color: #D24726; }
+.md-office-ico--pdf  { background: none; color: #E5252A; }
 .md-office-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .md-office-meta b { font-size: 13px; color: var(--text-0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .md-office-meta i { font-style: normal; font-size: 11px; color: var(--text-2); }
 .md-office-btn { flex: none; padding: 6px 14px; border-radius: 9px; border: none; background: var(--accent); color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-.md-office-open { flex: none; padding: 6px 12px; border-radius: 9px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-size: 12.5px; font-weight: 700; cursor: pointer; }
-.md-office-open:hover { background: var(--accent-weak, rgba(127,127,127,0.12)); }
+.md-office-open { flex: none; padding: 6px 12px; border-radius: 9px; border: 1px solid var(--line); background: transparent; color: var(--text-1); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.md-office-open:hover { background: var(--bg-2); color: var(--text-0); }
 .md-office-btn:disabled { opacity: 0.6; cursor: default; }
 .md-office-err { font-size: 11px; color: var(--danger, #e5736f); flex-basis: 100%; width: 100%; overflow-wrap: anywhere; }
 .md-office-pending { opacity: 0.72; }
