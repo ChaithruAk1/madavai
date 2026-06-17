@@ -448,8 +448,7 @@ async function runTeamTurn(sess, text) {
         const stepId = rid2();
         emit(sess.id, "tool_use", { id: stepId, name: `${step.member.name} (teammate)`, input: { task: step.task || "full mission" }, auto: true });
         const task = `MISSION (from the user):\n${text}` + (step.task ? `\n\nYOUR ASSIGNED SUB-TASK (do only this part):\n${step.task}` : "");
-        return callModel(profFor(step.member), [{ role: "system", content: memberSys(step.member) }, { role: "user", content: task }], sess.ac.signal)
-          .then((r) => (r && r.text) || "")
+        return runMemberWithTools(step.member, profFor(step.member), task, sess)
           .catch((e) => { if (e && e.name === "AbortError") throw e; return "(member failed: " + String((e && e.message) || e) + ")"; })
           .then((out) => {
             emit(sess.id, "tool_result", { id: stepId, output: (out || "(no output)").slice(0, 4000) });
@@ -465,7 +464,7 @@ async function runTeamTurn(sess, text) {
         const stepId = rid2();
         emit(sess.id, "tool_use", { id: stepId, name: `${step.member.name} (teammate)`, input: { task: "mission + teammates' work" }, auto: true });
         let out = "";
-        try { const r = await callModel(profFor(step.member), [{ role: "system", content: memberSys(step.member) }, { role: "user", content: task }], sess.ac.signal); out = (r && r.text) || ""; }
+        try { out = await runMemberWithTools(step.member, profFor(step.member), task, sess); }
         catch (e) { if (e && e.name === "AbortError") throw e; out = "(member failed: " + String((e && e.message) || e) + ")"; }
         outputs.push({ name: step.member.name, text: out || "(no output)" });
         emit(sess.id, "tool_result", { id: stepId, output: (out || "(no output)").slice(0, 4000) });
@@ -848,6 +847,50 @@ async function runChatAgentTurn(sess, text, images, prof) {
     emit(sess.id, "error", { message: String((e && e.message) || e) });
     emit(sess.id, "result", { subtype: "error" });
   }
+}
+
+// Team members on the web get the same lightweight tools as chat (web_search/web_fetch/create_image)
+// so they can research + make images instead of being text-only. Bounded loop; tool steps are tagged
+// with the member name. Falls back to a plain reply if the model can't tool-call.
+async function runMemberWithTools(member, prof, task, sess) {
+  const msgs = [{ role: "system", content: memberSys(member) }, { role: "user", content: task }];
+  const sig = sess && sess.ac ? sess.ac.signal : undefined;
+  const tools = activeChatTools();
+  const plain = async () => { const r = await callModel(prof, msgs, sig); return (r && r.text) || ""; };
+  let usedTools = false;
+  for (let step = 0; step < 6; step++) {
+    let res;
+    try {
+      res = await streamChatTools(prof, msgs, tools, { onDelta: () => {}, signal: sig });
+    } catch (e) {
+      if (e && e.name === "AbortError") throw e;
+      if (isNetworkErr(e) && getToken()) {
+        try { res = await streamChatTools(prof, msgs, tools, { onDelta: () => {}, signal: sig, proxy: proxyCfg() }); }
+        catch (e2) { if (e2 && e2.name === "AbortError") throw e2; if (!usedTools) return await plain(); throw e2; }
+      } else if (!usedTools) { return await plain(); }
+      else throw e;
+    }
+    const { content, toolCalls } = res;
+    if (!toolCalls || !toolCalls.length) return content || "";
+    usedTools = true;
+    msgs.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
+    for (const c of toolCalls) {
+      const args = (tolerantParse(c.arguments || "{}").value) || {};
+      const label = "↳ " + member.name + ": " + c.name;
+      if (sess) emit(sess.id, "tool_use", { id: c.id, name: label, input: args, auto: true });
+      let out, image = null;
+      if (c.name === "create_image") {
+        try { image = await webGenImage(prof, args.prompt); out = "Image generated and shown to the user."; }
+        catch (e) { out = "ERROR: " + String((e && e.message) || e); }
+      } else {
+        try { out = await executeTool(c.name, args, { sess }); }
+        catch (e) { out = "Error: " + String((e && e.message) || e); }
+      }
+      if (sess) emit(sess.id, "tool_result", { id: c.id, name: label, ok: true, output: String(out).slice(0, 2000), image });
+      msgs.push({ role: "tool", tool_call_id: c.id, content: headTail(String(out), { maxChars: 12000, headLines: 200, tailLines: 100 }) });
+    }
+  }
+  return await plain();
 }
 
 // Claude-style: title a chat from its FIRST exchange. Fire-and-forget, fail-open (a failure or empty

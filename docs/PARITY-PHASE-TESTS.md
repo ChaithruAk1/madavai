@@ -220,3 +220,40 @@ Desktop wasn't touched — Let's Chat there behaves exactly as before.
   for all your models**; desktop unchanged.
 - If any model's plain chat breaks or feels slower → tell me which model/provider and I'll tighten the
   trigger (or gate it behind a setting).
+
+---
+
+## Phase 1 — increment 5: web team members get tools
+
+**What changed in plain words:** On web, agent **team members** could only write text — they couldn't
+search the web or make an image (desktop members can use tools). Now each web team member can use the
+same light tools as chat (web search, web fetch, image). Their tool steps show in the chat tagged with
+the member's name (e.g. "↳ Researcher: web_search"). If a model can't do tools, that member just writes
+a normal answer (safe fallback). Only `src/bridge/webBridge.js` changed. **No desktop code changed.**
+
+### Test 1 — Safety net still green
+    npx vitest run tests/parity
+**You should see:** `Tests  30 passed`.
+
+### Test 2 — Team members can research (web rebuild + signed in)
+1. Build + open web:
+
+       npm run build
+
+2. Make an **Agent Team** of 2 members (e.g. "Researcher" + "Writer"), signed in.
+3. Run a mission that needs current info, e.g. **"Find the current stable Python version and write a one-paragraph note about it."**
+
+**You should see:** member tool steps tagged with the member name (a **web_search**/**web_fetch** step),
+then the team's combined answer using what they found.
+
+### Test 3 — Teams still work with any model (safety check)
+Run a team with your usual model(s). Even if a model can't use tools, each member should still produce a
+normal text answer and the team should finish — same as before.
+
+### Test 4 — Desktop unchanged
+Desktop wasn't touched — agent teams there behave exactly as before.
+
+### Pass / fail
+- **PASS** = parity tests green; web team members can search/make images when relevant; teams still
+  finish for all your models; desktop unchanged.
+- If a team breaks or stalls on a model → tell me which provider/model.
