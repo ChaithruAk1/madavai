@@ -402,6 +402,26 @@ ipcMain.handle("madav:openPath", (_e, p) => {
   } catch { return false; }
 });
 ipcMain.handle("madav:showInFolder", (_e, p) => { try { require("electron").shell.showItemInFolder(String(p || "")); return true; } catch { return false; } });
+// Build-on-device office files: write the file to Downloads and OPEN it in its native app (Excel/
+// Word/…). Only inert document types are allowed (same allowlist spirit as openPath, review H1).
+ipcMain.handle("madav:saveAndOpen", (_e, payload) => {
+  try {
+    const path = require("path"), fs = require("fs"), shell = require("electron").shell;
+    const SAFE = new Set(["xlsx", "xls", "docx", "doc", "pptx", "ppt", "pdf", "csv", "txt"]);
+    let name = String((payload && payload.name) || "document").replace(/[\\/:*?"<>|\r\n]/g, "_").replace(/^\.+/, "").slice(0, 120);
+    const ext = path.extname(name).toLowerCase().replace(/^\./, "");
+    if (!SAFE.has(ext)) return { ok: false, error: "unsupported file type" };
+    const buf = Buffer.from(String((payload && payload.b64) || ""), "base64");
+    if (!buf.length) return { ok: false, error: "empty file" };
+    const dir = app.getPath("downloads");
+    const base = name.slice(0, name.length - ext.length - 1);
+    let file = path.join(dir, name);
+    for (let i = 1; fs.existsSync(file); i++) file = path.join(dir, base + " (" + i + ")." + ext);
+    fs.writeFileSync(file, buf);
+    shell.openPath(file);
+    return { ok: true, path: file };
+  } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+});
 
 // ---- IPC: shallow directory listing (for @-mention file picker) ----
 const DIR_SKIP = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", "dist", "build", ".next", ".cache"]);

@@ -56,7 +56,7 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
 
     // KPI tiles (rendered as 2-wide merged blocks, two per row) — usually a summary sheet
     if (Array.isArray(sh.kpis) && sh.kpis.length) {
-      const tiles = sh.kpis.slice(0, 6);
+      const tiles = sh.kpis.slice(0, 24); // was 6 — the writer truncated KPIs the preview showed (preview/file mismatch). Layout below scales to any count.
       let i = 0;
       for (const k of tiles) {
         const colBlock = i % 2; // 0 -> B:C, 1 -> E:F
@@ -252,7 +252,8 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
         for (const s of (def.series || [])) { const CL = colKeyLetter[sheet][s.col]; if (!CL) continue; series.push({ name: s.name || s.col, values: `${CL}${ds}:${CL}${ds + rows - 1}` }); }
       }
       if (categories && series.length) charts.push({ sheet, type: def.type || "line", title: def.title || "", categories, series, anchor: def.anchor || autoAnchor(sheet), w: def.w, h: def.h });
-    } catch (e) {}
+      else console.warn(`[xlsxTemplate] chart "${def.title || ""}" on ${sheet} dropped \u2014 unresolved ${categories ? "series" : "x/categories"} (x=${def.x}, series=${(def.series || []).length})`);
+    } catch (e) { console.warn("[xlsxTemplate] chart resolve error:", (e && e.message) || e); }
   }
   function autoAnchor(sheet) {
     if (periodCols[sheet]) return `${colLetters((periodCols[sheet].slice(-1)[0]) + 2)}3`;

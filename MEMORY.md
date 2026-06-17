@@ -1600,3 +1600,70 @@ Git nag: `error: improper chunk offset` = corrupted commit-graph; clean with `gi
 
 ### RESTART
 session-manager.cjs + agent-openai.cjs are MAIN-PROCESS → full `npm run electron:dev` restart (Ctrl+R won't load them). App.jsx is renderer (Ctrl+R / restart). App.jsx also ships to WEB via npm run build → redeploy to Render.
+
+## Session 2026-06-16 (cont.) — full code review + Claude-parity "Let's Chat" pass
+
+### Full code review → CODE-REVIEW-2026-06-16.md (untracked)
+Reviewed all 4 surfaces (4 parallel agents + own re-verification). Verdict: more hardened than CLAUDE.md implied. Fixes shipped (all verified by node --check / esbuild + behavioral tests; NOT runtime-tested — can't run the app, user verifies by eye):
+- H1 (electron/main.cjs) DESKTOP: shell.openPath executed ANY renderer/model path (one-click .exe via a model-written output). Now allowlists inert doc/media types or dirs; reveals (showItemInFolder) everything else.
+- H2 (server/auth-server.mjs) WEB: OAuth redirect used unanchored startsWith → token leak (https://madav.ai@evil.com / .evil.com passed). Now exact-origin match at both /auth/start and callback.
+- H3 (electron/agent-openai.cjs) DESKTOP: run_bash ran model-authored shell under bypassPermissions. Added destructiveBashGuard deny-list (rm -rf /, mkfs, dd, curl|sh, shutdown, reg delete, …) enforced even under bypass; deny-list chosen over forced-prompt to preserve the PROTECTED weak-model pipeline.
+- M1 (shared/csp.cjs) BOTH: web CSP dropped 'unsafe-inline' from script-src; scoped connect-src/img-src to 'self' https:. Desktop branch unchanged.
+- M2 (src/deck/deckPreview.js) BOTH: deck-preview eval shadows fetch/XHR/WebSocket/window/eval/Function/etc.; image src validated. (Main-thread hardening; a worker is the airtight follow-up.)
+- M3 (auth-server.mjs) WEB: verify() length-checks before crypto.timingSafeEqual (was throw->unhandled-rejection->hung socket DoS); web sign() now carries tokenVersion, checked in authUser + /me -> revocable.
+- M4 (main.cjs) DESKTOP: Google loopback OAuth now generates+sends+verifies state (CSRF).
+- M5 (auth-server.mjs) WEB: rate-limit keys on the trusted right-most X-Forwarded-For hop (TRUSTED_PROXY_HOPS, default 1), not the spoofable left-most.
+- M6 (electron/settings.cjs) DESKTOP: encStr no longer silently writes plaintext on encrypt failure (sets _encryptFailed; save() preserves prior ciphertext).
+- M7 (server/store.mjs) WEB: Postgres TLS verifies cert when PGSSLROOTCERT set (PEM or path), else warns.
+Commits: M3-M7 = 88af1298. H1/H3/M1/M2 STILL UNCOMMITTED (mixed into the chat batch). main.cjs carries H1+M4.
+
+### "Let's Chat" Claude-parity pass (all shipped)
+- New chat appears in sidebar INSTANTLY, titled from first message. FIRST attempt emitted a custom chat_started event BEFORE the turn's init -> broke live reply display (regression) -> REVERTED. Final: backend titles the chat at turn start; renderer refreshes the sidebar on the EXISTING init event (App.jsx case "init" -> setHistRefresh) + error-path refresh. (session-manager.cjs start, webBridge.js start, App.jsx).
+- Auto-titled chats: smart 3-6 word title after the first exchange (fire-and-forget, fail-open, first-exchange guard, strips <think>/quotes; emits convtitle -> sidebar refresh). Desktop _autoTitle (in _send result, chat/cowork/code modes), web maybeAutoTitle (runTurn ONLY).
+- Artifact/preview panel: per-chat memory (artifactByConv map -> reopens its file on return, closes on switch). Drag-resizable left handle; iframe-drag stutter fixed with a full-window shield + rAF-throttled width writes. Esc-to-close (guarded vs editing). Office header decluttered (Edit/Code/open-in-tab/copy/More hidden when artifact.kind==="office"); Save-to-gallery + Send-to-room moved into a "More" menu for non-office. Title ellipsis. (App.jsx, ArtifactPanel.jsx, styles.css.)
+- Office file cards (markdown OfficeCard + Collaborate FileOutCard): full-color brand file icons (OfficeIcon inline SVG, FIXED Microsoft/Adobe colors, theme-independent, no tile, size 36, sits next to the button), full-width card, single "Open in <App>" accent primary. DESKTOP native open = new saveAndOpen IPC (electron/preload.cjs + main.cjs: write built file to Downloads + hardened openPath). WEB: bridge.saveAndOpen undefined -> falls back to download (correct).
+- Preview rendering: CSS-ONLY sheet tabs (hidden radios + <label>, :checked~ rules) for BOTH rich (xlsxTemplatePreview.js) and plain (office.js _previewXlsx) — chosen because the preview iframe's PROD CSP blocks inline scripts (style-src allows inline; script-src 'self' 'unsafe-eval' has NO unsafe-inline -> JS tabs would work in dev and die in the packaged app). Inline-SVG charts in the rich preview (fail-safe try/catch). KPI truncation fix: xlsxTemplate.js slice(0,6)->slice(0,24) (preview showed ~17 KPIs, downloaded file had 6).
+- Charts were silently dropped in TWO places (xlsxTemplate resolution skip when categories/series don't resolve; office.js empty catch on injectCharts). Both now console.warn. officeRule strengthened: model MUST emit the charts array, not just describe charts (edited BOTH src/office.js + shared/office-rules.cjs; rules-parity test passes @10500 chars).
+- BUG fixed: per-chat MODEL attribution. Each assistant message stores model+provider (desktop _persistTurn, web runTurn); restored into item.meta on reopen (App.jsx openSession/openConversation map); shown as a muted badge next to "Madav" (Message.jsx). NOTE: only NEW messages (no retroactive data).
+- BUG fixed: weak-model office-spec JSON SNIPPET. A fenced JSON shaped like an office spec ("sheets"/"slides"/"sections") now routes to OfficeCard (valid=file card, invalid=clean placeholder) instead of a raw code block (markdown.jsx block parser).
+
+### Madav identity hardening (cont. 2026-06-16) — stop "I'm Claude"
+- Symptom: deepseek-v4-pro (Claude-distilled) replied "I'm Claude" even though prompts already said "You are Madav". The per-chat model badge was CORRECT ("Madav | deepseek/deepseek-v4-pro"); the prompt identity was just too weak to override a distilled model.
+- Fix: added a firm negation to EVERY user-facing identity prompt on BOTH surfaces: "You are NOT Claude, ChatGPT, Gemini, or any other assistant; if anyone asks who you are or who made you, you are Madav." Locations: WEB BASE_BEHAVIOR (webBridge.js ~303, plain chat) + coworkSystem (~544, Collaborate); DESKTOP sysChat (session-manager.cjs ~852, plain chat) + agent-openai SYSTEM all 3 variants (chat/code/folder, ~214/217/220).
+- DELIBERATELY NOT touched (blanket replace would BREAK the app / pure noise): real model IDs (claude-opus-4-8, claude-sonnet-4-6), the @anthropic-ai/claude-agent-sdk package, api.anthropic.com, the "anthropic" provider kind, internal code comments, and INTERNAL-role prompts (team coordinator, project scout, code reviewer, sub-agent, user-named team members — none self-introduce to the user).
+- Caveat: this STEERS, doesn't BIND — a heavily distilled model can still rarely slip. Hard guarantee = a cheap output post-filter ("I'm Claude/ChatGPT" -> "I'm Madav"). NOT built (offered).
+- System-prompt change => NEW replies only; the "I'm Claude" message already in history stays.
+
+### Key constraints / decisions
+- Preview iframe sandbox + prod CSP => inline scripts blocked in prod (allowed in dev — a trap). Inline styles allowed. Preview interactivity must be CSS-only OR move to an in-panel React grid.
+- User asked for a TRUE interactive Excel-grid preview "exactly like Claude". Explained it needs an in-panel React grid (the CSP-limited iframe can't host the JS) + is a big untestable rebuild. User chose "keep what's stable for Madav" -> NOT built (deferred).
+- "Backend exactly like Claude" = DECLINED (proprietary/undisclosed; would mean reproducing Anthropic IP). Biggest realistic lever discussed: gate Madav's rigid system rules behind isDeckCapable so strong models (Opus/Sonnet) aren't constrained, + align sampling (currently max_tokens 16384 hard-coded in electron/providers.cjs, no temperature set). NOT done.
+
+### WEB PARITY status (RULE 0)
+- Shared renderer (src/**) fixes apply to BOTH automatically: preview tabs/charts, KPI fix, artifact panel (bind/reopen/resize/declutter/Esc), office card styling/icons/full-width, Bug2 snippet routing, model-badge DISPLAY, chart-failure logging, chart prompt (office.js copy), M1 (csp web branch), M2 (deckPreview).
+- Standard chat backend MIRRORED to webBridge: chat-in-sidebar (start titles + init), auto-title (maybeAutoTitle), per-message model (runTurn).
+- GAP CLOSED (cont. 2026-06-16): webBridge.runAgentTurn (~711) and runTeamTurn (~487) now push assistant messages WITH model/provider AND call maybeAutoTitle -> at parity with runTurn. All 3 web turn paths attribute model + auto-title (team attributes the lead/coordinator prof, line 406). esbuild-verified.
+- Native "Open in Excel" is DESKTOP-only by design (web downloads — browser can't launch native apps). Collaborate FileOutCard Open/Folder use openPath/showInFolder (desktop).
+
+### PENDING / not done
+1. isDeckCapable gate on the rigid project recipe (review pending #2) — biggest lever for Claude-grade output on strong models.
+2. Post-check formula-as-text auto-fix (review pending #1).
+3. DONE (cont. 2026-06-16): Web parity model + auto-title on webBridge runAgentTurn/runTeamTurn (GAP above closed).
+4. CLAUDE.md STALE: the "three prompt copies / two separate CSPs" rules are now single-sourced (shared/office-rules.cjs + shared/csp.cjs); the renderer keeps a byte-equal ESM duplicate of the office rule (test/rules-parity.test.cjs, passes) — wire that test into npm run verify / CI.
+5. Hygiene: npm audit fix (form-data/joi, non-breaking; runtime deps clean); git rm --cached .~lock.Madav-Test-Plan.xlsx# (committed lock file).
+6. Interactive Excel-grid preview (deferred by user).
+
+### UNCOMMITTED (suggested 2 commits; M3-M7 already @88af1298)
+Chat/office (1): electron/session-manager.cjs electron/preload.cjs electron/main.cjs src/App.jsx src/markdown.jsx src/components/ArtifactPanel.jsx src/components/Message.jsx src/styles.css src/office.js src/doc/xlsxTemplate.js src/doc/xlsxTemplatePreview.js src/bridge/webBridge.js shared/office-rules.cjs
+Security remainder (2): shared/csp.cjs electron/agent-openai.cjs src/deck/deckPreview.js
+Untracked: CODE-REVIEW-2026-06-16.md
+Identity + web-parity (cont. 2026-06-16): folded into already-listed files -> webBridge.js (agent/team parity + identity), session-manager.cjs (identity), agent-openai.cjs (identity x3). No NEW files. As of session end: WRITTEN + verified (node --check + esbuild) but NOT committed / NOT built / NOT redeployed -> user runs git commit + npm run build + Render redeploy (web) + full npm run electron:dev restart (desktop main-process: agent-openai.cjs, session-manager.cjs).
+
+### RESTART / DEPLOY
+- Main-process (session-manager, main, preload, agent-openai, settings) -> FULL npm run electron:dev restart (Ctrl+R won't load them; saveAndOpen needs the restart or "Open in Excel" silently falls back to download).
+- Renderer (src/**) -> Ctrl+R (desktop) + npm run build -> redeploy Render (web).
+- Web server (auth-server, store) -> redeploy Render; set PGSSLROOTCERT (M7) + optional TRUSTED_PROXY_HOPS (M5).
+- Shared (csp.cjs, office-rules.cjs) -> both surfaces.
+
+### Verification note
+All changes verified by node --check (.cjs/.mjs) + esbuild (.jsx/.js) + targeted behavioral tests (redirect exact-origin, destructiveBashGuard block/allow, verify() no-throw + tokenVersion, CSP output, title sanitisation, rules-parity). NOT runtime-tested (cannot run Electron/browser here) — user verifies visually after build/restart.

@@ -5,9 +5,10 @@
 // headings, bold/italic/strikethrough, inline code, fenced code blocks, links,
 // bullet/numbered lists, blockquotes, horizontal rules, tables (basic).
 import { Fragment, useState, useEffect } from "react";
-import { parseOfficeSpec, downloadOffice } from "./office.js";
+import { parseOfficeSpec, downloadOffice, buildOfficeBlob } from "./office.js";
 import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
 import { deckPreviewHTML } from "./deck/deckPreview.js";
+import { bridge } from "./bridge/index.js";
 
 // ---- inline parsing: code spans first (their content is literal), then links/emphasis ----
 function inline(text, keyBase = "i") {
@@ -57,6 +58,24 @@ function _codeSyntaxError(code, params) {
 // Two-channel build flag: public builds without Office render the spec as a plain code block.
 const FEAT_OFFICE = import.meta.env.VITE_FEAT_OFFICE !== "0";
 const OFFICE_LABEL = { xlsx: "Excel spreadsheet", docx: "Word document", pptx: "PowerPoint deck", pdf: "PDF document" };
+export const OPEN_LABEL = { xlsx: "Open in Excel", docx: "Open in Word", pptx: "Open in PowerPoint", pdf: "Open PDF" };
+// Real-looking Microsoft/Adobe file icons (full-color SVG, fixed brand colors — never theme-tinted),
+// like Claude: a white page with a folded corner + a brand-colored label badge and the type letter.
+export function OfficeIcon({ type, size = 36 }) {
+  const COLOR = { xlsx: "#21A366", docx: "#2B579A", pptx: "#C43E1C", pdf: "#D32F2F" };
+  const LETTER = { xlsx: "X", docx: "W", pptx: "P", pdf: "PDF" };
+  const c = COLOR[type] || "#5B8DEF";
+  const letter = LETTER[type] || "";
+  const w = type === "pdf" ? 17 : 14.5;
+  return (
+    <svg viewBox="0 0 28 28" width={size} height={size} aria-hidden="true" style={{ flex: "none" }}>
+      <path d="M7 3h9l5 5v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="#ffffff" stroke="#dfe3e8" strokeWidth="1" />
+      <path d="M16 3l5 5h-4a1 1 0 0 1-1-1V3z" fill="#cfd4da" />
+      <rect x="3.5" y="13" width={w} height="9.5" rx="1.5" fill={c} />
+      <text x={3.5 + w / 2} y="20.3" fontSize={type === "pdf" ? 6.2 : 9} fontWeight="700" fill="#ffffff" textAnchor="middle" fontFamily="'Segoe UI', Arial, sans-serif">{letter}</text>
+    </svg>
+  );
+}
 function OfficeCard({ code }) {
   const [state, setState] = useState(""); // "" | building | done | error:<msg>
   const [stuck, setStuck] = useState(false);
@@ -86,8 +105,17 @@ function OfficeCard({ code }) {
   }
   const dl = async () => {
     setState("building");
-    try { await downloadOffice(parsed); setState("done"); setTimeout(() => setState(""), 2500); }
-    catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 120)); }
+    try {
+      // Desktop: build the real file, save it, and OPEN it in its native app (Excel/Word/…).
+      if (bridge && bridge.saveAndOpen) {
+        const blob = await buildOfficeBlob(parsed);
+        const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(blob); });
+        const out = await bridge.saveAndOpen(parsed.name, b64);
+        if (out && out.ok) { setState("done"); setTimeout(() => setState(""), 2500); return; }
+      }
+      // Web, or if native open is unavailable/failed: download the file.
+      await downloadOffice(parsed); setState("done"); setTimeout(() => setState(""), 2500);
+    } catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 120)); }
   };
   const count = parsed.type === "xlsx" ? `${(parsed.sheets || []).length || 1} sheet(s)`
     : parsed.type === "pptx" ? `${(parsed.slides || []).length + (parsed.title ? 1 : 0)} slide(s)`
@@ -97,11 +125,10 @@ function OfficeCard({ code }) {
   const open = () => { try { window.dispatchEvent(new CustomEvent("madav:openoffice", { detail: { code, name: parsed.name, type: parsed.type } })); } catch {} };
   return (
     <div className="md-office">
-      <span className="md-office-ico" onClick={open} style={{ cursor: "pointer" }} title="Open preview">{parsed.type === "xlsx" ? "📊" : parsed.type === "pptx" ? "📽" : parsed.type === "pdf" ? "📕" : "📄"}</span>
       <span className="md-office-meta" onClick={open} style={{ cursor: "pointer" }} title="Open preview"><b>{parsed.name}</b><i>{OFFICE_LABEL[parsed.type]} · {count} · built on your device</i></span>
-      <button className="md-office-open" onClick={open} title="Open beside the chat">Open</button>
+      <span className={"md-office-ico md-office-ico--" + parsed.type} onClick={open} style={{ cursor: "pointer" }} title="Open preview"><OfficeIcon type={parsed.type} /></span>
       <button className="md-office-btn" disabled={state === "building"} onClick={dl}>
-        {state === "building" ? "Building…" : state === "done" ? "Saved ✓" : "Download"}
+        {state === "building" ? "Building…" : state === "done" ? "Saved ✓" : (OPEN_LABEL[parsed.type] || "Download")}
       </button>
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
       {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
@@ -186,6 +213,10 @@ export default function Markdown({ text, streaming }) {
       } else if (FEAT_OFFICE && /"type"\s*:\s*"(?:xlsx|docx|pptx|pdf)"/.test(buf.join("\n")) && !/\bpptx\s*\.\s*addSlide|\.\s*addSlide\s*\(/.test(buf.join("\n"))) {
         // A spreadsheet/Word/PDF spec emitted with the WRONG fence (```xlsx / ```json / untagged) is still
         // a file, never a raw snippet — render it as the downloadable card with Open/Download.
+        blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
+      } else if (FEAT_OFFICE && /^\s*\{/.test(buf.join("\n").trim()) && /"(?:sheets|slides|sections)"\s*:/.test(buf.join("\n"))) {
+        // A weak model dumped a partial/failed office spec as raw JSON - useless to the user. Route it to the
+        // office card: a valid spec becomes the file, an invalid one shows a clean placeholder. Never raw JSON.
         blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
       } else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
       continue;

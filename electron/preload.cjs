@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld("madav", {
   listDir: (dir) => ipcRenderer.invoke("madav:listDir", dir),
   openExternal: (url) => ipcRenderer.invoke("madav:openExternal", url),
   openPath: (p) => ipcRenderer.invoke("madav:openPath", p),
+  saveAndOpen: (name, b64) => ipcRenderer.invoke("madav:saveAndOpen", { name, b64 }),
   showInFolder: (p) => ipcRenderer.invoke("madav:showInFolder", p),
 
   // --- model speed check ---

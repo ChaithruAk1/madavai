@@ -35904,3 +35904,83 @@ Git nag: `error: improper chunk offset` = corrupted commit-graph; clean with `gi
 
 ### RESTART
 session-manager.cjs + agent-openai.cjs are MAIN-PROCESS → full `npm run electron:dev` restart (Ctrl+R won't load them). App.jsx is renderer (Ctrl+R / restart). App.jsx also ships to WEB via npm run build → redeploy to Render.
+
+================================================================================
+## Session 2026-06-16 (cont.) — full code review, Let's-Chat Claude-parity pass, Madav identity + web parity
+Chronological companion to MEMORY §"Session 2026-06-16 (cont.)". Sandbox UP; all changes verified by
+node --check (.cjs/.mjs) + esbuild (.jsx/.js) — NOT runtime-tested (user verifies after build/restart).
+
+### CODE REVIEW
+Full project review → CODE-REVIEW-2026-06-16.md. Prioritized H1-H3 (high) + M1-M7 (medium) + hygiene.
+Walked both surfaces per RULE 0.
+
+### SECURITY FIXES (H1-H3, M1-M7)
+- H1 (electron/main.cjs): openPath allowlists inert types, else reveals in folder (no auto-exec).
+- H2 (server/auth-server.mjs): isAllowedRedirect → exact-origin match (was spoofable prefix).
+- H3 (electron/agent-openai.cjs): destructiveBashGuard deny-list before execAsync.
+- M1 (shared/csp.cjs): web branch dropped 'unsafe-inline'; scoped connect-src/img-src.
+- M2 (src/deck/deckPreview.js): shadow network globals + sanitize image src in the deck sandbox.
+- M3 (auth-server.mjs): verify() length-checks before timingSafeEqual + tokenVersion revocation.
+- M4 (main.cjs): OAuth `state` param on the desktop Google flow.
+- M5 (auth-server.mjs): rate-limit keys on right-most XFF (TRUSTED_PROXY_HOPS), not spoofable left-most.
+- M6 (electron/settings.cjs): don't persist plaintext on encrypt failure.
+- M7 (server/store.mjs): Postgres TLS verifies cert when PGSSLROOTCERT set.
+Commits: M3-M7 @88af1298; H1/H3/M1/M2 in later batches.
+
+### LET'S-CHAT CLAUDE-PARITY PASS (shipped)
+- New chat appears in sidebar INSTANTLY, titled from first message (backend titles at turn start; renderer
+  refreshes on the EXISTING init event — a first attempt emitting a custom chat_started BEFORE init broke
+  live replies and was reverted).
+- Auto-titled chats: smart 3-6 word title after first exchange (fire-and-forget, fail-open). Desktop
+  _autoTitle; web maybeAutoTitle.
+- Per-chat artifact/preview panel: reopens its file on return, closes on switch; drag-resizable handle
+  (iframe-drag stutter fixed with a full-window shield + rAF); Esc-to-close; office header decluttered.
+- Office file cards (markdown OfficeCard + Collaborate FileOutCard): real Microsoft/Adobe brand icons
+  (OfficeIcon inline SVG, fixed brand colors), full-width card, single "Open in <App>" primary. Desktop
+  native open = new saveAndOpen IPC (preload.cjs + main.cjs → Downloads + openPath); web → download.
+- Preview: CSS-ONLY sheet tabs (hidden radios + labels) for rich + plain previews — the preview iframe's
+  PROD CSP blocks inline scripts (JS tabs work in dev, die packaged). Inline-SVG charts. KPI truncation
+  fix: xlsxTemplate slice(0,6)→slice(0,24).
+- Charts silently dropped in two places (xlsxTemplate resolution skip; office.js empty catch) → both now
+  console.warn; officeRule strengthened to REQUIRE the charts array (src/office.js + shared/office-rules.cjs, byte-parity).
+- Per-chat MODEL attribution: each assistant msg stores model+provider; muted badge next to "Madav"
+  (new messages only, no retroactive data).
+- Weak-model office-spec JSON snippet now routes to OfficeCard instead of a raw code block.
+- Composer: grows to ~40vh with input; "Madav is AI and can make mistakes…" disclaimer under the model
+  selector; full-width text row above the icon row (Claude layout).
+
+### MADAV IDENTITY HARDENING — stop "I'm Claude"
+- deepseek-v4-pro (Claude-distilled) replied "I'm Claude" though prompts already said "You are Madav"
+  (the model badge was correct). Added a firm negation to EVERY user-facing identity prompt on BOTH
+  surfaces: "You are NOT Claude, ChatGPT, Gemini…; if asked who you are or who made you, you are Madav."
+  Locations: web BASE_BEHAVIOR + coworkSystem; desktop sysChat + agent-openai SYSTEM (chat/code/folder).
+- NOT touched (would break / noise): model IDs (claude-opus-4-8), @anthropic-ai/claude-agent-sdk,
+  api.anthropic.com, the "anthropic" provider kind, comments, and internal-role prompts (coordinator,
+  scout, reviewer, sub-agent, user-named team members).
+- Steers, doesn't bind — a hard guarantee needs an output post-filter (offered, not built).
+Commits: 8d960e33, 6cabf8a4, 3f446317.
+
+### WEB PARITY (RULE 0)
+- Standard chat already mirrored (sidebar/title/auto-title/model). GAP found + CLOSED: webBridge
+  runAgentTurn (~711) + runTeamTurn (~487) now push model/provider AND call maybeAutoTitle — all 3 web
+  turn paths at parity (team attributes the lead/coordinator prof, line 406).
+- Native "Open in Excel" stays desktop-only by design (browser can't launch native apps → download).
+
+### PENDING / NOT DONE
+1. isDeckCapable gate on the rigid project recipe (biggest lever for strong-model output quality).
+2. Formula-as-text post-check auto-fix.
+3. Optional "I'm Claude → I'm Madav" output post-filter (hard identity guarantee).
+4. CLAUDE.md "three prompt copies / two CSPs" note is stale (now single-sourced); wire rules-parity test into CI.
+5. Hygiene: npm audit fix; git rm --cached the committed .~lock file.
+
+### UNCOMMITTED at this point
+Office/chat batch (9 files): electron/main.cjs, electron/preload.cjs, shared/office-rules.cjs,
+src/components/ArtifactPanel.jsx, src/components/Message.jsx, src/doc/xlsxTemplate.js,
+src/doc/xlsxTemplatePreview.js, src/markdown.jsx, src/office.js  + MEMORY.md + this Chat.md.
+PowerShell note: Windows PowerShell 5.x rejects `&&` — run `git add …` then `git commit …` on separate lines.
+
+### RESTART / DEPLOY
+- Main-process (main.cjs, preload.cjs, session-manager.cjs, agent-openai.cjs) → full npm run electron:dev
+  restart (Ctrl+R won't load them; saveAndOpen needs the restart).
+- Renderer (src/**) + shared/office-rules.cjs → Ctrl+R (desktop) + npm run build → redeploy Render (web).
+================================================================================
