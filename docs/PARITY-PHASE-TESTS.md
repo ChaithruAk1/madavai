@@ -320,3 +320,40 @@ behind-the-scenes module only; there's no new button or behavior yet.
 - **PASS** = `35 passed`, and the web app is unchanged.
 - Live MCP connection is tested **after the next step (P3.2)**, which adds the server routes and is
   verified by connecting to a real MCP server post-deploy.
+
+---
+
+## Phase 3 — increment P3.2: /mcp server routes (deploy-tested)
+
+**What changed in plain words:** Added two server endpoints — `POST /mcp/tools` (list a remote MCP
+server's tools) and `POST /mcp/call` (call one) — to `server/auth-server.mjs`. Both require sign-in,
+are rate-limited, run the SSRF guard, and only forward a small allowlist of headers. **Additive only**
+— no existing route changed (a test asserts `/proxy/fetch` is untouched). This is **server-only**: no
+`electron/**`, no renderer. Still **not wired to the agent** (P3.3), so the web UI is unchanged.
+
+⚠️ **This is a production-server change** — it only takes effect after a **Render redeploy**; `npm run
+dev` alone does not run this server.
+
+### Test 1 — Safety net + route contract
+    npx vitest run tests/parity
+**You should see:** `Tests  39 passed` (4 new ones check the routes exist, are auth+rate-limit+SSRF
+guarded, and that `/proxy/fetch` was not altered).
+
+### Test 2 — Live check (after you deploy to Render)
+With your Madav session token, point it at a public **HTTPS** MCP server:
+
+    curl -s -X POST https://<your-render-host>/mcp/tools ^
+      -H "Authorization: Bearer <your-madav-token>" ^
+      -H "Content-Type: application/json" ^
+      -d "{\"url\":\"https://<some-public-mcp-server>/mcp\"}"
+
+**You should see:** a JSON `{ "tools": [...] }` list. A bad/missing token → 401; a private/loopback URL
+→ 400 "Refusing to connect…"; no token bucket abuse (rate-limited).
+
+### Test 3 — Nothing user-facing changed yet
+The web app behaves exactly as before — these routes aren't called by the UI until P3.3.
+
+### Pass / fail
+- **PASS** = `39 passed`; after deploy, `/mcp/tools` returns a tool list for a real MCP server and
+  rejects unauth/private URLs. Web UI unchanged.
+- Live connection issues (transport/handshake) → tell me the MCP server URL + the error.

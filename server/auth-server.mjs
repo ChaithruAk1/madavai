@@ -16,6 +16,7 @@ import { makeStore } from "./store.mjs";
 import webmd from "../electron/webmd.cjs";
 import cspPolicy from "../shared/csp.cjs"; // single CSP source (web + desktop) // LLM-ready web extraction (CJS — Node imports it fine)
 import { scoreQuiz, scoreBatch } from "./quiz.mjs";
+import * as mcpBroker from "./mcp-broker.mjs"; // Phase 3: server-side MCP broker (HTTP/SSE), SSRF-guarded
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
 // Real environment variables (e.g. set in PowerShell or on the host) always win.
@@ -802,6 +803,46 @@ const server = http.createServer(async (req, res) => {
       }
       return json(res, 200, { url: r.url, status: r.status, contentType: ct, text: text.slice(0, 40000) });
     } catch (e) { return json(res, 502, { error: "fetch", detail: String((e && e.message) || e) }); }
+  }
+
+  // ---- Phase 3: MCP connector broker (Bearer) — list/call tools on a remote HTTP/SSE MCP server on
+  // the agent's behalf (browsers can't, and must not hold connector secrets). Additive + SSRF-guarded.
+  // Only a small allowlist of forward headers is honored. NOTE: redirect/DNS-rebinding hardening is a
+  // follow-up (docs/PHASE3-MCP.md). stdio MCP servers are desktop-only by design.
+  function mcpForwardHeaders(h) {
+    if (!h || typeof h !== "object") return {};
+    const out = {};
+    for (const [k, v] of Object.entries(h)) {
+      if (typeof v === "string" && /^(authorization|x-api-key|x-mcp-[a-z0-9-]+)$/i.test(k)) out[k] = v;
+      if (Object.keys(out).length >= 10) break;
+    }
+    return out;
+  }
+  if (p === "/mcp/tools" && req.method === "POST") {
+    if (rateLimited(req, "mcp", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
+    const rawReq = await rawBody(req, res); if (rawReq === null) return;
+    let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
+    const url = String(b.url || "").trim();
+    try { mcpBroker.assertSafeMcpUrl(url); } catch (e) { return json(res, 400, { error: String((e && e.message) || e) }); }
+    try {
+      const tools = await mcpBroker.listTools({ url, headers: mcpForwardHeaders(b.headers) });
+      return json(res, 200, { tools });
+    } catch (e) { return json(res, 502, { error: "mcp", detail: String((e && e.message) || e) }); }
+  }
+  if (p === "/mcp/call" && req.method === "POST") {
+    if (rateLimited(req, "mcp", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
+    const rawReq = await rawBody(req, res); if (rawReq === null) return;
+    let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
+    const url = String(b.url || "").trim();
+    const name = String(b.name || "").trim();
+    if (!name) return json(res, 400, { error: "tool name required" });
+    try { mcpBroker.assertSafeMcpUrl(url); } catch (e) { return json(res, 400, { error: String((e && e.message) || e) }); }
+    try {
+      const result = await mcpBroker.callTool({ url, headers: mcpForwardHeaders(b.headers), name, args: b.args || {} });
+      return json(res, 200, { result });
+    } catch (e) { return json(res, 502, { error: "mcp", detail: String((e && e.message) || e) }); }
   }
 
   // GET /admin/users (x-admin-key) -> all users with computed status + last-seen.
