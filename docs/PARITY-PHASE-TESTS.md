@@ -257,3 +257,42 @@ Desktop wasn't touched — agent teams there behave exactly as before.
 - **PASS** = parity tests green; web team members can search/make images when relevant; teams still
   finish for all your models; desktop unchanged.
 - If a team breaks or stalls on a model → tell me which provider/model.
+
+---
+
+## Phase 1 — increment 6: CORRECTION to increment 2 (web Projects CAN make files)
+
+**What changed in plain words:** Increment 2 was too strict — it told web Projects "you cannot create
+files." But web already makes real **downloadable** files (Excel/Word/PDF/slide decks) through the normal
+office feature, and that prompt rule is also in a web Project — so the two instructions **contradicted**
+each other. Fixed: a web Project now correctly **does make downloadable files** when asked. The only real
+limit (now stated accurately) is that a web Project has **no linked local folder**, so it can't read or
+compute over your existing local data files or save into a folder — that still needs the desktop app or
+"Let's Collaborate". Only `src/bridge/webBridge.js` changed. **No desktop code changed.**
+
+### Test 1 — Safety net still green
+    npx vitest run tests/parity
+**You should see:** `Tests  30 passed`.
+
+### Test 2 — Web Project now makes a file (web rebuild)
+1. Build + open web:
+
+       npm run build
+
+2. Open a **Project** on web. Ask: **"Make me an Excel file with a 3-month sales forecast for a coffee shop."**
+
+**You should see:** a real **downloadable file card** (an .xlsx you can download) — NOT a refusal.
+(Before this fix it wrongly said it couldn't make files.)
+
+### Test 3 — Folder-data limit is still honest
+In a web Project ask: **"Read the sales file in my project folder and total it."**
+**You should see:** it explains it can't read a local folder on web and points you to the desktop app or
+"Let's Collaborate" — because that part really is desktop-only.
+
+### Test 4 — Desktop unchanged
+Desktop Projects still read folders and save real files exactly as before.
+
+### Pass / fail
+- **PASS** = parity green; a web Project produces a downloadable file when asked; it's still honest about
+  not reading your local folder; desktop unchanged.
+- If a web Project still refuses to make a file → tell me the model you used.

@@ -1005,7 +1005,7 @@ const fmtHour = (h) => `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
 // ================= the bridge =================
 // Honest note injected into WEB Projects turns: the web has no linked local folder and no file tools
 // (those are desktop-only), so the assistant sets expectations instead of silently degrading (P0-1).
-const WEB_PROJECT_NOTE = "NOTE ON THIS ENVIRONMENT: You are running in Madav Web Projects. You can discuss and reason over this project's text knowledge, but on the web you CANNOT read a linked local folder or create/save files (spreadsheets, Word docs, PDFs) — those need the Madav desktop app, or 'Let's Collaborate' with a folder the user picks. If the user asks you to generate or save a file here, briefly tell them this and give the content inline instead.";
+const WEB_PROJECT_NOTE = "NOTE ON THIS ENVIRONMENT: You are in Madav Web Projects. You have this project's text knowledge, but there is NO linked local folder here, so you cannot read or compute over the user's own local data files and cannot save a file into a folder; that needs the Madav desktop app, or 'Let's Collaborate' with a folder the user picks. You CAN still create real, downloadable files (spreadsheets, Word docs, PDFs, slide decks) with your normal office capability when asked - they download in the browser. So make files normally; only point the user to the desktop app or Let's Collaborate when they need work over their EXISTING local folder data.";
 
 export const webBridge = {
   // ---- chat / agent ----
