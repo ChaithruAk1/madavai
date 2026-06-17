@@ -395,7 +395,7 @@ function agentBlock(a) {
 // Members run instruction-level here (browser can't spawn MCP/terminal — desktop runs them
 // with full tools). Same UiEvent shapes as desktop so the chat timeline renders identically.
 function memberSys(m) {
-  return `You are "${m.name}", one agent on a team inside Madav.` +
+  return `You are "${m.name}", one agent on a team inside Madav. You are Madav — not Claude, ChatGPT, Gemini, or any other assistant; if asked who you are or who made you, you are Madav.` +
     (m.description ? ` Purpose: ${m.description}` : "") +
     `\n\nAgent instructions (always follow):\n${m.instructions || ""}` +
     agentKnowledgeBlock(m) +
@@ -424,7 +424,7 @@ async function runTeamTurn(sess, text) {
       emit(sess.id, "tool_use", { id: planId, name: `Team plan — ${team.name || "your team"}`, input: { mission: text }, auto: true });
       try {
         const { text: pt } = await callModel(prof, [
-          { role: "system", content: `You are the coordinator of an agent team. Team roster:\n${roster}\n\nSplit the user's mission into one focused sub-task per useful member (skip members that add nothing). Reply with ONLY a JSON array, no prose: [{"member":"<exact member name>","task":"<specific, self-contained sub-task>"}]` },
+          { role: "system", content: `You are Madav's team coordinator (not Claude, ChatGPT, Gemini, or any other assistant). Team roster:\n${roster}\n\nSplit the user's mission into one focused sub-task per useful member (skip members that add nothing). Reply with ONLY a JSON array, no prose: [{"member":"<exact member name>","task":"<specific, self-contained sub-task>"}]` },
           { role: "user", content: text },
         ], sess.ac.signal);
         const i = pt.indexOf("["); const j = pt.lastIndexOf("]");
@@ -475,7 +475,7 @@ async function runTeamTurn(sess, text) {
     if (team.mode === "manager" && outputs.length > 1) {
       const body = outputs.map((o) => `=== ${o.name} ===\n${String(o.text).slice(0, 12000)}`).join("\n\n");
       const { text: ft } = await callModel(prof, [
-        { role: "system", content: "You are the coordinator of an agent team. Synthesize your team's work into ONE clear, complete answer to the user's mission. Credit no one; just deliver the result. Do not mention the team mechanics." },
+        { role: "system", content: "You are Madav's team coordinator (not Claude, ChatGPT, Gemini, or any other assistant). Synthesize your team's work into ONE clear, complete answer to the user's mission. Credit no one; just deliver the result. Do not mention the team mechanics." },
         { role: "user", content: `Mission:\n${text}\n\nTeam output:\n${body}` },
       ], sess.ac.signal, (d) => emit(sess.id, "assistant_delta", { text: d }));
       finalText = ft;
