@@ -1,7 +1,7 @@
 import { useState, memo } from "react";
 import { LayoutTemplate, Copy, Check, Pencil, RotateCcw } from "lucide-react";
 import ToolCard from "./ToolCard.jsx";
-import { bridge } from "../bridge/index.js";
+import { bridge, isWeb } from "../bridge/index.js";
 import ThinkLogo from "./ThinkLogo.jsx";
 import Markdown, { OfficeIcon, OPEN_LABEL } from "../markdown.jsx";
 import { extractArtifacts } from "../artifacts.js";
@@ -48,8 +48,10 @@ function FileOutCard({ name, path }) {
     <div className="md-office">
       <span className="md-office-meta"><b>{name}</b><i>produced by the run · saved in your folder</i></span>
       <span className={"md-office-ico" + (t ? " md-office-ico--" + t : "")}><OfficeIcon type={t} /></span>
-      <button className="md-office-open" title="Show in folder" onClick={() => { try { bridge.showInFolder && bridge.showInFolder(path); } catch {} }}>Folder</button>
-      <button className="md-office-btn" title="Open the file" onClick={() => { try { bridge.openPath ? bridge.openPath(path) : bridge.openExternal && bridge.openExternal(path); } catch {} }}>{OPEN_LABEL[t] || "Open"}</button>
+      {/* Native open/reveal are desktop-only; on web the file already lives in the folder the user picked,
+          so we don't render dead buttons (WEB-VS-DESKTOP P0-2). Desktop branch is unchanged. */}
+      {!isWeb && <button className="md-office-open" title="Show in folder" onClick={() => { try { bridge.showInFolder && bridge.showInFolder(path); } catch {} }}>Folder</button>}
+      {!isWeb && <button className="md-office-btn" title="Open the file" onClick={() => { try { bridge.openPath ? bridge.openPath(path) : bridge.openExternal && bridge.openExternal(path); } catch {} }}>{OPEN_LABEL[t] || "Open"}</button>}
     </div>
   );
 }

@@ -142,3 +142,40 @@ file and shows the Open card, exactly as before.
 ### Pass / fail
 - **PASS** = parity tests green; web Project is honest about files; desktop Projects still make files.
 - If PASS → commit this increment. If not → tell me what it said.
+
+---
+
+## Phase 1 — increment 3: file-output card web fallback
+
+**What changed in plain words:** The "file produced" card (the one with **Folder** and **Open** buttons)
+appears after a run makes a file. Those two buttons only work on the desktop app. On **web** they did
+nothing. Now, on web, those dead buttons are simply **not shown** (on web the file is already saved in
+the folder you picked, so you open it from there). On **desktop, the card is exactly the same as before** —
+both buttons still there and working.
+
+⚠️ This is the **first shared-screen change** (the file `src/components/Message.jsx` is used by both
+desktop and web). It is gated so the **desktop part is unchanged**. Please check desktop carefully.
+
+### Test 1 — Safety net still green
+    npx vitest run tests/parity
+**You should see:** `Tests  30 passed`.
+
+### Test 2 — Desktop unchanged (important — this is the shared file)
+1. Reload the desktop app (Ctrl+R), or rebuild it your normal way.
+2. Run a folder-linked Project that makes a file (e.g. "Execute report for March").
+3. Look at the file card that appears.
+
+**You should see:** the **Folder** and **Open** buttons are still there and still work (open the file,
+show it in the folder) — **exactly like before**. If anything is different on desktop, stop and tell me.
+
+### Test 3 — Web has no dead buttons
+1. Build + open web:
+
+       npm run build
+
+2. If a "file produced" card appears (e.g. in Let's Collaborate after making a file), it should show the
+   file name and icon with **no dead buttons** — the file is in the folder you picked.
+
+### Pass / fail
+- **PASS** = parity tests green; desktop file card works exactly as before; web shows no dead buttons.
+- If PASS → commit. If desktop changed in any way → stop and tell me.
