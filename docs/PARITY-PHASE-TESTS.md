@@ -105,3 +105,40 @@ Desktop was not touched. If you start the desktop app, agent teams behave exactl
 ### Pass / fail
 - **PASS** = parity tests green, and a web team member/coordinator identifies as Madav.
 - If PASS → commit this increment (separate from Phase 0). If not → tell me what it said.
+
+---
+
+## Phase 1 — increment 2: honest web Projects (no silent degrade)
+
+**What changed in plain words:** On web, a **Project** chat could not make files but never said so — it
+just replied with text as if everything was fine. Now, on web only, the assistant is told up front
+that web Projects can discuss the project's notes but **cannot read a local folder or create/save
+files** (those need the desktop app or "Let's Collaborate" with a picked folder). So if you ask for a
+spreadsheet in a web Project, it will say so plainly instead of pretending. Only `src/bridge/webBridge.js`
+changed. **No desktop code changed** — desktop Projects still make real files exactly as before.
+
+### Test 1 — Safety net still green
+    npx vitest run tests/parity
+**You should see:** `Tests  30 passed`.
+
+### Test 2 — See it on web (needs a web rebuild)
+1. Build + open web:
+
+       npm run build
+
+   then open the web app (or `npm run preview`).
+2. Open a **Project** (Workroom) on web.
+3. Ask it: **"Make me an Excel file of this data."**
+
+**You should see:** a clear, honest reply — it explains that creating/saving files isn't available in
+web Projects and points you to the desktop app or "Let's Collaborate", and it still helps with the
+content inline. (Before: it would silently answer in text as if it had made a file.)
+Normal questions (no file requested) should still get normal answers.
+
+### Test 3 — Desktop unchanged
+Open a folder-linked Project in the **desktop** app, ask for a report → it still creates the real Excel
+file and shows the Open card, exactly as before.
+
+### Pass / fail
+- **PASS** = parity tests green; web Project is honest about files; desktop Projects still make files.
+- If PASS → commit this increment. If not → tell me what it said.
