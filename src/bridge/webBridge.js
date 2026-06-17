@@ -1101,6 +1101,14 @@ export const webBridge = {
 
   // ---- settings / models ----
   async getSettings() { return loadSettings(); },
+  async mcpTestServer(url, headers) {
+    try {
+      const r = await fetch(api("/mcp/tools"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url, headers: headers || {} }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return { ok: false, error: j.error || ("HTTP " + r.status), detail: j.detail };
+      return { ok: true, count: Array.isArray(j.tools) ? j.tools.length : 0, tools: (j.tools || []).map((t) => t.name) };
+    } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+  },
   async saveSettings(next) { const saved = LS.set(SETTINGS_KEY, next); wsMaybePush(); return saved; },
   async listModels(profileId) {
     const s = loadSettings(); const p = resolveProfile(profileId ? s.profiles[profileId] : activeProfile(s)); // Starter gets the session token

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, RefreshCw, Check, Search, Settings2, ChevronDown, Copy, ExternalLink, MousePointerClick } from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
-import { bridge } from "../bridge/index.js";
+import { bridge, isWeb } from "../bridge/index.js";
+import McpServers from "./McpServers.jsx";
 import { iconUrlFor, iconBySlug } from "../connectorIcons.js";
 
 const BLANK = (id) => ({ id, name: "New connector", command: "npx", args: [], env: {}, enabled: true });
@@ -329,6 +330,8 @@ export default function Connectors() {
         Browse popular connectors below, or search for any of thousands more. Cloud apps need a quick sign-in or token.
         Connected apps are available to the agent in Chat, Cowork, Code, and Projects.
       </p>
+
+      {isWeb && <McpServers />}
 
       {!sel && <>
       {list.length > 0 && (

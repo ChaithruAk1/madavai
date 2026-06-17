@@ -393,3 +393,34 @@ MCP server's tools can answer. **You should see** an `mcp__…` tool step, then 
 - **PASS** = `43 passed`; with no MCP configured chat is unchanged; (optional) with a configured MCP
   server + deployed routes, a chat tool call works.
 - The clean way to configure a server (no console) arrives with **P3.5 (connector UI)**.
+
+---
+
+## Phase 3 — increment P3.5: "MCP servers" UI (chain now end-to-end)
+
+**What changed in plain words:** The Connectors screen now has an **"MCP servers"** panel (web only)
+where you paste an HTTPS MCP server URL, **Test** it, and **Add/Remove** it — no console needed. Added
+servers are used by web chat (from P3.3). This completes the chain: **UI → broker routes → chat → broker**.
+Files: new `src/components/McpServers.jsx`, a one-line `{isWeb && <McpServers/>}` render in
+`src/components/Connectors.jsx` (gated, so **desktop Connectors is unchanged**), and a `mcpTestServer`
+method in `webBridge.js`. **No desktop code, no `electron/**`.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  43 passed`.
+
+### Test 2 — Desktop Connectors unchanged (shared file — please check)
+Open **Connectors in the desktop app** → it looks exactly as before (no "MCP servers" panel; that's
+web-only).
+
+### Test 3 — Web end-to-end (needs `npm run build` + the server deployed from P3.2)
+1. `npm run build`, open web → **Connectors**. You should see the **"MCP servers"** panel.
+2. Paste a public **HTTPS** MCP server URL, click **Test** → you should see a tool count (e.g. "OK — 5
+   tools: …"). A private/loopback URL → "Failed: Refusing to connect…". Click **Add**.
+3. Go to **Let's Chat** and ask something those MCP tools handle → you should see an `mcp__…` tool step,
+   then an answer using it.
+
+### Pass / fail
+- **PASS** = `43 passed`; desktop Connectors unchanged; web shows the panel; Test lists tools for a real
+  server; chat can call an MCP tool.
+- If the panel doesn't appear on web, or Test/Add misbehaves → tell me what you saw.
