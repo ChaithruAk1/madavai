@@ -357,3 +357,39 @@ The web app behaves exactly as before — these routes aren't called by the UI u
 - **PASS** = `39 passed`; after deploy, `/mcp/tools` returns a tool list for a real MCP server and
   rejects unauth/private URLs. Web UI unchanged.
 - Live connection issues (transport/handshake) → tell me the MCP server URL + the error.
+
+---
+
+## Phase 3 — increment P3.3 (chat slice): MCP tools wired into web Let's Chat
+
+**What changed in plain words:** Web **Let's Chat** can now use the tools of a connected MCP server.
+It's **opt-in**: nothing happens unless you configure an MCP server in `settings.mcpServers`. With none
+configured (the default), chat behaves exactly as before. When configured, at the start of a chat turn
+the app asks the server broker for that MCP server's tools and offers them to the model as
+`mcp__<server>__<tool>`; a tool call is routed back through the broker. If listing fails, the turn just
+proceeds without MCP tools (fail-open). Files changed: `src/bridge/webBridge.js` + a new pure helper
+`src/bridge/mcpNames.js`. **No desktop, no other surface.** Only the **chat loop** is wired this slice
+(Collaborate + teams come next).
+
+### Test 1 — Safety net (now includes MCP name/config tests)
+    npx vitest run tests/parity
+**You should see:** `Tests  43 passed`.
+
+### Test 2 — Default = unchanged (the important safety check)
+With **no** MCP server configured, open web Let's Chat and chat normally → identical to before (no
+extra tool steps, no slowdown).
+
+### Test 3 — End-to-end (needs: server deployed (P3.2) + an MCP server + opt-in config)
+There's no UI to add an MCP server yet (that's P3.5). To try it now, set one in the browser console:
+```
+const k="be.settings"; const s=JSON.parse(localStorage.getItem(k)||"{}");
+s.mcpServers=[{url:"https://<a-public-https-mcp-server>/mcp"}];
+localStorage.setItem(k, JSON.stringify(s));
+```
+(adjust the key if your settings use a different one), reload, then in Let's Chat ask something the
+MCP server's tools can answer. **You should see** an `mcp__…` tool step, then an answer using it.
+
+### Pass / fail
+- **PASS** = `43 passed`; with no MCP configured chat is unchanged; (optional) with a configured MCP
+  server + deployed routes, a chat tool call works.
+- The clean way to configure a server (no console) arrives with **P3.5 (connector UI)**.

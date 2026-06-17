@@ -26,6 +26,7 @@ import { officeRule, ARTIFACT_RULE } from "../office.js";
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
+import { mcpServersFromSettings, mcpToolName, mcpResultText } from "./mcpNames.js"; // Phase 3 MCP (opt-in)
 const AUTH_BASE = (() => {
   if (typeof window !== "undefined" && window.__MADAV_AUTH_BASE__) return String(window.__MADAV_AUTH_BASE__).replace(/\/+$/, "");
   if (typeof location !== "undefined" && location.port === "5174") return "http://127.0.0.1:8787";
@@ -649,6 +650,11 @@ async function runSubagent(sess, task, prof) {
 
 async function executeTool(name, args, ctx) {
   const sess = ctx && ctx.sess;
+  if (name && name.startsWith("mcp__")) {
+    const entry = (sess && sess.mcpRegistry && sess.mcpRegistry[name]) || null;
+    if (!entry) return "Unknown MCP tool: " + name;
+    return await mcpCallTool(entry.server, entry.realName, args || {});
+  }
   switch (name) {
     case "list_dir": return JSON.stringify(await webfs.listDir(args.path || ""));
     case "list_files": { const f = await webfs.walk(); return f.length ? f.join("\n") : "(empty)"; }
@@ -776,8 +782,37 @@ function activeChatTools() {
   try { on = FEAT_IMAGEGEN && ((loadSettings().extras) || {}).imagegen !== false; } catch {}
   return on ? CHAT_TOOLS : CHAT_TOOLS.filter((t) => t.function.name !== "create_image");
 }
-async function callChatTools(prof, messages, onDelta, signal) {
-  const tools = activeChatTools();
+// ---- Phase 3: MCP connector tools on web (opt-in via settings.mcpServers; default off) -----------
+// Lists/calls a remote MCP server's tools THROUGH the server broker (/mcp/*), which enforces auth +
+// SSRF. Loaded once per session, fail-open. With no server configured, none of this runs.
+async function mcpListTools(server) {
+  const r = await fetch(api("/mcp/tools"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url: server.url, headers: server.headers }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || ("mcp/tools " + r.status));
+  return Array.isArray(j.tools) ? j.tools : [];
+}
+async function mcpCallTool(server, name, args) {
+  const r = await fetch(api("/mcp/call"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url: server.url, headers: server.headers, name, args: args || {} }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return "MCP error: " + (j.error || r.status) + (j.detail ? " - " + j.detail : "");
+  return mcpResultText(j.result);
+}
+async function ensureMcpForSession(sess) {
+  if (sess.mcpLoaded) return;
+  sess.mcpLoaded = true; sess.mcpTools = []; sess.mcpRegistry = {};
+  for (const server of mcpServersFromSettings(loadSettings())) {
+    let tools = [];
+    try { tools = await mcpListTools(server); } catch { tools = []; }
+    for (const t of tools) {
+      if (!t || !t.name) continue;
+      const pname = mcpToolName(server.id, t.name);
+      sess.mcpRegistry[pname] = { server, realName: t.name };
+      sess.mcpTools.push({ type: "function", function: { name: pname, description: ("[" + server.id + "] " + (t.description || "")).slice(0, 1024), parameters: t.inputSchema || { type: "object", properties: {} } } });
+    }
+  }
+}
+async function callChatTools(prof, messages, onDelta, signal, extraTools) {
+  const tools = activeChatTools().concat(extraTools || []);
   try { return await streamChatTools(prof, messages, tools, { onDelta, signal }); }
   catch (e) { if (isNetworkErr(e) && getToken()) return await streamChatTools(prof, messages, tools, { onDelta, signal, proxy: proxyCfg() }); throw e; }
 }
@@ -800,12 +835,13 @@ async function runChatAgentTurn(sess, text, images, prof) {
   sess.ac = new AbortController();
   emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind });
   const started = Date.now();
+  try { if (mcpServersFromSettings(loadSettings()).length) await ensureMcpForSession(sess); } catch {}
   let usedTools = false, streamedAny = false;
   try {
     for (let step = 0; step < 8; step++) {
       let res;
       try {
-        res = await callChatTools(prof, sess.messages, (c) => { if (c) { streamedAny = true; emit(sess.id, "assistant_delta", { text: c }); } }, sess.ac.signal);
+        res = await callChatTools(prof, sess.messages, (c) => { if (c) { streamedAny = true; emit(sess.id, "assistant_delta", { text: c }); } }, sess.ac.signal, (sess.mcpTools || []));
       } catch (e) {
         if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
         if (step === 0 && !usedTools && !streamedAny) { noToolModels.add(modelKey(prof)); return await plainReply(sess, text, prof, started); }
@@ -932,8 +968,9 @@ async function runTurn(sess, text, images) {
   // image-gen on). Anthropic + tool-incapable models fall through to the normal reply below.
   {
     const imagegenOn = FEAT_IMAGEGEN && ((s.extras) || {}).imagegen !== false;
+    const mcpOn = mcpServersFromSettings(s).length > 0;
     if (prof.kind !== "anthropic" && !sess.projectId && !(images && images.length)
-        && !noToolModels.has(modelKey(prof)) && (!!getToken() || imagegenOn)) {
+        && !noToolModels.has(modelKey(prof)) && (!!getToken() || imagegenOn || mcpOn)) {
       return runChatAgentTurn(sess, text, images, prof);
     }
   }
