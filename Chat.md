@@ -35984,3 +35984,188 @@ PowerShell note: Windows PowerShell 5.x rejects `&&` — run `git add …` then 
   restart (Ctrl+R won't load them; saveAndOpen needs the restart).
 - Renderer (src/**) + shared/office-rules.cjs → Ctrl+R (desktop) + npm run build → redeploy Render (web).
 ================================================================================
+
+================================================================================
+## Session 2026-06-16 (cont.) — full conversation log (turn by turn)
+Faithful per-turn reconstruction: user requests quoted/paraphrased; Madav turns summarized (not verbatim). Companion to the technical summary entry above.
+
+## 🧑 User
+Continue work on Madav. Don't start coding yet — read the docs, confirm the current state, tell me where we left off.
+## 🤖 Madav
+Read CLAUDE.md + MEMORY.md; reported the current state and the two pending decisions (isDeckCapable gate; formula-as-text post-check). No code.
+
+## 🧑 User
+Explain both pending decisions in simple English (with examples).
+## 🤖 Madav
+Explained the isDeckCapable capability gate and the formula-as-text post-check in plain language with examples.
+
+## 🧑 User
+Perform a full project code review and provide your analysis.
+## 🤖 Madav
+Reviewed the codebase across both surfaces; produced CODE-REVIEW-2026-06-16.md with prioritized findings H1-H3 (high) + M1-M7 (medium) + hygiene.
+
+## 🧑 User
+Explain these findings in simple English with examples.
+## 🤖 Madav
+Walked through each finding (H1-H3, M1-M7, hygiene) in plain language with concrete risk/fix examples.
+
+## 🧑 User
+H2, H1, H3, M1, M2, M3-M7 — fix them.
+## 🤖 Madav
+Fixed all High/Medium findings on both surfaces (H1 openPath allowlist; H2 exact-origin redirect; H3 destructive-bash guard; M1 CSP unsafe-inline removal; M2 deck sandbox globals; M3 verify()+token revocation; M4 OAuth state; M5 XFF rate-limit; M6 no plaintext on encrypt-fail; M7 Postgres TLS). Verified; M3-M7 committed @88af1298.
+
+## 🧑 User
+I want behavior exactly like Claude: when the user enters text and presses enter, the chat should appear in the sidebar.
+## 🤖 Madav
+Implemented instant titled sidebar (backend titles at turn start; renderer refreshes). A first attempt emitting a custom chat_started before init broke live replies → reverted to refresh on the existing init event.
+
+## 🧑 User
+When I start a new chat, why isn't it shown in the sidebar from my first input? (+ explain simply)
+## 🤖 Madav
+Explained the mechanism; confirmed the title-at-start + sidebar-refresh fix — new chats now appear immediately, titled from the first message.
+
+## 🧑 User
+These parity features are all buildable — agreed and aligned.
+## 🤖 Madav
+Built the Let's-Chat parity pass: auto-titled chats, per-chat artifact panel (reopen/resize/Esc), office file cards, preview sheet tabs + inline charts, per-chat model badge.
+
+## 🧑 User
+Don't change the model-selector alignment (keep it centered below the text window).
+## 🤖 Madav
+Confirmed .model-dock stays centered; left untouched.
+
+## 🧑 User
+Increase the office icon size and place it next to the "Open in Excel" button.
+## 🤖 Madav
+Enlarged the brand icon (OfficeIcon size 36) and positioned it next to the primary button.
+
+## 🧑 User
+Give me the git changes for all recent Chat changes to commit.
+## 🤖 Madav
+Listed changed files + suggested commit grouping/messages.
+
+## 🧑 User
+Bug: the preview shows lots of info, but the downloaded Excel file doesn't contain it.
+## 🤖 Madav
+Root-caused KPI truncation (xlsxTemplate.js slice(0,6)); raised to slice(0,24) so the file matches the preview.
+
+## 🧑 User
+Remove the nuances; replicate the best of Claude's output rendering.
+## 🤖 Madav
+Improved the preview (CSS-only sheet tabs, inline SVG charts) within the CSP constraints.
+
+## 🧑 User
+Let's keep what's stable for Madav.
+## 🤖 Madav
+Deferred the in-panel interactive Excel-grid rebuild; kept the stable CSS-only preview.
+
+## 🧑 User
+Why doesn't Madav render graphs?
+## 🤖 Madav
+Charts were silently dropped in two places (xlsxTemplate resolution skip; office.js empty catch). Added console.warn surfacing + strengthened the office rule to REQUIRE the charts array (byte-parity src/office.js + shared/office-rules.cjs).
+
+## 🧑 User
+Why do Opus-in-Sonnet vs Opus-in-Madav give different-contrast results?
+## 🤖 Madav
+Explained: Madav's rigid system rules + sampling differences vs the Anthropic product; the rigid project recipe constrains strong models.
+
+## 🧑 User
+Remove all these limitations; build a backend exactly like Claude.
+## 🤖 Madav
+Declined a literal "exactly like Claude" backend (proprietary). Explained the realistic lever (gate rigid rules behind isDeckCapable + align sampling); proceeded with what's buildable.
+
+## 🧑 User
+Do (a) and (b) — yes.
+## 🤖 Madav
+Implemented the agreed items.
+
+## 🧑 User
+Two bugs to close the Let's-Chat topic: (1) chat history doesn't store the model used; (2) the weak-model snippet-instead-of-Excel is useless — remove it.
+## 🤖 Madav
+(1) Each assistant message now stores model+provider and shows a badge (new messages only). (2) Weak-model office-spec JSON now routes to the file card instead of a raw code block.
+
+## 🧑 User
+Did you implement all fixes to web too?
+## 🤖 Madav
+Audited webBridge; mirrored the standard-chat fixes and flagged the agent/team gap.
+
+## 🧑 User
+Update memory.
+## 🤖 Madav
+Appended the dated session entry to MEMORY.md.
+
+## 🧑 User
+Change the chat window back to Claude shape and make it grow with input volume.
+## 🤖 Madav
+Composer now grows dynamically to ~40vh with input (Claude shape).
+
+## 🧑 User
+Below the model selector add: "Madav is AI and can make mistakes. Please double-check responses."
+## 🤖 Madav
+Added the centered disclaimer line under the model selector.
+
+## 🧑 User
+Use the full-window text line above the icons (per screenshot).
+## 🤖 Madav
+Reworked the composer to a two-row layout: full-width text above the action-icon row.
+
+## 🧑 User
+Why is it saying "Claude"? It should say "I'm Madav".
+## 🤖 Madav
+Found the model self-identifies as Claude despite the prompt saying "You are Madav" — the prompt was too weak to override a distilled model.
+
+## 🧑 User
+Replace any reference to Claude with Madav.
+## 🤖 Madav
+Strengthened the standard chat identity on both surfaces ("You are Madav… NOT Claude/ChatGPT/Gemini"). Deliberately did NOT touch functional refs (model IDs claude-opus-4-8, @anthropic-ai/claude-agent-sdk, api.anthropic.com, the anthropic provider, code comments).
+
+## 🧑 User
+Are all today's Let's-Chat / chat-window changes applied to Madav web too?
+## 🤖 Madav
+Verified against webBridge: most live in src/** (shared → web after build+redeploy). Found + FIXED two web gaps — runAgentTurn + runTeamTurn now attribute model + auto-title (parity with runTurn). Native "Open in Excel" stays desktop-only by design (web downloads).
+
+## 🧑 User
+Yes — harden identity everywhere.
+## 🤖 Madav
+Added the not-Claude negation to web coworkSystem (Collaborate) + desktop agent-openai SYSTEM (chat/code/folder). Left internal-role prompts alone. node --check + esbuild verified.
+
+## 🧑 User
+Update memory. What should I mention when starting a new session?
+## 🤖 Madav
+Updated MEMORY.md (identity + parity; GAP closed; pending). Gave a copy-paste new-session kickoff message.
+
+## 🧑 User
+Give commands to update git and commit.
+## 🤖 Madav
+Checked git: identity/parity already committed (3f446317 / 6cabf8a4 / 8d960e33). Gave PowerShell-safe commands for the remaining office batch + docs.
+
+## 🧑 User
+[PowerShell '&&' parse error] — then committed.
+## 🤖 Madav
+Diagnosed: Windows PowerShell 5.x rejects '&&' (use separate lines). User committed as 6e68859a (tree clean, 10 commits ahead of origin/main).
+
+## 🧑 User
+Also update Chat.md with the chat history. → yes.
+## 🤖 Madav
+Appended a structured "Session 2026-06-16 (cont.)" technical-summary entry to Chat.md (append-only).
+
+## 🧑 User
+[Showed git state: 10 commits ahead, working tree clean.]
+## 🤖 Madav
+Confirmed clean; gave 'git push' + the deploy split (electron:dev restart for main-process; npm run build + Render redeploy for web); offered to run the build.
+
+## 🧑 User
+Yes — run the build.
+## 🤖 Madav
+Could not finish the obfuscated build in the sandbox (background processes reaped between calls; 45s single-call cap). Verified statically instead: all 4 worker entries + every changed file compile. Gave the PowerShell command to confirm the 4 worker chunks locally before deploy.
+
+## 🧑 User
+Give me a prompt to start a new session so Claude remembers where we left off.
+## 🤖 Madav
+Provided a paste-ready kickoff prompt with exact git state (HEAD 6e68859a, 10 ahead, not pushed/deployed), shipped work, pending items, and working rules.
+
+## 🧑 User
+Update Chat.md with all chat history.
+## 🤖 Madav
+Appended this full turn-by-turn conversation log (append-only).
+================================================================================
