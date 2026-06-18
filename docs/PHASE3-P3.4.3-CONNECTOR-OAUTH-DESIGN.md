@@ -160,4 +160,4 @@ All in `tests/parity/` (web/server only), so they run in CI without secrets:
   the first code that accepts a provider token.
 - Then P3.4.4 (token injection) under its own gate.
 
-**Status:** §8 signed off. **P3.4.3a is implemented + unit-tested** (PKCE `server/oauth-pkce.mjs`, registry `server/connector-registry.mjs`, store-backed state `server/oauth-state.mjs`, `oauthstate` collection). **P3.4.3b/3c routes are NOT written yet** — 3c (the token-accepting callback) requires re-review per §9.
+**Status:** §8 signed off. **P3.4.3a + P3.4.3b + P3.4.3c implemented + tested** (PKCE, constants-only registry, store-backed user-bound state, start/list/disconnect routes, and the token-accepting callback exchanging code→tokens sealed into the vault; 80 parity tests green). **Next gate: P3.4.4** (server-side token use/refresh).

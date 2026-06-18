@@ -21,6 +21,7 @@ import { getConnector, isConfigured, connectorCreds, listConnectors, buildAuthor
 import { makeOAuthStateStore } from "./oauth-state.mjs"; // P3.4.3: store-backed, single-use, user-bound OAuth state
 import { makeCodeVerifier, codeChallengeS256 } from "./oauth-pkce.mjs"; // P3.4.3: PKCE
 import { makeConnectorVault } from "./connector-vault.mjs"; // P3.4.2: per-user encrypted token vault
+import { exchangeCodeForToken } from "./connector-oauth.mjs"; // P3.4.3c: auth-code -> provider tokens (fetch-injectable)
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
 // Real environment variables (e.g. set in PowerShell or on the host) always win.
@@ -906,6 +907,43 @@ const server = http.createServer(async (req, res) => {
     if (!getConnector(id)) return json(res, 404, { error: "unknown connector" });
     try { await connectorVault().remove(user.id, id); } catch {}
     return json(res, 200, { ok: true });
+  }
+
+  // GET /connectors/:id/oauth/callback?code&state  (P3.4.3c) — the ONLY route that accepts a provider token.
+  // Consumes the single-use, user-bound state; exchanges the code (with PKCE); seals tokens into the vault
+  // under the STATE's userId (never a request field). No token ever appears in a response/redirect/log.
+  mConn = p.match(/^\/connectors\/([a-z0-9-]+)\/oauth\/callback$/);
+  if (mConn && req.method === "GET") {
+    if (rateLimited(req, "conn-oauth", 20, 15 * 60000)) return tooMany(res, 900);
+    const id = mConn[1];
+    const conn = getConnector(id);
+    const code = u.searchParams.get("code");
+    const state = u.searchParams.get("state");
+    const ctx = await oauthStates.consume(state); // single-use + TTL + user-bound; deleted on read
+    if (!conn || !code || !ctx || ctx.connectorId !== id) { res.writeHead(400); return res.end("Invalid or expired connector authorization"); }
+    try {
+      const { clientId, clientSecret } = connectorCreds(id);
+      const tok = await exchangeCodeForToken({ tokenUrl: conn.tokenUrl, clientId, clientSecret, code, codeVerifier: ctx.codeVerifier, redirectUri: `${BASE}/connectors/${id}/oauth/callback` });
+      if (!tok || !tok.access_token) {
+        console.error(`[connector] ${id} token exchange failed:`, JSON.stringify({ error: tok && tok.error, description: tok && tok.error_description }));
+        res.writeHead(400); return res.end("Connector authorization failed");
+      }
+      await connectorVault().put(ctx.userId, id, {
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token || null,
+        expires_at: tok.expires_in ? Date.now() + tok.expires_in * 1000 : null,
+        scope: tok.scope || conn.scopes.join(" "),
+        accountLabel: null,
+        connectedAt: new Date().toISOString(),
+      });
+      const redir = ctx.redirect && isAllowedRedirect(ctx.redirect) ? ctx.redirect : "";
+      if (redir) { const sep = redir.includes("?") ? "&" : "?"; res.writeHead(302, { Location: redir + sep + "connected=" + encodeURIComponent(id) }); return res.end(); }
+      res.writeHead(200, { "Content-Type": "text/html" });
+      return res.end(`<h2>Connected ${esc(conn.label)} to Madav</h2><p>You can close this window.</p>`);
+    } catch (e) {
+      console.error(`[connector] ${id} callback error:`, String(e && e.message));
+      res.writeHead(500); return res.end("Connector error");
+    }
   }
 
   // GET /admin/users (x-admin-key) -> all users with computed status + last-seen.

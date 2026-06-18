@@ -630,3 +630,36 @@ Web/server-only; desktop behaves exactly as before.
   no token ever appears in a response.
 - **Next (GATED):** P3.4.3c adds the callback that exchanges the code and seals tokens into the vault —
   **re-review before writing**. Then P3.4.4 (server-side token injection) and P3.4.5 (UI).
+
+---
+
+## Phase 3 — increment P3.4.3c: token-accepting callback (connect flow now end-to-end)
+
+**What changed in plain words:** the final piece of "connect a Google account on the web." The callback
+endpoint receives Google's one-time code, exchanges it server-side (with the PKCE proof) for the real
+tokens, and SEALS them into the encrypted vault under the user who started the flow. Tokens never touch the
+browser. Files: `server/connector-oauth.mjs` (the code→token exchange, no network in tests) + one callback
+route in `server/auth-server.mjs`. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  80 passed` (the exchange helper sends grant_type + PKCE verifier and parses
+success/error with a stubbed network; the static contract check confirms the callback consumes single-use
+state, checks the connector matches, seals to the state's user, re-validates the redirect, and never puts a
+token in a URL).
+
+### Test 2 — (optional, needs real Google creds) end-to-end
+Only works once you create a Google OAuth client, set `GMAIL_CONNECTOR_CLIENT_ID` / `GMAIL_CONNECTOR_CLIENT_SECRET`,
+and add `<base>/connectors/google-gmail/oauth/callback` as an authorized redirect URI. Then, signed in:
+`POST /connectors/google-gmail/oauth/start` → open the returned URL → approve → you're redirected back and
+`GET /connectors` shows `google-gmail connected:true`. The tokens live only in the server vault (ciphertext).
+Until those creds exist, start returns `501` and nothing can be connected — safe by default.
+
+### Test 3 — Desktop unchanged
+Web/server-only; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `80 passed`; desktop unchanged; with no Google creds set the flow is inert (501) and no token
+  can be stored; with creds, a connect seals ciphertext into the vault and the browser only sees `connected=id`.
+- **Next (separate gate):** P3.4.4 — *use* the stored token (refresh if expired, attach server-side to
+  MCP/API calls). Then P3.4.5 — wire the Connectors UI to these routes.
