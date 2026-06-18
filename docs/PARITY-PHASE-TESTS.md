@@ -663,3 +663,31 @@ Web/server-only; desktop behaves exactly as before.
   can be stored; with creds, a connect seals ciphertext into the vault and the browser only sees `connected=id`.
 - **Next (separate gate):** P3.4.4 — *use* the stored token (refresh if expired, attach server-side to
   MCP/API calls). Then P3.4.5 — wire the Connectors UI to these routes.
+
+---
+
+## Phase 3 — increment P3.4.4: token use (refresh + re-seal) — primitive only, no consumer yet
+
+**What changed in plain words:** the server can now turn a stored connector login into a usable access token,
+refreshing it automatically when it's about to expire and re-encrypting the new one. This is the **library
+piece only** — nothing in Madav calls it yet (no Gmail feature exists), so the running app is unchanged.
+Files: `server/connector-oauth.mjs` (refreshAccessToken) + `server/connector-tokens.mjs` (getAccessToken).
+The token is returned to SERVER code only and is never sent to the browser. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  87 passed` (7 new: refresh sends the right grant; getAccessToken returns a valid
+token as-is, refreshes + re-seals an expired one, keeps or rotates the refresh token correctly, returns null
+when it can't refresh, and on a revoked token (`invalid_grant`) removes the record to force a clean reconnect).
+
+### Test 2 — Nothing changed in the app
+No new behaviour to click — a tested building block with no caller yet (by design).
+
+### Test 3 — Desktop unchanged
+Web/server-only; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `87 passed`; app unchanged.
+- This completes the server-side connector **library** (acquire → store → use). What remains is product, not
+  plumbing: **P3.4.5** (Connectors UI: connect / status / disconnect) and, when wanted, a concrete connector
+  feature (e.g. a Gmail tool) that calls `getAccessToken` following the injection rule in the review note.
