@@ -19,7 +19,7 @@ Of **17** tracked capabilities, **4 are inherently desktop-only** and are correc
 - **5 at full / realized parity** — chat, sandboxed Python, deep research, MCP connectors, scheduled tasks.
 - **5 partial-but-usable** — chat tool-loop, folder-linked projects (Chrome/Edge), generated-file delivery,
   team member tools, skill authoring.
-- **3 pending a managed-service build** — browser automation, Telegram/mobile, voice transcription.
+- **2 pending a managed-service build** — browser automation, Telegram/mobile. (**Voice transcription is now done** — BYO Whisper via `/proxy/transcribe`, parity with desktop.)
 
 Plus **3 capabilities not called out as manifest rows but now real on web**: project/Workroom sync, RAG-lite
 knowledge retrieval, and agent memory + track record. And one quiet win: **client-side office-document
@@ -53,7 +53,7 @@ list of partial features, three vendor-gated managed services, and a cluster of 
 | `skills.authoring` | ✅ | ◑ Partial | built-in packs read-only; `createSkill/importSkill*` desktop-only | **Partial** (authoring = Phase 4) |
 | `automation.browser` | ✅ | ⏳ Pending | manifest SERVICE; no managed browser built | **Not yet** (vendor-gated) |
 | `comms.messaging` (Telegram) | ✅ | ⏳ Pending | `applyMessaging/messagingStatus` stub "desktop app only" | **Not yet** (vendor-gated) |
-| `voice.transcribe` | ✅ | ⏳ Pending | browser mic only; `transcribe` absent from webBridge | **Not yet** (Whisper service) |
+| `voice.transcribe` | ✅ | ✅ Realized | mic capture + `/proxy/transcribe` → user's OpenAI/Groq Whisper key | **Parity** (BYO) |
 | `exec.shell` / terminal | ✅ | ⛔ Desktop-only | `enableCli/termCreate` stub; a real shell needs the local machine | **Correctly excluded** |
 | `file.openInApp` | ✅ | ⛔ Desktop-only | opening Excel/Word natively needs the OS | **Correctly excluded** |
 | `automation.desktop` | ✅ | ⛔ Desktop-only | controlling local apps | **Correctly excluded** |
@@ -84,17 +84,21 @@ These stay as honest, messaged degradations via the capability manifest — neve
 
 Server-feasible items not bound to the desktop, roughly in value order:
 
-1. **Advanced agent operations** — not yet wired on web (present in the desktop contract, missing from
-   `webBridge`): swarms (`runSwarm`/`cancelSwarm`/`onSwarmEvent`), agent versioning
-   (`listAgentVersions`/`snapshotAgentVersion`), portability (`exportAgent`/`importAgent`), missions
-   (`getMission`), and agent-memory *management* (`setAgentMemory`/`clearAgentMemory`/`getAgentHistory`/
-   `getAgentStats`). Note: agent memory already *functions* in web runs; only the management surface is absent.
-2. **Managed-service trio** (each vendor-gated, design-note-first per the established gate):
-   `automation.browser` (e.g. Browserless), `comms.messaging` (managed Telegram bot), `voice.transcribe`
-   (Whisper). The scheduled-runs work (S3/S4) is the template: design + threat note → additive routes → adapter.
-3. **Skill authoring on web** (Phase 4) — create/import skills server-side; today web ships built-ins read-only.
+> Update (2026-06-18, later same day): the agent-ops management surface, skill authoring, and voice
+> transcription listed below were **shipped** this session — they're struck through. What genuinely remains:
+
+1. ~~Advanced agent operations~~ — **mostly done**: agent-memory management
+   (`setAgentMemory`/`clearAgentMemory`/`getAgentHistory`/`getAgentStats`), versioning
+   (`listAgentVersions`/`snapshotAgentVersion`), and portability (`exportAgent`/`importAgent`) all shipped
+   (client-side). **Only swarms (`runSwarm`/`cancelSwarm`/`onSwarmEvent`) + missions (`getMission`) remain —
+   PARKED** (they force a server-side multi-agent loop; needs an explicit go + design note).
+2. **Managed-service pair** (each vendor-gated, design-note-first): `automation.browser` (e.g. Browserless) and
+   `comms.messaging` (managed Telegram bot). (`voice.transcribe` is **done** — BYO Whisper via
+   `/proxy/transcribe`.) The scheduled-runs work (S3/S4) is the template: design + threat note → additive
+   routes → adapter.
+3. ~~Skill authoring on web~~ — **shipped** (merge engine + bridge CRUD + zip/play import + web-gated editor).
 4. **Partial → full**: per-member team tools (`team.memberTools`) and richer `chat.toolLoop` — both wait on the
-   shared-core extraction (ADR-0001), which is the larger structural play.
+   shared-core extraction (ADR-0001), which is the larger structural play. **This is now the main remaining work.**
 
 ---
 

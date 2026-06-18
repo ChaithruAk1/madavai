@@ -1567,7 +1567,25 @@ export const webBridge = {
   async cancelSwarm() { return true; },
   onSwarmEvent() { return () => {}; },
   async getMission() { return null; },
-  async transcribe() { return { error: "Voice transcription isn't available on web yet." }; },
+  async transcribe({ b64, mime } = {}) {
+    if (!getToken()) return { error: "Sign in to Madav to use voice input." };
+    if (!b64) return { error: "No audio captured." };
+    const s = loadSettings();
+    // Mirror desktop sttProfile: explicit voiceStt override, else first OpenAI/Groq profile with a key.
+    const STT = [{ re: /api\.openai\.com/i, model: "whisper-1", path: "/v1/audio/transcriptions" },
+                 { re: /api\.groq\.com/i, model: "whisper-large-v3-turbo", path: "/openai/v1/audio/transcriptions" }];
+    const ov = s.voiceStt || {}; let prof = null, model = "whisper-1", path = "/v1/audio/transcriptions";
+    if (ov.profileId && s.profiles && s.profiles[ov.profileId] && s.profiles[ov.profileId].apiKey) { prof = s.profiles[ov.profileId]; model = ov.model || model; path = ov.path || path; }
+    else { for (const pr of Object.values(s.profiles || {})) { if (!pr || !pr.apiKey) continue; const hit = STT.find((h) => h.re.test(pr.baseUrl || "")); if (hit) { prof = pr; model = hit.model; path = hit.path; break; } } }
+    if (!prof) return { error: "Voice input needs a Whisper-capable key — add an OpenAI or Groq API key in Settings \u2192 Models, then try again." };
+    try {
+      const r = await fetch(api("/proxy/transcribe"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ baseUrl: prof.baseUrl, apiKey: prof.apiKey, model, path, b64, mime }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return { error: j.error || ("transcription " + r.status) };
+      return j.text ? { text: j.text } : { error: j.error || "Nothing was transcribed." };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  },
   async setUserMemory(notes) {
     const list = (Array.isArray(notes) ? notes : [])
       .map((n) => (typeof n === "string" ? { at: Date.now(), text: n } : n))

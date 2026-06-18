@@ -949,6 +949,34 @@ const server = http.createServer(async (req, res) => {
 
   // POST /proxy/fetch (Bearer) — fetch a web page / search the web for the agent. Browsers can't fetch
   // arbitrary sites (CORS), so the web app routes its web_fetch / web_search tools through here.
+  // POST /proxy/transcribe (Bearer) — forward push-to-talk audio to the user's OWN Whisper-capable endpoint
+  // (OpenAI/Groq). Browsers can't POST multipart to those hosts (CORS) and shouldn't expose keys, so the server
+  // relays it. BYO key (from the caller's profile) — no Madav-side vendor. Mirrors desktop electron/voice.cjs.
+  if (p === "/proxy/transcribe" && req.method === "POST") {
+    if (rateLimited(req, "transcribe", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });
+    const raw = await rawBody(req, res, 26 * 1024 * 1024); if (raw === null) return; // ~25MB audio ceiling
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const { baseUrl, apiKey, model, path: sttPath, b64, mime } = b;
+    if (!baseUrl || !apiKey || !b64) return json(res, 400, { error: "baseUrl, apiKey and audio required" });
+    if (!isLoopbackCaller(req) && isForbiddenTarget(baseUrl)) return json(res, 403, { error: "blocked host" });
+    if (!isLoopbackCaller(req) && !isAllowedProxyHost(baseUrl)) return json(res, 400, { error: "unsupported provider host — set PROXY_HOSTS to allow it" });
+    try {
+      const buf = Buffer.from(String(b64), "base64");
+      if (buf.length < 1200) return json(res, 400, { error: "That recording was too short — hold the mic and speak." });
+      if (buf.length > 25 * 1024 * 1024) return json(res, 400, { error: "Recording too long — keep it under ~2 minutes." });
+      const ext = /ogg/.test(mime || "") ? "ogg" : /mp4|m4a/.test(mime || "") ? "m4a" : "webm";
+      const form = new FormData();
+      form.append("file", new Blob([buf], { type: mime || "audio/webm" }), "speech." + ext);
+      form.append("model", String(model || "whisper-1"));
+      const url = String(baseUrl).replace(/\/$/, "") + (sttPath || "/v1/audio/transcriptions");
+      const up = await fetch(url, { method: "POST", headers: { Authorization: "Bearer " + apiKey }, body: form });
+      if (!up.ok) { const t = (await up.text()).slice(0, 220); return json(res, 502, { error: "Transcription failed (" + up.status + "): " + t }); }
+      const j = await up.json().catch(() => ({}));
+      const text = String((j && j.text) || "").trim();
+      return json(res, 200, text ? { text } : { error: "Nothing was transcribed — try speaking a little longer." });
+    } catch (e) { return json(res, 502, { error: String((e && e.message) || e).slice(0, 200) }); }
+  }
   if (p === "/proxy/fetch" && req.method === "POST") {
     if (rateLimited(req, "fetch", 60, 60000)) return json(res, 429, { error: "rate limited" });
     const pl = verify(bearer(req)); if (!pl) return json(res, 401, { error: "unauthenticated" });

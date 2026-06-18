@@ -33,7 +33,7 @@ export const CAPABILITIES = {
   "automation.desktop":  { status: WEB_STATUS.DESKTOP_ONLY,    label: "Native desktop automation", message: "Controlling local apps needs the desktop app." },
   "tasks.scheduled":     { status: WEB_STATUS.SERVICE,         label: "Scheduled tasks",           message: "Scheduled runs use a managed runner; the desktop app runs them locally." },
   "comms.messaging":     { status: WEB_STATUS.SERVICE,         label: "Telegram / mobile",         message: "Runs via a managed bot service; the desktop app runs it locally." },
-  "voice.transcribe":    { status: WEB_STATUS.SERVICE,         label: "Voice input",               message: "Web uses the browser mic; managed transcription is on the way." },
+  "voice.transcribe":    { status: WEB_STATUS.PARITY,         label: "Voice input",               message: "Voice input transcribes through your own OpenAI- or Groq-compatible key (same as desktop)." },
   "qa.selfHeal":         { status: WEB_STATUS.DESKTOP_ONLY,    label: "Self-test / Repair Bay",    message: "Maintenance tooling is desktop-only." },
 };
 

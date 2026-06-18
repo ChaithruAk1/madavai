@@ -1278,3 +1278,30 @@ vendor-gated, design-note-first — or Phase 4 (skill authoring on web + parity 
 
 **Pass = 203 automated green + steps 1–7.** Client-side only (`be.skills` + `be.skillPrefs`); cross-device sync
 is a later option. **Deploy:** renderer-only (`npm run build` → redeploy).
+
+---
+
+## Voice transcription on web (BYO Whisper)
+
+**What shipped:**
+- `server/auth-server.mjs` — `POST /proxy/transcribe`: authed, SSRF-allowlisted, ~25 MB cap; forwards the
+  captured audio (multipart) to the user's own OpenAI/Groq `/audio/transcriptions` endpoint with their key
+  (browser-held, attached server-side — same posture as `/proxy/chat`, needed because browsers can't POST to
+  those hosts directly). No Madav-side vendor.
+- `src/bridge/webBridge.js` — `transcribe({b64,mime})` (replaces the earlier no-op): mirrors desktop
+  `voice.cjs` profile selection (explicit `voiceStt` override, else first OpenAI/Groq profile with a key) →
+  posts to `/proxy/transcribe`. Returns `{text}` or a "Whisper-capable key" message.
+- `src/bridge/webCapabilities.js` — `voice.transcribe` → PARITY (BYO, same as desktop).
+- The mic UI in `Composer.jsx` already captures audio and calls `bridge.transcribe` — this lights it up on web.
+
+**Automated:** `203 → 205 passed (33 files)` — new `proxy-transcribe` route + bridge contract tests. esbuild
+clean; production build exit 0; **no `electron/` changes**.
+
+**Manual (web, signed in, with an OpenAI or Groq key in Settings → Models):**
+1. Click the mic in the composer → speak → click again to stop → your words appear in the input.
+2. With **no** Whisper-capable key: the mic prompts "Voice input needs a Whisper-capable key — add an OpenAI or
+   Groq API key…" (no crash).
+3. Very short clip → "that recording was too short"; very long → "keep it under ~2 minutes".
+
+**Pass = 205 automated green + steps 1–3.** **Deploy:** server (`server/*.mjs` → redeploy) **and** renderer
+(`npm run build` → redeploy) — this one needs both.
