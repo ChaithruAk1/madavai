@@ -22,6 +22,7 @@ import { makeOAuthStateStore } from "./oauth-state.mjs"; // P3.4.3: store-backed
 import { makeCodeVerifier, codeChallengeS256 } from "./oauth-pkce.mjs"; // P3.4.3: PKCE
 import { makeConnectorVault } from "./connector-vault.mjs"; // P3.4.2: per-user encrypted token vault
 import { exchangeCodeForToken } from "./connector-oauth.mjs"; // P3.4.3c: auth-code -> provider tokens (fetch-injectable)
+import { beginConnectorSignIn, finishConnectorSignIn } from "./connector-oauth-web.mjs"; // P3.4.5: realigned SDK OAuth (generic, brokered)
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
 // Real environment variables (e.g. set in PowerShell or on the host) always win.
@@ -944,6 +945,51 @@ const server = http.createServer(async (req, res) => {
       console.error(`[connector] ${id} callback error:`, String(e && e.message));
       res.writeHead(500); return res.end("Connector error");
     }
+  }
+
+  // ---- Phase 3 P3.4.5 (R2b): REALIGNED connector OAuth via the MCP SDK (generic, one path for ALL
+  // connectors). Brokers the same flow desktop's mcp-oauth.cjs runs. Tokens never reach the browser; the
+  // server URL is SSRF-checked; tokens are sealed in the per-user vault. Supersedes the bespoke
+  // /connectors/:id/oauth/* routes above, which R3 removes once the bridge is wired.
+  if (p === "/connectors/signin" && req.method === "POST") {
+    if (rateLimited(req, "conn-oauth", 20, 15 * 60000)) return tooMany(res, 900);
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const rawReq = await rawBody(req, res); if (rawReq === null) return;
+    let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
+    const server = b.server || {};
+    if (!server.url || !server.id) return json(res, 400, { error: "server id + url required" });
+    try { mcpBroker.assertSafeMcpUrl(server.url); } catch (e) { return json(res, 400, { error: String((e && e.message) || e) }); }
+    const redirect = String(b.redirect || "");
+    if (redirect && !isAllowedRedirect(redirect)) return json(res, 400, { error: "redirect not allowed" });
+    try {
+      const r = await beginConnectorSignIn({ vault: connectorVault(), pending: oauthStates, userId: user.id, server, redirectUrl: `${BASE}/connectors/oauth/callback`, redirect });
+      return json(res, r.ok ? 200 : 400, r);
+    } catch (e) { return json(res, 502, { error: "signin", detail: String((e && e.message) || e).slice(0, 300) }); }
+  }
+  if (p === "/connectors/oauth/callback" && req.method === "GET") {
+    if (rateLimited(req, "conn-oauth", 20, 15 * 60000)) return tooMany(res, 900);
+    const code = u.searchParams.get("code"); const state = u.searchParams.get("state");
+    let r; try { r = await finishConnectorSignIn({ vault: connectorVault(), pending: oauthStates, stateId: state, code, redirectUrl: `${BASE}/connectors/oauth/callback` }); }
+    catch (e) { r = { ok: false, error: String((e && e.message) || e) }; }
+    if (!r.ok) { res.writeHead(400); return res.end("Connector sign-in failed"); }
+    const redir = r.redirect && isAllowedRedirect(r.redirect) ? r.redirect : "";
+    if (redir) { const sep = redir.includes("?") ? "&" : "?"; res.writeHead(302, { Location: redir + sep + "connected=" + encodeURIComponent(r.serverId) }); return res.end(); }
+    res.writeHead(200, { "Content-Type": "text/html" }); return res.end(`<h2>Connected to Madav</h2><p>You can close this window.</p>`);
+  }
+  if (p === "/connectors/status" && req.method === "GET") {
+    if (rateLimited(req, "connectors", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const id = u.searchParams.get("id") || "";
+    let rec = null; try { rec = await connectorVault().get(user.id, id); } catch {}
+    return json(res, 200, { connected: !!(rec && rec.tokens), registered: !!(rec && rec.client) });
+  }
+  if (p === "/connectors/signout" && req.method === "POST") {
+    if (rateLimited(req, "connectors", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const rawReq = await rawBody(req, res); if (rawReq === null) return;
+    let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
+    try { await connectorVault().remove(user.id, String(b.id || "")); } catch {}
+    return json(res, 200, { ok: true });
   }
 
   // GET /admin/users (x-admin-key) -> all users with computed status + last-seen.

@@ -720,3 +720,61 @@ Web/server-only; desktop behaves exactly as before.
 - **Next (GATED):** R2 adds the signin/callback/status/signout routes that run the SDK flow — the callback
   accepts the provider code, so it gets a **security review** before it ships. Then R3 wires the `/mcp` broker
   + the web bridge methods so the existing Connectors UI works, and retires the old bespoke Google modules.
+
+---
+
+## Phase 3 — increment P3.4.5 / R2a: sign-in orchestration (two-request SDK flow; no routes)
+
+**What changed in plain words:** the hard part of web sign-in — bridging the two steps of an OAuth login
+(start → approve in the browser → come back) when each step is a separate web request. `begin` runs the SDK
+to get the "approve" URL and remembers the in-progress login; `finish` takes the code the provider sends
+back, lets the SDK swap it for tokens, and seals them in the vault. Same generic flow for every connector.
+Still **no routes, no UI**. Files: `server/connector-oauth-web.mjs` (+orchestration), `server/oauth-state.mjs`
+(+explicit-id record). **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  100 passed` (5 new: begin reaches the approve URL and saves the verifier+user;
+the "already connected" shortcut; finish consumes the one-time state, restores the verifier, and stores
+tokens; an unknown/expired state is rejected without calling the SDK; a non-AUTHORIZED result stores nothing).
+These run against a **mock** of the SDK, proving our two-request logic.
+
+### Test 2 — Still not clickable
+Connector sign-in on web is still the stub until R2b (routes) + R3 (wire the UI).
+
+### Test 3 — Desktop unchanged
+Web/server-only; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `100 passed`.
+- **Next:** R2b adds the 4 routes (signin/callback/status/signout) that call this orchestration; R3 wires the
+  web bridge + retires the bespoke modules. Then it's clickable against a real OAuth MCP server.
+
+---
+
+## Phase 3 — increment P3.4.5 / R2b: realigned connector OAuth routes (SDK-driven)
+
+**What changed in plain words:** the four web endpoints that actually run connector sign-in — start
+(`/connectors/signin`), the return trip (`/connectors/oauth/callback`), `status`, and `signout`. They call
+the generic SDK orchestration from R2a, so the SAME endpoints serve every connector. Auth-gated,
+rate-limited, the MCP server URL is SSRF-checked, the post-login redirect is allowlisted, and no token is
+ever returned to the browser. The old bespoke Google routes are still in the file for now (R3 removes them).
+File: `server/auth-server.mjs`. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  105 passed` (5 new: the 4 routes exist; they import the orchestration; signin is
+authed/rate-limited/SSRF-checked/redirect-guarded; callback finishes via the orchestration and puts only
+`connected=<id>` — never a token — in the redirect; status/signout require auth and return no token).
+
+### Test 2 — Still not clickable from the UI
+The routes ARE live on the server now, but the web bridge methods still point at the stub until R3 wires them.
+
+### Test 3 — Desktop unchanged
+Web/server-only; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `105 passed`.
+- **Next (R3, the last step to clickable):** wire the web bridge `connectorSignIn/authStatus/signOut` to these
+  routes, make the `/mcp` broker use the silent vault provider so tokens get used, and remove the bespoke
+  Google modules. Then the Connectors page Connect button works end-to-end against a reachable OAuth MCP server.
