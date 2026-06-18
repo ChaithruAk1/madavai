@@ -510,3 +510,60 @@ Web-only change; desktop behaves exactly as before.
 ### Pass / fail
 - **PASS** = `46 passed`; MCP tools fire in Collaborate and in team members (not just chat); desktop unchanged.
 - With no MCP server configured, all three surfaces behave exactly as before (opt-in).
+
+---
+
+## Phase 3 — increment P3.4.1: encrypted connector-token vault (no wiring yet)
+
+**What changed in plain words:** the groundwork for "sign in to Gmail/Slack/etc. on the web." This slice
+adds ONLY the locked box that will hold those logins — `server/token-vault.mjs` — which encrypts tokens
+with AES-256-GCM so they're unreadable at rest and never sent to the browser. It is **wired to nothing**:
+no new routes, no OAuth, no login buttons. The running app (desktop *and* web) behaves exactly as before.
+Design + the security-gated next steps are in `docs/PHASE3-OAUTH.md`. **No desktop code.**
+
+### Test 1 — Safety net (the only test you can run today)
+    npx vitest run tests/parity
+**You should see:** `Tests  58 passed` (12 new ones for the vault: encrypt/decrypt round-trip, tamper is
+rejected, wrong key fails, the stored blob never contains the plaintext token, per-user isolation, and the
+"refuse an insecure key in production" guard).
+
+### Test 2 — Nothing changed in the app
+Use Let's Chat / Collaborate / MCP exactly as before — there is no new button or behaviour to see yet.
+This slice is invisible on purpose; it only adds a tested building block.
+
+### Test 3 — Desktop unchanged
+Web/server-only files added; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `58 passed`; the app looks and works exactly as before (the vault isn't connected to anything).
+- **What's next (and gated):** P3.4.2 stores the box in real persistence; P3.4.3/P3.4.4 add the OAuth
+  login + server-side token injection — both **only after a security review**, per `docs/PHASE3-OAUTH.md`.
+
+---
+
+## Phase 3 — increment P3.4.2: persist the connector vault in the store (still no wiring)
+
+**What changed in plain words:** the locked box from P3.4.1 now has a real shelf to sit on. The encrypted
+connector tokens are persisted in the user store under a new `conntokens` collection — works on both store
+backends (local JSON file and Postgres), per-user. Files: `server/store.mjs` (one additive collection name),
+`server/connector-vault.mjs` (binds the vault to the store). Still **wired to nothing live**: no routes, no
+OAuth, no login buttons — nothing in the running app calls this yet. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  61 passed` (3 new for the store binding: the adapter inserts-then-updates
+correctly; an end-to-end round-trip through the **real** JSON store; and a check that the on-disk file
+contains only ciphertext — the token value and even the field name `access_token` never appear in plaintext;
+plus a "survives a restart" read-back).
+
+### Test 2 — Nothing changed in the app
+Use Let's Chat / Collaborate / MCP exactly as before. There is still nothing new to click — this slice only
+gives the vault somewhere to live.
+
+### Test 3 — Desktop unchanged
+Web/server-only (`server/*.mjs`); desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `61 passed`; app unchanged; the on-disk store shows ciphertext only.
+- **What's next (and gated):** P3.4.3 (OAuth start/callback) and P3.4.4 (server-side token injection) —
+  both **only after a security review**, per `docs/PHASE3-OAUTH.md`. Then P3.4.5 wires the Connectors UI.
