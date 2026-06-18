@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getAgentMem, addAgentNote, recordAgentRun, agentMemoryBlock } from "../../src/bridge/agentMemory.js";
+import { getAgentMem, addAgentNote, recordAgentRun, agentMemoryBlock , getAgentHistory, getAgentStats} from "../../src/bridge/agentMemory.js";
 
 describe("agentMemory — notes", () => {
   it("default record for an unknown agent", () => {
@@ -40,4 +40,27 @@ describe("agentMemory — injection block", () => {
     expect(b).toContain("user is based in Berlin");
     expect(b).toContain("Track record: 1 prior run");
   });
+});
+
+import { describe as d2, it as i2, expect as e2 } from "vitest";
+import { recordAgentRun as rar, getAgentHistory as gah, getAgentStats as gas } from "../../src/bridge/agentMemory.js";
+d2("agentMemory A1 — run history + stats", () => {
+  i2("recordAgentRun keeps a bounded history (<=20), newest last in store / first via getAgentHistory", () => {
+    let store = {};
+    for (let k = 0; k < 25; k++) store = rar(store, "ag1", { ok: k % 2 === 0, now: () => 1000 + k });
+    e2(store.ag1.history.length).toBe(20);
+    const hist = gah(store, "ag1");
+    e2(hist.length).toBe(20);
+    e2(hist[0].at).toBe(1000 + 24); // most recent first
+    e2(store.ag1.runs).toBe(25);
+  });
+  i2("getAgentStats derives runs/ok/fail/lastAt/cleanRate per agent", () => {
+    let store = {};
+    store = rar(store, "ag2", { ok: true, now: () => 10 });
+    store = rar(store, "ag2", { ok: true, now: () => 20 });
+    store = rar(store, "ag2", { ok: false, now: () => 30 });
+    const st = gas(store);
+    e2(st.ag2).toEqual({ runs: 3, ok: 2, fail: 1, lastAt: 30, cleanRate: 67 });
+  });
+  i2("getAgentHistory is [] for an unknown agent", () => { e2(gah({}, "nope")).toEqual([]); });
 });

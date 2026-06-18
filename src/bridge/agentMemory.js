@@ -3,7 +3,8 @@
 // lastRunAt, ok, fail } } (the bridge persists it in localStorage `be.agentMemory`). Lets a custom agent
 // accumulate durable learnings it references on FUTURE runs, plus a lightweight usage record. Pure -> tested.
 const NOTE_CAP = 40;
-const rec = (store, id) => (store && store[id]) || { notes: [], runs: 0, lastRunAt: 0, ok: 0, fail: 0 };
+const HISTORY_CAP = 20;
+const rec = (store, id) => (store && store[id]) || { notes: [], runs: 0, lastRunAt: 0, ok: 0, fail: 0, history: [] };
 const clamp = (s, n) => String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, n);
 const at = (now) => (typeof now === "function" ? now() : now);
 
@@ -18,11 +19,30 @@ export function addAgentNote(store, agentId, text, now = Date.now, cap = NOTE_CA
   return { ...(store || {}), [agentId]: { ...r, notes: notes.slice(-cap) } };
 }
 
-// Record one run of the agent (track record). Returns a NEW store.
-export function recordAgentRun(store, agentId, { ok = true, now = Date.now } = {}) {
+// Record one run of the agent (track record + bounded per-run history). Returns a NEW store.
+export function recordAgentRun(store, agentId, { ok = true, now = Date.now, note = "" } = {}) {
   if (!agentId) return store || {};
   const r = rec(store, agentId);
-  return { ...(store || {}), [agentId]: { ...r, runs: (r.runs || 0) + 1, lastRunAt: at(now), ok: (r.ok || 0) + (ok ? 1 : 0), fail: (r.fail || 0) + (ok ? 0 : 1) } };
+  const entry = { at: at(now), ok: !!ok };
+  const txt = clamp(note, 200); if (txt) entry.note = txt;
+  const history = [...(r.history || []), entry].slice(-HISTORY_CAP);
+  return { ...(store || {}), [agentId]: { ...r, runs: (r.runs || 0) + 1, lastRunAt: at(now), ok: (r.ok || 0) + (ok ? 1 : 0), fail: (r.fail || 0) + (ok ? 0 : 1), history } };
+}
+
+// Per-run track record, most-recent-first. [] if none.
+export function getAgentHistory(store, agentId) {
+  return [...(rec(store, agentId).history || [])].reverse();
+}
+
+// Track-record stats per agent: { [id]: { runs, ok, fail, lastAt, cleanRate } }. Powers presence + "N missions, X% clean".
+export function getAgentStats(store) {
+  const out = {};
+  for (const id of Object.keys(store || {})) {
+    const r = rec(store, id);
+    const runs = r.runs || 0, ok = r.ok || 0;
+    out[id] = { runs, ok, fail: r.fail || 0, lastAt: r.lastRunAt || 0, cleanRate: runs ? Math.round((ok / runs) * 100) : 0 };
+  }
+  return out;
 }
 
 // System-prompt block: recent learnings + a one-line track record. "" if the agent has no history yet.

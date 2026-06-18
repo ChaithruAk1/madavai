@@ -1073,3 +1073,174 @@ Server-only (`server/task-run.mjs`).
 - **PASS** = `130 passed`.
 - **Next (security-review gate):** S3 — the scheduler tick + atomic claim + per-user quotas + the encrypted
   **BYO-key vault** (the slice that actually executes server-side). Then S4 wires the web task UI.
+
+---
+
+## Phase 3 / S3a — BYO provider-key vault + key routes (storage only; NO execution)
+
+**What shipped:** `server/provider-key-vault.mjs` (seals a user's `{kind,baseUrl,apiKey}` with the same
+AES-256-GCM token-vault as connectors, per user) + routes `POST /tasks/provider-key`, `GET
+/tasks/provider-key/status`, `DELETE /tasks/provider-key` + a `provkeys` store collection. The key is opt-in,
+**never echoed to the browser** (status is `{stored, kind}`), and is **not used to run anything yet** (that's S3b).
+
+**Automated (already passing):** `npx vitest run tests/parity` → **138 passed (26 files)**. The 8 new
+`provider-key-vault` tests assert: set/get round-trip, status is boolean+kind only, the secret is **not in
+plaintext at rest**, per-user isolation, and the route contract (authed, host-allowlisted, status never
+serializes `apiKey`).
+
+**Manual (signed in on web):**
+1. **Status before set** — DevTools console (replace `TOKEN` with `localStorage.getItem("be.token")`):
+   ```js
+   fetch(AUTH+"/tasks/provider-key/status",{headers:{Authorization:"Bearer "+localStorage.getItem("be.token")}}).then(r=>r.json()).then(console.log)
+   ```
+   Expect `{stored:false, kind:null}`. (Set `AUTH` to your auth base, e.g. the Render URL.)
+2. **Set a key** —
+   ```js
+   fetch(AUTH+"/tasks/provider-key",{method:"POST",headers:{Authorization:"Bearer "+localStorage.getItem("be.token"),"Content-Type":"application/json"},body:JSON.stringify({kind:"openai",baseUrl:"https://openrouter.ai/api/v1",apiKey:"sk-test-123"})}).then(r=>r.json()).then(console.log)
+   ```
+   Expect `{ok:true}`. Re-run step 1 → `{stored:true, kind:"openai"}`. **The key is never returned.**
+3. **Bad host is rejected** — repeat step 2 with `baseUrl:"http://127.0.0.1:9000"` → expect `400 {"error":"unsupported provider host"}` (SSRF allowlist).
+4. **Delete** —
+   ```js
+   fetch(AUTH+"/tasks/provider-key",{method:"DELETE",headers:{Authorization:"Bearer "+localStorage.getItem("be.token")}}).then(r=>r.json()).then(console.log)
+   ```
+   Expect `{ok:true}`; step 1 → `{stored:false, kind:null}`.
+5. **Auth required** — run any of the above with no `Authorization` header → `401`.
+
+**Pass = all five behave as above + 138 automated green.** Nothing runs on a timer yet.
+
+**Next (final check before the executing slice):** S3b — the internal 60s scheduler tick (claim-first → run
+single-shot via `runTaskOnce` → store run), the provider-call builder (Starter house key or the sealed BYO
+key), per-user daily quota + plan gate, and `POST /tasks/:id/run` (authed "run now"). Single-instance v1.
+
+---
+
+## Phase 3 / S3b — internal scheduler + single-shot execution + "run now" (THE EXECUTING SLICE)
+
+**What shipped (server-only):**
+- `server/provider-call.mjs` — `completeOnce()`: ONE non-streaming chat completion → text (OpenAI-ish or
+  Anthropic), `max_tokens` capped at 2000. No streaming, no tools.
+- `server/scheduler.mjs` — `makeScheduler()`: an internal tick that finds DUE tasks, **claims each first**
+  (advances `nextRunAt` before running, so a concurrent tick can't double-run), then runs it via the
+  tool-less `runTaskOnce` (S2). Per-user **daily cap (200)**, **plan gate** (only active/trialing run),
+  **60s per-run timeout**, runs **ring-buffered to 50/task**. `start()` uses a 60s `setInterval` (unref'd).
+- `server/auth-server.mjs` — `providerCallFor()` (Starter house key for `:free`/`nim/`, or the sealed BYO
+  key via the S3a vault, host-allowlisted), `POST /tasks/:id/run` (authed "run now", same single-shot path),
+  and the scheduler is started on boot unless `SCHED_DISABLED=1` or `NODE_ENV=test`.
+
+**Automated (passing):** `npx vitest run tests/parity` → **158 passed (29 files)**. New: `provider-call` (5),
+`scheduler` (10 — claim-first/no-double-run, quota, plan gate, provider-error, not-due/disabled, ring-buffer,
+force, + a drift-guard that scheduler imports only `task-run` and calls no tools/agent loops),
+`tasks-run-route` (5 — route contract).
+
+**Manual (signed in on web; needs the server deployed with the scheduler):**
+1. **Create a Starter task** (Tasks UI when S4 lands, or via console):
+   ```js
+   const H={Authorization:"Bearer "+localStorage.getItem("be.token"),"Content-Type":"application/json"};
+   const t=await fetch(AUTH+"/tasks",{method:"POST",headers:H,body:JSON.stringify({title:"ping",prompt:"Say the single word PONG.",model:"meta-llama/llama-3.1-8b-instruct:free",provider:"starter",intervalMs:900000})}).then(r=>r.json()); console.log(t);
+   ```
+2. **Run it now** — `POST /tasks/:id/run`:
+   ```js
+   await fetch(AUTH+"/tasks/"+t.task.id+"/run",{method:"POST",headers:H}).then(r=>r.json()).then(console.log)
+   ```
+   Expect `{run:{ok:true, output:"…PONG…", startedAt, finishedAt}}`. (If your account is past trial and has
+   no Starter access, expect `403 {skipped:"plan"}` — switch the task to `provider:"byo"` after storing a key
+   in S3a, step below.)
+3. **BYO path** — store a key (S3a), set the task to BYO, run now:
+   ```js
+   await fetch(AUTH+"/tasks/provider-key",{method:"POST",headers:H,body:JSON.stringify({kind:"openai",baseUrl:"https://openrouter.ai/api/v1",apiKey:"sk-…"})});
+   await fetch(AUTH+"/tasks/"+t.task.id,{method:"PUT",headers:H,body:JSON.stringify({provider:"byo",model:"openai/gpt-4o-mini"})});
+   await fetch(AUTH+"/tasks/"+t.task.id+"/run",{method:"POST",headers:H}).then(r=>r.json()).then(console.log)
+   ```
+   Expect `{run:{ok:true, output:"…"}}`. (Bad/missing key → `{run:{ok:false, error:"…"}}`.)
+4. **History** — `GET /tasks/:id/runs` shows the run records (capped at 50, newest first).
+5. **Quota** — fire `…/run` repeatedly; after 200 runs/day → `429 {skipped:"quota"}`.
+6. **Auto-fire** — leave a task enabled with a short interval (min 15m); within a tick (~60s after due) a run
+   appears in history without you pressing anything. `lastRunAt`/`nextRunAt` advance.
+
+**Pass = 158 automated green + steps 1–6 behave as above.** Scheduler honors claim-first (no duplicate runs),
+the daily cap, and the plan gate; execution is single-shot (no tools).
+
+**Next:** S4 — wire the web **Tasks UI** (`webBridge`: create/list/update/delete tasks, run-now, view runs,
+manage the provider key) so this is clickable, not console-only. Then the remaining Phase 3 managed-service
+items (each vendor-gated, design-note-first).
+
+---
+
+## Phase 3 / S4 — wire the shared Scheduler UI to the managed runner (web)
+
+**What shipped:**
+- `server/schedule-next.mjs` — `computeNextRunAt(schedule, fromTs, tz)` for the shared desktop schedule model
+  (`off` / `interval` / `daily` / `weekly`), **timezone-aware** (daily/weekly fire at the user's local HH:MM,
+  DST-correct) + `sanitizeSchedule`.
+- `server/auth-server.mjs` — `/tasks` POST/PUT now persist the rich shared-UI fields
+  (`name/description/schedule/target/permission/group/tz`) additively, allow **drafts** (no prompt / mode off),
+  and derive `enabled` + `nextRunAt` from the schedule. The scheduler claims the schedule's **true next fire**
+  (not a flat interval).
+- `src/bridge/webBridge.js` — the old localStorage task stubs are replaced by a **server-backed adapter**
+  (`listTasks/createTask/updateTask/deleteTask/getRuns/runTaskNow`) that maps the shared `Scheduler.jsx` shape
+  to `/tasks` and sends the browser timezone. Webhook triggers no-op gracefully ("desktop app"); keep-awake and
+  adaptive `completeOnce` use the existing web implementations. **Desktop is untouched** (it uses `window.madav`).
+
+**Automated (passing):** `NODE_ENV=test npx vitest run tests/parity` → **179 passed (31 files)**. New:
+`schedule-next` (10 incl. DST + tz + sanitize), `tasks-schedule-routes` (4), a scheduler "claims the daily
+next-fire" test, and 6 new `bridge-surface` task-method guards. No duplicate keys (esbuild clean).
+
+**Deploy first:** this spans the web server (`server/*.mjs` → **redeploy to Render**) and the shared renderer
+(`src/bridge/webBridge.js` → **`npm run build` → redeploy to Render**). Desktop needs nothing.
+
+**Manual (web, signed in):**
+1. **Open Scheduler** from the sidebar. It should load (no crash) and show your tasks (empty at first).
+2. **Create — manual:** New task → name + description + prompt, Schedule = **Manual**, pick a model, Save.
+   It appears in the list. **Reload the page** → it's still there (now server-backed, not localStorage).
+3. **Run now (▶):** the run history modal shows **Success** + the model's output (or **Error** + reason).
+4. **Create — every 15 min:** Schedule = interval, 15 min. Leave it; within ~a minute of becoming due a run
+   appears in history on its own (requires the deployed server to be awake — see the S3b Render note).
+5. **Create — daily at a clock time:** set Daily 09:00. The schedule text reads "Daily at 09:00"; the server
+   computes the next 09:00 **in your timezone** (the browser sends its tz on save).
+6. **Weekly:** Weekly · Mon 09:00 behaves the same, next Monday in your tz.
+7. **Cross-device:** sign in on another browser → the same tasks appear (server-stored).
+8. **Webhooks button:** opens and shows it's a desktop-only feature — **no crash**.
+9. **BYO model:** store a provider key (S3a console step) and set a task's provider to BYO with your model →
+   run now → output comes from your provider. Without a key, a BYO run errors clearly.
+
+**Pass = 179 automated green + steps 1–9 behave as above + the Scheduler screen is fully usable on web.**
+Note: tasks previously saved in browser localStorage (old stub) are not migrated — they were never runnable.
+
+**Next:** remaining Phase 3 managed-service items (browser automation, Telegram, Whisper, alerts) — each
+vendor-gated, design-note-first — or Phase 4 (skill authoring on web + parity scorecard).
+
+---
+
+## Agent Ops on Web (A1–A3) — memory mgmt · track record · versioning · portability
+
+**What shipped (client-side; no server, no secrets):**
+- `src/bridge/agentMemory.js` — `recordAgentRun` now keeps a **bounded per-run history** (last 20); added pure
+  `getAgentHistory` + `getAgentStats`. The turn engine already calls `recordAgentRun`, so history populates
+  automatically.
+- `src/bridge/webBridge.js` — the inert Agent Ops panel is now wired: `getAgentMemory` (ts→at mapping),
+  `setAgentMemory`, `clearAgentMemory`, `getAgentHistory`, `getAgentStats`, `listAgentVersions`,
+  `snapshotAgentVersion`, `exportAgent` (JSON download), `importAgent` (file picker → fresh id, model pin
+  stripped). Versions persist in `be.agentVersions`. Heavier agent-execution features (`runSwarm`/`cancelSwarm`/
+  `onSwarmEvent`/`getMission`/`transcribe`) are graceful no-ops so the Agents screen can't break on web.
+
+**Automated (passing):** `NODE_ENV=test npx vitest run tests/parity` → **191 passed (31 files)**. New: 3
+`agentMemory` tests (history cap, stats derivation, empty-history) + 9 `bridge-surface` guards. esbuild clean
+(no duplicate keys); production build exit 0; **no `electron/` changes**.
+
+**Manual (web, signed in), open an agent → Ops:**
+1. **Memory edit:** type notes (one per line) → Save → they persist; **reload** → still there.
+2. **Coach:** 👍/👎 with a note → it's appended to memory (previously a no-op on web).
+3. **Clear memory:** clears the notes; the run track-record is kept.
+4. **Run history + stats:** run the agent once (chat with it) → the run shows under **Runs**, and the
+   track-record line ("N runs · X% clean") + presence dot populate.
+5. **Versioning:** edit and save the agent → the prior version appears under **Versions** (last 10 kept).
+6. **Export/Import:** Export downloads `<name>.agent.json`; Import (on another agent/browser) adds it back with
+   a fresh id and no model pin.
+7. **Swarms/voice:** the swarm/mission/voice controls degrade gracefully ("desktop app") — **no crash**.
+8. **Desktop unchanged:** the Agents screen behaves identically in the desktop app (uses `window.madav`).
+
+**Pass = 191 automated green + steps 1–8 behave as above.** This is client-side only (localStorage
+`be.agentMemory` + `be.agentVersions`); nothing is sent to the server, and desktop is untouched.
+
+**Deploy:** renderer-only (`npm run build` → redeploy to Render). No server change.

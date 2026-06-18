@@ -13,6 +13,9 @@ const REQUIRED = [
   "start", "sendInput", "interrupt", "onEvent",
   "getSettings", "saveSettings", "listModels",
   "listSessions", "getSession", "authMe", "listCheckpoints",
+  "listTasks", "createTask", "updateTask", "deleteTask", "getRuns", "runTaskNow", // S4: scheduled tasks
+  "getAgentMemory", "setAgentMemory", "clearAgentMemory", "getAgentHistory", "getAgentStats",
+  "listAgentVersions", "snapshotAgentVersion", "exportAgent", "importAgent", // Agent Ops (A2)
 ];
 
 describe("web bridge surface", () => {

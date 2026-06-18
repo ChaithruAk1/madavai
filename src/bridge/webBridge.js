@@ -31,7 +31,7 @@ import { toolsUnsupportedErr } from "./toolSupport.js"; // only cache "no tools"
 import { runDeepResearch } from "./deepResearch.js"; // Phase 2: client-orchestrated multi-search research
 import { resolveProviderOnline } from "./providerPing.js"; // online/offline chip: proxy fallback
 import { buildKnowledgeContext } from "./ragLite.js"; // Phase 2: RAG-lite project knowledge
-import { agentMemoryBlock, addAgentNote, recordAgentRun, getAgentMem } from "./agentMemory.js"; // Phase 2: per-agent memory
+import { agentMemoryBlock, addAgentNote, recordAgentRun, getAgentMem, getAgentHistory, getAgentStats } from "./agentMemory.js"; // Phase 2 + Agent Ops (A1)
 const AUTH_BASE = (() => {
   if (typeof window !== "undefined" && window.__MADAV_AUTH_BASE__) return String(window.__MADAV_AUTH_BASE__).replace(/\/+$/, "");
   if (typeof location !== "undefined" && location.port === "5174") return "http://127.0.0.1:8787";
@@ -1149,6 +1149,24 @@ const fmtHour = (h) => `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
 // (those are desktop-only), so the assistant sets expectations instead of silently degrading (P0-1).
 const WEB_PROJECT_NOTE = "NOTE ON THIS ENVIRONMENT: You are in Madav Web Projects. You have this project's text knowledge, but there is NO linked local folder here, so you cannot read or compute over the user's own local data files and cannot save a file into a folder; that needs the Madav desktop app, or 'Let's Collaborate' with a folder the user picks. You CAN still create real, downloadable files (spreadsheets, Word docs, PDFs, slide decks) with your normal office capability when asked - they download in the browser. So make files normally; only point the user to the desktop app or Let's Collaborate when they need work over their EXISTING local folder data.";
 
+// ---- Phase 3 S4: scheduled-task adapter — the SHARED Scheduler.jsx UI <-> server /tasks routes.
+// Maps the rich desktop task shape to the minimal server record and back; runs go through the managed
+// runner (server). Desktop-only helpers (keep-awake, webhooks, adaptive setup) no-op gracefully here.
+const browserTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; } };
+const toUiTask = (t) => t && ({
+  id: t.id, name: t.name || t.title || "", description: t.description || "", prompt: t.prompt || "",
+  model: t.model || "", schedule: t.schedule || { mode: "off" }, target: t.target || { type: "chat" },
+  permission: t.permission || "ask", group: t.group || "", lastRun: t.lastRunAt || 0,
+});
+const mapRun = (r) => ({ status: r && r.ok ? "success" : "error", output: (r && (r.output || r.error)) || "", at: (r && (r.startedAt || r.finishedAt)) || 0 });
+async function tasksApi(path, opts) {
+  if (!getToken()) return null; // task features require sign-in (same posture as workspace/projects sync)
+  try {
+    const r = await fetch(api(path), { ...(opts || {}), headers: authHeaders({ "Content-Type": "application/json", ...((opts && opts.headers) || {}) }) });
+    return await r.json().catch(() => ({}));
+  } catch { return null; }
+}
+
 export const webBridge = {
   // ---- chat / agent ----
   async start(req) {
@@ -1216,6 +1234,27 @@ export const webBridge = {
     } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
   },
   async saveSettings(next) { const saved = LS.set(SETTINGS_KEY, next); wsMaybePush(); return saved; },
+
+  // ---- Scheduled tasks (web): the shared Scheduler UI drives the managed runner via /tasks ----
+  async listTasks() { const j = await tasksApi("/tasks"); return ((j && j.tasks) || []).map(toUiTask); },
+  async createTask() {
+    const j = await tasksApi("/tasks", { method: "POST", body: JSON.stringify({ tz: browserTz() }) });
+    return (j && j.task) ? toUiTask(j.task)
+      : { id: "tsk_local_" + Math.random().toString(36).slice(2, 8), name: "", description: "", prompt: "", model: "", schedule: { mode: "off" }, target: { type: "chat" }, permission: "ask", group: "", lastRun: 0 };
+  },
+  async updateTask(id, patch) { const j = await tasksApi("/tasks/" + id, { method: "PUT", body: JSON.stringify({ ...(patch || {}), tz: browserTz() }) }); return (j && j.task) ? toUiTask(j.task) : null; },
+  async deleteTask(id) { await tasksApi("/tasks/" + id, { method: "DELETE" }); return true; },
+  async getRuns(id) { const j = await tasksApi("/tasks/" + id + "/runs"); return ((j && j.runs) || []).map(mapRun).sort((a, b) => (b.at || 0) - (a.at || 0)); },
+  async runTaskNow(id) {
+    const j = await tasksApi("/tasks/" + id + "/run", { method: "POST" });
+    if (j && j.run) return mapRun(j.run);
+    if (j && j.skipped) return { status: "error", output: "Run skipped (" + j.skipped + ").", at: Date.now() };
+    return { status: "error", output: (j && j.error) || "Couldn't run this task. Are you signed in?", at: Date.now() };
+  },
+  // Webhook triggers are a desktop-only feature the shared Scheduler references — graceful no-ops on web.
+  async webhookStatus() { return { running: false, port: 0, error: "Webhook triggers run in the desktop app." }; },
+  async applyWebhooks() { return { ok: false, error: "Webhook triggers run in the desktop app." }; },
+  async newWebhookToken() { return { token: "" }; },
   async listModels(profileId) {
     const s = loadSettings(); const p = resolveProfile(profileId ? s.profiles[profileId] : activeProfile(s)); // Starter gets the session token
     let out = await provListModels(p);
@@ -1377,13 +1416,7 @@ export const webBridge = {
   async createConversation(projectId) { const all = LS.get("be.convs", {}); const c = { id: rid("cnv_"), projectId, title: "New conversation", messages: [], updatedAt: Date.now() }; all[c.id] = c; LS.set("be.convs", all); return c; },
   async deleteConversation(id) { const all = LS.get("be.convs", {}); delete all[id]; LS.set("be.convs", all); return true; },
 
-  // ---- scheduled tasks (stored; execution is desktop-only since the browser can't run in the background) ----
-  async listTasks() { return Object.values(LS.get("be.tasks", {})); },
-  async createTask() { const all = LS.get("be.tasks", {}); const t = { id: rid("tsk_"), name: "New task", prompt: "", target: { type: "chat" }, schedule: { mode: "off", everyMinutes: 60, time: "09:00", weekday: 1 }, lastRun: 0 }; all[t.id] = t; LS.set("be.tasks", all); return t; },
-  async updateTask(id, patch) { const all = LS.get("be.tasks", {}); all[id] = { ...all[id], ...patch }; LS.set("be.tasks", all); return all[id]; },
-  async deleteTask(id) { const all = LS.get("be.tasks", {}); delete all[id]; LS.set("be.tasks", all); return true; },
-  async getRuns() { return []; },
-  async runTaskNow() { return { status: "error", output: "Scheduled tasks run in the desktop app (it can run in the background). On the web they're saved here." }; },
+  // ---- scheduled tasks: implemented by the Phase 3 S4 server-backed adapter above (managed runner) ----
 
   // ---- usage (computed from local history) ----
   async getUsage(days) {
@@ -1471,7 +1504,65 @@ export const webBridge = {
 
   // ---- cross-chat user memory (view / edit / clear) ----
   async getUserMemory() { return umGet(); },
-  async getAgentMemory(agentId) { return getAgentMem(amGet(), agentId); },
+  // ---- Agent Ops (web): memory mgmt / track record / versioning / portability. Client-side (localStorage),
+  // wired to agentMemory.js + settings.agents + be.agentVersions. Mirrors the desktop bridge shapes. ----
+  async getAgentMemory(agentId) { const r = getAgentMem(amGet(), agentId); return { notes: (r.notes || []).map((n) => ({ at: n.ts || n.at || 0, text: n.text })) }; },
+  async setAgentMemory(agentId, notes) {
+    if (!agentId) return { notes: [] };
+    const store = amGet(); const r = getAgentMem(store, agentId);
+    const list = (Array.isArray(notes) ? notes : [])
+      .map((n) => (typeof n === "string" ? n : (n && n.text) || ""))
+      .map((t) => String(t).replace(/\s+/g, " ").trim().slice(0, 280)).filter(Boolean)
+      .map((text) => ({ text, ts: Date.now() })).slice(-40);
+    amSave({ ...store, [agentId]: { ...r, notes: list } });
+    return { notes: list.map((n) => ({ at: n.ts, text: n.text })) };
+  },
+  async clearAgentMemory(agentId) {
+    if (!agentId) return { notes: [] };
+    const store = amGet(); const r = getAgentMem(store, agentId);
+    amSave({ ...store, [agentId]: { ...r, notes: [] } });
+    return { notes: [] };
+  },
+  async getAgentHistory(agentId) { return getAgentHistory(amGet(), agentId).map((h) => ({ at: h.at, ok: h.ok, status: h.ok ? "success" : "error", output: h.note || "" })); },
+  async getAgentStats() { return getAgentStats(amGet()); },
+  async listAgentVersions(agentId) { const all = LS.get("be.agentVersions", {}); return (all[agentId] || []).slice().reverse(); },
+  async snapshotAgentVersion(agent) {
+    if (!agent || !agent.id) return { ok: false, skipped: true };
+    const all = LS.get("be.agentVersions", {}); const list = all[agent.id] || [];
+    list.push({ at: Date.now(), agent }); all[agent.id] = list.slice(-10); LS.set("be.agentVersions", all);
+    return { ok: true };
+  },
+  async exportAgent(agent) {
+    try {
+      const blob = new Blob([JSON.stringify({ madavAgent: 1, agent }, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob); const a = document.createElement("a");
+      a.href = url; a.download = ((agent && (agent.name || agent.id)) || "agent") + ".agent.json";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return { ok: true };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  },
+  async importAgent() {
+    return new Promise((resolve) => {
+      try {
+        const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json,.agent,application/json";
+        inp.onchange = async () => {
+          try {
+            const f = inp.files && inp.files[0]; if (!f) return resolve({ error: "No file selected." });
+            const parsed = JSON.parse(await f.text()); const src = parsed && parsed.agent ? parsed.agent : parsed;
+            if (!src || typeof src !== "object") return resolve({ error: "That isn't a valid agent file." });
+            const agent = { ...src, id: "ag_" + Math.random().toString(36).slice(2, 10) }; delete agent.model;
+            resolve({ agent });
+          } catch (e) { resolve({ error: "Couldn't read that file: " + String((e && e.message) || e) }); }
+        };
+        inp.click();
+      } catch (e) { resolve({ error: String((e && e.message) || e) }); }
+    });
+  },
+  async runSwarm() { return { error: "Swarms run in the desktop app." }; },
+  async cancelSwarm() { return true; },
+  onSwarmEvent() { return () => {}; },
+  async getMission() { return null; },
+  async transcribe() { return { error: "Voice transcription isn't available on web yet." }; },
   async setUserMemory(notes) {
     const list = (Array.isArray(notes) ? notes : [])
       .map((n) => (typeof n === "string" ? { at: Date.now(), text: n } : n))
