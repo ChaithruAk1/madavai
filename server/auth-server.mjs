@@ -592,6 +592,65 @@ const server = http.createServer(async (req, res) => {
   // ---- Workspace sync — agents/teams/folders/instructions follow the ACCOUNT ----
   // API keys and connector tokens are deliberately NOT synced (device-local by design).
   // Last-write-wins via updatedAt; clients compare before applying.
+  // ---- Scheduled tasks (Phase 3 S1): per-user task CRUD + run history. STORAGE ONLY — execution
+  // (single-shot Starter/BYO run) + scheduler are added later (S2/S3) behind review. No secrets stored here.
+  if (p === "/tasks" && req.method === "GET") {
+    if (rateLimited(req, "tasks", 120, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const all = await store.col("tasks").all();
+    return json(res, 200, { tasks: all.filter((t) => t.userId === user.id) });
+  }
+  if (p === "/tasks" && req.method === "POST") {
+    if (rateLimited(req, "tasks-w", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const raw = await rawBody(req, res); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const mine = (await store.col("tasks").all()).filter((t) => t.userId === user.id);
+    if (mine.length >= 20) return json(res, 400, { error: "task limit reached (max 20)" });
+    const prompt = String(b.prompt || "").slice(0, 8000);
+    if (!prompt) return json(res, 400, { error: "prompt required" });
+    const intervalMs = Math.max(15 * 60000, Number(b.intervalMs) || 0); // min 15-minute interval
+    const now = Date.now();
+    const task = { id: "tsk_" + crypto.randomBytes(8).toString("hex"), userId: user.id,
+      title: String(b.title || "").slice(0, 200), prompt, model: String(b.model || "").slice(0, 200),
+      provider: b.provider === "byo" ? "byo" : "starter", intervalMs, enabled: b.enabled !== false,
+      createdAt: now, lastRunAt: 0, nextRunAt: now + intervalMs };
+    await store.col("tasks").insert(task);
+    return json(res, 200, { task });
+  }
+  if (p.match(/^\/tasks\/[a-z0-9_]+$/i) && req.method === "PUT") {
+    if (rateLimited(req, "tasks-w", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const cur = await store.col("tasks").get(p.split("/")[2]);
+    if (!cur || cur.userId !== user.id) return json(res, 404, { error: "not found" });
+    const raw = await rawBody(req, res); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const patch = {};
+    if (b.title != null) patch.title = String(b.title).slice(0, 200);
+    if (b.prompt != null) patch.prompt = String(b.prompt).slice(0, 8000);
+    if (b.model != null) patch.model = String(b.model).slice(0, 200);
+    if (b.enabled != null) patch.enabled = !!b.enabled;
+    if (b.intervalMs != null) patch.intervalMs = Math.max(15 * 60000, Number(b.intervalMs) || 0);
+    return json(res, 200, { task: await store.col("tasks").update(cur.id, patch) });
+  }
+  if (p.match(/^\/tasks\/[a-z0-9_]+$/i) && req.method === "DELETE") {
+    if (rateLimited(req, "tasks-w", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const cur = await store.col("tasks").get(p.split("/")[2]);
+    if (!cur || cur.userId !== user.id) return json(res, 404, { error: "not found" });
+    await store.col("tasks").remove(cur.id);
+    return json(res, 200, { ok: true });
+  }
+  if (p.match(/^\/tasks\/[a-z0-9_]+\/runs$/i) && req.method === "GET") {
+    if (rateLimited(req, "tasks", 120, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const tid = p.split("/")[2];
+    const cur = await store.col("tasks").get(tid);
+    if (!cur || cur.userId !== user.id) return json(res, 404, { error: "not found" });
+    const runs = (await store.col("runs").all()).filter((r) => r.taskId === tid && r.userId === user.id);
+    return json(res, 200, { runs });
+  }
+
   // ---- Project (Workroom) records sync (Phase 2): Workrooms follow the account, like the workspace blob
   // below. Projects carry NO secrets (names/instructions/knowledge-text/agent ids only); 1MB body cap bounds size.
   if (p === "/projects" && req.method === "GET") {

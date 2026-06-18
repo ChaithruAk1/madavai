@@ -1020,3 +1020,30 @@ Web bridge only.
 ### Pass / fail
 - **PASS** = `119 passed`; an agent recalls a saved learning on a later run; track record increments.
 - **Note:** memory is **device-local** for now (localStorage); account-wide server-sync is a later follow-up.
+
+---
+
+## Phase 3 / S1 — scheduled tasks: store + CRUD routes (storage only)
+
+**What changed in plain words:** groundwork for "run this prompt on a schedule, even with the tab closed."
+This slice adds ONLY the storage + management endpoints — create/list/update/delete a scheduled task and read
+its run history — per user, capped (≤20 tasks, ≥15-min interval). **Nothing runs yet**; the executor, the
+scheduler, and the encrypted BYO-key store come in S2/S3 behind security review. Files: `server/store.mjs`
+(+`tasks`,+`runs` collections), `server/auth-server.mjs` (5 routes). **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  123 passed` (4 new: store has tasks+runs; CRUD + runs routes exist; they're
+authed, per-user, quota-bounded, and carry **no** execution/secret handling yet; /projects + /workspace untouched).
+
+### Test 2 — (optional) curl, with a dev token (see `E2E-CONNECTORS-WEB.md` for getting one)
+- `POST /tasks {"prompt":"daily news","intervalMs":900000}` → `{task:{id,nextRunAt,...}}`
+- `GET /tasks` → your tasks · `PUT /tasks/<id> {"enabled":false}` · `GET /tasks/<id>/runs` → `[]` (none yet) · `DELETE /tasks/<id>`
+- Unauthenticated → 401 · a 21st task → `"task limit reached (max 20)"`.
+
+### Test 3 — Desktop unchanged
+Server-only.
+
+### Pass / fail
+- **PASS** = `123 passed`; task CRUD works per-user with quotas; **nothing executes yet** (by design).
+- **Next:** S2 single-shot executor (gated) → S3 scheduler + BYO-key vault (security review) → S4 UI wiring.
