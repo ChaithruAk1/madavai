@@ -424,3 +424,32 @@ web-only).
 - **PASS** = `43 passed`; desktop Connectors unchanged; web shows the panel; Test lists tools for a real
   server; chat can call an MCP tool.
 - If the panel doesn't appear on web, or Test/Add misbehaves → tell me what you saw.
+
+---
+
+## Phase 3 — MCP end-to-end test (concrete: DeepWiki)
+
+**Server:** `https://mcp.deepwiki.com/mcp` — free, no-auth, read-only. 3 tools over public GitHub repos:
+`read_wiki_structure`, `read_wiki_contents`, `ask_question`. (Tool names show in chat sanitized, e.g.
+`mcp__mcp-deepwiki-com__ask-question` — underscores become dashes in the label; the real tool is still called.)
+
+### Setup
+1. **Auth server must be running the latest code** (restart it so the `/mcp` routes are live; stale server → "Failed: not found").
+2. Web → **Connectors** → **MCP servers** → paste `https://mcp.deepwiki.com/mcp` → **Test**.
+   → Expect **"OK — 3 tools: read_wiki_structure, read_wiki_contents, ask_question"** → click **Add**.
+3. **Let's Chat** (not a Project) → pick a **tool-capable** model (Claude, GPT‑4o‑class, or a solid **paid** OpenRouter model — **not** a `:free` one).
+
+### Prompts (each should trigger an `mcp__mcp-deepwiki-com__…` tool step)
+- **A — list topics (read_wiki_structure):**
+  > Use the DeepWiki tools to list the documentation topics available for the GitHub repo `vercel/next.js`.
+- **B — ask a question (ask_question):**
+  > Using DeepWiki, explain how the `facebook/react` repository implements its fiber reconciliation algorithm, and mention the files involved.
+- **C — read contents (read_wiki_contents):**
+  > With DeepWiki, give me a 5-bullet overview of what `tailwindlabs/tailwindcss` does, based on its wiki.
+
+### Pass / fail
+- **PASS** = for A/B/C you see a tool step labeled `mcp__mcp-deepwiki-com__…`, then an answer that uses
+  the tool's result (repo-specific facts, not generic knowledge).
+- **Fallback check** = switch to a model that can't tool-call → it should still answer (no MCP step), not error.
+- If a prompt doesn't call a tool: add "**use your MCP tools**" explicitly, or use a more tool-eager model
+  (weak models sometimes ignore tools). If you get a transport error on Test, tell me the exact text.
