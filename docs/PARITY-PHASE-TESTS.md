@@ -597,3 +597,36 @@ Web/server-only; desktop behaves exactly as before.
 - **PASS** = `71 passed`; app unchanged.
 - **Next (gated):** P3.4.3b adds the `start` / `list` / `disconnect` routes; P3.4.3c adds the `callback`
   that accepts a provider token — **re-review at 3c**, per the design doc. Then P3.4.4 (token injection).
+
+---
+
+## Phase 3 — increment P3.4.3b: connector-OAuth routes (start / list / disconnect; NO callback)
+
+**What changed in plain words:** the first real connector endpoints. A signed-in web user can now (via the
+API) list connectors, START a Gmail connect (which returns a Google authorize URL built with PKCE + a
+single-use, user-bound state), and DISCONNECT (wipes their stored tokens). The endpoint that *accepts* a
+token back from Google — the callback — is deliberately NOT built yet (that's P3.4.3c, re-reviewed). Files:
+`server/auth-server.mjs` (3 routes), `server/connector-registry.mjs` (buildAuthorizeUrl). Auth-gated,
+rate-limited, open-redirect-guarded; tokens are never returned to the browser. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  79 passed` (8 new: buildAuthorizeUrl puts the right OAuth+PKCE params on
+Google's constant endpoint; plus a static contract check that the 3 routes exist, require auth, rate-limit,
+gate on config, use PKCE S256 + user-bound state, never return a token, and that the callback route is NOT
+present yet).
+
+### Test 2 — (optional) hit the routes locally
+With the web server running and signed in: `GET /connectors` lists the Gmail entry as `configured:false`
+(until you set `GMAIL_CONNECTOR_CLIENT_ID` / `GMAIL_CONNECTOR_CLIENT_SECRET`) and `connected:false`.
+`POST /connectors/google-gmail/oauth/start` returns `501 not configured` until those env vars are set.
+No browser response ever contains a token.
+
+### Test 3 — Desktop unchanged
+Web/server-only; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `79 passed`; desktop unchanged; start returns a PKCE authorize URL (or 501 if unconfigured);
+  no token ever appears in a response.
+- **Next (GATED):** P3.4.3c adds the callback that exchanges the code and seals tokens into the vault —
+  **re-review before writing**. Then P3.4.4 (server-side token injection) and P3.4.5 (UI).

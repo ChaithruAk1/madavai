@@ -17,6 +17,10 @@ import webmd from "../electron/webmd.cjs";
 import cspPolicy from "../shared/csp.cjs"; // single CSP source (web + desktop) // LLM-ready web extraction (CJS — Node imports it fine)
 import { scoreQuiz, scoreBatch } from "./quiz.mjs";
 import * as mcpBroker from "./mcp-broker.mjs"; // Phase 3: server-side MCP broker (HTTP/SSE), SSRF-guarded
+import { getConnector, isConfigured, connectorCreds, listConnectors, buildAuthorizeUrl } from "./connector-registry.mjs"; // P3.4.3: connector OAuth registry (constants only)
+import { makeOAuthStateStore } from "./oauth-state.mjs"; // P3.4.3: store-backed, single-use, user-bound OAuth state
+import { makeCodeVerifier, codeChallengeS256 } from "./oauth-pkce.mjs"; // P3.4.3: PKCE
+import { makeConnectorVault } from "./connector-vault.mjs"; // P3.4.2: per-user encrypted token vault
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
 // Real environment variables (e.g. set in PowerShell or on the host) always win.
@@ -84,6 +88,12 @@ const OAUTH = {
 
 // ---- user store (JSON file by default, Postgres when DATABASE_URL is set) ----
 const store = await makeStore();
+
+// Phase 3 P3.4.x: connector OAuth state + per-user encrypted token vault. The vault is built LAZILY and is
+// key-guarded, so a missing CONNECTOR_VAULT_KEY degrades only the connector routes — never server startup.
+const oauthStates = makeOAuthStateStore(store);
+let _connectorVault = null;
+const connectorVault = () => (_connectorVault ||= makeConnectorVault(store));
 
 // Email lists read live (editing the file needs no restart): combines an env var (comma-separated)
 // with a text file (one email per line, '#' for comments).
@@ -845,6 +855,57 @@ const server = http.createServer(async (req, res) => {
       const result = await mcpBroker.callTool({ url, headers: mcpForwardHeaders(b.headers), name, args: b.args || {} });
       return json(res, 200, { result });
     } catch (e) { return json(res, 502, { error: "mcp", detail: String((e && e.message) || e) }); }
+  }
+
+  // ---- Phase 3 P3.4.3b: connector OAuth — START / LIST / DISCONNECT. The token-accepting
+  // /connectors/:id/oauth/callback route is P3.4.3c (gated) and is intentionally NOT defined here.
+  // Tokens are NEVER returned to the browser; registry URLs/scopes are constants (no request input).
+  // GET /connectors -> [{id,label,configured,connected,scopes,accountLabel}] for the signed-in user. No tokens.
+  if (p === "/connectors" && req.method === "GET") {
+    if (rateLimited(req, "connectors", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const out = [];
+    for (const c of listConnectors()) {
+      let connected = false, accountLabel = null;
+      if (c.configured) { try { const tok = await connectorVault().get(user.id, c.id); connected = !!tok; accountLabel = (tok && tok.accountLabel) || null; } catch {} }
+      out.push({ id: c.id, label: c.label, configured: c.configured, connected, scopes: (getConnector(c.id) || {}).scopes || [], accountLabel });
+    }
+    return json(res, 200, { connectors: out });
+  }
+
+  // POST /connectors/:id/oauth/start -> { authorizeUrl }. Mints PKCE + a user-bound, single-use state. No token here.
+  let mConn = p.match(/^\/connectors\/([a-z0-9-]+)\/oauth\/start$/);
+  if (mConn && req.method === "POST") {
+    if (rateLimited(req, "conn-oauth", 20, 15 * 60000)) return tooMany(res, 900);
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const id = mConn[1];
+    const conn = getConnector(id); if (!conn) return json(res, 404, { error: "unknown connector" });
+    if (!isConfigured(id)) return json(res, 501, { error: "connector not configured on server" });
+    const rawReq = await rawBody(req, res); if (rawReq === null) return;
+    let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
+    const redirect = String(b.redirect || "");
+    if (redirect && !isAllowedRedirect(redirect)) return json(res, 400, { error: "redirect not allowed" });
+    const { clientId } = connectorCreds(id);
+    const codeVerifier = makeCodeVerifier();
+    const state = await oauthStates.create({ connectorId: id, userId: user.id, codeVerifier, redirect });
+    const authorizeUrl = buildAuthorizeUrl(conn, {
+      clientId,
+      redirectUri: `${BASE}/connectors/${id}/oauth/callback`, // route lands in P3.4.3c
+      state,
+      codeChallenge: codeChallengeS256(codeVerifier),
+    });
+    return json(res, 200, { authorizeUrl });
+  }
+
+  // POST /connectors/:id/disconnect -> remove the user's stored tokens (idempotent). No token in/out.
+  mConn = p.match(/^\/connectors\/([a-z0-9-]+)\/disconnect$/);
+  if (mConn && req.method === "POST") {
+    if (rateLimited(req, "connectors", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const id = mConn[1];
+    if (!getConnector(id)) return json(res, 404, { error: "unknown connector" });
+    try { await connectorVault().remove(user.id, id); } catch {}
+    return json(res, 200, { ok: true });
   }
 
   // GET /admin/users (x-admin-key) -> all users with computed status + last-seen.
