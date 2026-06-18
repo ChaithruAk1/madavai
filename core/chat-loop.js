@@ -116,8 +116,9 @@ export async function coreChatTurn({
 
       // Loop breaker: refuse the 3rd identical consecutive call instead of spinning.
       if (guard.repeatBlocked(name, args)) {
-        messages.push(toolResultMsg(call, "[harness] blocked a repeated identical call to " + name + " — try a different approach."));
-        adapter.emit({ type: "tool_blocked", name });
+        const blockMsg = "[harness] blocked a repeated identical call to " + name + " — try a different approach.";
+        messages.push(toolResultMsg(call, blockMsg));
+        adapter.emit({ type: "tool_blocked", id: call.id, name, args, message: blockMsg });
         continue;
       }
 
@@ -126,7 +127,7 @@ export async function coreChatTurn({
 
       let resultText, ok = true;
       try {
-        resultText = normalizeToolResult(await adapter.runTool(name, args, { mode, model, signal }));
+        resultText = normalizeToolResult(await adapter.runTool(name, args, { id: call.id, mode, model, signal }));
       } catch (e) {
         ok = false;
         resultText = "[tool error] " + (e && e.message ? e.message : String(e));
