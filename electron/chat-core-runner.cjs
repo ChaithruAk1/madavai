@@ -61,7 +61,7 @@ async function runChatTurnViaCore(deps) {
   const res = await coreChatTurn({
     adapter, history, prompt: "", system: "",
     model: (profile && profile.model) || "", mode, tools, caps,
-    opts: { stepCap: MAX_STEPS, signal },
+    opts: { stepCap: MAX_STEPS, signal, profile }, // forward baseUrl/apiKey/etc — streamChatTools builds the URL from profile.baseUrl
   });
   // Persist the new turn messages back into the session history (core builds its own array).
   for (let i = before; i < res.messages.length; i++) history.push(res.messages[i]);

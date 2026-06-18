@@ -5,10 +5,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // ADR-0001 / M2c.3. electron/chat-core-runner.cjs routes a chat turn through coreChatTurn + the
-// desktop adapter (what the MADAV_CORE_CHAT branch in agent-openai.cjs calls). Driven here with the
-// SAME desktop leaves mocked, against the REAL recorded cassette: it must reproduce the final text,
-// the tool sequence, the desktop tool_use/tool_result events, AND persist the new turn back into
-// the session history.
+// desktop adapter (what the MADAV_CORE_CHAT branch in agent-openai.cjs calls). Driven with the SAME
+// desktop leaves mocked, against the REAL recorded cassette.
 const require = createRequire(import.meta.url);
 const { runChatTurnViaCore } = require("../../electron/chat-core-runner.cjs");
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -16,13 +14,16 @@ const cassette = JSON.parse(fs.readFileSync(path.join(here, "fixtures/desktop-ch
 
 function makeDeps() {
   const ipc = [];
+  const seenProfiles = [];
   let i = 0;
   const results = {};
   for (const k of Object.keys(cassette.toolResults || {})) results[k] = cassette.toolResults[k].slice();
   const history = [{ role: "system", content: cassette.system }, { role: "user", content: cassette.input }];
+  const profile = { model: cassette.model, baseUrl: "https://openrouter.ai/api", apiKey: "test-key", kind: "openai" };
   return {
     deps: {
-      streamChatTools: async (_p, _m, _t, { onDelta } = {}) => {
+      streamChatTools: async (p, _m, _t, { onDelta } = {}) => {
+        seenProfiles.push(p);
         const turn = cassette.modelTurns[i++] || { content: "" };
         if (turn.content && onDelta) onDelta(turn.content);
         return { content: turn.content || "", toolCalls: (turn.tool_calls || []).map((tc) => ({ id: tc.id, name: tc.function.name, arguments: tc.function.arguments })) };
@@ -35,15 +36,24 @@ function makeDeps() {
       askUserQuestion: async () => "answer",
       isAuto: () => true, isBlocked: () => false, askPermission: async () => true,
       emit: (ev) => ipc.push(ev), permissions: new Map(),
-      tools: cassette.tools, history, profile: { model: cassette.model }, mode: "chat", caps: { shell: true },
+      tools: cassette.tools, history, profile, mode: "chat", caps: { shell: true },
       cwd: "/x", skillsDir: "", mission: {}, agentName: "", allowAskUser: false, imagegenOn: true,
       permMode: "default", textMode: false, MAX_STEPS: 12, signal: undefined,
     },
-    ipc, history,
+    ipc, history, seenProfiles,
   };
 }
 
 describe("chat-core-runner — routes a real chat turn through the core, end to end (M2c.3)", () => {
+  it("forwards the full provider profile (baseUrl/apiKey) to the model call — regression for the /v1/chat/completions URL bug", async () => {
+    const { deps, seenProfiles } = makeDeps();
+    await runChatTurnViaCore(deps);
+    expect(seenProfiles.length).toBeGreaterThan(0);
+    expect(seenProfiles[0].baseUrl).toBe("https://openrouter.ai/api");
+    expect(seenProfiles[0].apiKey).toBe("test-key");
+    expect(seenProfiles[0].model).toBe(cassette.model);
+  });
+
   it("reproduces final text + tool sequence + the recorded tool_use/tool_result events", async () => {
     const { deps, ipc } = makeDeps();
     const res = await runChatTurnViaCore(deps);
@@ -56,7 +66,7 @@ describe("chat-core-runner — routes a real chat turn through the core, end to 
 
   it("persists the new turn back into session history (assistant + tool + assistant)", async () => {
     const { deps, history } = makeDeps();
-    expect(history).toHaveLength(2); // [system, user] going in
+    expect(history).toHaveLength(2);
     await runChatTurnViaCore(deps);
     expect(history.length).toBeGreaterThan(2);
     expect(history[history.length - 1].role).toBe("assistant");
