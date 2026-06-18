@@ -416,6 +416,7 @@ async function runTeamTurn(sess, text) {
   };
   sess.ac = new AbortController();
   emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind, mode: "team" });
+  try { if (mcpServersFromSettings(loadSettings()).length) await ensureMcpForSession(sess); } catch {}
   if (!sess.title) sess.title = text.slice(0, 60);
   const started = Date.now();
   try {
@@ -696,8 +697,8 @@ function activeTools() {
   try { on = FEAT_IMAGEGEN && ((loadSettings().extras) || {}).imagegen !== false; } catch {}
   return on ? COWORK_TOOLS : COWORK_TOOLS.filter((t) => t.function.name !== "create_image");
 }
-async function callTools(prof, messages, onDelta, signal) {
-  const tools = activeTools();
+async function callTools(prof, messages, onDelta, signal, extraTools) {
+  const tools = activeTools().concat(extraTools || []);
   try { return await streamChatTools(prof, messages, tools, { onDelta, signal }); }
   catch (e) { if (isNetworkErr(e) && getToken()) return await streamChatTools(prof, messages, tools, { onDelta, signal, proxy: proxyCfg() }); throw e; }
 }
@@ -708,12 +709,13 @@ async function runAgentTurn(sess, text, images, prof) {
   emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind, cwd: sess.cwd });
   const started = Date.now();
   // Harness (desktop-mirrored): squash stale tool outputs + per-turn call guard.
+  try { if (mcpServersFromSettings(loadSettings()).length) await ensureMcpForSession(sess); } catch {}
   squashStale(sess.messages);
   const guard = new CallGuard();
   let reasks = 0;
   try {
     for (let step = 0; step < 16; step++) {
-      const { content, toolCalls } = await callTools(prof, sess.messages, (c) => emit(sess.id, "assistant_delta", { text: c }), sess.ac.signal);
+      const { content, toolCalls } = await callTools(prof, sess.messages, (c) => emit(sess.id, "assistant_delta", { text: c }), sess.ac.signal, (sess.mcpTools || []));
       if (!toolCalls || !toolCalls.length) { sess.messages.push({ role: "assistant", content: content || "", model: prof.model, provider: prof.name }); emit(sess.id, "assistant_message", { stop_reason: "end_turn" }); maybeAutoTitle(sess, text, content || ""); break; }
       sess.messages.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
       for (const c of toolCalls) {
@@ -898,7 +900,7 @@ async function runChatAgentTurn(sess, text, images, prof) {
 async function runMemberWithTools(member, prof, task, sess) {
   const msgs = [{ role: "system", content: memberSys(member) }, { role: "user", content: task }];
   const sig = sess && sess.ac ? sess.ac.signal : undefined;
-  const tools = activeChatTools();
+  const tools = activeChatTools().concat((sess && sess.mcpTools) || []);
   const plain = async () => { const r = await callModel(prof, msgs, sig); return (r && r.text) || ""; };
   let usedTools = false;
   for (let step = 0; step < 6; step++) {

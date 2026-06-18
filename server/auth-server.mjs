@@ -826,6 +826,7 @@ const server = http.createServer(async (req, res) => {
     const url = String(b.url || "").trim();
     try { mcpBroker.assertSafeMcpUrl(url); } catch (e) { return json(res, 400, { error: String((e && e.message) || e) }); }
     try {
+      console.log("[mcp] list tools  <-", url);
       const tools = await mcpBroker.listTools({ url, headers: mcpForwardHeaders(b.headers) });
       return json(res, 200, { tools });
     } catch (e) { return json(res, 502, { error: "mcp", detail: String((e && e.message) || e) }); }
@@ -840,6 +841,7 @@ const server = http.createServer(async (req, res) => {
     if (!name) return json(res, 400, { error: "tool name required" });
     try { mcpBroker.assertSafeMcpUrl(url); } catch (e) { return json(res, 400, { error: String((e && e.message) || e) }); }
     try {
+      console.log("[mcp] CALL tool   <-", name, "@", url);
       const result = await mcpBroker.callTool({ url, headers: mcpForwardHeaders(b.headers), name, args: b.args || {} });
       return json(res, 200, { result });
     } catch (e) { return json(res, 502, { error: "mcp", detail: String((e && e.message) || e) }); }

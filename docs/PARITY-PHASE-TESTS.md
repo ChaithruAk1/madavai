@@ -480,3 +480,33 @@ Web-only change; desktop behaves exactly as before.
 
 ### Pass / fail
 - **PASS** = `46 passed`; MCP/tools still fire; a one-off network error no longer kills tools for the session.
+
+---
+
+## Phase 3 — increment P3.7: MCP tools in Collaborate + agent teams
+
+**What changed in plain words:** MCP tools were chat-only; now they're also available in **Let's
+Collaborate** and to **agent team members** — same opt-in `settings.mcpServers`, same broker, same
+fail-open loading. Files: `src/bridge/webBridge.js` only (the `executeTool` mcp route added in P3.3
+already handles the calls; this just loads `sess.mcpTools` for those sessions and adds them to each
+loop's tool list). **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  46 passed`.
+
+### Test 2 — MCP in Let's Collaborate (needs a picked folder + tool-capable model + DeepWiki added)
+1. Open **Let's Collaborate**, pick any folder.
+2. Ask: **"Using the DeepWiki tools, list the doc topics for `vercel/next.js`."**
+3. **You should see** an `mcp__mcp-deepwiki-com__…` tool step (and `[mcp] CALL tool` in the server terminal).
+
+### Test 3 — MCP in an agent team
+1. Run an **Agent Team** (tool-capable model) with: **"Use DeepWiki to summarize what `sindresorhus/ky` does."**
+2. **You should see** a member tool step tagged like `↳ Scout: mcp__mcp-deepwiki-com__ask-question` (and `[mcp] CALL tool` in the terminal).
+
+### Test 4 — Desktop unchanged
+Web-only change; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `46 passed`; MCP tools fire in Collaborate and in team members (not just chat); desktop unchanged.
+- With no MCP server configured, all three surfaces behave exactly as before (opt-in).
