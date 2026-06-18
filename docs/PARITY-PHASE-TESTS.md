@@ -567,3 +567,33 @@ Web/server-only (`server/*.mjs`); desktop behaves exactly as before.
 - **PASS** = `61 passed`; app unchanged; the on-disk store shows ciphertext only.
 - **What's next (and gated):** P3.4.3 (OAuth start/callback) and P3.4.4 (server-side token injection) —
   both **only after a security review**, per `docs/PHASE3-OAUTH.md`. Then P3.4.5 wires the Connectors UI.
+
+---
+
+## Phase 3 — increment P3.4.3a: connector-OAuth foundation (PKCE + registry + state; NO routes)
+
+**What changed in plain words:** the building blocks for "Sign in to Gmail on the web," with still **no live
+endpoint**. Three server-only pieces, each unit-tested: (1) PKCE helpers (the standard proof that ties an
+OAuth login to the request that started it); (2) a connector registry whose provider URLs and scopes are
+**fixed in code, never taken from a request** — this is what removes whole classes of attack (SSRF, scope
+injection); and (3) a single-use, user-bound, 10-minute OAuth "state" record stored in the database so it
+survives restarts and multiple server instances. Files: `server/oauth-pkce.mjs`,
+`server/connector-registry.mjs`, `server/oauth-state.mjs`, `server/store.mjs` (one new collection name).
+**No routes, no OAuth network calls, no UI, no desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  71 passed` (10 new: PKCE challenge math + entropy; the registry exposes Gmail
+read-only with constant https URLs and never leaks the client secret; OAuth state is single-use, expires
+after 10 min, and a sweep drops only the expired records — all verified against the real JSON store).
+
+### Test 2 — Nothing changed in the app
+There is still nothing to click. This slice only adds tested building blocks behind the scenes.
+
+### Test 3 — Desktop unchanged
+Web/server-only; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `71 passed`; app unchanged.
+- **Next (gated):** P3.4.3b adds the `start` / `list` / `disconnect` routes; P3.4.3c adds the `callback`
+  that accepts a provider token — **re-review at 3c**, per the design doc. Then P3.4.4 (token injection).
