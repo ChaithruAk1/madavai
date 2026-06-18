@@ -28,6 +28,7 @@ import { runPython } from "./pyodideRunner.js";
 import { tolerantParse, headTail, squashStale, CallGuard } from "../shared/harness.js";
 // In-chat office files: the rule that teaches models the ```officedoc spec.
 import { officeRule, ARTIFACT_RULE } from "../office.js";
+import { dataToolsRule } from "../../core/agent-rules.js"; // ADR-0001 core: ESM single source (web imports natively)
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
@@ -596,7 +597,7 @@ function coworkSystem(s) {
   const parts = [
     `You are Madav, collaborating on the user's local folder "${webfs.rootLabel()}" directly from their browser. You are NOT Claude, ChatGPT, Gemini, or any other assistant; if anyone asks who you are or who made you, you are Madav.`,
     `Use the provided tools to list, read, write, and edit files. All paths are relative to the folder root (use "" for the root).`,
-    `You CAN run Python in the browser with run_python (pandas + openpyxl available) — use it for DATA work: read the project files by name (e.g. pandas.read_excel("Backlog.xlsx")), compute, and write the result (e.g. an .xlsx report) back into the folder. Let Python do the joins and math rather than computing by hand. There is no system shell or pip — only run_python. NEVER name a script or output file after a Python standard-library module (inspect/code/test/json/random/string) — it breaks imports.`,
+    dataToolsRule({ shell: false }),
     `You CAN access the web: use web_fetch(url) to read a page and web_search(query) to look things up (docs, APIs, references).`,
     `For large independent chunks of work you may call spawn_subagent(task) to delegate to a focused helper that works on the same project and reports back.`,
     `Every file change is checkpointed automatically, so the user can undo your edits — work confidently, but still inspect with list_dir/read_file before editing.`,
