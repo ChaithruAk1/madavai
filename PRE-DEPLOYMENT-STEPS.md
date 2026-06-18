@@ -19,6 +19,7 @@
 | `npm run qa:restore` | Restore source code to the last green checkpoint (OTP-protected in the console) | outside the app |
 | `npm run qa:list` | Show saved checkpoints | outside the app |
 | `node server/auth-server.mjs` | Start the account/billing server locally | — |
+| `http://localhost:5174` - Local host to run directly on web| — |
 
 ---
 
