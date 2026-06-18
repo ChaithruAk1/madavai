@@ -4,14 +4,13 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { coreChatTurn } from "../../core/chat-loop.js";
 
-// ADR-0001 / M2c. The capstone harness proof: a REAL desktop chat turn (captured by
-// electron/turn-recorder.cjs, fixture below with the system prompt trimmed) is replayed through
-// core/chat-loop.js coreChatTurn via a mock adapter. coreChatTurn must reproduce the recorded
-// final text + tool sequence byte-equal. This is what gates the M2c flag cutover. It already
-// caught one real gap — the desktop engine's stripReasoning() on the final answer — now closed by
-// single-sourcing stripReasoning into core/turn-helpers.js.
+// ADR-0001 / M2c. The capstone harness proof: every REAL desktop chat turn captured by
+// electron/turn-recorder.cjs (fixtures/desktop-chat-*.json) must replay through core/chat-loop.js
+// coreChatTurn byte-equal — recorded final text + tool sequence + step count. This gates the M2c
+// flag cutover. It already caught the desktop stripReasoning() gap (now single-sourced into core).
 const here = path.dirname(fileURLToPath(import.meta.url));
-const cassette = JSON.parse(fs.readFileSync(path.join(here, "fixtures/desktop-chat-real.json"), "utf8"));
+const fixturesDir = path.join(here, "fixtures");
+const files = fs.readdirSync(fixturesDir).filter((f) => /^desktop-chat.*\.json$/.test(f)).sort();
 
 function adapterFromCassette(c) {
   const turns = (c.modelTurns || []).slice();
@@ -28,18 +27,22 @@ function adapterFromCassette(c) {
     emit: () => {},
   };
 }
+const run = (c) => coreChatTurn({ adapter: adapterFromCassette(c), prompt: c.input, system: c.system, model: c.model });
 
-describe("coreChatTurn replays a REAL recorded desktop chat turn (M2c harness proof)", () => {
-  it("reproduces the recorded tool sequence", async () => {
-    const res = await coreChatTurn({ adapter: adapterFromCassette(cassette), prompt: cassette.input, system: cassette.system, model: cassette.model });
-    expect(res.observedTools).toEqual(cassette.expect.toolSequence);
-  });
-  it("reproduces the recorded final text byte-equal (locks the stripReasoning parity fix)", async () => {
-    const res = await coreChatTurn({ adapter: adapterFromCassette(cassette), prompt: cassette.input, system: cassette.system, model: cassette.model });
-    expect(res.text).toBe(cassette.expect.finalText);
-  });
-  it("reproduces the recorded step count", async () => {
-    const res = await coreChatTurn({ adapter: adapterFromCassette(cassette), prompt: cassette.input, system: cassette.system, model: cassette.model });
-    expect(res.steps).toBe(cassette.expect.numTurns);
-  });
+describe("coreChatTurn replays REAL recorded desktop chat turns (M2c harness proof)", () => {
+  it("has at least one recorded cassette fixture", () => { expect(files.length).toBeGreaterThan(0); });
+  for (const file of files) {
+    const c = JSON.parse(fs.readFileSync(path.join(fixturesDir, file), "utf8"));
+    describe(`${file} (${c.modelTurns.length} turns, tools=[${c.expect.toolSequence.join(",")}])`, () => {
+      it("reproduces the recorded tool sequence", async () => {
+        expect((await run(c)).observedTools).toEqual(c.expect.toolSequence);
+      });
+      it("reproduces the recorded final text byte-equal", async () => {
+        expect((await run(c)).text).toBe(c.expect.finalText);
+      });
+      it("reproduces the recorded step count", async () => {
+        expect((await run(c)).steps).toBe(c.expect.numTurns);
+      });
+    });
+  }
 });

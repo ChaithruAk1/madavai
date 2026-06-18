@@ -1,0 +1,63 @@
+{
+  "name": "desktop-chat-2026-06-18T22-43-25-342Z",
+  "recordedAt": "2026-06-18T22:43:25.342Z",
+  "model": "stepfun/step-3.5-flash",
+  "mode": "chat",
+  "system": "[system prompt trimmed for fixture]",
+  "input": "what is weather today in chicago",
+  "tools": [
+    "load_skill",
+    "ask_user",
+    "create_image",
+    "web_search"
+  ],
+  "modelTurns": [
+    {
+      "content": "\nLet me search for Chicago's weather for you.",
+      "tool_calls": [
+        {
+          "id": "call_2b8586351a32bc5e",
+          "function": {
+            "name": "web_search",
+            "arguments": "{\"query\": \"weather today in Chicago\"}"
+          }
+        }
+      ]
+    },
+    {
+      "content": "\nI'm unable to retrieve current weather data for Chicago at the moment — the search tool isn't returning results.\n\nFor the most accurate, up-to-date Chicago weather, I'd recommend checking:\n\n- **weather.com** or **weather.gov** (National Weather Service)\n- **Google Weather** (search \"Chicago weather\")\n- **AccuWeather** or **Weather Underground**\n- Your phone's built-in weather app\n\nThese will give you current temperature, conditions, humidity, wind, and the forecast for the next several days."
+    }
+  ],
+  "toolResults": {
+    "web_search": [
+      "(no web results)"
+    ]
+  },
+  "events": [
+    {
+      "kind": "tool_use",
+      "data": {
+        "id": "call_2b8586351a32bc5e",
+        "name": "web_search",
+        "input": {
+          "query": "weather today in Chicago"
+        },
+        "auto": true
+      }
+    },
+    {
+      "kind": "tool_result",
+      "data": {
+        "id": "call_2b8586351a32bc5e",
+        "output": "(no web results)"
+      }
+    }
+  ],
+  "expect": {
+    "toolSequence": [
+      "web_search"
+    ],
+    "finalText": "I'm unable to retrieve current weather data for Chicago at the moment — the search tool isn't returning results.\n\nFor the most accurate, up-to-date Chicago weather, I'd recommend checking:\n\n- **weather.com** or **weather.gov** (National Weather Service)\n- **Google Weather** (search \"Chicago weather\")\n- **AccuWeather** or **Weather Underground**\n- Your phone's built-in weather app\n\nThese will give you current temperature, conditions, humidity, wind, and the forecast for the next several days.",
+    "numTurns": 2
+  }
+}
