@@ -1244,3 +1244,37 @@ vendor-gated, design-note-first — or Phase 4 (skill authoring on web + parity 
 `be.agentMemory` + `be.agentVersions`); nothing is sent to the server, and desktop is untouched.
 
 **Deploy:** renderer-only (`npm run build` → redeploy to Render). No server change.
+
+---
+
+## Skill Authoring on Web (SK1–SK3) — create · edit · enable · delete · import/export
+
+**What shipped (client-side; no server, no secrets):**
+- `src/webSkills.js` — pure `mergeSkills(bundled,user,prefs)` + `listAll`/`readAny`/`userSkills`/`skillPrefs`;
+  `bundledByName` + `bundledIndex` now run over the merged **enabled** list, so **authored skills feed the model
+  automatically** (they appear in the SKILLS index and load via the `load_skill` tool — no turn-loop change).
+- `src/bridge/webBridge.js` — `createSkill`/`saveSkill`/`deleteSkill`/`setSkillEnabled`/`readSkill`/`listSkills`
+  over `be.skills` + `be.skillPrefs`; `importSkillZip` (JSZip) + `exportPlay`/`importPlay` (JSON). `load_skill`
+  + the system-prompt index use the merged list. `importSkillFolder` stays desktop-only.
+- `src/components/Skills.jsx` — **web-gated** inline editor (name/description/body + Save) for user skills;
+  the "Write it by hand", "Import" (.zip/.md), and "Import play" entry points are now shown on web. Folder
+  import + the recorders remain desktop-only. **Desktop UI unchanged** (every addition is `isWeb`-gated or was
+  already shown on desktop).
+
+**Automated (passing):** `NODE_ENV=test npx vitest run tests/parity` → **203 passed (32 files)**. New: 5
+`web-skills` merge tests + 7 `bridge-surface` skill guards. esbuild clean (no dup keys); production build exit 0;
+**no `electron/` changes**.
+
+**Manual (web, signed in), Playbook screen:**
+1. **Create:** "Write it by hand" → name it → it appears in the Playbook as "Yours".
+2. **Edit:** open it → **Edit** → write a Markdown body + description → Save → reload shows the saved body.
+3. **Use in chat:** ask the assistant something matching the skill → it calls `load_skill` and follows your
+   instructions (authored skills are in the model's SKILLS list automatically).
+4. **Bench/enable:** toggle "In play / Benched" → a benched skill drops out of the model's SKILLS list.
+5. **Delete:** a user skill deletes; a built-in pack can't be deleted (offers "bench" instead).
+6. **Import:** "Import" → a `.zip` (with SKILL.md) or a `.md` file → it's added as a user skill. "Import play"
+   adds a `.play.json`. **Share** (export) downloads the skill as JSON.
+7. **Desktop unchanged:** the Playbook behaves identically in the desktop app.
+
+**Pass = 203 automated green + steps 1–7.** Client-side only (`be.skills` + `be.skillPrefs`); cross-device sync
+is a later option. **Deploy:** renderer-only (`npm run build` → redeploy).

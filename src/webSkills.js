@@ -33,11 +33,32 @@ export function listBundled() {
 }
 
 export const readBundled = (dir) => listBundled().find((s) => s.dir === dir) || null;
-export const bundledByName = (name) => listBundled().find((s) => s.name === name) || null;
+
+// ---- user-authored skills + prefs (web only; localStorage). Bundled stays read-only; users add their own. ----
+const LSK = "be.skills", LPREF = "be.skillPrefs";
+function lsObj(key) { try { const m = JSON.parse((typeof localStorage !== "undefined" && localStorage.getItem(key)) || "{}"); return (m && typeof m === "object") ? m : {}; } catch { return {}; } }
+export function userSkills() { return Object.values(lsObj(LSK)).filter((x) => x && x.dir); }
+export function skillPrefs() { return lsObj(LPREF); }
+
+// Pure: merge bundled + user (user wins on a dir clash), apply enabled overrides, sort by name. -> tested.
+export function mergeSkills(bundled, user, prefs) {
+  const p = prefs || {}; const byDir = new Map();
+  for (const x of bundled || []) byDir.set(x.dir, { ...x, bundled: true, user: false });
+  for (const x of user || []) if (x && x.dir) byDir.set(x.dir, { ...x, bundled: false, user: true });
+  return [...byDir.values()].map((x) => {
+    const ov = p[x.dir];
+    return { ...x, enabled: ov && ov.enabled === false ? false : (x.enabled !== false) };
+  }).sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+}
+// All skills (bundled + user) with enabled applied. NOT memoized — user skills change at runtime.
+export function listAll() { return mergeSkills(listBundled(), userSkills(), skillPrefs()); }
+export const readAny = (dir) => listAll().find((s) => s.dir === dir) || null;
+// Name lookup for load_skill — enabled skills only (bundled OR user).
+export const bundledByName = (name) => listAll().find((s) => s.enabled !== false && s.name === name) || null;
 
 // System-prompt index (mirror of electron/skills-manager.cjs indexText — keep wording in sync).
 export function bundledIndex() {
-  const skills = listBundled();
+  const skills = listAll().filter((s) => s.enabled !== false);
   if (!skills.length) return "";
   return "You have these SKILLS. When the user's request matches one, call the load_skill tool " +
     "with its exact name to get the full instructions, then follow them:\n" +

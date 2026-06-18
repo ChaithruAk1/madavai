@@ -16,6 +16,7 @@ const REQUIRED = [
   "listTasks", "createTask", "updateTask", "deleteTask", "getRuns", "runTaskNow", // S4: scheduled tasks
   "getAgentMemory", "setAgentMemory", "clearAgentMemory", "getAgentHistory", "getAgentStats",
   "listAgentVersions", "snapshotAgentVersion", "exportAgent", "importAgent", // Agent Ops (A2)
+  "listSkills", "readSkill", "createSkill", "saveSkill", "deleteSkill", "setSkillEnabled", "importSkillZip", // Skill authoring (SK)
 ];
 
 describe("web bridge surface", () => {

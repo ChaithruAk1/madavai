@@ -184,8 +184,9 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
   const [connectors, setConnectors] = useState([]);   // enabled connectors (for "needs")
   const [editChain, setEditChain] = useState(false);
   const [editNeeds, setEditNeeds] = useState(false);
+  const [skEdit, setSkEdit] = useState(null); // web inline skill editor draft (isWeb only)
 
-  const webNote = isWeb ? "Built-in packs work right here. Recording, importing and writing your own plays need the desktop app — the browser can't manage files on your computer." : "";
+  const webNote = isWeb ? "Built-in packs and your own skills both work right here — create, edit, bench and import skills in the browser. (Importing a whole skill folder still needs the desktop app.)" : "";
 
   const refresh = async () => {
     const cfg = await bridge.getSettings();
@@ -404,6 +405,7 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
                 {on ? <ToggleRight size={20} /> : <ToggleLeft size={20} />} {on ? "In play" : "Benched"}
               </button>
               <button className="btn ghost danger" title="Delete this play" onClick={() => deleteSkill(sel)}><Trash2 size={15} /></button>
+              {isWeb && <button className="btn ghost" title="Edit this skill" onClick={() => setSkEdit({ name: sel.name, description: sel.description || "", body: (detail && detail.body) || "" })}>Edit</button>}
             </>)}
             <button className="btn ghost" title="Share this play (with the expert agent that pins it)" onClick={() => sharePlay(sel)}><Share2 size={16} /></button>
           </div>
@@ -473,9 +475,21 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
               )}
             </div>
           )}
-          <div className="sk-card">
-            {detail ? renderMd(detail.body) : <div className="sk-empty">Loading…</div>}
-          </div>
+          {isWeb && skEdit ? (
+            <div className="sk-card" style={{ display: "grid", gap: 8 }}>
+              <input className="model-search" style={{ marginBottom: 0 }} value={skEdit.name} placeholder="Skill name" onChange={(e) => setSkEdit({ ...skEdit, name: e.target.value })} />
+              <input className="model-search" style={{ marginBottom: 0 }} value={skEdit.description} placeholder="One-line description (helps the agent pick it)" onChange={(e) => setSkEdit({ ...skEdit, description: e.target.value })} />
+              <textarea className="model-search" rows={16} style={{ resize: "vertical", fontFamily: "ui-monospace, monospace", fontSize: 12.5 }} value={skEdit.body} placeholder="Skill instructions in Markdown (an optional --- frontmatter block with name/description is supported)" onChange={(e) => setSkEdit({ ...skEdit, body: e.target.value })} />
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button className="btn ghost" onClick={() => setSkEdit(null)}>Cancel</button>
+                <button className="btn" onClick={async () => { const r = await bridge.saveSkill(sel.dir, skEdit); if (r && r.error) { setStatus(r.error); return; } setSkEdit(null); const list = await refresh(); const fresh = (list || []).find((x) => x.dir === sel.dir); if (fresh) { setSel(fresh); setDetail(await bridge.readSkill(fresh.dir)); } setStatus("Saved"); }}>Save skill</button>
+              </div>
+            </div>
+          ) : (
+            <div className="sk-card">
+              {detail ? renderMd(detail.body) : <div className="sk-empty">Loading…</div>}
+            </div>
+          )}
           <div className="sk-dir">{sel.dir}</div>
         </div>
       </div>
@@ -525,7 +539,7 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
             <button className="icon-btn" title="Reload" onClick={() => refresh()}><RefreshCw size={15} /></button>
             <div className="pj-search"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search plays…" /></div>
             <button className="btn ghost" title="Playbook Guide — pinning, stats, sharing" onClick={() => { setGuideTab("tour"); setChapter(0); setView("guide"); }}><BookOpen size={14} /> Playbook Guide</button>
-            {!isWeb && <button className="btn ghost" title="Import a shared .madavplay (play + its expert agent)" onClick={importPlay}><Download size={14} /> Import play</button>}
+            <button className="btn ghost" title="Import a shared play file" onClick={importPlay}><Download size={14} /> Import play</button>
             <button className="btn ghost" onClick={() => setShowFolders((v) => !v)}><FolderPlus size={14} /> Folders</button>
           </div>
         </div>
@@ -572,7 +586,7 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
                 else { setStatus("Distilling what you showed…"); const r = await bridge.recordDesktopStop(); setDeskRec(false); setStatus((r && (r.note || r.error)) || "stopped"); setTimeout(refresh, 4000); }
               }} />
           )}
-          {!isWeb && (
+          {(
             <Tile icon={PenLine} title="Write it by hand" sub="A named SKILL.md you fill in yourself." onClick={() => setWriting((v) => !v)} active={writing}>
               {writing && (
                 <span style={{ display: "flex", gap: 6, marginTop: 8, width: "100%" }} onClick={(e) => e.stopPropagation()}>
@@ -583,11 +597,11 @@ export default function Skills({ onSelectScreen = () => {} } = {}) {
               )}
             </Tile>
           )}
-          {!isWeb && (
-            <Tile icon={Package} title="Import" sub="A skill folder or .zip from anywhere.">
+          {(
+            <Tile icon={Package} title="Import" sub={isWeb ? "A skill .zip or SKILL.md file." : "A skill folder or .zip from anywhere."}>
               <span style={{ display: "flex", gap: 6, marginTop: 8 }} onClick={(e) => e.stopPropagation()}>
-                <button className="btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={importFolder}><FolderUp size={13} /> Folder</button>
-                <button className="btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={importZip}><Upload size={13} /> .zip</button>
+                {!isWeb && <button className="btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={importFolder}><FolderUp size={13} /> Folder</button>}
+                <button className="btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={importZip}><Upload size={13} /> {isWeb ? ".zip / .md" : ".zip"}</button>
               </span>
             </Tile>
           )}

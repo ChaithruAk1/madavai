@@ -22,15 +22,14 @@ describe("scheduled-task routes (Phase 3 S1)", () => {
     expect(src.includes("\\/tasks\\/[a-z0-9_]+\\/runs$")).toBe(true);   // GET runs
   });
 
-  it("CRUD is authed, per-user, quota-bounded; storage-only (no execution/secret in S1)", () => {
-    const i = src.indexOf('p === "/tasks" && req.method === "GET"');
-    const seg = src.slice(i, i + 3400);
-    expect(seg).toMatch(/authUser\(req\)/);
-    expect(seg).toMatch(/t\.userId === user\.id/);                     // per-user scoping
-    expect(seg).toMatch(/task limit reached/);                        // quota cap
-    expect(seg).toMatch(/15 \* 60000/);                               // min 15-min interval
-    expect(seg).not.toContain("apiKey");                              // no key handling yet
-    expect(seg).not.toContain("/starter/v1/chat");                    // no execution yet
+  it("CRUD is authed, per-user, quota-bounded; the task CRUD block never handles secrets", () => {
+    const start = src.indexOf('p === "/tasks" && req.method === "GET"');
+    const crud = src.slice(start, src.indexOf("/run$/i")); // GET/POST/PUT/DELETE/runs — before the run + key routes
+    expect(crud).toMatch(/authUser\(req\)/);
+    expect(crud).toMatch(/t\.userId === user\.id/);                  // per-user scoping
+    expect(crud).toMatch(/task limit reached/);                      // quota cap
+    expect(crud).not.toContain("apiKey");                            // key handling lives only in /tasks/provider-key
+    expect(src).toMatch(/15 \* 60000/);                              // min 15-min interval (in the task normalizer)
   });
 
   it("did not alter the existing /projects or /workspace routes", () => {

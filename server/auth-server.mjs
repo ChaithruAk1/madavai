@@ -19,6 +19,10 @@ import { scoreQuiz, scoreBatch } from "./quiz.mjs";
 import * as mcpBroker from "./mcp-broker.mjs"; // Phase 3: server-side MCP broker (HTTP/SSE), SSRF-guarded
 import { makeOAuthStateStore } from "./oauth-state.mjs"; // P3.4.3: store-backed, single-use, user-bound OAuth state
 import { makeConnectorVault } from "./connector-vault.mjs"; // P3.4.2: per-user encrypted token vault
+import { makeProviderKeyVault } from "./provider-key-vault.mjs"; // P3 S3a: sealed BYO provider key for scheduled runs
+import { completeOnce } from "./provider-call.mjs"; // P3 S3b: one non-streaming completion -> text
+import { makeScheduler } from "./scheduler.mjs"; // P3 S3b: internal claim-first scheduler (single-shot runs)
+import { computeNextRunAt, isActiveSchedule, sanitizeSchedule } from "./schedule-next.mjs"; // P3 S4: tz-aware next fire + schedule sanitize
 import { beginConnectorSignIn, finishConnectorSignIn, makeWebOAuthProvider } from "./connector-oauth-web.mjs"; // P3.4.5: realigned SDK OAuth + silent provider for the /mcp broker
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
@@ -93,6 +97,8 @@ const store = await makeStore();
 const oauthStates = makeOAuthStateStore(store);
 let _connectorVault = null;
 const connectorVault = () => (_connectorVault ||= makeConnectorVault(store));
+let _providerKeyVault = null;
+const providerKeyVault = () => (_providerKeyVault ||= makeProviderKeyVault(store));
 
 // Email lists read live (editing the file needs no restart): combines an env var (comma-separated)
 // with a text file (one email per line, '#' for comments).
@@ -411,6 +417,60 @@ function authorLabel(u) {
 const REQ_STATUSES = ["requested", "approved", "rejected", "building", "deployed"];
 const THREAD_CATEGORIES = ["ideas", "help", "showcase", "general"];
 
+// ---- Phase 3 S4: normalize a scheduled-task body (shared by POST + PUT). Stores the rich shared-UI fields
+// (name/description/schedule/target/permission/group/tz) additively; derives enabled + nextRunAt from the
+// schedule so daily/weekly/interval all fire correctly. Drafts (no prompt / mode off) are stored but never run.
+function sanitizeTaskTarget(t) {
+  const x = t || {}; const str = (v) => String(v == null ? "" : v).slice(0, 80);
+  const out = { type: ["chat", "project", "agent", "team", "play", "folder", "brief"].includes(x.type) ? x.type : "chat" };
+  for (const k of ["projectId", "agentId", "teamId", "skillName"]) if (x[k]) out[k] = str(x[k]);
+  return out;
+}
+function normalizeTaskInput(b, prev, now) {
+  const p = prev || {};
+  const pick = (k, n, dflt) => String((b[k] != null ? b[k] : (p[k] != null ? p[k] : dflt)) ?? "").slice(0, n);
+  const schedule = sanitizeSchedule(b.schedule != null ? b.schedule : p.schedule);
+  const prompt = (b.prompt != null ? String(b.prompt) : String(p.prompt || "")).slice(0, 8000);
+  const tz = String(b.tz != null ? b.tz : (p.tz || "UTC")).slice(0, 64);
+  const provider = ((b.provider != null ? b.provider : p.provider) === "byo") ? "byo" : "starter";
+  const intervalMs = schedule.mode === "interval" ? Math.max(15 * 60000, schedule.everyMinutes * 60000) : 0; // min 15-minute interval
+  const enabled = isActiveSchedule(schedule) && !!prompt;
+  const name = pick("name", 200, b.title != null ? b.title : p.title);
+  return {
+    title: pick("title", 200, name), name,
+    description: pick("description", 2000), prompt,
+    model: pick("model", 200), provider, schedule, tz,
+    target: sanitizeTaskTarget(b.target != null ? b.target : p.target),
+    permission: pick("permission", 20, "ask") || "ask",
+    group: pick("group", 80),
+    intervalMs, enabled,
+    nextRunAt: enabled ? computeNextRunAt(schedule, now, tz) : 0,
+  };
+}
+
+// ---- Phase 3 S3b: scheduled-task execution (single-shot; Starter house key or sealed BYO key) ----
+async function providerCallFor(task, user) {
+  const model = String(task.model || ""); const prompt = String(task.prompt || "");
+  if (task.provider === "byo") {
+    const k = await providerKeyVault().get(task.userId);
+    if (!k || !k.apiKey) throw new Error("no stored provider key — add one in Settings");
+    if (!isAllowedProxyHost(k.baseUrl)) throw new Error("provider host not allowed");
+    return completeOnce({ kind: k.kind, baseUrl: k.baseUrl, apiKey: k.apiKey, model, prompt });
+  }
+  // Starter (house key). Free models only, mirroring /starter/v1/chat/completions.
+  if (!STARTER_KEY && !STARTER_NIM_KEY) throw new Error("Starter is not configured on this server");
+  if (model.startsWith("nim/")) {
+    if (!STARTER_NIM_KEY) throw new Error("NVIDIA Starter source not configured");
+    return completeOnce({ kind: "openai", baseUrl: NIM_BASE, apiKey: STARTER_NIM_KEY, model: model.slice(4), prompt });
+  }
+  if (/:free$/.test(model)) {
+    if (!STARTER_KEY) throw new Error("Starter not configured");
+    return completeOnce({ kind: "openai", baseUrl: "https://openrouter.ai/api/v1", apiKey: STARTER_KEY, model, prompt, headers: STARTER_HEADERS });
+  }
+  throw new Error("Starter serves free models only (:free or nim/) — use provider:byo with a stored key for others");
+}
+const taskScheduler = makeScheduler({ store, providerCallFor, getUser: (id) => store.getUser(id), statusOf });
+
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, BASE);
   const p = u.pathname;
@@ -607,14 +667,9 @@ const server = http.createServer(async (req, res) => {
     let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
     const mine = (await store.col("tasks").all()).filter((t) => t.userId === user.id);
     if (mine.length >= 20) return json(res, 400, { error: "task limit reached (max 20)" });
-    const prompt = String(b.prompt || "").slice(0, 8000);
-    if (!prompt) return json(res, 400, { error: "prompt required" });
-    const intervalMs = Math.max(15 * 60000, Number(b.intervalMs) || 0); // min 15-minute interval
     const now = Date.now();
-    const task = { id: "tsk_" + crypto.randomBytes(8).toString("hex"), userId: user.id,
-      title: String(b.title || "").slice(0, 200), prompt, model: String(b.model || "").slice(0, 200),
-      provider: b.provider === "byo" ? "byo" : "starter", intervalMs, enabled: b.enabled !== false,
-      createdAt: now, lastRunAt: 0, nextRunAt: now + intervalMs };
+    const f = normalizeTaskInput(b, null, now); // draft allowed (no prompt / mode off => stored, never fires)
+    const task = { id: "tsk_" + crypto.randomBytes(8).toString("hex"), userId: user.id, createdAt: now, lastRunAt: 0, ...f };
     await store.col("tasks").insert(task);
     return json(res, 200, { task });
   }
@@ -625,12 +680,7 @@ const server = http.createServer(async (req, res) => {
     if (!cur || cur.userId !== user.id) return json(res, 404, { error: "not found" });
     const raw = await rawBody(req, res); if (raw === null) return;
     let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
-    const patch = {};
-    if (b.title != null) patch.title = String(b.title).slice(0, 200);
-    if (b.prompt != null) patch.prompt = String(b.prompt).slice(0, 8000);
-    if (b.model != null) patch.model = String(b.model).slice(0, 200);
-    if (b.enabled != null) patch.enabled = !!b.enabled;
-    if (b.intervalMs != null) patch.intervalMs = Math.max(15 * 60000, Number(b.intervalMs) || 0);
+    const patch = normalizeTaskInput(b, cur, Date.now()); // merges over cur; recomputes enabled + nextRunAt
     return json(res, 200, { task: await store.col("tasks").update(cur.id, patch) });
   }
   if (p.match(/^\/tasks\/[a-z0-9_]+$/i) && req.method === "DELETE") {
@@ -649,6 +699,45 @@ const server = http.createServer(async (req, res) => {
     if (!cur || cur.userId !== user.id) return json(res, 404, { error: "not found" });
     const runs = (await store.col("runs").all()).filter((r) => r.taskId === tid && r.userId === user.id);
     return json(res, 200, { runs });
+  }
+
+  // Run a task NOW (Phase 3 S3b): authed, user-scoped, single-shot via the scheduler (plan + daily quota apply).
+  if (p.match(/^\/tasks\/[a-z0-9_]+\/run$/i) && req.method === "POST") {
+    if (rateLimited(req, "tasks-w", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const cur = await store.col("tasks").get(p.split("/")[2]);
+    if (!cur || cur.userId !== user.id) return json(res, 404, { error: "not found" });
+    const run = await taskScheduler.runDue(cur); // checks plan + daily quota; ONE completion, no tools
+    if (run && run.skipped === "quota") return json(res, 429, { error: "daily run limit reached", skipped: "quota" });
+    if (run && (run.skipped === "plan" || run.skipped === "no user")) return json(res, 403, { error: "not eligible to run", skipped: run.skipped });
+    return json(res, 200, { run });
+  }
+
+  // ---- Scheduled-task BYO provider key (Phase 3 S3a): opt-in, sealed server-side, never echoed to the
+  // browser. Used later (S3b) to run a scheduled task on the user's own provider. Status is boolean-only.
+  if (p === "/tasks/provider-key" && req.method === "POST") {
+    if (rateLimited(req, "provkey", 20, 60000)) return tooMany(res, 60);
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const raw = await rawBody(req, res); if (raw === null) return;
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const baseUrl = String(b.baseUrl || "").trim(); const apiKey = String(b.apiKey || "").trim();
+    if (!baseUrl || !apiKey) return json(res, 400, { error: "baseUrl and apiKey required" });
+    if (!isAllowedProxyHost(baseUrl)) return json(res, 400, { error: "unsupported provider host" }); // SSRF allowlist (reused)
+    try { await providerKeyVault().set(user.id, { kind: b.kind, baseUrl, apiKey }); }
+    catch (e) { return json(res, 500, { error: "vault", detail: String((e && e.message) || e).slice(0, 200) }); }
+    return json(res, 200, { ok: true });
+  }
+  if (p === "/tasks/provider-key/status" && req.method === "GET") {
+    if (rateLimited(req, "tasks", 120, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    let st = { stored: false }; try { st = await providerKeyVault().status(user.id); } catch {}
+    return json(res, 200, st);
+  }
+  if (p === "/tasks/provider-key" && req.method === "DELETE") {
+    if (rateLimited(req, "provkey", 20, 60000)) return tooMany(res, 60);
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    try { await providerKeyVault().remove(user.id); } catch {}
+    return json(res, 200, { ok: true });
   }
 
   // ---- Project (Workroom) records sync (Phase 2): Workrooms follow the account, like the workspace blob
@@ -1337,4 +1426,5 @@ const server = http.createServer(async (req, res) => {
 
 server.headersTimeout = 65000;     // slow-loris guard
 server.requestTimeout = 300000;    // generous: /proxy/chat streams can run for minutes
+if (process.env.SCHED_DISABLED !== "1" && process.env.NODE_ENV !== "test") { taskScheduler.start(); console.log("[auth-server] task scheduler started (60s tick)"); }
 server.listen(PORT, () => console.log(`Madav auth server on ${BASE}  (store ${store.kind} · trial ${TRIAL_DAYS}d · dev-login ${process.env.ALLOW_DEV_LOGIN === "1" ? "ON" : "off"} · stripe ${STRIPE_SECRET && STRIPE_PRICE ? "ON" : "off"})`));

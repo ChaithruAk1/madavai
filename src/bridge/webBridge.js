@@ -10,12 +10,17 @@
 //     local models) can't run in a browser -> they return a clear "desktop app" result.
 import { streamChat, streamChatTools, listModels as provListModels, ping as provPing, apiBase } from "../shared/providers.js";
 import * as webTrace from "./webTrace.js";
-import { listBundled as _listBundled, readBundled, bundledByName, bundledIndex as _bundledIndex } from "../webSkills.js";
+import { listBundled as _listBundled, readBundled, mergeSkills, userSkills, skillPrefs } from "../webSkills.js"; // + user-authored skills (SK)
 // Bundled packs honor the same Extras gate as the desktop engine (today: EdgeTrader).
 const FEAT_EDGETRADER = import.meta.env.VITE_FEAT_EDGETRADER !== "0";
 const bundledOn = () => { try { return FEAT_EDGETRADER && ((loadSettings().extras) || {}).edgetrader !== false; } catch { return FEAT_EDGETRADER; } };
 const listBundled = () => (bundledOn() ? _listBundled() : []);
-const bundledIndex = () => (bundledOn() ? _bundledIndex() : "");
+const allSkills = () => mergeSkills(listBundled(), userSkills(), skillPrefs()); // gated bundled + user, enabled applied
+const skillByName = (name) => allSkills().find((s) => s.enabled !== false && s.name === name) || null;
+const bundledIndex = () => {
+  const sk = allSkills().filter((s) => s.enabled !== false);
+  return sk.length ? "You have these SKILLS. When the user\u0027s request matches one, call the load_skill tool with its exact name to get the full instructions, then follow them:\n" + sk.map((s) => `- ${s.name}: ${s.description}`).join("\n") : "";
+};
 import * as webfs from "./webfs.js";
 import { runPython } from "./pyodideRunner.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
@@ -736,7 +741,7 @@ async function executeTool(name, args, ctx) {
     case "web_search": return await webFetch({ query: args.query });
     case "deep_research": return await runDeepResearch({ query: args.query, queries: args.queries }, (term) => webFetch({ query: term }));
     case "remember": { const ag = ctx && ctx.sess && ctx.sess.agent; if (!ag || !ag.id) return "(Memory is kept only for custom agents.)"; amSave(addAgentNote(amGet(), ag.id, args.note || args.text || "")); return "Saved to your agent memory."; }
-    case "load_skill": { const sk = bundledByName(String(args.name || "").trim()); return sk ? sk.body : `No skill named "${args.name}". Available: ${listBundled().map((x) => x.name).join(", ") || "(none)"}`; }
+    case "load_skill": { const sk = skillByName(String(args.name || "").trim()); return sk ? sk.body : `No skill named "${args.name}". Available: ${allSkills().map((x) => x.name).join(", ") || "(none)"}`; }
     case "spawn_subagent": return await runSubagent(sess, args.task || "", sess && sess.profile);
     default: return "That tool isn't available on the web app (no terminal). Use the file/web tools.";
   }
@@ -1646,22 +1651,79 @@ export const webBridge = {
     ];
     return { items, stale: false, source: "web" };
   },
-  async listSkills() { return listBundled().map(({ body, ...s }) => s); }, // bundled packs ship in the web build (read-only)
-  async createSkill() { return { error: "Skills run in the desktop app." }; },
+  async listSkills() { return allSkills().map(({ body, ...s }) => s); }, // bundled (gated) + user-authored
+  async createSkill(name) {
+    const nm = String(name || "").trim(); if (!nm) return { error: "Name required." };
+    const all = LS.get("be.skills", {}); if (Object.keys(all).length >= 25) return { error: "Skill limit reached (25)." };
+    const slug = nm.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || ("skill-" + Date.now().toString(36));
+    let dir = "user/" + slug, i = 2; while (all[dir]) dir = "user/" + slug + "-" + (i++);
+    const now = Date.now();
+    all[dir] = { dir, name: nm, description: "", body: `---\nname: ${nm}\ndescription: \n---\n\n# ${nm}\n\nDescribe what this skill does and the exact steps to follow.\n`, user: true, createdAt: now, updatedAt: now };
+    LS.set("be.skills", all); return { ok: true, dir };
+  },
+  async saveSkill(dir, patch) {
+    const all = LS.get("be.skills", {}); const cur = all[dir];
+    if (!cur) return { error: "Built-in skills can\u0027t be edited \u2014 duplicate or create a new one." };
+    const x = patch || {};
+    all[dir] = { ...cur, name: x.name != null ? String(x.name).slice(0, 80) : cur.name, description: x.description != null ? String(x.description).slice(0, 300) : cur.description, body: x.body != null ? String(x.body).slice(0, 20000) : cur.body, updatedAt: Date.now() };
+    LS.set("be.skills", all); return { ok: true };
+  },
   async setPinnedSkills() { return { error: "Pinning plays needs the desktop app." }; },
   async getPlayStats() { return {}; },
-  async exportPlay() { return { error: "Sharing plays needs the desktop app." }; },
-  async importPlay() { return { error: "Importing plays needs the desktop app." }; },
+  async exportPlay(name) {
+    const sk = allSkills().find((x) => x.name === name); if (!sk) return { error: "Not found." };
+    try {
+      const blob = new Blob([JSON.stringify({ madavPlay: 1, skill: { name: sk.name, description: sk.description, body: sk.body } }, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = (sk.name || "play") + ".play.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return { ok: true };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  },
+  async importPlay() {
+    return new Promise((resolve) => { try {
+      const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json,.play,application/json";
+      inp.onchange = async () => { try {
+        const f = inp.files && inp.files[0]; if (!f) return resolve({ canceled: true });
+        const parsed = JSON.parse(await f.text()); const sk = parsed && parsed.skill ? parsed.skill : parsed;
+        if (!sk || !sk.name) return resolve({ error: "Not a valid play file." });
+        const all = LS.get("be.skills", {}); const slug = String(sk.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || ("play-" + Date.now().toString(36));
+        let dir = "user/" + slug, i = 2; while (all[dir]) dir = "user/" + slug + "-" + (i++);
+        all[dir] = { dir, name: String(sk.name).slice(0, 80), description: String(sk.description || "").slice(0, 300), body: String(sk.body || "").slice(0, 20000), user: true, createdAt: Date.now(), updatedAt: Date.now() };
+        LS.set("be.skills", all); resolve({ play: sk.name });
+      } catch (e) { resolve({ error: String((e && e.message) || e) }); } };
+      inp.click();
+    } catch (e) { resolve({ error: String((e && e.message) || e) }); } });
+  },
   async setPlayChain() { return { error: "Desktop only." }; },
   async setPlayNeeds() { return { error: "Desktop only." }; },
   async getPlayConfig() { return { chains: {}, meta: {} }; },
   async setTeamPinnedSkills() { return { error: "Desktop only." }; },
   async getPinSuggestions() { return []; },
   async importSkillFolder() { return { error: "Available in the desktop app." }; },
-  async importSkillZip() { return { error: "Available in the desktop app." }; },
-  async readSkill(dir) { const s = readBundled(dir); return s ? { dir: s.dir, file: s.file, meta: { name: s.name, description: s.description }, body: s.body, updated: 0 } : null; },
-  async setSkillEnabled() { return true; },
-  async deleteSkill() { return { ok: true }; },
+  async importSkillZip() {
+    return new Promise((resolve) => { try {
+      const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".zip,.md,application/zip,text/markdown";
+      inp.onchange = async () => { try {
+        const f = inp.files && inp.files[0]; if (!f) return resolve({ canceled: true });
+        let body = "";
+        if (/\.zip$/i.test(f.name)) {
+          const JSZip = (await import("jszip")).default; const zip = await JSZip.loadAsync(await f.arrayBuffer());
+          const entry = Object.keys(zip.files).find((n) => /SKILL\.md$/i.test(n)); if (!entry) return resolve({ error: "No SKILL.md in the zip." });
+          body = await zip.files[entry].async("string");
+        } else { body = await f.text(); }
+        let name = "", description = ""; const fm = body.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+        if (fm) fm[1].split(/\r?\n/).forEach((l) => { const k = l.indexOf(":"); if (k > 0) { const key = l.slice(0, k).trim(), val = l.slice(k + 1).trim().replace(/^["\u0027]|["\u0027]$/g, ""); if (key === "name") name = val; if (key === "description") description = val; } });
+        name = name || f.name.replace(/\.(zip|md)$/i, "");
+        const all = LS.get("be.skills", {}); const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || ("skill-" + Date.now().toString(36));
+        let dir = "user/" + slug, i = 2; while (all[dir]) dir = "user/" + slug + "-" + (i++);
+        all[dir] = { dir, name, description, body, user: true, createdAt: Date.now(), updatedAt: Date.now() };
+        LS.set("be.skills", all); resolve({ ok: true, count: 1 });
+      } catch (e) { resolve({ error: String((e && e.message) || e) }); } };
+      inp.click();
+    } catch (e) { resolve({ error: String((e && e.message) || e) }); } });
+  },
+  async readSkill(dir) { const s = allSkills().find((x) => x.dir === dir) || readBundled(dir); return s ? { dir: s.dir, file: s.file || "", meta: { name: s.name, description: s.description }, body: s.body || "", updated: s.updatedAt || 0 } : null; },
+  async setSkillEnabled(dir, enabled) { if (!dir) return true; const prefs = LS.get("be.skillPrefs", {}); if (enabled) delete prefs[dir]; else prefs[dir] = { enabled: false }; LS.set("be.skillPrefs", prefs); return true; },
+  async deleteSkill(dir) { const all = LS.get("be.skills", {}); if (!all[dir]) return { error: "Built-in skills can\u0027t be deleted \u2014 you can bench it instead." }; delete all[dir]; LS.set("be.skills", all); const prefs = LS.get("be.skillPrefs", {}); if (prefs[dir]) { delete prefs[dir]; LS.set("be.skillPrefs", prefs); } return { ok: true }; },
   async applyMessaging() { return { running: false, status: "Telegram runs in the desktop app." }; },
   async messagingStatus() { return { running: false, status: "desktop app only" }; },
   async completeOnce(messages) { try { const s = loadSettings(); const { text } = await streamChat(activeProfile(s), messages || [], { onDelta: () => {} }); return { text }; } catch (e) { return { error: String((e && e.message) || e) }; } },
