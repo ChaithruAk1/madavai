@@ -691,3 +691,32 @@ Web/server-only; desktop behaves exactly as before.
 - This completes the server-side connector **library** (acquire → store → use). What remains is product, not
   plumbing: **P3.4.5** (Connectors UI: connect / status / disconnect) and, when wanted, a concrete connector
   feature (e.g. a Gmail tool) that calls `getAccessToken` following the injection rule in the review note.
+
+---
+
+## Phase 3 — increment P3.4.5 / R1: web OAuth provider (desktop's mechanism, generic, no routes)
+
+**What changed in plain words:** the start of doing connector sign-in the SAME way desktop does it. Desktop
+lets the MCP SDK handle every connector's login generically — it discovers each server's login and registers
+itself, so there's **no code per connector**. This adds the web half: the storage adapter the SDK talks to,
+backed by the encrypted vault (the web stand-in for desktop's OS keychain), keyed per user. It works for ANY
+connector URL — no Gmail-specific (or any-provider-specific) code. Wired to nothing yet (no routes).
+File: `server/connector-oauth-web.mjs`. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  95 passed` (8 new: the provider advertises a public PKCE client at the HTTPS
+callback, round-trips client registration + tokens through the vault, carries the PKCE verifier, refuses to
+open a browser on the silent path, scopes credential invalidation, and is isolated per user).
+
+### Test 2 — Nothing changed in the app
+No new behaviour — a tested building block. Connector sign-in on web is still the old stub until R2/R3.
+
+### Test 3 — Desktop unchanged
+Web/server-only; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `95 passed`; app unchanged.
+- **Next (GATED):** R2 adds the signin/callback/status/signout routes that run the SDK flow — the callback
+  accepts the provider code, so it gets a **security review** before it ships. Then R3 wires the `/mcp` broker
+  + the web bridge methods so the existing Connectors UI works, and retires the old bespoke Google modules.
