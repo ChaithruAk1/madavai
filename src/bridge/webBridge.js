@@ -29,6 +29,9 @@ import { officeRule, ARTIFACT_RULE } from "../office.js";
 import { mcpServersFromSettings, mcpToolName, mcpResultText } from "./mcpNames.js"; // Phase 3 MCP (opt-in)
 import { toolsUnsupportedErr } from "./toolSupport.js"; // only cache "no tools" on a definitive signal
 import { runDeepResearch } from "./deepResearch.js"; // Phase 2: client-orchestrated multi-search research
+import { resolveProviderOnline } from "./providerPing.js"; // online/offline chip: proxy fallback
+import { buildKnowledgeContext } from "./ragLite.js"; // Phase 2: RAG-lite project knowledge
+import { agentMemoryBlock, addAgentNote, recordAgentRun, getAgentMem } from "./agentMemory.js"; // Phase 2: per-agent memory
 const AUTH_BASE = (() => {
   if (typeof window !== "undefined" && window.__MADAV_AUTH_BASE__) return String(window.__MADAV_AUTH_BASE__).replace(/\/+$/, "");
   if (typeof location !== "undefined" && location.port === "5174") return "http://127.0.0.1:8787";
@@ -369,6 +372,9 @@ const UMEM_KEY = "be.userMemory";
 let _umLastLearn = 0;
 function umGet() { try { const m = JSON.parse(localStorage.getItem(UMEM_KEY) || "{}"); return { notes: Array.isArray(m.notes) ? m.notes : [] }; } catch { return { notes: [] }; } }
 function umSave(m) { try { localStorage.setItem(UMEM_KEY, JSON.stringify(m)); } catch {} return m; }
+const AMEM_KEY = "be.agentMemory"; // per-agent memory + track record (Phase 2)
+function amGet() { try { const m = JSON.parse(localStorage.getItem(AMEM_KEY) || "{}"); return (m && typeof m === "object") ? m : {}; } catch { return {}; } }
+function amSave(m) { try { localStorage.setItem(AMEM_KEY, JSON.stringify(m || {})); } catch {} return m; }
 function umBlock(s) {
   if (!FEAT_MEMORY) return "";
   if (s && s.userMemory && s.userMemory.enabled === false) return "";
@@ -401,7 +407,7 @@ async function umLearn(prof, s, userText, replyText) {
   } catch {}
 }
 
-function systemPrompt(s, projectId) {
+function systemPrompt(s, projectId, query = "") {
   const parts = [BASE_BEHAVIOR + ARTIFACT_RULE + ANSWER_DIRECT_RULE + officeRulePart(s)];
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}, regardless of the language of the question.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
@@ -410,7 +416,9 @@ function systemPrompt(s, projectId) {
     const p = LS.get("be.projects", {})[projectId];
     if (p) {
       if (p.instructions) parts.push(p.instructions);
-      for (const k of p.knowledge || []) if (k.type === "text" && k.content) parts.push(`# ${k.name}\n${k.content}`);
+      const kdocs = (p.knowledge || []).filter((k) => k.type === "text" && k.content).map((k) => ({ name: k.name, content: k.content }));
+      const kctx = buildKnowledgeContext(query, kdocs); // RAG-lite: whole docs when small; ranked excerpts when large
+      if (kctx) parts.push(kctx);
     }
   }
   return parts.join("\n\n").trim();
@@ -428,7 +436,7 @@ function agentBlock(a) {
   return `You are "${a.name || "a custom agent"}", an agent the user built in Madav.` +
     (a.description ? ` Purpose: ${a.description}` : "") +
     `\n\nAgent instructions (always follow):\n${a.instructions}` +
-    agentKnowledgeBlock(a);
+    agentKnowledgeBlock(a) + agentMemoryBlock(amGet(), a.id);
 }
 
 // ===== Agent teams on the web (multi-agent: relay + manager) =====
@@ -613,6 +621,7 @@ const COWORK_TOOLS = [
   { type: "function", function: { name: "spawn_subagent", description: "Delegate a focused sub-task to a helper agent that works on the same project and returns a summary. Use for independent chunks of work (e.g. 'write tests for X').", parameters: { type: "object", properties: { task: { type: "string", description: "Clear, self-contained instructions for the sub-agent." } }, required: ["task"] } } },
   { type: "function", function: { name: "create_image", description: "Generate an IMAGE (raster picture) from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user automatically. Use ONLY for actual pictures: photos, illustrations, logos, artwork, or a diagram rendered as a picture. NEVER call this for a document, spreadsheet, slide deck, presentation, or PDF — those are produced with a fenced officedoc block, not with create_image. If unsure, do not call it.", parameters: { type: "object", properties: { prompt: { type: "string" } }, required: ["prompt"] } } },
   { type: "function", function: { name: "run_python", description: "Run a Python script IN THE BROWSER (pandas + openpyxl available) — the web equivalent of a terminal, for DATA work. The project's files are mounted in the working directory, so read them by name (e.g. pandas.read_excel(\"Backlog.xlsx\")). Any file the script writes (e.g. an .xlsx report) is saved back into the project folder. Use this to join/aggregate spreadsheets and build .xlsx/.csv outputs instead of computing by hand.", parameters: { type: "object", properties: { code: { type: "string", description: "Python source to run." } }, required: ["code"] } } },
+  { type: "function", function: { name: "remember", description: "Save a durable learning to your long-term agent memory so you recall it on FUTURE runs (a user preference, a fact about their setup, a lesson from this task). Use sparingly for things worth remembering beyond this conversation; never store secrets or one-off content.", parameters: { type: "object", properties: { note: { type: "string" } }, required: ["note"] } } },
   { type: "function", function: { name: "load_skill", description: "Load a skill's full instructions by its exact name (from the SKILLS list in your instructions), then follow them.", parameters: { type: "object", properties: { name: { type: "string" } }, required: ["name"] } } },
 ];
 
@@ -726,6 +735,7 @@ async function executeTool(name, args, ctx) {
     case "web_fetch": return await webFetch({ url: args.url });
     case "web_search": return await webFetch({ query: args.query });
     case "deep_research": return await runDeepResearch({ query: args.query, queries: args.queries }, (term) => webFetch({ query: term }));
+    case "remember": { const ag = ctx && ctx.sess && ctx.sess.agent; if (!ag || !ag.id) return "(Memory is kept only for custom agents.)"; amSave(addAgentNote(amGet(), ag.id, args.note || args.text || "")); return "Saved to your agent memory."; }
     case "load_skill": { const sk = bundledByName(String(args.name || "").trim()); return sk ? sk.body : `No skill named "${args.name}". Available: ${listBundled().map((x) => x.name).join(", ") || "(none)"}`; }
     case "spawn_subagent": return await runSubagent(sess, args.task || "", sess && sess.profile);
     default: return "That tool isn't available on the web app (no terminal). Use the file/web tools.";
@@ -817,7 +827,7 @@ async function runAgentTurn(sess, text, images, prof) {
 // Mirrors desktop's lightweight chat-agent path. Engaged only for OpenAI-style models on a plain
 // (non-project, non-team, non-folder) chat. Falls back to a normal streamed reply if the model can't
 // tool-call (and remembers that model so it won't retry-and-fail on every message).
-const CHAT_TOOLS = COWORK_TOOLS.filter((t) => ["web_fetch", "web_search", "create_image", "deep_research"].includes(t.function.name));
+const CHAT_TOOLS = COWORK_TOOLS.filter((t) => ["web_fetch", "web_search", "create_image", "deep_research", "remember"].includes(t.function.name));
 const modelKey = (prof) => (prof && (prof.baseUrl || "") + "::" + (prof.model || "")) || "";
 // Models that DEFINITIVELY rejected tool-calling -> use plain chat. TTL'd, and recorded ONLY on a
 // clear "tools unsupported" error (never a transient network/rate error) so a single hiccup can't
@@ -1154,7 +1164,7 @@ export const webBridge = {
       id = req.conversationId; messages = (prior.messages || []).slice(); title = prior.title || "";
     } else {
       id = rid("sess_"); messages = [];
-      let sys = agentic ? coworkSystem(s) : systemPrompt(s, req.projectId);
+      let sys = agentic ? coworkSystem(s) : systemPrompt(s, req.projectId, req.prompt || "");
       // WEB Projects have no linked local folder / no file tools (desktop-only). Be honest rather than
       // silently giving a tool-less reply (WEB-VS-DESKTOP P0-1). Discussion + text knowledge still work.
       if (!agentic && req.projectId) sys = sys ? `${sys}\n\n${WEB_PROJECT_NOTE}` : WEB_PROJECT_NOTE;
@@ -1165,6 +1175,7 @@ export const webBridge = {
     const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, convId: id, title, agentic, cwd: req.cwd || null, agent,
       team: (req.team && Array.isArray(req.team.members) && req.team.members.length) ? req.team : null };
     sessions.set(id, sess);
+    if (!prior && sess.agent && sess.agent.id) { try { amSave(recordAgentRun(amGet(), sess.agent.id)); } catch {} } // track record
     // Claude-like: title the chat from the FIRST message NOW (before the turn) so the sidebar —
     // refreshed on the init event — shows the real title the instant the turn starts. New chats only.
     if (!prior && req.prompt && !sess.title) {
@@ -1212,7 +1223,20 @@ export const webBridge = {
     if ((!out || !out.length) && p && p.baseUrl && getToken()) { try { out = await provListModels(p, { proxy: proxyCfg() }); } catch {} }
     return out;
   },
-  async pingProvider(profileId) { const s = loadSettings(); const p = resolveProfile(profileId ? s.profiles[profileId] : activeProfile(s)); return provPing(p); },
+  async pingProvider(profileId) {
+    const s = loadSettings();
+    const p = resolveProfile(profileId ? s.profiles[profileId] : activeProfile(s));
+    // Direct browser ping can CORS-fail while chat works via the proxy; confirm reachability server-side.
+    return resolveProviderOnline({
+      directPing: () => provPing(p),
+      hasToken: () => !!getToken(),
+      proxyModels: async () => {
+        const r = await fetch(api("/proxy/models"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ kind: p.kind, baseUrl: p.baseUrl, apiKey: p.apiKey }) });
+        if (!r.ok) throw new Error("proxy/models " + r.status);
+        return await r.json();
+      },
+    });
+  },
   async scoreQuiz(batch) {
     if (!getToken()) return {};
     try { const r = await fetch(api("/score-quiz"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ batch }) }); const j = await r.json().catch(() => ({})); return (j && j.scores) || {}; }
@@ -1447,6 +1471,7 @@ export const webBridge = {
 
   // ---- cross-chat user memory (view / edit / clear) ----
   async getUserMemory() { return umGet(); },
+  async getAgentMemory(agentId) { return getAgentMem(amGet(), agentId); },
   async setUserMemory(notes) {
     const list = (Array.isArray(notes) ? notes : [])
       .map((n) => (typeof n === "string" ? { at: Date.now(), text: n } : n))

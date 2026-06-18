@@ -933,3 +933,90 @@ Web-only (`deepResearch.js` + `webBridge.js`).
 
 ### Pass / fail
 - **PASS** = `100 passed`; in chat, `deep_research` fires and returns a multi-source digest the model synthesizes.
+
+---
+
+## Fix — provider online/offline chip (false "offline")
+
+**What changed in plain words:** the green/red chip pinged the provider **directly from the browser**, which
+CORS-fails for most cloud providers even though chat works (chat falls back to the server proxy). Now, when
+the direct ping fails and you're signed in, the chip confirms reachability the same way chat does — via the
+server's `/proxy/models` — so it shows "online" when chat actually works, and "offline" only for a real
+outage. Files: `src/bridge/providerPing.js` (new, pure), `src/bridge/webBridge.js` (`pingProvider`). **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  106 passed` (6 new: direct-ok short-circuits; not-signed-in trusts direct;
+direct-fail + signed-in consults the proxy; provider error / throw → offline; throwing direct ping falls through).
+
+### Test 2 — Manual
+With the web app running + a cloud provider whose `/models` is CORS-blocked: the chip now shows **online**
+while chat works. In devtools → Network you may see the direct `…/models` fail (CORS) but `POST /proxy/models`
+return 200 → chip goes green. A real outage (stop the server) → offline.
+
+### Test 3 — Desktop unchanged
+Web bridge only.
+
+### Pass / fail
+- **PASS** = `106 passed`; the chip reflects whether chat can actually reach the provider (proxy-aware), not
+  just whether the browser can directly.
+
+---
+
+## Phase 2 — RAG-lite knowledge retrieval (chunk + rank)
+
+**What changed in plain words:** a Project's text knowledge was injected **whole** into every project chat's
+system prompt with **no cap** — large knowledge blew up the prompt (and cost), and nothing prioritized the
+relevant parts. Now: small knowledge is still injected whole (unchanged); large knowledge is chunked and the
+passages most relevant to your question are selected within a budget (~6k chars), labeled by source so the
+model can cite them. No embeddings — lexical keyword ranking, fully client-side. Files: `src/bridge/ragLite.js`
+(new, pure), `src/bridge/webBridge.js` (`systemPrompt` uses it; query = your message). **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  113 passed` (7 new: chunk bounds; ranking puts query-matching passages first;
+small knowledge returned unchanged; empty → ""; large+query → relevant excerpts within budget with filler
+dropped; large+no-query → truncated within budget).
+
+### Test 2 — Manual (web running, signed in)
+1. Create a Project; add a **large** knowledge doc (paste a long document, >6k chars) spanning several topics.
+2. Open the Project chat and ask about **one** specific topic in it.
+3. The answer should focus on that topic and cite the source; the prompt no longer dumps the whole doc.
+   (Small knowledge docs behave exactly as before.)
+
+### Test 3 — Desktop unchanged
+Web bridge only.
+
+### Pass / fail
+- **PASS** = `113 passed`; large project knowledge is ranked + capped (not dumped whole); small unchanged.
+
+---
+
+## Phase 2 — agent memory + track record
+
+**What changed in plain words:** custom agents now have a long-term memory + a usage record, mirroring
+desktop's `agent-memory`. An agent can save a durable learning with a new **`remember`** tool (e.g. "the user
+prefers metric units"); those learnings are injected into the agent's system prompt on **future** runs, and
+each run bumps a track record. Per-agent, stored locally (`be.agentMemory`). Files: `src/bridge/agentMemory.js`
+(new, pure), `src/bridge/webBridge.js` (inject into agentBlock + `remember` tool + record run + getAgentMemory).
+**No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  119 passed` (6 new: notes add/trim/dedupe/cap + immutability; track-record counts;
+injection block empty-vs-populated).
+
+### Test 2 — Manual (web, signed in)
+1. **Agents** → create/open a custom agent (give it instructions); chat with it.
+2. Tell it: **"Remember that I prefer metric units."** → it calls the `remember` tool ("Saved to your agent memory").
+3. Start a **new** chat with the **same** agent and ask something where it matters (e.g. "a good beginner
+   running distance?") → it should answer in **km** without being told again.
+4. (devtools) the agent's system message now carries a "What you've learned from past runs" block + a
+   "Track record: N prior runs" line.
+
+### Test 3 — Desktop unchanged
+Web bridge only.
+
+### Pass / fail
+- **PASS** = `119 passed`; an agent recalls a saved learning on a later run; track record increments.
+- **Note:** memory is **device-local** for now (localStorage); account-wide server-sync is a later follow-up.
