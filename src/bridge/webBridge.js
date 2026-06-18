@@ -27,6 +27,7 @@ import { officeRule, ARTIFACT_RULE } from "../office.js";
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
 import { mcpServersFromSettings, mcpToolName, mcpResultText } from "./mcpNames.js"; // Phase 3 MCP (opt-in)
+import { toolsUnsupportedErr } from "./toolSupport.js"; // only cache "no tools" on a definitive signal
 const AUTH_BASE = (() => {
   if (typeof window !== "undefined" && window.__MADAV_AUTH_BASE__) return String(window.__MADAV_AUTH_BASE__).replace(/\/+$/, "");
   if (typeof location !== "undefined" && location.port === "5174") return "http://127.0.0.1:8787";
@@ -775,8 +776,14 @@ async function runAgentTurn(sess, text, images, prof) {
 // (non-project, non-team, non-folder) chat. Falls back to a normal streamed reply if the model can't
 // tool-call (and remembers that model so it won't retry-and-fail on every message).
 const CHAT_TOOLS = COWORK_TOOLS.filter((t) => ["web_fetch", "web_search", "create_image"].includes(t.function.name));
-const noToolModels = new Set(); // "baseUrl::model" that rejected a tools request -> use plain chat
 const modelKey = (prof) => (prof && (prof.baseUrl || "") + "::" + (prof.model || "")) || "";
+// Models that DEFINITIVELY rejected tool-calling -> use plain chat. TTL'd, and recorded ONLY on a
+// clear "tools unsupported" error (never a transient network/rate error) so a single hiccup can't
+// silently disable tools (and MCP) for the whole session.
+const noToolModels = new Map(); // key -> expiresAt (ms)
+const NO_TOOL_TTL = 60 * 60 * 1000; // 1 hour, then re-try tools
+const noToolUntil = (prof) => { const t = noToolModels.get(modelKey(prof)); return !!(t && t > Date.now()); };
+const markNoTools = (prof) => noToolModels.set(modelKey(prof), Date.now() + NO_TOOL_TTL);
 function activeChatTools() {
   let on = true;
   try { on = FEAT_IMAGEGEN && ((loadSettings().extras) || {}).imagegen !== false; } catch {}
@@ -844,7 +851,7 @@ async function runChatAgentTurn(sess, text, images, prof) {
         res = await callChatTools(prof, sess.messages, (c) => { if (c) { streamedAny = true; emit(sess.id, "assistant_delta", { text: c }); } }, sess.ac.signal, (sess.mcpTools || []));
       } catch (e) {
         if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
-        if (step === 0 && !usedTools && !streamedAny) { noToolModels.add(modelKey(prof)); return await plainReply(sess, text, prof, started); }
+        if (step === 0 && !usedTools && !streamedAny) { if (toolsUnsupportedErr(e)) markNoTools(prof); return await plainReply(sess, text, prof, started); }
         throw e;
       }
       const { content, toolCalls } = res;
@@ -970,7 +977,7 @@ async function runTurn(sess, text, images) {
     const imagegenOn = FEAT_IMAGEGEN && ((s.extras) || {}).imagegen !== false;
     const mcpOn = mcpServersFromSettings(s).length > 0;
     if (prof.kind !== "anthropic" && !sess.projectId && !(images && images.length)
-        && !noToolModels.has(modelKey(prof)) && (!!getToken() || imagegenOn || mcpOn)) {
+        && !noToolUntil(prof) && (!!getToken() || imagegenOn || mcpOn)) {
       return runChatAgentTurn(sess, text, images, prof);
     }
   }

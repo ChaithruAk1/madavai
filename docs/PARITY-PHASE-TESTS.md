@@ -453,3 +453,30 @@ web-only).
 - **Fallback check** = switch to a model that can't tool-call → it should still answer (no MCP step), not error.
 - If a prompt doesn't call a tool: add "**use your MCP tools**" explicitly, or use a more tool-eager model
   (weak models sometimes ignore tools). If you get a transport error on Test, tell me the exact text.
+
+---
+
+## Phase 3 — increment P3.6: robust tool-support cache (no more session-wide disable)
+
+**What changed in plain words:** Previously, if a model's first tool request failed **once** — even a
+transient network/rate blip — Madav marked it "no tools" and **silently skipped tools (and MCP) for the
+whole browser session** until you reloaded. (That's what hid MCP during testing.) Now it only remembers
+"no tools" on a **definitive** "tools unsupported" error (e.g. OpenRouter's "no endpoints found that
+support tool use", or "model does not support tools"), **never** on a transient error — and the memory
+**expires after 1 hour** so a model can recover. A transient blip now just falls back for that one
+message and retries tools on the next. Files: new pure `src/bridge/toolSupport.js` (unit-tested) +
+`src/bridge/webBridge.js`. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  46 passed` (3 new ones check the error classifier: definitive vs transient).
+
+### Test 2 — Tools/MCP still work (regression)
+In Let's Chat with a tool-capable model + DeepWiki configured, run the forcing prompt → you still get the
+`[mcp] CALL tool` line / tool step. (No reload needed anymore after a hiccup.)
+
+### Test 3 — Desktop unchanged
+Web-only change; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `46 passed`; MCP/tools still fire; a one-off network error no longer kills tools for the session.
