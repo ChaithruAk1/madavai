@@ -576,7 +576,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // ADR-0001 / M2c.0 — capture this CHAT turn to a replay cassette when MADAV_RECORD_TURN is set.
   // rec is null in normal use (env unset / non-chat / module absent) so every rec hook below is a no-op.
   const rec = (mode === "chat" && process.env.MADAV_RECORD_TURN && _makeTurnRecorder) ? _makeTurnRecorder({ model }) : null;
-  if (rec) rec.start({ system: (history[0] && history[0].role === "system") ? history[0].content : "", input: prompt, model, mode, tools: tools.map((t) => t.function && t.function.name).filter(Boolean) });
+  if (rec) { const _emit0 = emit; emit = (ev) => { try { rec.event(ev); } catch {} return _emit0(ev); }; rec.start({ system: (history[0] && history[0].role === "system") ? history[0].content : "", input: prompt, model, mode, tools: tools.map((t) => t.function && t.function.name).filter(Boolean) }); }
   for (let step = 0; step < MAX_STEPS; step++) {
     // Wave 1.3 — auto-compaction: at ~70% of the model's window, compress the
     // mission into working notes (exactly what /compact does in the CLI). Guard

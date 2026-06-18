@@ -38,7 +38,7 @@ function makeTurnRecorder({ model = "" } = {}) {
     recordedAt: new Date().toISOString(),
     model, mode: "chat",
     system: "", input: "", tools: [],
-    modelTurns: [], toolResults: {},
+    modelTurns: [], toolResults: {}, events: [],
     expect: { toolSequence: [], finalText: "", numTurns: 0 },
   };
 
@@ -52,7 +52,7 @@ function makeTurnRecorder({ model = "" } = {}) {
       try { fs.writeSync(fd, JSON.stringify(cassette, null, 2)); fs.fsyncSync(fd); }
       finally { fs.closeSync(fd); }
       console.log("[madav] turn-recorder: wrote chat cassette -> " + dest +
-        " (" + cassette.modelTurns.length + " model turns, " + cassette.expect.toolSequence.length + " tool calls)");
+        " (" + cassette.modelTurns.length + " model turns, " + cassette.expect.toolSequence.length + " tool calls, " + cassette.events.length + " events)");
     } catch (e) {
       console.error("[madav] turn-recorder: failed to write cassette:", (e && e.message) || e);
     }
@@ -81,6 +81,20 @@ function makeTurnRecorder({ model = "" } = {}) {
       const key = String(name == null ? "" : name);
       (cassette.toolResults[key] || (cassette.toolResults[key] = [])).push(String(text == null ? "" : text));
       cassette.expect.toolSequence.push(key);
+    },
+    // One UI event (desktop emits { kind, data }); trimmed so cassettes stay small.
+    event(ev) {
+      if (!ev || typeof ev !== "object") return;
+      const e = { kind: ev.kind };
+      if (ev.data && typeof ev.data === "object") {
+        const d = {};
+        for (const [k, v] of Object.entries(ev.data)) {
+          if (k === "image") continue; // drop base64 image blobs
+          d[k] = (typeof v === "string" && v.length > 600) ? (v.slice(0, 600) + "…(trimmed)") : v;
+        }
+        e.data = d;
+      } else if (ev.data !== undefined) { e.data = ev.data; }
+      cassette.events.push(e);
     },
     finish({ text = "", numTurns = 0, capped = false } = {}) {
       cassette.expect.finalText = String(text == null ? "" : text);

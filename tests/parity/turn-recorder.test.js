@@ -105,3 +105,21 @@ describe("turn-recorder -> coreChatTurn round-trip (the M2c contract)", () => {
     expect(res.steps).toBe(2);
   });
 });
+
+describe("turn-recorder — captures the UI event stream (for adapter emit parity)", () => {
+  it("records emit events, drops image blobs, trims long strings", () => {
+    process.env.MADAV_RECORD_TURN = path.join(os.tmpdir(), "madav-ev-" + Date.now() + ".json");
+    const rec = makeTurnRecorder({});
+    rec.start({ system: "s", input: "i", mode: "chat" });
+    rec.event({ kind: "tool_use", data: { id: "t1", name: "web_search", input: { query: "x" } } });
+    rec.event({ kind: "tool_result", data: { id: "t1", output: "y".repeat(1000), image: "data:image/png;base64,AAAA" } });
+    rec.event({ kind: "result", data: { subtype: "success" } });
+    const c = rec.finish({ text: "done", numTurns: 1 });
+    expect(c.events).toHaveLength(3);
+    expect(c.events[0]).toEqual({ kind: "tool_use", data: { id: "t1", name: "web_search", input: { query: "x" } } });
+    expect(c.events[1].data.image).toBeUndefined();            // base64 image dropped
+    expect(c.events[1].data.output.length).toBeLessThan(700);  // long string trimmed
+    expect(c.events[1].data.output.endsWith("(trimmed)")).toBe(true);
+    fs.unlinkSync(recorderDest());
+  });
+});
