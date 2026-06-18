@@ -839,3 +839,36 @@ tool count shows on the connector. Sign out → calls cleanly report needs-sign-
 - **PASS** = `107 passed`; no-auth MCP still works; a connected server's tools run in chat; a not-connected one
   errors as needs-sign-in (no crash, no token to the browser).
 - **Next:** R3c — remove the retired bespoke Google modules, leaving one clean SDK-based path.
+
+---
+
+## Phase 3 — increment P3.4.5 / R3c: retire the bespoke Google OAuth modules (one clean path)
+
+**What changed in plain words:** the old per-provider Google OAuth code (the thing we replaced with the
+generic, desktop-aligned SDK flow) is now removed from the live app. `server/auth-server.mjs` no longer
+defines the bespoke `/connectors/:id/oauth/*` routes or imports the bespoke modules. The four dead modules
+(`connector-registry`, `oauth-pkce`, `connector-oauth`, `connector-tokens`) and their unit tests are deleted
+in the same commit (see command below). One connector path remains — the SDK one. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see (after the `git rm` below):** all green, ~`88 passed`. (In this sandbox the count shows 100
+because the mount won't let me delete files; once you `git rm` the dead modules + their tests, the orphaned
+tests go away and the count drops — still all green.)
+
+### Test 2 — Retirement guard
+`connector-routes.test.js` now asserts the bespoke routes/imports are **gone** and the realigned routes
+remain. `connector-oauth-foundation.test.js` now covers only the kept `oauth-state` store.
+
+### Test 3 — Desktop unchanged
+Server + web-bridge only; desktop untouched. (Note: `electron/connector-registry.cjs` is desktop's own,
+separate file — not removed.)
+
+### Pass / fail
+- **PASS** = suite green after the `git rm`; only the SDK-based `/connectors/*` path exists; no live code
+  imports the removed modules.
+
+### Deletion command (run on your machine — the sandbox can't delete files)
+    git add server\auth-server.mjs tests\parity\connector-routes.test.js tests\parity\connector-oauth-foundation.test.js docs\PARITY-PHASE-TESTS.md
+    git rm server\connector-registry.mjs server\oauth-pkce.mjs server\connector-oauth.mjs server\connector-tokens.mjs tests\parity\oauth-pkce.test.js tests\parity\connector-oauth-exchange.test.js tests\parity\connector-tokens.test.js
+    git commit -m "P3.4.5 R3c: retire bespoke Google OAuth modules+routes; single SDK-based connector path"

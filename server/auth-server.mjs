@@ -17,11 +17,8 @@ import webmd from "../electron/webmd.cjs";
 import cspPolicy from "../shared/csp.cjs"; // single CSP source (web + desktop) // LLM-ready web extraction (CJS — Node imports it fine)
 import { scoreQuiz, scoreBatch } from "./quiz.mjs";
 import * as mcpBroker from "./mcp-broker.mjs"; // Phase 3: server-side MCP broker (HTTP/SSE), SSRF-guarded
-import { getConnector, isConfigured, connectorCreds, listConnectors, buildAuthorizeUrl } from "./connector-registry.mjs"; // P3.4.3: connector OAuth registry (constants only)
 import { makeOAuthStateStore } from "./oauth-state.mjs"; // P3.4.3: store-backed, single-use, user-bound OAuth state
-import { makeCodeVerifier, codeChallengeS256 } from "./oauth-pkce.mjs"; // P3.4.3: PKCE
 import { makeConnectorVault } from "./connector-vault.mjs"; // P3.4.2: per-user encrypted token vault
-import { exchangeCodeForToken } from "./connector-oauth.mjs"; // P3.4.3c: auth-code -> provider tokens (fetch-injectable)
 import { beginConnectorSignIn, finishConnectorSignIn, makeWebOAuthProvider } from "./connector-oauth-web.mjs"; // P3.4.5: realigned SDK OAuth + silent provider for the /mcp broker
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
@@ -859,94 +856,6 @@ const server = http.createServer(async (req, res) => {
       const result = await mcpBroker.callTool({ url, headers: mcpForwardHeaders(b.headers), name, args: b.args || {}, authProvider });
       return json(res, 200, { result });
     } catch (e) { return json(res, 502, { error: "mcp", detail: String((e && e.message) || e) }); }
-  }
-
-  // ---- Phase 3 P3.4.3b: connector OAuth — START / LIST / DISCONNECT. The token-accepting
-  // /connectors/:id/oauth/callback route is P3.4.3c (gated) and is intentionally NOT defined here.
-  // Tokens are NEVER returned to the browser; registry URLs/scopes are constants (no request input).
-  // GET /connectors -> [{id,label,configured,connected,scopes,accountLabel}] for the signed-in user. No tokens.
-  if (p === "/connectors" && req.method === "GET") {
-    if (rateLimited(req, "connectors", 60, 60000)) return json(res, 429, { error: "rate limited" });
-    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
-    const out = [];
-    for (const c of listConnectors()) {
-      let connected = false, accountLabel = null;
-      if (c.configured) { try { const tok = await connectorVault().get(user.id, c.id); connected = !!tok; accountLabel = (tok && tok.accountLabel) || null; } catch {} }
-      out.push({ id: c.id, label: c.label, configured: c.configured, connected, scopes: (getConnector(c.id) || {}).scopes || [], accountLabel });
-    }
-    return json(res, 200, { connectors: out });
-  }
-
-  // POST /connectors/:id/oauth/start -> { authorizeUrl }. Mints PKCE + a user-bound, single-use state. No token here.
-  let mConn = p.match(/^\/connectors\/([a-z0-9-]+)\/oauth\/start$/);
-  if (mConn && req.method === "POST") {
-    if (rateLimited(req, "conn-oauth", 20, 15 * 60000)) return tooMany(res, 900);
-    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
-    const id = mConn[1];
-    const conn = getConnector(id); if (!conn) return json(res, 404, { error: "unknown connector" });
-    if (!isConfigured(id)) return json(res, 501, { error: "connector not configured on server" });
-    const rawReq = await rawBody(req, res); if (rawReq === null) return;
-    let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
-    const redirect = String(b.redirect || "");
-    if (redirect && !isAllowedRedirect(redirect)) return json(res, 400, { error: "redirect not allowed" });
-    const { clientId } = connectorCreds(id);
-    const codeVerifier = makeCodeVerifier();
-    const state = await oauthStates.create({ connectorId: id, userId: user.id, codeVerifier, redirect });
-    const authorizeUrl = buildAuthorizeUrl(conn, {
-      clientId,
-      redirectUri: `${BASE}/connectors/${id}/oauth/callback`, // route lands in P3.4.3c
-      state,
-      codeChallenge: codeChallengeS256(codeVerifier),
-    });
-    return json(res, 200, { authorizeUrl });
-  }
-
-  // POST /connectors/:id/disconnect -> remove the user's stored tokens (idempotent). No token in/out.
-  mConn = p.match(/^\/connectors\/([a-z0-9-]+)\/disconnect$/);
-  if (mConn && req.method === "POST") {
-    if (rateLimited(req, "connectors", 60, 60000)) return json(res, 429, { error: "rate limited" });
-    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
-    const id = mConn[1];
-    if (!getConnector(id)) return json(res, 404, { error: "unknown connector" });
-    try { await connectorVault().remove(user.id, id); } catch {}
-    return json(res, 200, { ok: true });
-  }
-
-  // GET /connectors/:id/oauth/callback?code&state  (P3.4.3c) — the ONLY route that accepts a provider token.
-  // Consumes the single-use, user-bound state; exchanges the code (with PKCE); seals tokens into the vault
-  // under the STATE's userId (never a request field). No token ever appears in a response/redirect/log.
-  mConn = p.match(/^\/connectors\/([a-z0-9-]+)\/oauth\/callback$/);
-  if (mConn && req.method === "GET") {
-    if (rateLimited(req, "conn-oauth", 20, 15 * 60000)) return tooMany(res, 900);
-    const id = mConn[1];
-    const conn = getConnector(id);
-    const code = u.searchParams.get("code");
-    const state = u.searchParams.get("state");
-    const ctx = await oauthStates.consume(state); // single-use + TTL + user-bound; deleted on read
-    if (!conn || !code || !ctx || ctx.connectorId !== id) { res.writeHead(400); return res.end("Invalid or expired connector authorization"); }
-    try {
-      const { clientId, clientSecret } = connectorCreds(id);
-      const tok = await exchangeCodeForToken({ tokenUrl: conn.tokenUrl, clientId, clientSecret, code, codeVerifier: ctx.codeVerifier, redirectUri: `${BASE}/connectors/${id}/oauth/callback` });
-      if (!tok || !tok.access_token) {
-        console.error(`[connector] ${id} token exchange failed:`, JSON.stringify({ error: tok && tok.error, description: tok && tok.error_description }));
-        res.writeHead(400); return res.end("Connector authorization failed");
-      }
-      await connectorVault().put(ctx.userId, id, {
-        access_token: tok.access_token,
-        refresh_token: tok.refresh_token || null,
-        expires_at: tok.expires_in ? Date.now() + tok.expires_in * 1000 : null,
-        scope: tok.scope || conn.scopes.join(" "),
-        accountLabel: null,
-        connectedAt: new Date().toISOString(),
-      });
-      const redir = ctx.redirect && isAllowedRedirect(ctx.redirect) ? ctx.redirect : "";
-      if (redir) { const sep = redir.includes("?") ? "&" : "?"; res.writeHead(302, { Location: redir + sep + "connected=" + encodeURIComponent(id) }); return res.end(); }
-      res.writeHead(200, { "Content-Type": "text/html" });
-      return res.end(`<h2>Connected ${esc(conn.label)} to Madav</h2><p>You can close this window.</p>`);
-    } catch (e) {
-      console.error(`[connector] ${id} callback error:`, String(e && e.message));
-      res.writeHead(500); return res.end("Connector error");
-    }
   }
 
   // ---- Phase 3 P3.4.5 (R2b): REALIGNED connector OAuth via the MCP SDK (generic, one path for ALL
