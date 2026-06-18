@@ -1047,3 +1047,29 @@ Server-only.
 ### Pass / fail
 - **PASS** = `123 passed`; task CRUD works per-user with quotas; **nothing executes yet** (by design).
 - **Next:** S2 single-shot executor (gated) → S3 scheduler + BYO-key vault (security review) → S4 UI wiring.
+
+---
+
+## Phase 3 / S2 — single-shot task executor (wired to nothing)
+
+**What changed in plain words:** the piece that actually RUNS one scheduled task — given a stored prompt it
+makes ONE model call and records the result (success or error). It does **not** use tools, files, MCP, or a
+multi-turn loop (drift guard R7), and the model call is **injected** so it holds no keys and runs in tests
+with no network. Nothing calls it yet (the scheduler is S3). Also adds the pure scheduler helpers
+(`isTaskDue`, `nextRunAfter`). File: `server/task-run.mjs`. **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  130 passed` (7 new: runTaskOnce success / output-cap / error / guard cases;
+`nextRunAfter` + `isTaskDue`; and a static check that the executor imports none of the tool/agent/broker machinery).
+
+### Test 2 — Nothing to click
+A tested building block; no behaviour change yet.
+
+### Test 3 — Desktop unchanged
+Server-only (`server/task-run.mjs`).
+
+### Pass / fail
+- **PASS** = `130 passed`.
+- **Next (security-review gate):** S3 — the scheduler tick + atomic claim + per-user quotas + the encrypted
+  **BYO-key vault** (the slice that actually executes server-side). Then S4 wires the web task UI.
