@@ -75,6 +75,8 @@ function destructiveBashGuard(command) {
   return "";
 }
 const { streamChatTools, streamChat, stripReasoning } = require("./providers.cjs");
+// ADR-0001 / M2c.0 — record-only chat-turn cassette capture (env-gated; no-op unless MADAV_RECORD_TURN set).
+let _makeTurnRecorder = null; try { _makeTurnRecorder = require("./turn-recorder.cjs").makeTurnRecorder; } catch {}
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
 // The discipline layer (PLAN-AGENT-PARITY waves): JSON repair, plan tracking,
@@ -571,6 +573,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   let reviewsDone = 0;           // Wave 5.2 — reviewer call budget per turn
   let justCompacted = false;     // skip re-triggering compaction the step right after it ran
   const textToolList = () => tools.map((t) => `- ${t.function.name} ${JSON.stringify((t.function.parameters && t.function.parameters.properties) || {}).slice(0, 160)}`).join("\n");
+  // ADR-0001 / M2c.0 — capture this CHAT turn to a replay cassette when MADAV_RECORD_TURN is set.
+  // rec is null in normal use (env unset / non-chat / module absent) so every rec hook below is a no-op.
+  const rec = (mode === "chat" && process.env.MADAV_RECORD_TURN && _makeTurnRecorder) ? _makeTurnRecorder({ model }) : null;
+  if (rec) rec.start({ system: (history[0] && history[0].role === "system") ? history[0].content : "", input: prompt, model, mode, tools: tools.map((t) => t.function && t.function.name).filter(Boolean) });
   for (let step = 0; step < MAX_STEPS; step++) {
     // Wave 1.3 — auto-compaction: at ~70% of the model's window, compress the
     // mission into working notes (exactly what /compact does in the CLI). Guard
@@ -637,6 +643,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     }
 
     const { content, toolCalls } = result;
+    if (rec) rec.step({ content, toolCalls, textMode, rawText: result._rawText });
     const assistantMsg = { role: "assistant", content: textMode ? (result._rawText || content || "") : (content || "") };
     if (!textMode && toolCalls.length) {
       assistantMsg.tool_calls = toolCalls.map((tc) => ({ id: tc.id, type: "function", function: { name: tc.name, arguments: tc.arguments } }));
@@ -659,6 +666,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       // Final answer — strip any chain-of-thought, then reveal the clean text. When we already
       // streamed it live (chat), it's on screen — re-emitting would duplicate it, so skip.
       const clean = stripReasoning(content);
+      if (rec) rec.finish({ text: clean, numTurns: step + 1 });
       if (clean && !(streamLive && !textMode)) emit({ kind: "assistant_delta", data: { text: clean } });
       emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
       emit({ kind: "result", data: { subtype: "success", num_turns: step + 1, duration_ms: Date.now() - started } });
@@ -671,6 +679,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     // In text mode there are no native tool_calls on the assistant message, so tool
     // results must return as user-role messages (the "tool" role would be rejected).
     const pushToolResult = (tc, text) => {
+      if (rec) rec.toolResult(tc.name, text);
       if (textMode) history.push({ role: "user", content: `[result of ${tc.name}]\n` + text });
       else history.push({ role: "tool", tool_call_id: tc.id, content: text });
     };
@@ -959,6 +968,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       }
     }
   }
+  if (rec) rec.finish({ text: "", numTurns: MAX_STEPS, capped: true });
   modelStats.bump(model, "maxSteps");
   emit({ kind: "result", data: { subtype: "max_steps", duration_ms: Date.now() - started } });
 }
