@@ -43,6 +43,7 @@ rendered in chat. Let's Chat produces files the same way (scratch dir). DO NOT "
 1. `_projectTurn` folder note = a RIGID recipe: inspect ≤2 cmds → write ONE uniquely-named
    script that SAVES an .xlsx into the folder → run once → stop → one-line summary. The SAVED
    FILE is the deliverable (not an inline officedoc). `_chatDataTurn` does the same in a scratch dir.
+   **(2026-06-16) GATED behind `isDeckCapable`:** the rigid recipe above now applies ONLY to weak models. `_projectTurn` wraps it as `isDeckCapable(profile.model) ? <lighter brief> : <this recipe, byte-identical 1313 B>`. Capable models (Opus/Sonnet/DeepSeek/etc.) get a lighter note that keeps the save-a-file -> Open/Download-card contract but drops the single-script / numbered-steps straitjacket. The WEAK path is byte-unchanged (verified), so the guarantee below still holds.
 2. `emitNewOutputs(emit, folder, before)` diffs the folder before/after and emits `file_output`
    → renders as `FileOutCard` (Open = openPath, Folder = showInFolder). Logs `[madav] emitNewOutputs ... new=N`.
 3. `needsDataTools` triggers on bare `excel|spreadsheet|workbook|xlsx|csv|pivot table` but NOT on
