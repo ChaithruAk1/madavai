@@ -23,7 +23,7 @@
 function makeDesktopChatAdapter(deps = {}) {
   const {
     streamChatTools, streamChat, parseTextToolCalls,
-    execLeaf, emit, toolset = [],
+    execLeaf, emit, toolset = [], authorize,
     isAuto = () => true, textMode = false, now = () => Date.now(),
   } = deps;
   const started = now();
@@ -52,7 +52,14 @@ function makeDesktopChatAdapter(deps = {}) {
     // Owns the tool UI events (desktop emits tool_use BEFORE running, tool_result AFTER).
     async runTool(name, args, ctx = {}) {
       const id = ctx.id || "";
-      emit({ kind: "tool_use", data: { id, name, input: args, auto: !!isAuto(name) } });
+      const dec = authorize ? await authorize(name, args, id) : { decision: "run", auto: !!isAuto(name) };
+      emit({ kind: "tool_use", data: { id, name, input: args, auto: !!dec.auto } });
+      if (dec.decision === "blocked" || dec.decision === "denied") {
+        const out = dec.decision === "blocked" ? "(blocked: plan mode is read-only)" : "(user declined this tool call)";
+        emit({ kind: "permission_denied", data: { id, name, reason: dec.decision === "blocked" ? "plan mode (read-only)" : "declined" } });
+        emit({ kind: "tool_result", data: { id, output: out } });
+        return out;
+      }
       let output;
       try { output = await execLeaf(name, args, ctx); }
       catch (e) { output = "ERROR: " + ((e && e.message) || e); }

@@ -44,3 +44,7 @@ vite.fast2.config.mjs
 .__scratch_probe
 _mdv_cleanup.bat
 _z_clean.bat
+
+# M2c turn-recorder local captures (contain real chat content — never commit)
+recorded-chat-turn.json
+desktop-chat-*.json

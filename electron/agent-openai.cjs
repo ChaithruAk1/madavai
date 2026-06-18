@@ -77,6 +77,7 @@ function destructiveBashGuard(command) {
 const { streamChatTools, streamChat, stripReasoning } = require("./providers.cjs");
 // ADR-0001 / M2c.0 — record-only chat-turn cassette capture (env-gated; no-op unless MADAV_RECORD_TURN set).
 let _makeTurnRecorder = null; try { _makeTurnRecorder = require("./turn-recorder.cjs").makeTurnRecorder; } catch {}
+let _runChatViaCore = null; try { _runChatViaCore = require("./chat-core-runner.cjs").runChatTurnViaCore; } catch {} // ADR-0001 / M2c.3 — flag-guarded core chat path (MADAV_CORE_CHAT, default off)
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
 // The discipline layer (PLAN-AGENT-PARITY waves): JSON repair, plan tracking,
@@ -577,6 +578,17 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // rec is null in normal use (env unset / non-chat / module absent) so every rec hook below is a no-op.
   const rec = (mode === "chat" && process.env.MADAV_RECORD_TURN && _makeTurnRecorder) ? _makeTurnRecorder({ model }) : null;
   if (rec) { const _emit0 = emit; emit = (ev) => { try { rec.event(ev); } catch {} return _emit0(ev); }; rec.start({ system: (history[0] && history[0].role === "system") ? history[0].content : "", input: prompt, model, mode, tools: tools.map((t) => t.function && t.function.name).filter(Boolean) }); }
+  // ADR-0001 / M2c.3 — flag-guarded cutover: route CHAT through the shared core loop. Default OFF =
+  // the legacy loop below runs byte-for-byte unchanged. ON = coreChatTurn + the desktop adapter.
+  if (process.env.MADAV_CORE_CHAT && mode === "chat" && _runChatViaCore) {
+    return await _runChatViaCore({
+      streamChatTools, streamChat, parseTextToolCalls: harness.parseTextToolCalls,
+      quickSearch: require("./research.cjs").quickSearch, generateImage: require("./imagegen.cjs").generateImage,
+      runTool, askUserQuestion, isAuto, isBlocked, askPermission,
+      emit, permissions, tools, history, profile, mode, caps: { shell: !noShell },
+      cwd, skillsDir, mission, agentName, allowAskUser, imagegenOn, permMode, textMode, MAX_STEPS, signal,
+    });
+  }
   for (let step = 0; step < MAX_STEPS; step++) {
     // Wave 1.3 — auto-compaction: at ~70% of the model's window, compress the
     // mission into working notes (exactly what /compact does in the CLI). Guard
