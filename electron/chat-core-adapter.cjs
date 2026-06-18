@@ -27,26 +27,35 @@ function makeDesktopChatAdapter(deps = {}) {
     isAuto = () => true, textMode = false, now = () => Date.now(),
   } = deps;
   const started = now();
+  let inText = !!textMode; // sticky once the native->text fallback fires
 
   return {
     tools() { return toolset; },
 
     async stream(profile, messages, tools, { onDelta, signal } = {}) {
-      if (textMode) {
+      const textPath = async () => {
         const tr = await streamChat(profile, messages, { onDelta: () => {}, signal });
         const text = (tr && tr.text) || "";
         const { calls, stripped } = parseTextToolCalls(text);
         return {
           content: stripped,
           tool_calls: (calls || []).map((c) => ({ id: c.id, function: { name: c.name, arguments: c.arguments } })),
-          _rawText: text,
+          textMode: true, _rawText: text,
         };
-      }
-      const r = (await streamChatTools(profile, messages, tools, { onDelta, signal })) || {};
-      return {
-        content: r.content || "",
-        tool_calls: (r.toolCalls || []).map((t) => ({ id: t.id, function: { name: t.name, arguments: t.arguments } })),
       };
+      if (inText) return textPath();
+      try {
+        const r = (await streamChatTools(profile, messages, tools, { onDelta, signal })) || {};
+        return {
+          content: r.content || "",
+          tool_calls: (r.toolCalls || []).map((t) => ({ id: t.id, function: { name: t.name, arguments: t.arguments } })),
+          textMode: false,
+        };
+      } catch (e) {
+        // Native function-calling unsupported -> fall back to the text protocol (sticky), like the legacy loop.
+        if (/tool|function/i.test(String((e && e.message) || ""))) { inText = true; return textPath(); }
+        throw e;
+      }
     },
 
     // Owns the tool UI events (desktop emits tool_use BEFORE running, tool_result AFTER).

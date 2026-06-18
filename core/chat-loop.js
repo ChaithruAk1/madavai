@@ -14,7 +14,7 @@
 //   tools(mode, caps)                                       -> tool schema array   (optional if `tools` passed)
 //   emit(event)                                             -> void                (UI event stream)
 
-import { tolerantParse, headTail, squashStale, CallGuard, parseTextToolCalls, stripReasoning } from "./turn-helpers.js";
+import { tolerantParse, headTail, squashStale, CallGuard, parseTextToolCalls, stripReasoning, TEXT_PROTOCOL } from "./turn-helpers.js";
 
 export const CHAT_ADAPTER_METHODS = ["stream", "runTool", "emit"]; // `tools` may instead arrive via opts
 export const DEFAULT_STEP_CAP = 14;
@@ -39,8 +39,12 @@ function normalizeToolResult(r) {
 
 // A native-protocol tool result: role "tool" carrying the originating call id. (Text-mode loops
 // elsewhere render this as a user-role "[result of ...]" message — which squashStale also compresses.)
-function toolResultMsg(call, content) {
-  return { role: "tool", tool_call_id: (call && call.id) || "", content: String(content == null ? "" : content) };
+function toolResultMsg(call, content, textMode) {
+  const text = String(content == null ? "" : content);
+  // Tier-C (text-mode) models reject role:"tool"; their results return as a user-role marker message
+  // (matches the desktop loop's pushToolResult). squashStale compresses both forms.
+  if (textMode) return { role: "user", content: "[result of " + (callName(call) || "") + "]\n" + text };
+  return { role: "tool", tool_call_id: (call && call.id) || "", content: text };
 }
 
 function callName(call) { return call && call.function ? call.function.name : (call && call.name); }
@@ -74,12 +78,23 @@ export async function coreChatTurn({
   const observedTools = [];
   let steps = 0;
   let finalText = "";
+  // Tier-C / no-native-tools support: text mode is sticky once active (initial from opts, or set by the
+  // adapter's native->text fallback via resp.textMode). It changes the tool-result message shape and
+  // injects the text protocol once, exactly like the desktop loop.
+  let textMode = !!opts.textMode;
+  const textToolList = () => (toolset || []).map((t) => "- " + (t.function && t.function.name) + " " + JSON.stringify((t.function && t.function.parameters && t.function.parameters.properties) || {}).slice(0, 160)).join("\n");
 
   adapter.emit({ type: "turn_start", mode, model });
 
   while (steps < stepCap) {
     if (signal && signal.aborted) { adapter.emit({ type: "aborted" }); break; }
     steps++;
+
+    // Inject the text-mode tool protocol ONCE when text mode is active (lazy: covers the fallback case).
+    if (textMode && messages[0] && messages[0].role === "system" && !messages[0]._protocolAdded) {
+      messages[0].content += "\n" + TEXT_PROTOCOL(textToolList());
+      messages[0]._protocolAdded = true;
+    }
 
     // Keep the window lean: compress stale tool results before each model call.
     squashStale(messages);
@@ -88,6 +103,7 @@ export async function coreChatTurn({
     const resp = (await adapter.stream(profile, messages, toolset, { onDelta, signal })) || {};
     const content = resp.content != null ? String(resp.content) : "";
     let toolCalls = Array.isArray(resp.tool_calls) ? resp.tool_calls : [];
+    if (resp.textMode) textMode = true; // sticky: the adapter used (or fell back to) the text protocol
 
     // Text-mode fallback: a model with no native tool calling emits fenced tool blocks in its
     // text. parseTextToolCalls runs on ASSISTANT text ONLY (never tool results / page content).
@@ -100,8 +116,10 @@ export async function coreChatTurn({
       }
     }
 
-    const assistantMsg = { role: "assistant", content: assistantContent };
-    if (toolCalls.length) assistantMsg.tool_calls = toolCalls;
+    // Text mode: record the RAW assistant text (so the model sees its own fenced call) and DON'T attach
+    // native tool_calls (the calls live in the text). Native mode is unchanged.
+    const assistantMsg = { role: "assistant", content: textMode ? (resp._rawText || content || "") : assistantContent };
+    if (!textMode && toolCalls.length) assistantMsg.tool_calls = toolCalls;
     messages.push(assistantMsg);
 
     if (!toolCalls.length) {
@@ -117,7 +135,7 @@ export async function coreChatTurn({
       // Loop breaker: refuse the 3rd identical consecutive call instead of spinning.
       if (guard.repeatBlocked(name, args)) {
         const blockMsg = "[harness] blocked a repeated identical call to " + name + " — try a different approach.";
-        messages.push(toolResultMsg(call, blockMsg));
+        messages.push(toolResultMsg(call, blockMsg, textMode));
         adapter.emit({ type: "tool_blocked", id: call.id, name, args, message: blockMsg });
         continue;
       }
@@ -134,7 +152,7 @@ export async function coreChatTurn({
       }
       resultText = headTail(resultText); // cap bulky output; keep head AND tail
       guard.noteResult(name, args && (args.path || args.file || args.target), ok);
-      messages.push(toolResultMsg(call, resultText));
+      messages.push(toolResultMsg(call, resultText, textMode));
       adapter.emit({ type: "tool_result", name, ok });
     }
   }
