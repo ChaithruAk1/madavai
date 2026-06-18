@@ -778,3 +778,35 @@ Web/server-only; desktop behaves exactly as before.
 - **Next (R3, the last step to clickable):** wire the web bridge `connectorSignIn/authStatus/signOut` to these
   routes, make the `/mcp` broker use the silent vault provider so tokens get used, and remove the bespoke
   Google modules. Then the Connectors page Connect button works end-to-end against a reachable OAuth MCP server.
+
+---
+
+## Phase 3 — increment P3.4.5 / R3a: wire the web Connectors UI to the live routes
+
+**What changed in plain words:** the web "Connect" button was a stub ("runs in the desktop app"). Now it
+actually works: it calls the realigned routes, opens the provider's sign-in page in a popup, and watches the
+status until the server has stored the tokens — then shows "Connected." Sign-out and status are wired too.
+File: `src/bridge/webBridge.js` (the **web** bridge only; desktop uses its own bridge, untouched).
+
+### Test 1 — Safety net (automated)
+    npx vitest run tests/parity
+**You should see:** `Tests  105 passed` (unchanged — this is browser code, validated by the manual test
+below, not by unit tests).
+
+### Test 2 — Manual, on web (needs the web app running + a reachable OAuth MCP server)
+1. `npm run dev` (or your deployed web build) and sign in to Madav.
+2. Connectors → add/select a **remote MCP server that uses OAuth** → **Connect**.
+3. A popup opens to the provider's consent screen → approve.
+4. The popup shows "Connected to Madav"; back in Madav the connector flips to **Connected**.
+5. Reload → still Connected. **Disconnect** → returns to not-connected.
+**Note:** the tool *count* may show 0 until R3b — the chat broker doesn't attach the stored token yet. The
+sign-in + connected status is what R3a delivers.
+
+### Test 3 — Desktop unchanged
+`src/bridge/webBridge.js` is the web bridge; desktop never loads it. Desktop behaves exactly as before.
+(To pick up this change on the live web app: `npm run build` → redeploy to Render. Desktop needs no rebuild.)
+
+### Pass / fail
+- **PASS** = `105 passed`; on web, Connect → approve → "Connected", persists across reload, Disconnect works.
+- **Next:** R3b — make the `/mcp` broker attach the stored token (silent vault provider) so a connected
+  connector's tools list and work in chat. Then R3c — remove the retired bespoke Google modules.

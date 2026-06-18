@@ -806,6 +806,52 @@ async function mcpCallTool(server, name, args) {
   if (!r.ok) return "MCP error: " + (j.error || r.status) + (j.detail ? " - " + j.detail : "");
   return mcpResultText(j.result);
 }
+// ---- Web connector OAuth (P3.4.5 R3): drive the realigned /connectors/* routes. The server brokers the
+// SAME MCP-SDK OAuth desktop runs (electron/mcp-oauth.cjs); tokens stay server-side in the vault, never here.
+// Sign-in opens provider consent in a popup, then polls status until the server callback has sealed tokens.
+const connServer = (s) => ({ id: s.id, url: s.url, transport: s.transport || "http", headers: s.headers || s.env });
+async function connectorStatusReq(serverId) {
+  if (!getToken()) return { connected: false, registered: false };
+  try {
+    const r = await fetch(api("/connectors/status?id=" + encodeURIComponent(serverId || "")), { headers: authHeaders() });
+    const j = await r.json().catch(() => ({}));
+    return { connected: !!j.connected, registered: !!j.registered };
+  } catch { return { connected: false, registered: false }; }
+}
+async function connectorSignOutReq(serverId) {
+  if (!getToken()) return { ok: true };
+  try { await fetch(api("/connectors/signout"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: serverId }) }); } catch {}
+  return { ok: true };
+}
+async function testConnectorWeb(server) {
+  if (!getToken()) return { ok: false, error: "Sign in to Madav first." };
+  if (!server || !server.url) return { ok: false, error: "Testing is for remote (URL) connectors; local commands run in the desktop app." };
+  try { const tools = await mcpListTools(connServer(server)); return { ok: true, tools: tools.map((t) => t.name) }; }
+  catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+}
+async function connectorSignInWeb(server) {
+  if (!getToken()) return { ok: false, error: "Sign in to Madav first." };
+  if (!server || !server.url) return { ok: false, error: "Sign-in is only for remote (URL) connectors." };
+  let j;
+  try {
+    const r = await fetch(api("/connectors/signin"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ server: connServer(server) }) });
+    j = await r.json().catch(() => ({}));
+    if (!r.ok) return { ok: false, error: j.error || ("signin " + r.status) };
+  } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+  if (j.alreadyConnected) { let tools = []; try { tools = (await mcpListTools(connServer(server))).map((t) => t.name); } catch {} return { ok: true, tools }; }
+  if (!j.authorizeUrl) return { ok: false, error: j.error || "This connector didn't start an OAuth sign-in." };
+  let popup = null; try { popup = window.open(j.authorizeUrl, "madav_oauth", "width=520,height=680"); } catch {}
+  if (!popup) return { ok: false, error: "Pop-up blocked — allow pop-ups for this site, then try again." };
+  const deadline = Date.now() + 180000;
+  while (Date.now() < deadline) {
+    await new Promise((res) => setTimeout(res, 1500));
+    let st = { connected: false }; try { st = await connectorStatusReq(server.id); } catch {}
+    if (st.connected) { try { popup.close(); } catch {} let tools = []; try { tools = (await mcpListTools(connServer(server))).map((t) => t.name); } catch {} return { ok: true, tools }; }
+    try { if (popup.closed) return { ok: false, error: "Sign-in window was closed before completing." }; } catch {}
+  }
+  try { popup.close(); } catch {}
+  return { ok: false, error: "Sign-in timed out — please try again." };
+}
 async function ensureMcpForSession(sess) {
   if (sess.mcpLoaded) return;
   sess.mcpLoaded = true; sess.mcpTools = []; sess.mcpRegistry = {};
@@ -1406,10 +1452,10 @@ export const webBridge = {
   },
   async listDir() { return []; },
   async openExternal(url) { try { window.open(url, "_blank", "noopener"); } catch {} return true; },
-  async testConnector() { return { ok: false, error: "Connecting an MCP server runs in the desktop app." }; },
-  async connectorSignIn() { return { ok: false, error: "Connector sign-in runs in the desktop app." }; },
-  async connectorAuthStatus() { return { connected: false, registered: false }; },
-  async connectorSignOut() { return { ok: true }; },
+  async testConnector(server) { return testConnectorWeb(server); },
+  async connectorSignIn(server) { return connectorSignInWeb(server); },
+  async connectorAuthStatus(serverId) { return connectorStatusReq(serverId); },
+  async connectorSignOut(serverId) { return connectorSignOutReq(serverId); },
   async listConnectorDirectory() {
     // Curated catalog of popular MCP connectors so the gallery isn't empty on web. Actually connecting
     // them (local processes / OAuth) happens in the desktop app — here it's a preview of what's available.
