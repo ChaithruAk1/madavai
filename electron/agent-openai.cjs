@@ -586,7 +586,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       quickSearch: require("./research.cjs").quickSearch, generateImage: require("./imagegen.cjs").generateImage,
       runTool, askUserQuestion, isAuto, isBlocked, askPermission,
       emit, permissions, tools, history, profile, mode, caps: { shell: !noShell },
-      cwd, skillsDir, mission, agentName, allowAskUser, imagegenOn, permMode, textMode, MAX_STEPS, signal,
+      cwd, skillsDir, mission, agentName, allowAskUser, imagegenOn, permMode, textMode, MAX_STEPS, signal, exactCtx,
     });
   }
   for (let step = 0; step < MAX_STEPS; step++) {

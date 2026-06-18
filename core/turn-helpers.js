@@ -169,3 +169,47 @@ export function stripReasoning(str) {
   s = s.replace(/<think>[\s\S]*$/i, "");
   return s.replace(/^\s+/, "");
 }
+
+// ---------- context budget + compaction (Wave 1.3) ----------
+// VERBATIM from electron/harness.cjs. coreChatTurn auto-compacts at ~70% of the model window
+// (estTokens vs ctxWindowFor) by summarizing via adapter.summarize, then applyCompaction rebuilds
+// the transcript as [system, notes, ...last turns] — exactly like the desktop loop.
+export const estTokens = (x) => {
+  if (x == null) return 0;
+  if (typeof x === "string") return Math.ceil(x.length / 4);
+  try { return Math.ceil(JSON.stringify(x).length / 4); } catch { return 0; }
+};
+
+export function buildCompactionMessages(history) {
+  const body = history
+    .filter((m) => m.role !== "system")
+    .map((m) => {
+      const role = m.role === "tool" ? "tool-result" : m.role;
+      let c = typeof m.content === "string" ? m.content : "";
+      if (m.tool_calls) c += "\n[called: " + m.tool_calls.map((t) => t.function && t.function.name).join(", ") + "]";
+      return role.toUpperCase() + ": " + c.slice(0, 2000);
+    })
+    .join("\n---\n").slice(0, 60000);
+  return [
+    { role: "system", content: "You compress an agent mission's history into working notes. Output ONLY the notes, no preamble." },
+    { role: "user", content: "Compress this mission history into concise notes with EXACTLY these sections:\nGOAL: (the user's objective)\nDECISIONS: (choices made and why)\nFILES: (files read/changed + their current relevant state)\nDONE: (what is finished)\nREMAINS: (what is left to do)\n\n" + body },
+  ];
+}
+
+export function applyCompaction(history, summary, keepLast = 4) {
+  const sys = history[0] && history[0].role === "system" ? history[0] : null;
+  const tailEnd = history.length;
+  let tailStart = tailEnd, turns = 0;
+  for (let i = tailEnd - 1; i > 0 && turns < keepLast; i--) {
+    if (history[i].role === "user" || (history[i].role === "assistant" && !history[i].tool_calls)) turns++;
+    tailStart = i;
+  }
+  // never start the tail on a tool message (it would orphan its tool_call_id)
+  while (tailStart < tailEnd && history[tailStart].role === "tool") tailStart++;
+  const tail = history.slice(tailStart);
+  const note = { role: "user", content: "[context notes — earlier history was compacted to stay within the model's memory]\n" + String(summary || "").slice(0, 12000) };
+  history.length = 0;
+  if (sys) history.push(sys);
+  history.push(note, ...tail);
+  return history;
+}

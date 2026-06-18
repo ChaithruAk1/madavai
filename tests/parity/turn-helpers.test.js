@@ -17,7 +17,7 @@ const desktop = require("../../electron/harness.cjs");
 const { tolerantParse, headTail, squashStale, CallGuard, ctxWindowFor, parseTextToolCalls } = core;
 
 describe("core/turn-helpers — byte-identical to desktop reference electron/harness.cjs", () => {
-  for (const n of ["tolerantParse", "headTail", "squashStale", "ctxWindowFor", "parseTextToolCalls", "TEXT_PROTOCOL", "CallGuard"]) {
+  for (const n of ["tolerantParse", "headTail", "squashStale", "ctxWindowFor", "parseTextToolCalls", "TEXT_PROTOCOL", "CallGuard", "estTokens", "buildCompactionMessages", "applyCompaction"]) {
     it(`${n} is extracted verbatim (toString() === harness.cjs)`, () => {
       expect(typeof core[n]).toBe(typeof desktop[n]);
       expect(core[n].toString()).toBe(desktop[n].toString());

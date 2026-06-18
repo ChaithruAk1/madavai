@@ -28,6 +28,7 @@ function makeDesktopChatAdapter(deps = {}) {
   } = deps;
   const started = now();
   let inText = !!textMode; // sticky once the native->text fallback fires
+  let _compactId = "";
 
   return {
     tools() { return toolset; },
@@ -77,6 +78,12 @@ function makeDesktopChatAdapter(deps = {}) {
       return output;
     },
 
+    // Plain completion for auto-compaction (no tools); coreChatTurn calls this near the window limit.
+    async summarize(messages, { profile, signal } = {}) {
+      const r = await streamChat(profile, messages, { onDelta: () => {}, signal });
+      return (r && r.text) || "";
+    },
+
     // Map coreChatTurn's semantic lifecycle events -> desktop IPC events.
     emit(event) {
       const t = event && event.type;
@@ -92,6 +99,11 @@ function makeDesktopChatAdapter(deps = {}) {
         emit({ kind: "result", data: { subtype: "success", duration_ms: now() - started } });
       } else if (t === "cap_reached") {
         emit({ kind: "result", data: { subtype: "max_steps", duration_ms: now() - started } });
+      } else if (t === "compacting") {
+        _compactId = "compact_" + String(now()).toString(36);
+        emit({ kind: "tool_use", data: { id: _compactId, name: "compact_context", input: { reason: event.reason || "" }, auto: true } });
+      } else if (t === "compacted") {
+        emit({ kind: "tool_result", data: { id: _compactId, output: event.error ? "(compaction skipped: " + event.error + ")" : "Mission history compacted into working notes (goal, decisions, files, remaining work)." } });
       }
       // turn_start / turn_end -> no desktop equivalent (init is pre-loop; result above closes it)
     },

@@ -50,21 +50,21 @@ function makeAuthorize(deps) {
 async function runChatTurnViaCore(deps) {
   const { coreChatTurn } = await coreChatLoop();
   const { streamChatTools, streamChat, parseTextToolCalls, emit, tools, history,
-          profile, mode, caps, textMode, MAX_STEPS, signal } = deps;
+          profile, mode, caps, textMode, MAX_STEPS, signal, exactCtx } = deps;
   const adapter = makeDesktopChatAdapter({
     streamChatTools, streamChat, parseTextToolCalls,
     execLeaf: makeChatLeafExec(deps), authorize: makeAuthorize(deps),
     emit, toolset: tools, textMode,
   });
   // history already holds [system, ...prior, user prompt]; let core consume it as-is.
-  const before = history.length;
   const res = await coreChatTurn({
     adapter, history, prompt: "", system: "",
     model: (profile && profile.model) || "", mode, tools, caps,
-    opts: { stepCap: MAX_STEPS, signal, profile }, // forward baseUrl/apiKey/etc — streamChatTools builds the URL from profile.baseUrl
+    opts: { stepCap: MAX_STEPS, signal, profile, exactCtx }, // profile -> baseUrl/apiKey for the URL; exactCtx -> compaction budget
   });
-  // Persist the new turn messages back into the session history (core builds its own array).
-  for (let i = before; i < res.messages.length; i++) history.push(res.messages[i]);
+  // Replace session history with the full transcript core produced (handles append AND compaction).
+  history.length = 0;
+  for (const m of res.messages) history.push(m);
   return res;
 }
 

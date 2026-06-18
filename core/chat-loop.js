@@ -14,7 +14,7 @@
 //   tools(mode, caps)                                       -> tool schema array   (optional if `tools` passed)
 //   emit(event)                                             -> void                (UI event stream)
 
-import { tolerantParse, headTail, squashStale, CallGuard, parseTextToolCalls, stripReasoning, TEXT_PROTOCOL } from "./turn-helpers.js";
+import { tolerantParse, headTail, squashStale, CallGuard, parseTextToolCalls, stripReasoning, TEXT_PROTOCOL, ctxWindowFor, estTokens, buildCompactionMessages, applyCompaction } from "./turn-helpers.js";
 
 export const CHAT_ADAPTER_METHODS = ["stream", "runTool", "emit"]; // `tools` may instead arrive via opts
 export const DEFAULT_STEP_CAP = 14;
@@ -83,12 +83,36 @@ export async function coreChatTurn({
   // injects the text protocol once, exactly like the desktop loop.
   let textMode = !!opts.textMode;
   const textToolList = () => (toolset || []).map((t) => "- " + (t.function && t.function.name) + " " + JSON.stringify((t.function && t.function.parameters && t.function.parameters.properties) || {}).slice(0, 160)).join("\n");
+  // Auto-compaction (Wave 1.3): only when the adapter can summarize (desktop wires streamChat).
+  let justCompacted = false;
+  const ctxBudget = ctxWindowFor(model, opts.exactCtx);
+  const canCompact = typeof adapter.summarize === "function";
 
   adapter.emit({ type: "turn_start", mode, model });
 
   while (steps < stepCap) {
     if (signal && signal.aborted) { adapter.emit({ type: "aborted" }); break; }
     steps++;
+
+    // Wave 1.3 — auto-compaction: near the model's window, summarize history into working notes,
+    // then rebuild as [system, notes, ...last turns]. Never compact two steps in a row.
+    if (canCompact && !justCompacted && estTokens(messages) > 0.7 * ctxBudget) {
+      adapter.emit({ type: "compacting", reason: "approaching the model's context window" });
+      try {
+        const summary = await adapter.summarize(buildCompactionMessages(messages), { profile, signal });
+        applyCompaction(messages, String(summary || ""));
+        for (let k = 1; k < messages.length; k++) {
+          const hm = messages[k];
+          if (hm && hm.role !== "system" && typeof hm.content === "string" && hm.content.length > 6000) hm.content = headTail(hm.content, { maxChars: 6000 });
+        }
+        justCompacted = true;
+        adapter.emit({ type: "compacted" });
+      } catch (e) {
+        adapter.emit({ type: "compacted", error: String((e && e.message) || e) });
+      }
+    } else if (justCompacted) {
+      justCompacted = false;
+    }
 
     // Inject the text-mode tool protocol ONCE when text mode is active (lazy: covers the fallback case).
     if (textMode && messages[0] && messages[0].role === "system" && !messages[0]._protocolAdded) {
