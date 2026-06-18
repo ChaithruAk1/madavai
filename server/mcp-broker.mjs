@@ -1,4 +1,4 @@
-// Madav web — server-side MCP broker (Phase 3 / P3.1).
+// Madav web — server-side MCP broker (Phase 3 / P3.1; auth passthrough added P3.4.5 R3b).
 //
 // The browser can't run stdio MCP servers and shouldn't hold connector secrets, so the SERVER
 // brokers MCP calls for web agents: it connects to a remote MCP server over HTTP/SSE, lists its
@@ -6,9 +6,9 @@
 // electron/mcp-manager.cjs (Client + StreamableHTTP/SSE transports) but is web/server-only and
 // adds an SSRF guard (the server must never be tricked into hitting internal/loopback addresses).
 //
-// This module is ADDITIVE and not yet wired into any route or agent — it's the tested primitive
-// the /mcp routes (P3.2) and the agent tool loop (P3.3) will build on. stdio MCP servers are
-// desktop-only by design and intentionally unsupported here.
+// R3b: an optional `authProvider` (the silent, vault-backed OAuthClientProvider from
+// connector-oauth-web.mjs) lets the SDK attach + refresh a connected server's stored token on each
+// call — server-side, never to the browser. stdio MCP servers are desktop-only by design.
 
 let _sdk = null;
 async function loadSdk() {
@@ -22,38 +22,35 @@ async function loadSdk() {
 }
 
 // ---- SSRF guard (pure, unit-tested) -------------------------------------------------------------
-// Literal-IP/hostname checks. NOTE: a public hostname can still resolve to a private IP
-// (DNS-rebinding). Before production, the route layer should ALSO resolve the host and re-check the
-// resolved address. Tracked in docs/PHASE3-MCP.md.
 function isPrivateIpv4(ip) {
   const o = String(ip).split(".").map(Number);
-  if (o.length !== 4 || o.some((n) => Number.isNaN(n) || n < 0 || n > 255)) return true; // malformed -> block
+  if (o.length !== 4 || o.some((n) => Number.isNaN(n) || n < 0 || n > 255)) return true;
   const [a, b] = o;
-  if (a === 0 || a === 127) return true;            // 0.0.0.0/8, loopback 127/8
-  if (a === 10) return true;                        // 10/8 private
-  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16/12 private
-  if (a === 192 && b === 168) return true;          // 192.168/16 private
-  if (a === 169 && b === 254) return true;          // 169.254/16 link-local incl. cloud metadata
-  if (a === 100 && b >= 64 && b <= 127) return true;// 100.64/10 CGNAT
+  if (a === 0 || a === 127) return true;
+  if (a === 10) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
   return false;
 }
 
 export function isPrivateHost(host) {
   if (!host) return true;
   let h = String(host).trim().toLowerCase();
-  if (h.startsWith("[") && h.endsWith("]")) h = h.slice(1, -1); // strip ipv6 brackets
+  if (h.startsWith("[") && h.endsWith("]")) h = h.slice(1, -1);
   if (h === "localhost" || h.endsWith(".localhost")) return true;
   if (h === "metadata.google.internal" || h.endsWith(".internal") || h.endsWith(".local")) return true;
-  if (h.includes(":")) { // IPv6
+  if (h.includes(":")) {
     if (h === "::1" || h === "::" || h === "0:0:0:0:0:0:0:1") return true;
-    if (h.startsWith("fc") || h.startsWith("fd")) return true;                 // fc00::/7 ULA
-    if (/^fe[89ab]/.test(h)) return true;                                       // fe80::/10 link-local
-    const m = h.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);                 // ipv4-mapped ::ffff:a.b.c.d
+    if (h.startsWith("fc") || h.startsWith("fd")) return true;
+    if (/^fe[89ab]/.test(h)) return true;
+    const m = h.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
     if (m) return isPrivateIpv4(m[1]);
     return false;
   }
-  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)) return isPrivateIpv4(h);  // IPv4 literal
-  return false; // ordinary public hostname
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)) return isPrivateIpv4(h);
+  return false;
 }
 
 export function assertSafeMcpUrl(urlStr) {
@@ -71,17 +68,25 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
 
-async function connect(url, headers, timeoutMs) {
+// Build transport options: forwarded headers and/or an SDK OAuthClientProvider. Pure + unit-tested.
+export function transportInit(headers, authProvider) {
+  const init = {};
+  if (headers && Object.keys(headers).length) init.requestInit = { headers };
+  if (authProvider) init.authProvider = authProvider;
+  return Object.keys(init).length ? init : undefined;
+}
+
+async function connect(url, headers, timeoutMs, authProvider) {
   const u = assertSafeMcpUrl(url);
   const sdk = await loadSdk();
   const mk = () => new sdk.Client({ name: "madav-web", version: "0.1.0" }, { capabilities: {} });
-  const init = headers && Object.keys(headers).length ? { requestInit: { headers } } : undefined;
+  const init = transportInit(headers, authProvider);
   if (sdk.StreamableHTTPClientTransport) {
     try {
       const c = mk();
       await withTimeout(c.connect(new sdk.StreamableHTTPClientTransport(u, init)), timeoutMs, "MCP connect");
       return c;
-    } catch (e) { if (!sdk.SSEClientTransport) throw e; } // fall through to SSE
+    } catch (e) { if (!sdk.SSEClientTransport) throw e; }
   }
   if (!sdk.SSEClientTransport) throw new Error("No usable MCP HTTP transport in this SDK build.");
   const c = mk();
@@ -90,8 +95,8 @@ async function connect(url, headers, timeoutMs) {
 }
 
 /** List a remote MCP server's tools. Returns [{ name, description, inputSchema }]. */
-export async function listTools({ url, headers = {}, timeoutMs = 15000 } = {}) {
-  const c = await connect(url, headers, timeoutMs);
+export async function listTools({ url, headers = {}, authProvider = null, timeoutMs = 15000 } = {}) {
+  const c = await connect(url, headers, timeoutMs, authProvider);
   try {
     const res = await withTimeout(c.listTools(), timeoutMs, "MCP listTools");
     return (res.tools || []).map((t) => ({
@@ -103,9 +108,9 @@ export async function listTools({ url, headers = {}, timeoutMs = 15000 } = {}) {
 }
 
 /** Call one tool on a remote MCP server. Returns the raw MCP result ({ content, isError? }). */
-export async function callTool({ url, headers = {}, name, args = {}, timeoutMs = 60000 } = {}) {
+export async function callTool({ url, headers = {}, authProvider = null, name, args = {}, timeoutMs = 60000 } = {}) {
   if (!name) throw new Error("callTool requires a tool name.");
-  const c = await connect(url, headers, timeoutMs);
+  const c = await connect(url, headers, timeoutMs, authProvider);
   try {
     return await withTimeout(c.callTool({ name, arguments: args || {} }), timeoutMs, "MCP callTool");
   } finally { try { await c.close(); } catch {} }

@@ -795,13 +795,13 @@ function activeChatTools() {
 // Lists/calls a remote MCP server's tools THROUGH the server broker (/mcp/*), which enforces auth +
 // SSRF. Loaded once per session, fail-open. With no server configured, none of this runs.
 async function mcpListTools(server) {
-  const r = await fetch(api("/mcp/tools"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url: server.url, headers: server.headers }) });
+  const r = await fetch(api("/mcp/tools"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: server.id, transport: server.transport, url: server.url, headers: server.headers }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error || ("mcp/tools " + r.status));
   return Array.isArray(j.tools) ? j.tools : [];
 }
 async function mcpCallTool(server, name, args) {
-  const r = await fetch(api("/mcp/call"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url: server.url, headers: server.headers, name, args: args || {} }) });
+  const r = await fetch(api("/mcp/call"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: server.id, transport: server.transport, url: server.url, headers: server.headers, name, args: args || {} }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) return "MCP error: " + (j.error || r.status) + (j.detail ? " - " + j.detail : "");
   return mcpResultText(j.result);

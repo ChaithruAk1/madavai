@@ -17,7 +17,7 @@ describe("realigned connector OAuth routes (P3.4.5 R2b)", () => {
   });
 
   it("imports the SDK sign-in orchestration", () => {
-    expect(src).toMatch(/import \{ beginConnectorSignIn, finishConnectorSignIn \} from "\.\/connector-oauth-web\.mjs"/);
+    expect(src).toMatch(/import \{ beginConnectorSignIn, finishConnectorSignIn.*\} from "\.\/connector-oauth-web\.mjs"/);
   });
 
   it("signin is authed, rate-limited, SSRF-checked, redirect-guarded", () => {

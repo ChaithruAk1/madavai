@@ -22,7 +22,7 @@ import { makeOAuthStateStore } from "./oauth-state.mjs"; // P3.4.3: store-backed
 import { makeCodeVerifier, codeChallengeS256 } from "./oauth-pkce.mjs"; // P3.4.3: PKCE
 import { makeConnectorVault } from "./connector-vault.mjs"; // P3.4.2: per-user encrypted token vault
 import { exchangeCodeForToken } from "./connector-oauth.mjs"; // P3.4.3c: auth-code -> provider tokens (fetch-injectable)
-import { beginConnectorSignIn, finishConnectorSignIn } from "./connector-oauth-web.mjs"; // P3.4.5: realigned SDK OAuth (generic, brokered)
+import { beginConnectorSignIn, finishConnectorSignIn, makeWebOAuthProvider } from "./connector-oauth-web.mjs"; // P3.4.5: realigned SDK OAuth + silent provider for the /mcp broker
 
 // Minimal .env loader (no dependency): load server/.env into process.env if present.
 // Real environment variables (e.g. set in PowerShell or on the host) always win.
@@ -839,7 +839,8 @@ const server = http.createServer(async (req, res) => {
     try { mcpBroker.assertSafeMcpUrl(url); } catch (e) { return json(res, 400, { error: String((e && e.message) || e) }); }
     try {
       console.log("[mcp] list tools  <-", url);
-      const tools = await mcpBroker.listTools({ url, headers: mcpForwardHeaders(b.headers) });
+      const authProvider = b.id ? makeWebOAuthProvider({ vault: connectorVault(), userId: pl.sub, server: { id: String(b.id), url, transport: b.transport }, redirectUrl: `${BASE}/connectors/oauth/callback`, interactive: false }) : null;
+      const tools = await mcpBroker.listTools({ url, headers: mcpForwardHeaders(b.headers), authProvider });
       return json(res, 200, { tools });
     } catch (e) { return json(res, 502, { error: "mcp", detail: String((e && e.message) || e) }); }
   }
@@ -854,7 +855,8 @@ const server = http.createServer(async (req, res) => {
     try { mcpBroker.assertSafeMcpUrl(url); } catch (e) { return json(res, 400, { error: String((e && e.message) || e) }); }
     try {
       console.log("[mcp] CALL tool   <-", name, "@", url);
-      const result = await mcpBroker.callTool({ url, headers: mcpForwardHeaders(b.headers), name, args: b.args || {} });
+      const authProvider = b.id ? makeWebOAuthProvider({ vault: connectorVault(), userId: pl.sub, server: { id: String(b.id), url, transport: b.transport }, redirectUrl: `${BASE}/connectors/oauth/callback`, interactive: false }) : null;
+      const result = await mcpBroker.callTool({ url, headers: mcpForwardHeaders(b.headers), name, args: b.args || {}, authProvider });
       return json(res, 200, { result });
     } catch (e) { return json(res, 502, { error: "mcp", detail: String((e && e.message) || e) }); }
   }

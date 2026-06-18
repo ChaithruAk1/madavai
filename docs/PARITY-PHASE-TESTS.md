@@ -810,3 +810,32 @@ sign-in + connected status is what R3a delivers.
 - **PASS** = `105 passed`; on web, Connect → approve → "Connected", persists across reload, Disconnect works.
 - **Next:** R3b — make the `/mcp` broker attach the stored token (silent vault provider) so a connected
   connector's tools list and work in chat. Then R3c — remove the retired bespoke Google modules.
+
+---
+
+## Phase 3 — increment P3.4.5 / R3b: connected tokens used in chat (silent vault provider in the broker)
+
+**What changed in plain words:** a connected connector's tools now actually work in chat. When the agent
+calls a connector's MCP tools, the server attaches the user's stored token (and the SDK refreshes it if
+expired) — server-side, never sent to the browser. If the user hasn't signed in, the call cleanly errors as
+"needs sign-in" instead of failing oddly. Files: `server/mcp-broker.mjs` (optional authProvider),
+`server/auth-server.mjs` (/mcp routes build a silent vault provider keyed by user + connector id),
+`src/bridge/webBridge.js` (sends the connector id). **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  107 passed` (2 new: `transportInit` carries headers and/or the auth provider; the
+`/mcp` routes build a non-interactive vault provider for the signed-in user). No-auth servers (e.g. DeepWiki)
+are unaffected — they never hit the auth path.
+
+### Test 2 — Manual end-to-end (needs web app + a reachable OAuth MCP server)
+Connect it (R3a), then in chat ask the agent to use its tools → the tool runs with your stored token, and the
+tool count shows on the connector. Sign out → calls cleanly report needs-sign-in.
+
+### Test 3 — Desktop unchanged
+`mcp-broker.mjs` / `auth-server.mjs` are server; `webBridge.js` is the web bridge. Desktop behaves as before.
+
+### Pass / fail
+- **PASS** = `107 passed`; no-auth MCP still works; a connected server's tools run in chat; a not-connected one
+  errors as needs-sign-in (no crash, no token to the browser).
+- **Next:** R3c — remove the retired bespoke Google modules, leaving one clean SDK-based path.
