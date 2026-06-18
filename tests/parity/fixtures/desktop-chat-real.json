@@ -1,0 +1,25 @@
+{
+  "name": "desktop-chat-2026-06-18T22-17-24-145Z",
+  "recordedAt": "2026-06-18T22:17:24.145Z",
+  "model": "stepfun/step-3.5-flash",
+  "mode": "chat",
+  "system": "[system prompt trimmed for fixture — irrelevant to replay; mock model ignores messages]",
+  "input": "what is weather today in chicgao",
+  "tools": [
+    "load_skill",
+    "ask_user",
+    "create_image",
+    "web_search"
+  ],
+  "modelTurns": [
+    {
+      "content": "\nI'm unable to retrieve real-time weather data for Chicago. The web search isn't returning results right now.\n\nFor current Chicago weather, please check:\n- **weather.com**\n- **weather.gov** (National Weather Service)\n- **Google Weather** (just search \"Chicago weather\")\n- Your phone's weather app\n\nThese will show you temperature, conditions, humidity, wind, and the forecast."
+    }
+  ],
+  "toolResults": {},
+  "expect": {
+    "toolSequence": [],
+    "finalText": "I'm unable to retrieve real-time weather data for Chicago. The web search isn't returning results right now.\n\nFor current Chicago weather, please check:\n- **weather.com**\n- **weather.gov** (National Weather Service)\n- **Google Weather** (just search \"Chicago weather\")\n- Your phone's weather app\n\nThese will show you temperature, conditions, humidity, wind, and the forecast.",
+    "numTurns": 1
+  }
+}

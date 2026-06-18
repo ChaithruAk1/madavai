@@ -14,7 +14,7 @@
 //   tools(mode, caps)                                       -> tool schema array   (optional if `tools` passed)
 //   emit(event)                                             -> void                (UI event stream)
 
-import { tolerantParse, headTail, squashStale, CallGuard, parseTextToolCalls } from "./turn-helpers.js";
+import { tolerantParse, headTail, squashStale, CallGuard, parseTextToolCalls, stripReasoning } from "./turn-helpers.js";
 
 export const CHAT_ADAPTER_METHODS = ["stream", "runTool", "emit"]; // `tools` may instead arrive via opts
 export const DEFAULT_STEP_CAP = 14;
@@ -61,6 +61,8 @@ export async function coreChatTurn({
   const signal = opts.signal;
   const toolset = tools || (typeof adapter.tools === "function" ? adapter.tools(mode, caps) : []);
   const profile = Object.assign({ model, mode, caps }, opts.profile || {});
+  // Final-answer normalizer: desktop strips chain-of-thought (providers.cjs line 661); match it.
+  const finalize = (opts && typeof opts.finalize === "function") ? opts.finalize : stripReasoning;
 
   // Assemble the working transcript: system, prior history, then the new user prompt.
   const messages = [];
@@ -103,7 +105,7 @@ export async function coreChatTurn({
     messages.push(assistantMsg);
 
     if (!toolCalls.length) {
-      finalText = assistantContent;
+      finalText = finalize(assistantContent);
       adapter.emit({ type: "final", text: finalText });
       break;
     }

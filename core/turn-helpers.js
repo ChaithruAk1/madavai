@@ -157,3 +157,15 @@ export function parseTextToolCalls(content) {
   const stripped = String(content || "").replace(/```tool\s*\n[\s\S]*?```/g, "").trim();
   return { calls, stripped };
 }
+
+// ---------- chain-of-thought stripper (final-answer normalizer) ----------
+// VERBATIM from electron/providers.cjs stripReasoning (also duplicated in extension/sidepanel.js).
+// coreChatTurn applies it to the FINAL answer so the core loop matches the desktop engine (line 661).
+export function stripReasoning(str) {
+  if (!str) return str || "";
+  let s = String(str).replace(/<think>[\s\S]*?<\/think>/gi, "");
+  const i = s.lastIndexOf("</think>");
+  if (i !== -1) s = s.slice(i + "</think>".length);
+  s = s.replace(/<think>[\s\S]*$/i, "");
+  return s.replace(/^\s+/, "");
+}

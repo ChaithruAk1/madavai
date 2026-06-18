@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { createRequire } from "module";
 import * as core from "../../core/turn-helpers.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // ADR-0001 / M2a. core/turn-helpers.js is a VERBATIM extraction of the pure turn-loop helpers
 // from the desktop reference electron/harness.cjs (desktop is the single source). The first
@@ -173,4 +176,29 @@ describe("parseTextToolCalls — text-mode tool blocks (assistant text only)", (
     const { calls } = parseTextToolCalls("```tool\nnot json\n```");
     expect(calls).toHaveLength(0);
   });
+});
+
+
+// stripReasoning is single-sourced into core (VERBATIM from electron/providers.cjs; also duplicated in
+// extension/sidepanel.js). coreChatTurn applies it to the final answer (ADR-0001 / M2c.2).
+const _here = path.dirname(fileURLToPath(import.meta.url));
+const _root = path.resolve(_here, "../..");
+const _grab = (src, sig) => { const i = src.indexOf(sig); return i < 0 ? "" : src.slice(i, src.indexOf("\n}", i) + 2); };
+
+describe("stripReasoning — single source (byte-identical to electron/providers.cjs)", () => {
+  it("core copy is a verbatim port of providers.cjs", () => {
+    const prov = _grab(fs.readFileSync(path.join(_root, "electron/providers.cjs"), "utf8"), "function stripReasoning(str) {");
+    const got = _grab(fs.readFileSync(path.join(_root, "core/turn-helpers.js"), "utf8"), "export function stripReasoning(str) {").replace(/^export /, "");
+    expect(prov.length).toBeGreaterThan(0);
+    expect(got).toBe(prov);
+  });
+});
+
+describe("stripReasoning — behavior", () => {
+  const { stripReasoning } = core;
+  it("removes a matched <think>…</think> block", () => { expect(stripReasoning("<think>reasoning</think>Answer")).toBe("Answer"); });
+  it("handles an orphan </think> (everything before it is reasoning)", () => { expect(stripReasoning("musing</think>Answer")).toBe("Answer"); });
+  it("handles an orphan <think> with no close (drop to end)", () => { expect(stripReasoning("Answer<think>musing to the end")).toBe("Answer"); });
+  it("strips leading whitespace (the exact recorded-cassette gap)", () => { expect(stripReasoning("\n  Hi")).toBe("Hi"); });
+  it("empty / null -> empty string", () => { expect(stripReasoning("")).toBe(""); expect(stripReasoning(null)).toBe(""); });
 });
