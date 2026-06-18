@@ -872,3 +872,35 @@ separate file — not removed.)
     git add server\auth-server.mjs tests\parity\connector-routes.test.js tests\parity\connector-oauth-foundation.test.js docs\PARITY-PHASE-TESTS.md
     git rm server\connector-registry.mjs server\oauth-pkce.mjs server\connector-oauth.mjs server\connector-tokens.mjs tests\parity\oauth-pkce.test.js tests\parity\connector-oauth-exchange.test.js tests\parity\connector-tokens.test.js
     git commit -m "P3.4.5 R3c: retire bespoke Google OAuth modules+routes; single SDK-based connector path"
+
+---
+
+## Phase 2 — Project-record (Workroom) sync (Workrooms follow the account)
+
+**What changed in plain words:** your Workrooms (Projects) were saved only in *this* browser
+(`be.projects` in localStorage), so a second browser showed your synced chats with no parent Workroom.
+Now Workrooms sync to your account like your agents/teams and chats already do. Mirrors the existing
+workspace-blob sync exactly. Files: `server/store.mjs` (+`projects` collection), `server/auth-server.mjs`
+(+`GET`/`PUT /projects` — authed, rate-limited, 1MB cap, no secrets), `src/bridge/webBridge.js` (`pjPull`
+on load + a debounced push after every Workroom change). **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  92 passed` (4 new: the `/projects` routes exist, require auth + rate-limit, cap
+the body and store a per-user blob, and don't alter `/workspace` or `/conversations`).
+
+### Test 2 — Manual cross-device (needs the web app running + signed in)
+1. `npm run dev` + `node server/auth-server.mjs`; sign in.
+2. Create a Workroom with some instructions/knowledge.
+3. Open the app in a second browser / incognito and sign in as the **same** account.
+4. The Workroom appears there within a few seconds; edit on one side → shows on the other after a refresh.
+5. (curl) `GET /projects` with your bearer returns `{data:{…your projects…}, updatedAt}` — and contains no API keys/tokens.
+
+### Test 3 — Desktop unchanged
+Server + web-bridge only; desktop behaves exactly as before.
+
+### Pass / fail
+- **PASS** = `92 passed`; a Workroom made on one browser appears on another for the same account; the synced
+  blob carries no secrets.
+- **Known limit (same as the workspace sync):** whole-blob last-writer-wins on concurrent multi-device edits —
+  acceptable for v1; a per-record merge (conversation-style, with tombstones) is a later upgrade if needed.

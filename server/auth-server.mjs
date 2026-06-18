@@ -592,6 +592,28 @@ const server = http.createServer(async (req, res) => {
   // ---- Workspace sync — agents/teams/folders/instructions follow the ACCOUNT ----
   // API keys and connector tokens are deliberately NOT synced (device-local by design).
   // Last-write-wins via updatedAt; clients compare before applying.
+  // ---- Project (Workroom) records sync (Phase 2): Workrooms follow the account, like the workspace blob
+  // below. Projects carry NO secrets (names/instructions/knowledge-text/agent ids only); 1MB body cap bounds size.
+  if (p === "/projects" && req.method === "GET") {
+    if (rateLimited(req, "projects", 60, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const rec = await store.col("projects").get(user.id);
+    return json(res, 200, rec ? { data: rec.data || {}, updatedAt: rec.updatedAt || 0 } : { data: null, updatedAt: 0 });
+  }
+  if (p === "/projects" && req.method === "PUT") {
+    if (rateLimited(req, "projects-w", 30, 60000)) return json(res, 429, { error: "rate limited" });
+    const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });
+    const raw = await rawBody(req, res, 1024 * 1024); if (raw === null) return; // 1MB cap
+    let b = {}; try { b = JSON.parse(raw || "{}"); } catch { return json(res, 400, { error: "bad json" }); }
+    const src = (b.data && typeof b.data === "object" && !Array.isArray(b.data)) ? b.data : {};
+    const data = {};
+    for (const id of Object.keys(src).slice(0, 200)) { if (src[id] && typeof src[id] === "object") data[id] = src[id]; }
+    const updatedAt = Date.now();
+    const existing = await store.col("projects").get(user.id);
+    if (existing) await store.col("projects").update(user.id, { data, updatedAt });
+    else await store.col("projects").insert({ id: user.id, data, updatedAt });
+    return json(res, 200, { ok: true, updatedAt });
+  }
   if (p === "/workspace" && req.method === "GET") {
     if (rateLimited(req, "workspace", 60, 60000)) return json(res, 429, { error: "rate limited" });
     const user = await authUser(req); if (!user) return json(res, 401, { error: "unauthenticated" });

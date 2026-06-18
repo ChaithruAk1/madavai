@@ -225,6 +225,42 @@ function wsMaybePush() {
     }, 4000);
   } catch {}
 }
+// ---- Project (Workroom) records sync (Phase 2; mirrors the workspace blob above) — Workrooms follow the account ----
+const pjHash = (d) => { const str = JSON.stringify(d || {}); let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return String(h) + ":" + str.length; };
+let _pjLast = "", _pjTimer = null;
+async function pjPull() {
+  try {
+    const s = loadSettings();
+    if (s.projectsSync === false || !getToken()) return;
+    const r = await fetch(api("/projects"), { headers: authHeaders() }).then((x) => x.json()).catch(() => null);
+    if (!r || r.error) return;
+    const local = LS.get("be.projects", {});
+    if (!r.data) { if (Object.keys(local).length) { _pjLast = ""; pjMaybePush(); } else _pjLast = pjHash(local); return; }
+    if ((r.updatedAt || 0) <= (s.projectsSyncedAt || 0)) { _pjLast = pjHash(local); return; }
+    LS.set("be.projects", r.data);
+    LS.set(SETTINGS_KEY, { ...loadSettings(), projectsSyncedAt: r.updatedAt });
+    _pjLast = pjHash(r.data);
+  } catch {}
+}
+function pjMaybePush() {
+  try {
+    const s = loadSettings();
+    if (s.projectsSync === false || !getToken()) return;
+    if (pjHash(LS.get("be.projects", {})) === _pjLast) return;
+    clearTimeout(_pjTimer);
+    _pjTimer = setTimeout(async () => {
+      try {
+        const data = LS.get("be.projects", {});
+        const h2 = pjHash(data);
+        if (h2 === _pjLast) return;
+        const r = await fetch(api("/projects"), { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ data }) }).then((x) => x.json()).catch(() => null);
+        if (r && r.ok) { _pjLast = h2; LS.set(SETTINGS_KEY, { ...loadSettings(), projectsSyncedAt: r.updatedAt }); }
+      } catch {}
+    }, 4000);
+  } catch {}
+}
+// be.projects writer that also schedules a sync push — used by every Workroom mutation.
+const wrSaveProjects = (all) => { LS.set("be.projects", all); pjMaybePush(); return all; };
 // ---- Chat sync (mirror of electron/chat-sync.cjs) — conversations follow the account across devices ----
 let _chatLast = "", _chatTimer = null;
 const CHAT_MAX_CONVS = 100, CHAT_MAX_MSGS = 300;
@@ -285,7 +321,8 @@ async function chatPushNow() {
   } catch {}
 }
 async function chatLaunchSync() { await chatPull(); await chatPushNow(); } // download remote, then upload our local (old) chats
-setTimeout(wsPull, 1500); // account workspace → this browser, shortly after load
+setTimeout(wsPull, 1500);
+setTimeout(pjPull, 1500); // P2: account Workrooms -> this browser // account workspace → this browser, shortly after load
 setTimeout(chatLaunchSync, 1800); // pull synced conversations, then upload local (old) chats
 // Starter profiles authenticate with the user's SESSION TOKEN as the bearer (the server
 // swaps in the house key upstream). Injected here so it's always current, never persisted.
@@ -1291,18 +1328,18 @@ export const webBridge = {
     }).sort((a, b) => b.createdAt - a.createdAt);
   },
   async getProject(id) { return wrNormalizeProject(LS.get("be.projects", {})[id] || null); },
-  async createProject(name) { const all = LS.get("be.projects", {}); const id = rid("prj_"); const p = { id, name: name || "Untitled", instructions: "", knowledge: [], agentIds: [], identity: wrAutoIdentity(id), createdAt: Date.now() }; all[p.id] = p; LS.set("be.projects", all); return p; },
-  async assignProjectAgent(projectId, agentId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p || !agentId) return null; if (!p.agentIds.includes(agentId)) p.agentIds.push(agentId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
-  async unassignProjectAgent(projectId, agentId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p) return null; p.agentIds = p.agentIds.filter((x) => x !== agentId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
+  async createProject(name) { const all = LS.get("be.projects", {}); const id = rid("prj_"); const p = { id, name: name || "Untitled", instructions: "", knowledge: [], agentIds: [], identity: wrAutoIdentity(id), createdAt: Date.now() }; all[p.id] = p; wrSaveProjects(all); return p; },
+  async assignProjectAgent(projectId, agentId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p || !agentId) return null; if (!p.agentIds.includes(agentId)) p.agentIds.push(agentId); p.updatedAt = Date.now(); all[projectId] = p; wrSaveProjects(all); return p; },
+  async unassignProjectAgent(projectId, agentId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p) return null; p.agentIds = p.agentIds.filter((x) => x !== agentId); p.updatedAt = Date.now(); all[projectId] = p; wrSaveProjects(all); return p; },
   async getProjectAgentHistory() { return []; }, // web: agent runs aren't recorded per-room (desktop feature)
   async seedSampleFiles() { return { error: "Creating sample files needs the desktop app." }; },
-  async assignProjectTeam(projectId, teamId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p || !teamId) return null; if (!p.teamIds.includes(teamId)) p.teamIds.push(teamId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
-  async unassignProjectTeam(projectId, teamId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p) return null; p.teamIds = p.teamIds.filter((x) => x !== teamId); p.updatedAt = Date.now(); all[projectId] = p; LS.set("be.projects", all); return p; },
-  async updateProject(id, patch) { const all = LS.get("be.projects", {}); all[id] = { ...all[id], ...patch }; LS.set("be.projects", all); return all[id]; },
-  async deleteProject(id) { const all = LS.get("be.projects", {}); delete all[id]; LS.set("be.projects", all); return true; },
-  async addKnowledgeText(projectId, name, content) { const all = LS.get("be.projects", {}); const p = all[projectId]; p.knowledge = p.knowledge || []; p.knowledge.push({ id: rid("kn_"), name, type: "text", content }); LS.set("be.projects", all); return p; },
+  async assignProjectTeam(projectId, teamId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p || !teamId) return null; if (!p.teamIds.includes(teamId)) p.teamIds.push(teamId); p.updatedAt = Date.now(); all[projectId] = p; wrSaveProjects(all); return p; },
+  async unassignProjectTeam(projectId, teamId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p) return null; p.teamIds = p.teamIds.filter((x) => x !== teamId); p.updatedAt = Date.now(); all[projectId] = p; wrSaveProjects(all); return p; },
+  async updateProject(id, patch) { const all = LS.get("be.projects", {}); all[id] = { ...all[id], ...patch }; wrSaveProjects(all); return all[id]; },
+  async deleteProject(id) { const all = LS.get("be.projects", {}); delete all[id]; wrSaveProjects(all); return true; },
+  async addKnowledgeText(projectId, name, content) { const all = LS.get("be.projects", {}); const p = all[projectId]; p.knowledge = p.knowledge || []; p.knowledge.push({ id: rid("kn_"), name, type: "text", content }); wrSaveProjects(all); return p; },
   async addKnowledgeFile() { return { error: "Uploading files into a project is available in the desktop app." }; },
-  async removeKnowledge(projectId, knId) { const all = LS.get("be.projects", {}); const p = all[projectId]; p.knowledge = (p.knowledge || []).filter((k) => k.id !== knId); LS.set("be.projects", all); return p; },
+  async removeKnowledge(projectId, knId) { const all = LS.get("be.projects", {}); const p = all[projectId]; p.knowledge = (p.knowledge || []).filter((k) => k.id !== knId); wrSaveProjects(all); return p; },
   async linkProjectFolder() { return { error: "Linking a local folder is available in the desktop app." }; },
   async linkGithub() { return { error: "Available in the desktop app." }; },
   async cloneRepo() { return { error: "Cloning a GitHub repo needs the desktop app. On the web: open the repo on GitHub → Code → Download ZIP, unzip it, then use Choose folder." }; },
