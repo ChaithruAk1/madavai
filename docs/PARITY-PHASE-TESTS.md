@@ -904,3 +904,32 @@ Server + web-bridge only; desktop behaves exactly as before.
   blob carries no secrets.
 - **Known limit (same as the workspace sync):** whole-blob last-writer-wins on concurrent multi-device edits —
   acceptable for v1; a per-record merge (conversation-style, with tombstones) is a later upgrade if needed.
+
+---
+
+## Phase 2 — deep_research (client-orchestrated multi-search)
+
+**What changed in plain words:** web chat/agents had only a single `web_search`. Now there's a
+`deep_research` tool — the model calls it with a topic (and optional sub-questions); it runs several web
+searches over the existing proxy, combines them into one **cited digest**, and hands that back for the model
+to synthesize. Closes the desktop `research.cjs` gap (matrix 🔴 P2-13). Pure browser, additive; available in
+Let's Chat, Collaborate, and agents. Files: `src/bridge/deepResearch.js` (new, pure), `src/bridge/webBridge.js`
+(tool def + executeTool + CHAT_TOOLS). **No desktop code.**
+
+### Test 1 — Safety net
+    npx vitest run tests/parity
+**You should see:** `Tests  100 passed` (8 new: planSearches dedup/expand/cap; assembleDigest structure +
+caps + empty; runDeepResearch searches each term + survives a failing search — all with an injected searchFn,
+no network).
+
+### Test 2 — Manual (needs the web app running + a tool-capable model)
+1. `npm run dev` + `node server/auth-server.mjs`; open **Let's Chat** with an OpenAI-style/tool-capable model.
+2. Ask an open-ended question, e.g. **"Do a deep research comparison of SQLite vs DuckDB for analytics, with sources."**
+3. **You should see** a `deep_research` tool step (several searches), then a synthesized answer citing multiple
+   sources — broader than a single `web_search`. (A non-tool model falls back to a plain answer — no crash.)
+
+### Test 3 — Desktop unchanged
+Web-only (`deepResearch.js` + `webBridge.js`).
+
+### Pass / fail
+- **PASS** = `100 passed`; in chat, `deep_research` fires and returns a multi-source digest the model synthesizes.

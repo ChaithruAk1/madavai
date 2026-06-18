@@ -28,6 +28,7 @@ import { officeRule, ARTIFACT_RULE } from "../office.js";
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
 import { mcpServersFromSettings, mcpToolName, mcpResultText } from "./mcpNames.js"; // Phase 3 MCP (opt-in)
 import { toolsUnsupportedErr } from "./toolSupport.js"; // only cache "no tools" on a definitive signal
+import { runDeepResearch } from "./deepResearch.js"; // Phase 2: client-orchestrated multi-search research
 const AUTH_BASE = (() => {
   if (typeof window !== "undefined" && window.__MADAV_AUTH_BASE__) return String(window.__MADAV_AUTH_BASE__).replace(/\/+$/, "");
   if (typeof location !== "undefined" && location.port === "5174") return "http://127.0.0.1:8787";
@@ -608,6 +609,7 @@ const COWORK_TOOLS = [
   { type: "function", function: { name: "delete_file", description: "Delete a file.", parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } } },
   { type: "function", function: { name: "web_fetch", description: "Fetch a web page and return its readable text. Use for docs, references, or any URL.", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } },
   { type: "function", function: { name: "web_search", description: "Search the web and return result snippets for a query.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
+  { type: "function", function: { name: "deep_research", description: "Research a topic IN DEPTH: runs several web searches and returns one combined, cited digest for you to synthesize. Prefer over a single web_search for open-ended, comparative, or multi-faceted questions. Optionally pass `queries` (2-5 sub-questions) to steer it.", parameters: { type: "object", properties: { query: { type: "string" }, queries: { type: "array", items: { type: "string" }, description: "Optional 2-5 sub-queries to investigate." } }, required: ["query"] } } },
   { type: "function", function: { name: "spawn_subagent", description: "Delegate a focused sub-task to a helper agent that works on the same project and returns a summary. Use for independent chunks of work (e.g. 'write tests for X').", parameters: { type: "object", properties: { task: { type: "string", description: "Clear, self-contained instructions for the sub-agent." } }, required: ["task"] } } },
   { type: "function", function: { name: "create_image", description: "Generate an IMAGE (raster picture) from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user automatically. Use ONLY for actual pictures: photos, illustrations, logos, artwork, or a diagram rendered as a picture. NEVER call this for a document, spreadsheet, slide deck, presentation, or PDF — those are produced with a fenced officedoc block, not with create_image. If unsure, do not call it.", parameters: { type: "object", properties: { prompt: { type: "string" } }, required: ["prompt"] } } },
   { type: "function", function: { name: "run_python", description: "Run a Python script IN THE BROWSER (pandas + openpyxl available) — the web equivalent of a terminal, for DATA work. The project's files are mounted in the working directory, so read them by name (e.g. pandas.read_excel(\"Backlog.xlsx\")). Any file the script writes (e.g. an .xlsx report) is saved back into the project folder. Use this to join/aggregate spreadsheets and build .xlsx/.csv outputs instead of computing by hand.", parameters: { type: "object", properties: { code: { type: "string", description: "Python source to run." } }, required: ["code"] } } },
@@ -723,6 +725,7 @@ async function executeTool(name, args, ctx) {
     case "delete_file": { let before = ""; try { before = await webfs.readFile(args.path); } catch {} await webfs.deleteFile(args.path); recordCheckpoint(sess, "delete", args.path, before, null); return "deleted " + args.path; }
     case "web_fetch": return await webFetch({ url: args.url });
     case "web_search": return await webFetch({ query: args.query });
+    case "deep_research": return await runDeepResearch({ query: args.query, queries: args.queries }, (term) => webFetch({ query: term }));
     case "load_skill": { const sk = bundledByName(String(args.name || "").trim()); return sk ? sk.body : `No skill named "${args.name}". Available: ${listBundled().map((x) => x.name).join(", ") || "(none)"}`; }
     case "spawn_subagent": return await runSubagent(sess, args.task || "", sess && sess.profile);
     default: return "That tool isn't available on the web app (no terminal). Use the file/web tools.";
@@ -814,7 +817,7 @@ async function runAgentTurn(sess, text, images, prof) {
 // Mirrors desktop's lightweight chat-agent path. Engaged only for OpenAI-style models on a plain
 // (non-project, non-team, non-folder) chat. Falls back to a normal streamed reply if the model can't
 // tool-call (and remembers that model so it won't retry-and-fail on every message).
-const CHAT_TOOLS = COWORK_TOOLS.filter((t) => ["web_fetch", "web_search", "create_image"].includes(t.function.name));
+const CHAT_TOOLS = COWORK_TOOLS.filter((t) => ["web_fetch", "web_search", "create_image", "deep_research"].includes(t.function.name));
 const modelKey = (prof) => (prof && (prof.baseUrl || "") + "::" + (prof.model || "")) || "";
 // Models that DEFINITIVELY rejected tool-calling -> use plain chat. TTL'd, and recorded ONLY on a
 // clear "tools unsupported" error (never a transient network/rate error) so a single hiccup can't
