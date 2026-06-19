@@ -775,7 +775,10 @@ async function runAgentTurn(sess, text, images, prof) {
       await runWebChatTurnViaCore({
         streamChatTools: netFb(streamChatTools), streamChat: netFb(streamChat),
         executeTool, webGenImage, emit, sessId: sess.id, sess,
-        tools: [...activeChatTools(), ...(sess.mcpTools || [])],
+        // ADR-0001 / M2d — folder-agentic path: the core loop must get the FULL tool set (file tools,
+        // run_python, …) like the legacy runAgentTurn loop below (callTools -> activeTools()). The chat
+        // subset (activeChatTools) would strip file/python tools on the flag-on path.
+        tools: [...activeTools(), ...(sess.mcpTools || [])],
         history: sess.messages, profile: prof, signal: sess.ac.signal,
       });
       persistSession(sess);

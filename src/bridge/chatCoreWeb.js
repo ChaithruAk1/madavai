@@ -4,8 +4,9 @@
 // the ONLY differences are the web emit (3-arg emit(sessId,kind,data)), web's tool executor
 // (executeTool / webGenImage), and that web has no approval flow (everything auto).
 //
-// ADDITIVE / NOT WIRED: webBridge.runAgentTurn does NOT call this yet. The web cutover (route chat
-// through this, delete web's loop) is gated on the desktop shakeout of MADAV_CORE_CHAT + Render validation.
+// WIRED (flag-guarded): webBridge.runAgentTurn routes through this when localStorage MADAV_CORE_CHAT="1"
+// (default off = web's legacy loop runs unchanged). Deleting web's legacy loop + src/shared/harness.js is
+// the RETIRE step, gated on Render flag-on validation (see docs/adr/0001-M2d-WEB-CUTOVER-PLAN.md).
 
 import { coreChatTurn } from "../../core/chat-loop.js";
 import { makeChatAdapter } from "../../core/chat-adapter.js";
