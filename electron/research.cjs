@@ -190,8 +190,9 @@ async function runDeepResearch(profile, args, opts = {}) {
       if (aborted()) break;
       if (sources.length >= 8) break;
       try {
-        const html = await fetchGuarded("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q), signal);
-        for (const hit of parseDuckResults(html)) {
+        let hits = await providerSearch(q, signal, 8); // shared provider (Tavily/Serper/Brave, house key)
+        if (!hits) { const html = await fetchGuarded("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q), signal); hits = parseDuckResults(html); } // DuckDuckGo fallback
+        for (const hit of hits) {
           if (seen.has(hit.url)) continue;
           seen.add(hit.url);
           sources.push(hit);
@@ -253,11 +254,28 @@ async function runDeepResearch(profile, args, opts = {}) {
   }
 }
 
-// Lightweight single-pass web search — for the in-chat web_search tool (no plan, no model calls, no
-// report). One DuckDuckGo lookup → top results as title + URL. Never throws.
-async function quickSearch(query, signal, limit = 6) {
+// ADR-0001 — web search routes through the SHARED core/search.js (Tavily/Serper/Brave, picked by key),
+// with DuckDuckGo as the automatic fallback on no-key / out-of-credits / error. Keys come from env
+// (server = house key; desktop testing = local env). ONE search backend for chat web_search AND Deep Research.
+let _searchModP = null;
+const searchMod = () => (_searchModP ||= import("../core/search.js")); // cached dynamic ESM import
+function searchCfg() {
+  return { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" };
+}
+async function providerSearch(query, signal, limit = 6) {
   try {
-    const html = await fetchGuarded("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(String(query || "")), signal);
+    const { webSearch } = await searchMod();
+    const results = await webSearch(query, { fetchImpl: fetch, cfg: searchCfg(), count: limit, signal });
+    return (Array.isArray(results) && results.length) ? results : null; // null → caller falls back to DuckDuckGo
+  } catch { return null; }
+}
+// Lightweight single-pass web search — for the in-chat web_search tool. Never throws.
+async function quickSearch(query, signal, limit = 6) {
+  const q = String(query || "");
+  const hits0 = await providerSearch(q, signal, limit);
+  if (hits0) { try { const { formatResults } = await searchMod(); return formatResults(hits0, q); } catch {} }
+  try {
+    const html = await fetchGuarded("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q), signal);
     const hits = parseDuckResults(html).slice(0, Math.max(1, limit));
     if (!hits.length) return "(no web results)";
     return hits.map((h, i) => `${i + 1}. ${h.title}\n   ${h.url}`).join("\n");
