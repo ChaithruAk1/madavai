@@ -1256,6 +1256,7 @@ input, textarea, select { font-family: inherit; }
 .msg.user .body:has(.msg-edit) { max-width: 100%; flex: 1 1 auto; align-items: stretch; }
 .msg-edit textarea { width: 100%; min-height: 120px; box-sizing: border-box; background: var(--bg-2); border: 1px solid var(--accent-line); border-radius: 10px; padding: 10px 12px; color: var(--text-0); font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; outline: none; }
 .msg-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.msg-time { font-size: 11px; color: var(--text-3, var(--text-2)); opacity: 0.75; align-self: center; }
 
 /* Saved library */
 .sv-list { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }

@@ -181,7 +181,7 @@ export default function App() {
       case "init": runBusy.current.set(sid, true); break;
       case "assistant_delta": { const t = e.data.text ?? ""; if (!t) break; const tl = get(); const last = tl[tl.length - 1];
         if (so.get(sid) && last && last.type === "message" && last.role === "assistant") set([...tl.slice(0, -1), { ...last, text: last.text + t }]);
-        else { so.set(sid, true); set([...tl, { type: "message", role: "assistant", text: t, meta: lastInfoRef.current }]); } break; }
+        else { so.set(sid, true); set([...tl, { type: "message", role: "assistant", text: t, meta: lastInfoRef.current, at: Date.now() }]); } break; }
       case "assistant_message": so.set(sid, false); break;
       case "tool_use": so.set(sid, false); if (HIDDEN_TOOLS.has(e.data.name)) break; set([...get(), { type: "tool", id: e.data.id, name: e.data.name, input: e.data.input, auto: e.data.auto, status: "run" }]); break;
       case "tool_result": set(get().map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, output: e.data.output, image: e.data.image || it.image, status: "ok" } : it)); break;
@@ -229,7 +229,7 @@ export default function App() {
             return [...tl.slice(0, -1), { ...last, text: last.text + text }];
           }
           streamOpen.current = true;
-          return [...tl, { type: "message", role: "assistant", text, meta: lastInfoRef.current }];
+          return [...tl, { type: "message", role: "assistant", text, meta: lastInfoRef.current, at: Date.now() }];
         });
         break;
       }
@@ -489,7 +489,7 @@ export default function App() {
     } catch {}
     if (tm) setTeamRun({ startedAt: Date.now(), steps: tm.members.map((m) => ({ name: m.name, status: "queued", identity: m.identity })), plan: tm.mode === "manager" ? { status: "queued" } : null, synth: null, finished: false });
     setSoloRun(ag && !tm ? { startedAt: Date.now(), finished: false, steps: [] } : null); // solo agents get their own live panel
-    setTimeline((tl) => [...tl, { type: "message", role: "user", text, images, routed }]);
+    setTimeline((tl) => [...tl, { type: "message", role: "user", text, images, routed, at: Date.now() }]);
     setBusy(true);
     streamOpen.current = false;
     replyBufRef.current = "";
@@ -647,7 +647,7 @@ export default function App() {
     setAgentCtx(null); setTeamCtx(null); setTeamRun(null); // project context is exclusive with agent/team
     const conv = await bridge.createConversation(project.id);
     setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: conv.id, title: (text || "").slice(0, 48) || "New conversation" });
-    setTimeline(text ? [{ type: "message", role: "user", text }] : []);
+    setTimeline(text ? [{ type: "message", role: "user", text, at: Date.now() }] : []);
     sessionRef.current = null; streamOpen.current = false;
     if (text) {
       setBusy(true);
@@ -669,7 +669,7 @@ export default function App() {
     setMode("cowork"); setChatMode("cowork");
     setProjectCtx(null); setCoworkProj({ id: project.id, name: project.name });
     setCwd(project.folder);
-    setTimeline(text ? [{ type: "message", role: "user", text }] : []);
+    setTimeline(text ? [{ type: "message", role: "user", text, at: Date.now() }] : []);
     setActiveConvId(null); sessionRef.current = null; streamOpen.current = false;
     if (text) {
       setBusy(true);
