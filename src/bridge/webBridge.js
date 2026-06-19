@@ -676,7 +676,8 @@ function recordCheckpoint(sess, op, path, before, after) {
 async function webFetch({ url, query }) {
   if (!getToken()) return "Web access needs sign-in.";
   try {
-    const r = await fetch(api("/proxy/fetch"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url, query }) });
+    const _ss = loadSettings(); // bring-your-own search key (Search Engine Settings) overrides the house key on the server
+    const r = await fetch(api("/proxy/fetch"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url, query, searchProvider: _ss.searchProvider || "auto", searchKey: _ss.searchKey || "" }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || j.error) return "Web request failed: " + (j.detail || j.error || r.status);
     return `# ${j.url || query} (${j.status || ""})\n\n${j.text || "(no text)"}`;

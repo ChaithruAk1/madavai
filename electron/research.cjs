@@ -237,7 +237,7 @@ async function runDeepResearch(profile, args, opts = {}) {
 async function serverSearch(query, signal, limit = 6) {
   const cfg = require("./settings.cjs").load();
   const authBaseUrl = cfg.authBaseUrl || "https://madav.ai";
-  const r = await require("./auth.cjs").apiCall("POST", "/proxy/fetch", { query: String(query || ""), count: limit }, authBaseUrl);
+  const r = await require("./auth.cjs").apiCall("POST", "/proxy/fetch", { query: String(query || ""), count: limit, searchProvider: cfg.searchProvider || "auto", searchKey: cfg.searchKey || "" }, authBaseUrl);
   return (r && Array.isArray(r.results)) ? r.results : [];
 }
 // In-chat web_search tool — formats the shared results for the model. Never throws.

@@ -12,6 +12,9 @@ This is an absolute requirement, not a preference Claude may trade off, and the 
 ## COMMIT & DEPLOY RULE — After every code change, Claude hands over the exact git commit + push commands.
 A web change reaches the live site (madav.ai on Render) ONLY when it is **pushed to git** — Render rebuilds on push (`buildCommand: npm install && npm run build:public`). Running `npm run build` locally only tests on Chaithru's own machine and deploys NOTHING. So after any fix, Claude ends by giving Chaithru copy-pasteable `git add <specific files>` / `git commit -m "…"` / `git push`, naming exactly which files belong to that fix so nothing is committed blind. Desktop changes need no git/deploy to test (just restart the app or Ctrl+R); git is for saving the change and for deploying the web version. (Owner preference, recorded 2026-06-18.)
 
+## SEARCH RULE — ALL web search, in ANY process, goes through the ONE backend (`core/search.js`).
+Every place anything in Madav searches the web — chat `web_search`, Deep Research, agents, teams, scheduled tasks, anything now or later — MUST go through the single shared search backend (`core/search.js`: provider by key → DuckDuckGo fallback) via the server's `/proxy/fetch` house-key endpoint. NEVER add a second search implementation, a direct DuckDuckGo/Google scrape, or a per-surface search path. If a new feature needs search, it calls the existing backend; if the backend needs a capability, add it THERE. (Owner preference, recorded 2026-06-18.)
+
 ## RULE 0 — Every fix must work on BOTH web and desktop. Always.
 Madav ships two surfaces from one repo. A change is **not done** until it is correct on **both** web and desktop, and the deploy step for each is stated. Never fix one and assume the other; they have separate prompt copies, separate CSPs, and separate deploy paths. When you change behaviour, walk the map below and patch every surface it touches.
 

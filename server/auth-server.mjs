@@ -987,7 +987,15 @@ const server = http.createServer(async (req, res) => {
       // Web SEARCH — the ONE backend (core/search.js): Tavily/Serper/Brave by key → DuckDuckGo fallback,
       // structured results. Web AND desktop both hit this endpoint, so there is a single search path.
       const { searchWeb, formatResults } = await import("../core/search.js");
-      const cfg = { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" };
+      // The caller's bring-your-own key (from Search Engine Settings) wins; otherwise the server's house key.
+      let cfg;
+      if (b.searchKey && b.searchProvider && b.searchProvider !== "auto") {
+        cfg = { provider: b.searchProvider, tavilyKey: b.searchProvider === "tavily" ? b.searchKey : "", serperKey: b.searchProvider === "serper" ? b.searchKey : "", braveKey: b.searchProvider === "brave" ? b.searchKey : "" };
+      } else if (b.searchProvider === "duckduckgo") {
+        cfg = {}; // explicit DuckDuckGo — no key
+      } else {
+        cfg = { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" };
+      }
       const results = await searchWeb(String(b.query), { fetchImpl: fetch, cfg, count: Number(b.count) || 6 });
       return json(res, 200, { url: "search:" + b.query, status: 200, text: formatResults(results, b.query), results });
     }

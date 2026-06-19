@@ -237,6 +237,30 @@ export default function ModelConfig({ onChanged }) {
         </div>
       </div>
 
+      {/* Search Engine Settings — which web-search provider powers web_search / Deep Research / agents.
+          Leave on "Madav default" to use the built-in house-key search; or bring your own provider key. */}
+      <div className="mc-card" style={{ marginTop: 12 }}>
+        <div className="nav-label" style={{ paddingLeft: 0 }}>Search Engine Settings<HelpDot mode="models" section="search" /></div>
+        <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
+          The web-search engine Madav uses everywhere — the <b>web_search</b> tool, Deep Research, and agents. Leave on <b>Madav default</b> for built-in search (no key needed), or pick a provider and paste your own API key to use your own quota.
+        </p>
+        <Field label="Search provider" help={<HelpDot mode="models" section="search" />}>
+          <select className="model-search" value={s.searchProvider || "auto"} onChange={(e) => setField("searchProvider", e.target.value)}>
+            <option value="auto">Madav default (built-in, no key)</option>
+            <option value="tavily">Tavily — best for AI answers</option>
+            <option value="serper">Serper — Google results</option>
+            <option value="brave">Brave Search</option>
+            <option value="duckduckgo">DuckDuckGo — free, no key</option>
+          </select>
+        </Field>
+        {["tavily", "serper", "brave"].includes(s.searchProvider) && (
+          <Field label="Search API key" help={<HelpDot mode="models" section="searchkey" />}>
+            <input className="model-search" type="password" value={s.searchKey || ""} onChange={(e) => setField("searchKey", e.target.value)}
+              placeholder={s.searchProvider === "tavily" ? "tvly-…" : s.searchProvider === "serper" ? "Serper API key" : "Brave subscription token"} />
+          </Field>
+        )}
+      </div>
+
       <div className="nav-label" style={{ paddingLeft: 0 }}>Model Providers<HelpDot mode="models" section="provider" /></div>
       <p style={{ color: "var(--text-2)", fontSize: 12.5, margin: "2px 0 10px" }}>
         <b style={{ color: "var(--text-1)" }}>Madav Starter (free)</b> works the moment you sign in — no API key needed, with a daily limit on free models.
