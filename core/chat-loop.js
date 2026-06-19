@@ -50,6 +50,15 @@ function toolResultMsg(call, content, textMode) {
 function callName(call) { return call && call.function ? call.function.name : (call && call.name); }
 function callArgs(call) { return call && call.function ? call.function.arguments : (call && call.arguments); }
 
+// Did the assistant SAY it would take a next action (e.g. "let me search again") without emitting a
+// tool call? Drives the opt-in weak-model follow-through nudge. Deliberately narrow — needs an intent
+// phrase AND an action verb close together — so it does NOT fire on normal final answers.
+function announcesNextAction(text) {
+  const t = String(text == null ? "" : text).trim();
+  if (!t) return false;
+  return /\b(let me|let'?s|i'?ll|i will|i'?m going to|i am going to|i need to|i should|now i'?ll|now i will|next,?\s*i)\b[^.?!\n]{0,80}\b(search|look up|look for|try|find|fetch|retrieve|run|use|call|query|browse|continue|gather|verify|check)\b/i.test(t);
+}
+
 /**
  * Run ONE chat turn through the adapter. Returns { text, messages, steps, observedTools }.
  * Pure orchestration — all I/O is the adapter's; all repair/compaction is core/turn-helpers.
@@ -85,6 +94,7 @@ export async function coreChatTurn({
   const textToolList = () => (toolset || []).map((t) => "- " + (t.function && t.function.name) + " " + JSON.stringify((t.function && t.function.parameters && t.function.parameters.properties) || {}).slice(0, 160)).join("\n");
   // Auto-compaction (Wave 1.3): only when the adapter can summarize (desktop wires streamChat).
   let justCompacted = false;
+  let nudgedFollowThrough = false; // weak-model follow-through nudge fires at most once per turn
   const ctxBudget = ctxWindowFor(model, opts.exactCtx);
   const canCompact = typeof adapter.summarize === "function";
 
@@ -149,6 +159,16 @@ export async function coreChatTurn({
     messages.push(assistantMsg);
 
     if (!toolCalls.length) {
+      // Weak-model follow-through (opt-in via opts.nudgeFollowThrough; default off so recorded-turn
+      // parity is byte-unchanged). If the model ANNOUNCES a next action ("let me search again") but
+      // emitted no tool call, nudge it ONCE to actually do it before we finalize. The desktop + web
+      // runners enable this so both surfaces benefit from one place.
+      if (opts.nudgeFollowThrough && !nudgedFollowThrough && toolset && toolset.length && announcesNextAction(assistantContent)) {
+        nudgedFollowThrough = true;
+        messages.push({ role: "user", content: "You described a next step but didn't take it. If you still need a tool, call it now — otherwise give your complete final answer." });
+        adapter.emit({ type: "nudge", reason: "announced a next step without acting" });
+        continue;
+      }
       finalText = finalize(assistantContent);
       adapter.emit({ type: "final", text: finalText });
       break;

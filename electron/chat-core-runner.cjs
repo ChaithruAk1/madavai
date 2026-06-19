@@ -65,7 +65,7 @@ async function runChatTurnViaCore(deps) {
   const res = await coreChatTurn({
     adapter, history, prompt: "", system: "",
     model: (profile && profile.model) || "", mode, tools, caps,
-    opts: { stepCap: MAX_STEPS, signal, profile, exactCtx }, // profile -> baseUrl/apiKey for the URL; exactCtx -> compaction budget
+    opts: { stepCap: MAX_STEPS, signal, profile, exactCtx, nudgeFollowThrough: true }, // profile -> baseUrl/apiKey; exactCtx -> compaction budget; nudge weak models that trail off
   });
   // Replace session history with the full transcript core produced (handles append AND compaction).
   history.length = 0;
