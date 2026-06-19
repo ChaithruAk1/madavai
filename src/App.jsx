@@ -234,10 +234,13 @@ export default function App() {
         break;
       }
       case "assistant_message":
-        streamOpen.current = false; setStreaming(false);
+        // Defer the bubble-close into the setTimeline queue so it runs AFTER the last streamed
+        // delta's updater. Otherwise (esp. on web's fast in-process emit) the final chunk's queued
+        // updater sees streamOpen already false and opens a NEW bubble — the "chopped reply" bug.
+        setStreaming(false); setTimeline((tl) => { streamOpen.current = false; return tl; });
         break;
       case "tool_use":
-        streamOpen.current = false; setStreaming(false);
+        setStreaming(false); setTimeline((tl) => { streamOpen.current = false; return tl; }); // defer close so pre-tool text isn't chopped (see assistant_message)
         if (HIDDEN_TOOLS.has(e.data.name)) break; // internal plumbing — don't surface to the user
         // Team mission tracking → drives the Mission Control (TeamOps) panel.
         if (/\(teammate\)$/.test(e.data.name || "")) {
@@ -287,7 +290,7 @@ export default function App() {
         setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, status: "deny" } : it));
         break;
       case "result":
-        streamOpen.current = false; setStreaming(false); setBusy(false);
+        setStreaming(false); setBusy(false); setTimeline((tl) => { streamOpen.current = false; return tl; }); // defer close (see assistant_message)
         if (sessionRef.current) runBusy.current.set(sessionRef.current, false);
         setTeamRun((r) => r ? { ...r, finished: true, synth: r.synth === "working" ? "done" : r.synth } : r);
         setSoloRun((r) => r ? { ...r, finished: true, endedAt: Date.now(), steps: r.steps.map((s) => s.status === "run" ? { ...s, status: "done" } : s) } : r);
@@ -308,7 +311,7 @@ export default function App() {
         setTimeline((tl) => tl.some((it) => it.type === "fileout" && it.path === e.data.path) ? tl : [...tl, { type: "fileout", name: e.data.name, path: e.data.path }]);
         break;
       case "error":
-        streamOpen.current = false; setStreaming(false); setBusy(false);
+        setStreaming(false); setBusy(false); setTimeline((tl) => { streamOpen.current = false; return tl; }); // defer close (see assistant_message)
         if (sessionRef.current) runBusy.current.set(sessionRef.current, false);
         setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ ${e.data?.message || "Error"}` }]);
         setHistRefresh((n) => n + 1); // keep the saved-chat list fresh even if the first turn errors
