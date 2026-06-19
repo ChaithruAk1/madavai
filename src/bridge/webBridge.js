@@ -26,7 +26,7 @@ import * as webfs from "./webfs.js";
 import { runPython } from "./pyodideRunner.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
 // head+tail truncation, stale-result squash, identical-call loop breaker.
-import { tolerantParse, headTail, squashStale, CallGuard } from "../shared/harness.js";
+import { tolerantParse, headTail, squashStale, CallGuard } from "../../core/turn-helpers.js"; // ADR-0001 / M2d — single source (was ../shared/harness.js, now retired)
 // In-chat office files: the rule that teaches models the ```officedoc spec.
 import { officeRule, ARTIFACT_RULE } from "../office.js";
 import { dataToolsRule } from "../../core/agent-rules.js"; // ADR-0001 core: ESM single source (web imports natively)
@@ -754,96 +754,25 @@ function activeTools() {
   try { on = FEAT_IMAGEGEN && ((loadSettings().extras) || {}).imagegen !== false; } catch {}
   return on ? COWORK_TOOLS : COWORK_TOOLS.filter((t) => t.function.name !== "create_image");
 }
-async function callTools(prof, messages, onDelta, signal, extraTools) {
-  const tools = activeTools().concat(extraTools || []);
-  try { return await streamChatTools(prof, messages, tools, { onDelta, signal }); }
-  catch (e) { if (isNetworkErr(e) && getToken()) return await streamChatTools(prof, messages, tools, { onDelta, signal, proxy: proxyCfg() }); throw e; }
-}
 async function runAgentTurn(sess, text, images, prof) {
   sess.messages.push({ role: "user", content: userContent(text, images) });
   if (!sess.title) sess.title = text.slice(0, 60);
   sess.ac = new AbortController();
   emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind, cwd: sess.cwd });
-  const started = Date.now();
-  // Harness (desktop-mirrored): squash stale tool outputs + per-turn call guard.
+  // ADR-0001 / M2d — folder-agentic chat runs through the SHARED core loop (single source, desktop + web).
+  // The legacy in-bridge tool loop + the MADAV_CORE_CHAT flag guard were RETIRED here once the core path
+  // was validated (flag-on Render shakeout). netFb retries once via the server proxy on a network error.
+  // See docs/adr/0001-M2d-WEB-CUTOVER-PLAN.md.
   try { if (mcpServersFromSettings(loadSettings()).length) await ensureMcpForSession(sess); } catch {}
-  // ADR-0001 / M2d.3 — flag-guarded web cutover: route chat through the SHARED core (same as desktop).
-  // Default off = web's loop below runs byte-for-byte unchanged. localStorage MADAV_CORE_CHAT=1 -> core path.
-  if (typeof localStorage !== "undefined" && localStorage.getItem("MADAV_CORE_CHAT") === "1") {
-    const netFb = (fn) => async (...a) => { const o = a[a.length - 1] || {}; try { return await fn(...a); } catch (e) { if (isNetworkErr(e) && getToken()) { a[a.length - 1] = { ...o, proxy: proxyCfg() }; return await fn(...a); } throw e; } };
-    try {
-      await runWebChatTurnViaCore({
-        streamChatTools: netFb(streamChatTools), streamChat: netFb(streamChat),
-        executeTool, webGenImage, emit, sessId: sess.id, sess,
-        // ADR-0001 / M2d — folder-agentic path: the core loop must get the FULL tool set (file tools,
-        // run_python, …) like the legacy runAgentTurn loop below (callTools -> activeTools()). The chat
-        // subset (activeChatTools) would strip file/python tools on the flag-on path.
-        tools: [...activeTools(), ...(sess.mcpTools || [])],
-        history: sess.messages, profile: prof, signal: sess.ac.signal,
-      });
-      persistSession(sess);
-    } catch (e) {
-      if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
-      emit(sess.id, "error", { message: String((e && e.message) || e) });
-      emit(sess.id, "result", { subtype: "error" });
-    }
-    return;
-  }
-  squashStale(sess.messages);
-  const guard = new CallGuard();
-  let reasks = 0;
+  const netFb = (fn) => async (...a) => { const o = a[a.length - 1] || {}; try { return await fn(...a); } catch (e) { if (isNetworkErr(e) && getToken()) { a[a.length - 1] = { ...o, proxy: proxyCfg() }; return await fn(...a); } throw e; } };
   try {
-    for (let step = 0; step < 16; step++) {
-      const { content, toolCalls } = await callTools(prof, sess.messages, (c) => emit(sess.id, "assistant_delta", { text: c }), sess.ac.signal, (sess.mcpTools || []));
-      if (!toolCalls || !toolCalls.length) { sess.messages.push({ role: "assistant", content: content || "", model: prof.model, provider: prof.name }); emit(sess.id, "assistant_message", { stop_reason: "end_turn" }); maybeAutoTitle(sess, text, content || ""); break; }
-      sess.messages.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
-      for (const c of toolCalls) {
-        // Wave 1.1 — tolerant JSON repair (weak models emit sloppy arguments).
-        const parsed = tolerantParse(c.arguments || "{}");
-        const args = parsed.value || {};
-        if (!parsed.ok) {
-          let out;
-          if (reasks < 2) { reasks++; out = `Your ${c.name} arguments were not valid JSON. Call ${c.name} again with ONE valid JSON object as arguments — no comments, no single quotes, no trailing commas.`; }
-          else out = "(arguments were invalid JSON again — abandon this call and try a different approach)";
-          emit(sess.id, "tool_use", { id: c.id, name: c.name, input: { error: "invalid arguments" }, auto: true });
-          emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: false, output: out });
-          sess.messages.push({ role: "tool", tool_call_id: c.id, content: out });
-          continue;
-        }
-        // Wave 1.4 — identical-call loop breaker (3rd copy of the same call in a row).
-        if (guard.repeatBlocked(c.name, args)) {
-          const out = "(blocked: this is the 3rd identical call in a row — the result will not change. State why the previous attempts failed and try a DIFFERENT approach.)";
-          emit(sess.id, "tool_use", { id: c.id, name: c.name, input: args, auto: true });
-          emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: false, output: out });
-          sess.messages.push({ role: "tool", tool_call_id: c.id, content: out });
-          continue;
-        }
-        emit(sess.id, "tool_use", { id: c.id, name: c.name, input: args, auto: true });
-        // Text→image: show the picture in the tool card; tiny text back to the model.
-        if (c.name === "create_image") {
-          let out, image = null;
-          try { image = await webGenImage(prof, args.prompt); out = "Image generated and shown to the user. Describe it in one short sentence and continue."; }
-          catch (e) { out = "ERROR: " + String((e && e.message) || e); }
-          emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: !!image, output: out, image });
-          sess.messages.push({ role: "tool", tool_call_id: c.id, content: out });
-          continue;
-        }
-        const target = args.path || args.query || args.url || "";
-        let out, failed = false;
-        try { out = await executeTool(c.name, args, { sess }); guard.noteResult(c.name, target, true); }
-        catch (e) {
-          failed = true;
-          guard.noteResult(c.name, target, false);
-          const streak = guard.failStreak(c.name, target);
-          out = "Error: " + String((e && e.message) || e) + (streak >= 2
-            ? "\n[harness] Second consecutive failure on this target — STOP retrying this approach. Say why it failed, then take a different route or report the blocker."
-            : "\nReflect: state in one sentence why this failed, then try a DIFFERENT approach.");
-        }
-        emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: !failed, output: headTail(String(out), { maxChars: 8000 }) });
-        sess.messages.push({ role: "tool", tool_call_id: c.id, content: headTail(String(out), { maxChars: 24000, headLines: 400, tailLines: 200 }) });
-      }
-    }
-    emit(sess.id, "result", { subtype: "success", duration_ms: Date.now() - started, total_cost_usd: 0 });
+    await runWebChatTurnViaCore({
+      streamChatTools: netFb(streamChatTools), streamChat: netFb(streamChat),
+      executeTool, webGenImage, emit, sessId: sess.id, sess,
+      // Folder-agentic path: the core loop gets the FULL tool set (file tools, run_python, …).
+      tools: [...activeTools(), ...(sess.mcpTools || [])],
+      history: sess.messages, profile: prof, signal: sess.ac.signal,
+    });
     persistSession(sess);
   } catch (e) {
     if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
