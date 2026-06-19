@@ -111,6 +111,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
+      spellcheck: true,
     },
   });
 
@@ -124,6 +125,23 @@ function createWindow() {
   win.webContents.on("will-navigate", (e, url) => {
     const ok = url.startsWith("http://localhost:5174") || url.startsWith("http://127.0.0.1:5174") || url.startsWith("file://");
     if (!ok) e.preventDefault();
+  });
+
+  // Right-click → spelling suggestions + standard edit actions (the renderer enables spellCheck on inputs).
+  win.webContents.on("context-menu", (ev, params) => {
+    const { Menu, MenuItem } = require("electron");
+    const menu = new Menu();
+    for (const s of (params.dictionarySuggestions || [])) menu.append(new MenuItem({ label: s, click: () => win.webContents.replaceMisspelling(s) }));
+    if (params.misspelledWord) {
+      menu.append(new MenuItem({ label: "Add to dictionary", click: () => win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord) }));
+      menu.append(new MenuItem({ type: "separator" }));
+    }
+    const f = params.editFlags || {};
+    if (f.canCut) menu.append(new MenuItem({ role: "cut" }));
+    if (f.canCopy) menu.append(new MenuItem({ role: "copy" }));
+    if (f.canPaste) menu.append(new MenuItem({ role: "paste" }));
+    if (params.isEditable || f.canCopy) menu.append(new MenuItem({ role: "selectAll" }));
+    if (menu.items.length) menu.popup();
   });
 
   applyPermissionPolicy();

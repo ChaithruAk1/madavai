@@ -1251,8 +1251,10 @@ input, textarea, select { font-family: inherit; }
 .msg-act { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-2); background: transparent; border: 1px solid var(--line); border-radius: 7px; padding: 3px 9px; cursor: pointer; }
 .msg-act:hover { color: var(--text-0); border-color: var(--line-2); background: var(--bg-2); }
 .msg-act.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-weak); }
-.msg-edit { margin-top: 4px; }
-.msg-edit textarea { width: 100%; box-sizing: border-box; background: var(--bg-2); border: 1px solid var(--accent-line); border-radius: 10px; padding: 10px 12px; color: var(--text-0); font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; outline: none; }
+.msg-edit { margin-top: 4px; width: 100%; }
+/* Editing: give the editor the FULL conversation width, not the narrow 76% read-view bubble. */
+.msg.user .body:has(.msg-edit) { max-width: 100%; flex: 1 1 auto; align-items: stretch; }
+.msg-edit textarea { width: 100%; min-height: 120px; box-sizing: border-box; background: var(--bg-2); border: 1px solid var(--accent-line); border-radius: 10px; padding: 10px 12px; color: var(--text-0); font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; outline: none; }
 .msg-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 
 /* Saved library */

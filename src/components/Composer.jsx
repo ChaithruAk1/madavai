@@ -513,7 +513,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
           </div>
           {ghOpen && <GithubContent onClose={() => setGhOpen(false)} onAttach={(items) => setFiles((f) => [...f, ...items])} />}
 
-          <textarea ref={ref} rows={1} value={text} placeholder={placeholder} onChange={grow} onKeyDown={onKey} onPaste={onPaste} />
+          <textarea ref={ref} rows={1} value={text} placeholder={placeholder} spellCheck={true} onChange={grow} onKeyDown={onKey} onPaste={onPaste} />
 
           {/* Gemini contract: the mic is always there; the round theme-colored send
               button slides in beside it the moment there's something to send.

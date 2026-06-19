@@ -82,7 +82,7 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
 
         {editing ? (
           <div className="msg-edit">
-            <textarea value={draft} autoFocus onChange={(e) => setDraft(e.target.value)}
+            <textarea value={draft} autoFocus spellCheck={true} onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveEdit(); if (e.key === "Escape") setEditing(false); }}
               rows={Math.min(12, (String(draft).match(/\n/g)?.length || 0) + 2)} />
             <div className="msg-edit-actions">
