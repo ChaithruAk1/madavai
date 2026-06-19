@@ -143,18 +143,51 @@ Rules: at most 2 tool blocks per reply; the args object must be valid JSON; afte
 Available tools:
 ${toolList}`;
 
-// Parse ```tool blocks from ASSISTANT text only (see SECURITY note at top).
+// Parse tool calls from ASSISTANT text only (see SECURITY note at top). Handles BOTH the fenced
+// protocol we instruct AND the XML syntax many weak NIM/Qwen/Hermes models emit instead (they ignore
+// the fenced format and use their trained <function=...><parameter=...> tags). Parsing the XML form
+// means the call actually RUNS rather than being printed raw to the user.
 export function parseTextToolCalls(content) {
   const calls = [];
-  const re = /```tool\s*\n([\s\S]*?)```/g;
+  const src = String(content || "");
   let m, i = 0;
-  while ((m = re.exec(String(content || ""))) && calls.length < 2) {
+
+  // Format A — the fenced JSON block we instruct: ```tool\n{"name":...,"args":{...}}\n```
+  const reFence = /```tool\s*\n([\s\S]*?)```/g;
+  while ((m = reFence.exec(src)) && calls.length < 2) {
     const p = tolerantParse(m[1]);
     if (p.ok && p.value && p.value.name) {
       calls.push({ id: "txt_" + Date.now().toString(36) + "_" + i++, name: String(p.value.name), arguments: JSON.stringify(p.value.args || p.value.arguments || {}) });
     }
   }
-  const stripped = String(content || "").replace(/```tool\s*\n[\s\S]*?```/g, "").trim();
+
+  // Format B — XML tags: <function=NAME><parameter=KEY>VALUE</parameter>...</function> (optionally
+  // wrapped in <tool_call>...</tool_call>). Only when Format A matched nothing (a model uses one or
+  // the other). Numbers/bools are coerced so typed-arg tools still work; everything else stays a string.
+  if (!calls.length) {
+    const reFn = /<function\s*=\s*([a-zA-Z0-9_.\-]+)\s*>([\s\S]*?)<\/function>/g;
+    while ((m = reFn.exec(src)) && calls.length < 2) {
+      const name = m[1];
+      const body = m[2] || "";
+      const args = {};
+      const reParam = /<parameter\s*=\s*([a-zA-Z0-9_.\-]+)\s*>([\s\S]*?)<\/parameter>/g;
+      let pm;
+      while ((pm = reParam.exec(body))) {
+        let v = (pm[2] || "").trim();
+        if (/^-?\d+(\.\d+)?$/.test(v)) v = Number(v);
+        else if (v === "true" || v === "false") v = v === "true";
+        args[pm[1]] = v;
+      }
+      calls.push({ id: "txt_" + Date.now().toString(36) + "_" + i++, name: String(name), arguments: JSON.stringify(args) });
+    }
+  }
+
+  // Strip whatever syntax we matched so the raw tool call never shows in the reply.
+  const stripped = src
+    .replace(/```tool\s*\n[\s\S]*?```/g, "")
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "")
+    .replace(/<function\s*=\s*[a-zA-Z0-9_.\-]+\s*>[\s\S]*?<\/function>/gi, "")
+    .trim();
   return { calls, stripped };
 }
 

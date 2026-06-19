@@ -78,6 +78,9 @@ const { streamChatTools, streamChat, stripReasoning } = require("./providers.cjs
 // ADR-0001 / M2c.0 — record-only chat-turn cassette capture (env-gated; no-op unless MADAV_RECORD_TURN set).
 let _makeTurnRecorder = null; try { _makeTurnRecorder = require("./turn-recorder.cjs").makeTurnRecorder; } catch {}
 let _runChatViaCore = null; try { _runChatViaCore = require("./chat-core-runner.cjs").runChatTurnViaCore; } catch {} // ADR-0001 / M2c.3 + M2e — shared core chat path; default-ON (escape hatch: MADAV_CORE_CHAT=0)
+// SINGLE SOURCE — parseTextToolCalls comes from core/turn-helpers.js (NOT the legacy harness copy) so the
+// desktop core chat path and web share ONE parser. Cached dynamic import (core is ESM).
+let _coreHelpersP = null; const _coreHelpers = () => (_coreHelpersP ||= import("../core/turn-helpers.js"));
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
 // The discipline layer (PLAN-AGENT-PARITY waves): JSON repair, plan tracking,
@@ -584,8 +587,9 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // loop below is the fallback (kept until M2e step 2 deletes it). Escape hatch: set MADAV_CORE_CHAT=0
   // to force the legacy path; if _runChatViaCore failed to load we also fall back to legacy automatically.
   if (process.env.MADAV_CORE_CHAT !== "0" && mode === "chat" && _runChatViaCore) {
+    const { parseTextToolCalls: coreParseTextToolCalls } = await _coreHelpers(); // one source, not harness's copy
     return await _runChatViaCore({
-      streamChatTools, streamChat, parseTextToolCalls: harness.parseTextToolCalls,
+      streamChatTools, streamChat, parseTextToolCalls: coreParseTextToolCalls,
       quickSearch: require("./research.cjs").quickSearch, generateImage: require("./imagegen.cjs").generateImage,
       runTool, askUserQuestion, isAuto, isBlocked, askPermission,
       emit, permissions, tools, history, profile, mode, caps: { shell: !noShell },

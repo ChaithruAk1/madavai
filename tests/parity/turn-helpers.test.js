@@ -17,7 +17,7 @@ const desktop = require("../../electron/harness.cjs");
 const { tolerantParse, headTail, squashStale, CallGuard, ctxWindowFor, parseTextToolCalls } = core;
 
 describe("core/turn-helpers — byte-identical to desktop reference electron/harness.cjs", () => {
-  for (const n of ["tolerantParse", "headTail", "squashStale", "ctxWindowFor", "parseTextToolCalls", "TEXT_PROTOCOL", "CallGuard", "estTokens", "buildCompactionMessages", "applyCompaction"]) {
+  for (const n of ["tolerantParse", "headTail", "squashStale", "ctxWindowFor", "TEXT_PROTOCOL", "CallGuard", "estTokens", "buildCompactionMessages", "applyCompaction"]) { // parseTextToolCalls intentionally omitted: core is now its single source and is ahead of the legacy harness copy (deleted in M2e step 2)
     it(`${n} is extracted verbatim (toString() === harness.cjs)`, () => {
       expect(typeof core[n]).toBe(typeof desktop[n]);
       expect(core[n].toString()).toBe(desktop[n].toString());
@@ -175,6 +175,19 @@ describe("parseTextToolCalls — text-mode tool blocks (assistant text only)", (
   it("ignores a block whose body is not valid JSON", () => {
     const { calls } = parseTextToolCalls("```tool\nnot json\n```");
     expect(calls).toHaveLength(0);
+  });
+  it("parses the XML <function=…><parameter=…> form weak NIM/Qwen models emit, and strips it", () => {
+    const content = "<tool_call>\n<function=web_search>\n<parameter=query>\nrecent space news\n</parameter>\n<parameter=topk>\n5\n</parameter>\n</function>\n</tool_call>";
+    const { calls, stripped } = parseTextToolCalls(content);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].name).toBe("web_search");
+    expect(JSON.parse(calls[0].arguments)).toEqual({ query: "recent space news", topk: 5 });
+    expect(stripped).toBe("");
+  });
+  it("the fenced form wins when both forms could match (no double-parse)", () => {
+    const { calls } = parseTextToolCalls("```tool\n{\"name\":\"a\",\"args\":{}}\n```");
+    expect(calls).toHaveLength(1);
+    expect(calls[0].name).toBe("a");
   });
 });
 
