@@ -9,6 +9,7 @@
 //   • Local-machine features (folders, installing skills, MCP connector processes, Telegram,
 //     local models) can't run in a browser -> they return a clear "desktop app" result.
 import { streamChat, streamChatTools, listModels as provListModels, ping as provPing, apiBase } from "../shared/providers.js";
+import { runWebChatTurnViaCore } from "./chatCoreWeb.js"; // ADR-0001 / M2d.3 — shared-core chat path (flag-guarded)
 import * as webTrace from "./webTrace.js";
 import { listBundled as _listBundled, readBundled, mergeSkills, userSkills, skillPrefs } from "../webSkills.js"; // + user-authored skills (SK)
 // Bundled packs honor the same Extras gate as the desktop engine (today: EdgeTrader).
@@ -766,6 +767,25 @@ async function runAgentTurn(sess, text, images, prof) {
   const started = Date.now();
   // Harness (desktop-mirrored): squash stale tool outputs + per-turn call guard.
   try { if (mcpServersFromSettings(loadSettings()).length) await ensureMcpForSession(sess); } catch {}
+  // ADR-0001 / M2d.3 — flag-guarded web cutover: route chat through the SHARED core (same as desktop).
+  // Default off = web's loop below runs byte-for-byte unchanged. localStorage MADAV_CORE_CHAT=1 -> core path.
+  if (typeof localStorage !== "undefined" && localStorage.getItem("MADAV_CORE_CHAT") === "1") {
+    const netFb = (fn) => async (...a) => { const o = a[a.length - 1] || {}; try { return await fn(...a); } catch (e) { if (isNetworkErr(e) && getToken()) { a[a.length - 1] = { ...o, proxy: proxyCfg() }; return await fn(...a); } throw e; } };
+    try {
+      await runWebChatTurnViaCore({
+        streamChatTools: netFb(streamChatTools), streamChat: netFb(streamChat),
+        executeTool, webGenImage, emit, sessId: sess.id, sess,
+        tools: [...activeChatTools(), ...(sess.mcpTools || [])],
+        history: sess.messages, profile: prof, signal: sess.ac.signal,
+      });
+      persistSession(sess);
+    } catch (e) {
+      if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
+      emit(sess.id, "error", { message: String((e && e.message) || e) });
+      emit(sess.id, "result", { subtype: "error" });
+    }
+    return;
+  }
   squashStale(sess.messages);
   const guard = new CallGuard();
   let reasks = 0;
