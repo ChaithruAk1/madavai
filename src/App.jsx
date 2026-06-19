@@ -4,6 +4,7 @@ import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestio
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
+import { providerFreeTier } from "./modelCost.js";
 import Composer from "./components/Composer.jsx";
 import PermissionModal from "./components/PermissionModal.jsx";
 import Settings from "./components/Settings.jsx";
@@ -838,7 +839,7 @@ export default function App() {
       const cached = p.cachedModels || [];
       const ids = live.length ? live : (cached.length ? cached : (p.model ? [p.model] : []));
       const loc = isLocal(p.baseUrl) ? "local" : "cloud";
-      return { group: `${p.name} · ${loc}`, items: ids.slice(0, 500).map((mid) => ({ id: `${p.id}::${mid}`, name: mid, prov: p.name, badge: loc })) };
+      return { group: `${p.name} · ${loc}`, items: ids.slice(0, 500).map((mid) => ({ id: `${p.id}::${mid}`, name: mid, prov: p.name, badge: loc, baseUrl: p.baseUrl, kind: p.kind, free: providerFreeTier(p) })) }; // stamp provider tier (baseUrl known here); catalog price still overrides per-model
     })
     .filter((g) => g.items.length);
 

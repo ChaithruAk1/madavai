@@ -22,7 +22,7 @@ async function fetchAll() {
     const arch = m.architecture || {};
     const inMod = Array.isArray(arch.input_modalities) ? arch.input_modalities : String(arch.modality || "").split(/[+,]/);
     const pr = m.pricing || {};
-    const free = (String(pr.prompt) === "0" && String(pr.completion || "0") === "0") || /:free$/.test(m.id || "");
+    const free = (String(pr.prompt) === "0" && String(pr.completion || "0") === "0"); // cost from REAL pricing, not the name
     const sp = Array.isArray(m.supported_parameters) ? m.supported_parameters : [];
     out[m.id] = {
       name: m.name || m.id,

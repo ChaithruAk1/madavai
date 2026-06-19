@@ -4,6 +4,7 @@ import { MODELS } from "../bridge/contract.js";
 import { bridge } from "../bridge/index.js";
 import { localCaps } from "../data/localModels.js";
 import HelpDot from "./HelpDot.jsx";
+import { isModelFree } from "../modelCost.js"; // SINGLE SOURCE: free/paid from the provider, not the name
 
 // Best-guess of a model's core purpose from its name (no universal API exposes this).
 export function classify(id) {
@@ -76,7 +77,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     const v = Math.max(220, Math.min(560, Math.floor(avail)));
     if (Math.abs(v - r.height) > 2) setMaxH(v);
   }, [open, openUp, q, maker, cost, host, caps]);
-  const isFree = (it, groupName) => /local/i.test(it.prov || groupName || "") || /:free\b/.test((it.name || "").toLowerCase());
+  const isFree = (it) => isModelFree(it, { catalog: orCat }); // provider pricing/tier — never the model-name text
   const makerOf = (it, group) => String(it.prov || (group || "").split(" · ")[0] || "").toLowerCase().trim(); // group by PROVIDER profile (OpenRouter/Anthropic/NIM), not model maker
   const ormOf = (it) => { if (!orCat) return null; const id = it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name; return orCat[id] || null; };
   // Local models have no catalog metadata — fall back to the curated family registry (localModels.js).
@@ -124,7 +125,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
       if (!(it.name + it.id).toLowerCase().includes(q.toLowerCase())) return false;
       if (agOnly && !CAPS.agentic(it, g.group)) return false; // only when the user opts in
       if (maker !== "all" && makerOf(it, g.group) !== maker) return false;
-      const free = isFree(it, g.group);
+      const free = isFree(it);
       if (cost === "free" && !free) return false;
       if (cost === "paid" && free) return false;
       const local = /local/i.test(it.prov || g.group || "");
@@ -222,7 +223,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
               </div>
               {g.items.map((it) => {
                 const isLocal = /local/i.test(it.prov || g.group || "");
-                const free = isFree(it, g.group);
+                const free = isFree(it);
                 const tags = [];
                 if (CAPS.coding(it, g.group)) tags.push("coding");
                 if (CAPS.reasoning(it, g.group)) tags.push("reasoning");
