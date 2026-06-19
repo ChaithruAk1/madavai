@@ -4,7 +4,7 @@ import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestio
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
-import { providerFreeTier } from "./modelCost.js";
+import { providerFreeTier, resolveModelValue } from "./modelCost.js";
 import Composer from "./components/Composer.jsx";
 import PermissionModal from "./components/PermissionModal.jsx";
 import Settings from "./components/Settings.jsx";
@@ -547,6 +547,25 @@ export default function App() {
     send(m.userText, [], null, teamCtx, { resumeMission: true });
   };
 
+  // ---- per-chat model memory (Claude-style): a conversation remembers the model it ran with. Opening a
+  // chat restores that model into the picker AND as the active model, so the next turn continues on it
+  // (bridge.start reads the saved active model). New chats keep your last-used model — we never reset it.
+  const convModelInfo = (conv) => {
+    if (!conv) return {};
+    if (conv.model) return { model: conv.model, provider: conv.provider };
+    const msgs = conv.messages || [];
+    for (let i = msgs.length - 1; i >= 0; i--) { const m = msgs[i]; if (m && m.role === "assistant" && m.model) return { model: m.model, provider: m.provider }; }
+    return {};
+  };
+  const applyConvModel = (model, provider, convMode) => {
+    if (!model || !settings) return;
+    const value = resolveModelValue(settings.profiles, model, provider);
+    if (!value) return; // unknown model/provider -> leave the current selection untouched
+    const surf = ["chat", "cowork", "code", "project"].includes(convMode) ? convMode : "chat";
+    setSurfaceModel((prev) => { if (prev[surf] === value) return prev; const next = { ...prev, [surf]: value }; try { localStorage.setItem("madav.surfaceModel", JSON.stringify(next)); } catch {} return next; });
+    selectModel(value);
+  };
+
   // ---- persisted chat history (Talk / Collaborate / Build) ----
   const openSession = async (id) => {
     const sid0 = convSession.current.get(id);
@@ -557,12 +576,14 @@ export default function App() {
       setTimeline(runBuffers.current.get(sid0) || []);
       sessionRef.current = sid0; streamOpen.current = !!runStreamOpen.current.get(sid0); setBusy(true);
       setProjectCtx(null); setCoworkProj(null);
+      { const mi = convModelInfo(conv0); applyConvModel(mi.model, mi.provider, conv0 && conv0.mode); }
       return;
     }
     const conv = await bridge.getSession(id);
     if (!conv) return;
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined, at: m.at }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
+    { const mi = convModelInfo(conv); applyConvModel(mi.model, mi.provider, conv.mode); }
     setProjectCtx(null); setCoworkProj(null);
     // Re-attach the project scope this Collaborate task ran under (saved on the record).
     if (conv.projectId && bridge.getProject) {
@@ -646,6 +667,7 @@ export default function App() {
     const outs = ((full && full.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path }));
     setTimeline([...msgs, ...outs]);
     setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });
+    { const mi = convModelInfo(full); applyConvModel(mi.model, mi.provider, (full && full.mode) || "project"); }
     sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const backToProjects = () => { modeCacheRef.current.project = null; setProjectCtx(null); setTimeline([]); sessionRef.current = null; setBusy(false); };

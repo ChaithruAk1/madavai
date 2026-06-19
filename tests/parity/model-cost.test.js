@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isModelFree, providerFreeTier } from "../../src/modelCost.js";
+import { isModelFree, providerFreeTier, resolveModelValue } from "../../src/modelCost.js";
 
 describe("model cost — free/paid from the PROVIDER, never the model-name text", () => {
   it("real pricing wins: $0 -> free, >$0 -> paid", () => {
@@ -32,5 +32,20 @@ describe("model cost — free/paid from the PROVIDER, never the model-name text"
     expect(providerFreeTier({ name: "NVIDIA", baseUrl: "https://integrate.api.nvidia.com" })).toBe(true);
     expect(providerFreeTier({ name: "OpenAI" })).toBe(false);
     expect(providerFreeTier({ name: "OpenRouter" })).toBe(false);
+  });
+});
+
+describe("resolveModelValue — per-chat model memory restores a conversation's model", () => {
+  const profiles = { p_starter: { id: "p_starter", name: "Madav Starter (free)", cachedModels: ["nvidia/nemotron-nano-9b-v2:free"] }, p_or: { id: "p_or", name: "OpenRouter", model: "deepseek/deepseek-v3", cachedModels: [] } };
+  it("matches by provider name", () => {
+    expect(resolveModelValue(profiles, "nvidia/nemotron-nano-9b-v2:free", "Madav Starter (free)")).toBe("p_starter::nvidia/nemotron-nano-9b-v2:free");
+  });
+  it("falls back to the profile that carries the model when the provider name is gone", () => {
+    expect(resolveModelValue(profiles, "nvidia/nemotron-nano-9b-v2:free", "Renamed")).toBe("p_starter::nvidia/nemotron-nano-9b-v2:free");
+    expect(resolveModelValue(profiles, "deepseek/deepseek-v3", "???")).toBe("p_or::deepseek/deepseek-v3");
+  });
+  it("returns null when nothing matches (caller keeps current model)", () => {
+    expect(resolveModelValue(profiles, "totally/unknown", "Nope")).toBe(null);
+    expect(resolveModelValue(profiles, "", "x")).toBe(null);
   });
 });

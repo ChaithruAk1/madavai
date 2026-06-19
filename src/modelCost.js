@@ -33,6 +33,18 @@ function profileIdOf(item) {
 //   2) a tier the group-builder stamped on the item (item.free)
 //   3) the provider tier table (from item.prov / baseUrl / kind / profile-id)
 // Returns true = free, false = paid. Never reads the model-name text.
+// Resolve a saved conversation's model+provider back to a picker value "profileId::model" (Claude-style
+// per-chat model memory). Match by provider NAME first, then by the profile that actually carries the
+// model. Returns null when no profile matches (caller then leaves the current model untouched).
+export function resolveModelValue(profiles, model, provider) {
+  if (!model) return null;
+  const list = Array.isArray(profiles) ? profiles : Object.values(profiles || {});
+  const p = list.find((x) => x && x.name === provider)
+         || list.find((x) => x && Array.isArray(x.cachedModels) && x.cachedModels.includes(model))
+         || list.find((x) => x && x.model === model);
+  return p ? `${p.id}::${model}` : null;
+}
+
 export function isModelFree(item = {}, { catalog } = {}) {
   const cat = catalog && catalog[catalogKey(item)];
   if (cat) {
