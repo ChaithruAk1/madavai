@@ -8,9 +8,9 @@
 // askUserQuestion) and the permission helpers (isAuto/isBlocked/askPermission) are the SAME desktop
 // functions the legacy loop uses — this re-expresses the chat tool wiring, it does not reinvent it.
 
-const { makeDesktopChatAdapter } = require("./chat-core-adapter.cjs");
-let _coreP = null;
-const coreChatLoop = () => (_coreP ||= import("../core/chat-loop.js")); // cached dynamic ESM import (proven MCP-SDK pattern)
+let _coreP = null, _adapterP = null;
+const coreChatLoop = () => (_coreP ||= import("../core/chat-loop.js"));     // cached dynamic ESM import (proven MCP-SDK pattern)
+const coreChatAdapter = () => (_adapterP ||= import("../core/chat-adapter.js")); // the SHARED adapter logic (desktop + web)
 
 // The chat-mode per-tool executor: inline chat tools specially, everything else via the generic runTool.
 function makeChatLeafExec(deps) {
@@ -49,12 +49,14 @@ function makeAuthorize(deps) {
 
 async function runChatTurnViaCore(deps) {
   const { coreChatTurn } = await coreChatLoop();
+  const { makeChatAdapter } = await coreChatAdapter();
   const { streamChatTools, streamChat, parseTextToolCalls, emit, tools, history,
           profile, mode, caps, textMode, MAX_STEPS, signal, exactCtx } = deps;
-  const adapter = makeDesktopChatAdapter({
+  const adapter = makeChatAdapter({
     streamChatTools, streamChat, parseTextToolCalls,
     execLeaf: makeChatLeafExec(deps), authorize: makeAuthorize(deps),
-    emit, toolset: tools, textMode,
+    ui: (kind, data) => emit({ kind, data }), // desktop IPC sink
+    toolset: tools, textMode,
   });
   // history already holds [system, ...prior, user prompt]; let core consume it as-is.
   const res = await coreChatTurn({

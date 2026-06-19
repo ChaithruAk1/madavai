@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createRequire } from "module";
+import { makeChatAdapter } from "../../core/chat-adapter.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -10,8 +10,6 @@ import { coreChatTurn } from "../../core/chat-loop.js";
 // desktop IPC events. Validated against a REAL recorded turn: coreChatTurn + the desktop adapter
 // must reproduce the recorded desktop tool_use/tool_result event sequence — the emit-parity proof
 // the flag cutover (M2c.3) depends on. DI runs it off the main process with mock primitives.
-const require = createRequire(import.meta.url);
-const { makeDesktopChatAdapter } = require("../../electron/chat-core-adapter.cjs");
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cassette = JSON.parse(fs.readFileSync(path.join(here, "fixtures/desktop-chat-tool.json"), "utf8"));
 
@@ -29,8 +27,8 @@ function build(c) {
     };
   };
   const execLeaf = async (name) => { const q = results[name]; return q && q.length ? q.shift() : ""; };
-  const adapter = makeDesktopChatAdapter({
-    streamChatTools, execLeaf, emit: (ev) => ipc.push(ev),
+  const adapter = makeChatAdapter({
+    streamChatTools, execLeaf, ui: (kind, data) => ipc.push({ kind, data }),
     toolset: c.tools, isAuto: () => true, now: () => 0,
   });
   return { adapter, ipc };
