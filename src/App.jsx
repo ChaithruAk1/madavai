@@ -546,7 +546,7 @@ export default function App() {
     }
     const conv = await bridge.getSession(id);
     if (!conv) return;
-    const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined }));
+    const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined, at: m.at }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
     setProjectCtx(null); setCoworkProj(null);
     // Re-attach the project scope this Collaborate task ran under (saved on the record).
@@ -627,7 +627,7 @@ export default function App() {
       return;
     }
     const full = await bridge.getConversation(convMeta.id);
-    const msgs = ((full && full.messages) || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined }));
+    const msgs = ((full && full.messages) || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined, at: m.at }));
     const outs = ((full && full.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path }));
     setTimeline([...msgs, ...outs]);
     setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });

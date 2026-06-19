@@ -109,7 +109,7 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
             <button className="msg-act" onClick={copy} title={copied ? "Copied" : "Copy"}>{copied ? <Check size={15} /> : <Copy size={15} />}</button>
             {isUser && onEdit && <button className="msg-act" onClick={startEdit} title="Edit"><Pencil size={15} /></button>}
             {!isUser && onRetry && <button className="msg-act" onClick={onRetry} title="Retry"><RotateCcw size={15} /></button>}
-            {item.at ? <span className="msg-time" title={new Date(item.at).toLocaleString()}>{new Date(item.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span> : null}
+            {item.at ? <span className="msg-time" title={new Date(item.at).toLocaleString()}>{new Date(item.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span> : null}
           </div>
         )}
       </div>

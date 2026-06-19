@@ -244,8 +244,8 @@ class SessionManager {
     if (!conv) return;
     const u = (t.userText || "").trim();
     const a = (t.replyText || "").trim();
-    if (u) conv.messages.push({ role: "user", content: u });
-    if (a) conv.messages.push({ role: "assistant", content: a, model: t.model, provider: t.provider });
+    if (u) conv.messages.push({ role: "user", content: u, at: Date.now() });
+    if (a) conv.messages.push({ role: "assistant", content: a, model: t.model, provider: t.provider, at: Date.now() });
     if ((!conv.title || conv.title === "New task") && u) conv.title = u.slice(0, 60);
     conv.cwd = s.cwd || conv.cwd;
     // Remember who ran this conversation so reopening it re-attaches the agent/team.

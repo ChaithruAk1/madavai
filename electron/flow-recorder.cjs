@@ -68,7 +68,7 @@ function start() {
       if (steps.length > 300) steps.splice(0, steps.length - 300);
     } catch {}
   }, 600);
-  win.loadURL("https://duckduckgo.com");
+  win.loadURL("https://www.google.com");
   active = { win, steps, timer };
   // Closing the window = "stop": distill whatever was recorded.
   win.on("closed", () => { const a = active; active = null; clearInterval(a.timer); distill(a.steps).catch(() => {}); });
