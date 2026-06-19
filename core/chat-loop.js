@@ -143,7 +143,9 @@ export async function coreChatTurn({
     // Text mode: record the RAW assistant text (so the model sees its own fenced call) and DON'T attach
     // native tool_calls (the calls live in the text). Native mode is unchanged.
     const assistantMsg = { role: "assistant", content: textMode ? (resp._rawText || content || "") : assistantContent };
-    if (!textMode && toolCalls.length) assistantMsg.tool_calls = toolCalls;
+    // Each tool call on the assistant message MUST carry type:"function" — strict providers (NVIDIA NIM)
+    // reject it otherwise (ChatCompletionMessageFunctionToolCallParam.type required). Matches the legacy loop.
+    if (!textMode && toolCalls.length) assistantMsg.tool_calls = toolCalls.map((tc) => ({ id: tc.id, type: "function", function: tc.function }));
     messages.push(assistantMsg);
 
     if (!toolCalls.length) {
