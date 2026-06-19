@@ -984,15 +984,12 @@ const server = http.createServer(async (req, res) => {
     let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
     let target = String(b.url || "").trim();
     if (b.query && !target) {
-      // Web SEARCH (house key): try the SHARED provider (Tavily/Serper/Brave) first; on no-key / out-of-
-      // credits / error, fall through to DuckDuckGo below. One search backend for web + desktop (core/search.js).
-      try {
-        const { webSearch, formatResults } = await import("../core/search.js");
-        const cfg = { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" };
-        const results = await webSearch(String(b.query), { fetchImpl: fetch, cfg, count: 6 });
-        if (Array.isArray(results) && results.length) return json(res, 200, { url: "search:" + b.query, status: 200, text: formatResults(results, b.query) });
-      } catch { /* provider failed → DuckDuckGo fallback */ }
-      target = "https://duckduckgo.com/html/?q=" + encodeURIComponent(b.query); // simple web search fallback
+      // Web SEARCH — the ONE backend (core/search.js): Tavily/Serper/Brave by key → DuckDuckGo fallback,
+      // structured results. Web AND desktop both hit this endpoint, so there is a single search path.
+      const { searchWeb, formatResults } = await import("../core/search.js");
+      const cfg = { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" };
+      const results = await searchWeb(String(b.query), { fetchImpl: fetch, cfg, count: Number(b.count) || 6 });
+      return json(res, 200, { url: "search:" + b.query, status: 200, text: formatResults(results, b.query), results });
     }
     if (!/^https?:\/\//i.test(target)) return json(res, 400, { error: "http(s) url or query required" });
     // SSRF guard: block private / loopback / link-local hosts (re-checked on every redirect hop below).

@@ -112,31 +112,8 @@ function htmlToText(raw) {
     .replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
 }
 
-// ---------- DuckDuckGo HTML result parsing ----------
-// DDG's HTML endpoint wraps every result link in a redirect:
-//   <a class="result__a" href="//duckduckgo.com/l/?uddg=<URL-ENCODED-TARGET>&...">Title</a>
-// We pull each <a class="result__a"> href + text, URL-decode the uddg= param to recover
-// the real destination, strip tags from the title, and dedupe by URL. Best-effort regex
-// (no DOM) — DDG markup is stable enough for this, but layout changes can break it.
-function parseDuckResults(html) {
-  const out = [];
-  const seen = new Set();
-  const re = /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-  let m;
-  while ((m = re.exec(html))) {
-    let href = m[1];
-    // Recover the true target from the uddg redirect param when present.
-    const ud = /[?&]uddg=([^&]+)/.exec(href);
-    if (ud) { try { href = decodeURIComponent(ud[1]); } catch {} }
-    else if (href.startsWith("//")) href = "https:" + href;
-    if (!/^https?:\/\//i.test(href)) continue;
-    if (seen.has(href) || isForbiddenTarget(href)) continue;
-    seen.add(href);
-    const title = htmlToText(m[2]).slice(0, 200) || href;
-    out.push({ url: href, title });
-  }
-  return out;
-}
+// DuckDuckGo result parsing now lives in the SINGLE SOURCE core/search.js (parseDuckResults), used by
+// the server's search backend. Desktop no longer parses search results locally — it calls the server.
 
 // ---------- PLAN: ask the model for 3-5 search queries as a JSON array ----------
 async function planQueries(profile, query, focus, signal) {
@@ -190,8 +167,7 @@ async function runDeepResearch(profile, args, opts = {}) {
       if (aborted()) break;
       if (sources.length >= 8) break;
       try {
-        let hits = await providerSearch(q, signal, 8); // shared provider (Tavily/Serper/Brave, house key)
-        if (!hits) { const html = await fetchGuarded("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q), signal); hits = parseDuckResults(html); } // DuckDuckGo fallback
+        const hits = await serverSearch(q, signal, 8); // ONE backend: server house key (core/search.js: Tavily → DuckDuckGo)
         for (const hit of hits) {
           if (seen.has(hit.url)) continue;
           seen.add(hit.url);
@@ -254,31 +230,23 @@ async function runDeepResearch(profile, args, opts = {}) {
   }
 }
 
-// ADR-0001 — web search routes through the SHARED core/search.js (Tavily/Serper/Brave, picked by key),
-// with DuckDuckGo as the automatic fallback on no-key / out-of-credits / error. Keys come from env
-// (server = house key; desktop testing = local env). ONE search backend for chat web_search AND Deep Research.
-let _searchModP = null;
-const searchMod = () => (_searchModP ||= import("../core/search.js")); // cached dynamic ESM import
-function searchCfg() {
-  return { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" };
+// ADR-0001 — ONE search backend. Desktop search goes through the SAME server endpoint as web
+// (/proxy/fetch with { query }), which runs the single source core/search.js (Tavily/Serper/Brave →
+// DuckDuckGo fallback) with the server's house key. No local key, no local search engine on desktop —
+// identical to web. Returns the server's unified [{title,url,content}] (or [] on failure).
+async function serverSearch(query, signal, limit = 6) {
+  const cfg = require("./settings.cjs").load();
+  const authBaseUrl = cfg.authBaseUrl || "https://madav.ai";
+  const r = await require("./auth.cjs").apiCall("POST", "/proxy/fetch", { query: String(query || ""), count: limit }, authBaseUrl);
+  return (r && Array.isArray(r.results)) ? r.results : [];
 }
-async function providerSearch(query, signal, limit = 6) {
-  try {
-    const { webSearch } = await searchMod();
-    const results = await webSearch(query, { fetchImpl: fetch, cfg: searchCfg(), count: limit, signal });
-    return (Array.isArray(results) && results.length) ? results : null; // null → caller falls back to DuckDuckGo
-  } catch { return null; }
-}
-// Lightweight single-pass web search — for the in-chat web_search tool. Never throws.
+// In-chat web_search tool — formats the shared results for the model. Never throws.
 async function quickSearch(query, signal, limit = 6) {
   const q = String(query || "");
-  const hits0 = await providerSearch(q, signal, limit);
-  if (hits0) { try { const { formatResults } = await searchMod(); return formatResults(hits0, q); } catch {} }
   try {
-    const html = await fetchGuarded("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q), signal);
-    const hits = parseDuckResults(html).slice(0, Math.max(1, limit));
+    const hits = await serverSearch(q, signal, limit);
     if (!hits.length) return "(no web results)";
-    return hits.map((h, i) => `${i + 1}. ${h.title}\n   ${h.url}`).join("\n");
+    return hits.map((h, i) => `${i + 1}. ${h.title}\n   ${h.url}` + (h.content ? `\n   ${String(h.content).replace(/\s+/g, " ").slice(0, 300)}` : "")).join("\n\n");
   } catch (e) { return "(web search failed: " + String((e && e.message) || e).slice(0, 120) + ")"; }
 }
 
