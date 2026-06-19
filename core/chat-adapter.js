@@ -92,7 +92,7 @@ export function makeChatAdapter(platform = {}) {
         ui("tool_use", { id: event.id || "", name: event.name, input: event.args || {}, auto: true });
         ui("tool_result", { id: event.id || "", output: event.message || "(blocked)" });
       } else if (t === "final") {
-        ui("assistant_message", { stop_reason: "end_turn" });
+        ui("assistant_message", { stop_reason: "end_turn", text: event.text });
         ui("result", { subtype: "success", duration_ms: now() - started });
       } else if (t === "cap_reached") {
         ui("result", { subtype: "max_steps", duration_ms: now() - started });

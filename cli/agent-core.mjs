@@ -193,10 +193,9 @@ export function undoLast() {
 }
 
 // ---------- web access ----------
-async function webGet(url, query) {
-  let target = url;
-  if (query && !target) target = "https://duckduckgo.com/html/?q=" + encodeURIComponent(query);
-  if (!/^https?:\/\//i.test(target || "")) return "Provide an http(s) url or a query.";
+async function webGet(url) {
+  const target = url;
+  if (!/^https?:\/\//i.test(target || "")) return "Provide an http(s) url.";
   try {
     const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
     const r = await fetch(target, { headers: { "User-Agent": "Madav/1.0" }, redirect: "follow", signal: ac.signal }).finally(() => clearTimeout(to));
@@ -204,6 +203,33 @@ async function webGet(url, query) {
     if (/html/i.test(ct)) t = t.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<\/(p|div|li|h[1-6]|tr|br)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
     return `# ${r.url} (${r.status})\n\n` + t.slice(0, 30000);
   } catch (e) { return "Web request failed: " + (e.message || e); }
+}
+
+// Web SEARCH goes through the ONE shared backend: the Madav server's /proxy/fetch house-key endpoint,
+// which runs core/search.js (Tavily/Serper/Brave by key -> DuckDuckGo fallback). Same path as web and
+// desktop — no second search implementation, no local DuckDuckGo scrape. The CLI's saved auth token
+// (Settings -> Terminal access) authorizes it; a configured search provider/key overrides the house key.
+async function webSearch(query) {
+  const q = String(query || "").trim();
+  if (!q) return "Provide a query.";
+  if (!cfg.authBaseUrl || !cfg.token) return "Web search needs Madav sign-in. Open the desktop app and enable Settings -> Terminal access, then restart the CLI.";
+  try {
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 20000);
+    const r = await fetch(cfg.authBaseUrl.replace(/\/$/, "") + "/proxy/fetch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + cfg.token },
+      body: JSON.stringify({ query: q, count: 6, searchProvider: cfg.searchProvider || "auto", searchKey: cfg.searchKey || "" }),
+      signal: ac.signal,
+    }).finally(() => clearTimeout(to));
+    if (r.status === 401) return "Web search unauthorized — your Madav terminal session expired. Re-enable Settings -> Terminal access in the app.";
+    if (!r.ok) return "Web search failed (server returned " + r.status + ").";
+    const j = await r.json().catch(() => ({}));
+    if (j && typeof j.text === "string" && j.text.trim()) return j.text;
+    if (j && Array.isArray(j.results) && j.results.length) {
+      return j.results.map((h, i) => `${i + 1}. ${h.title}\n   ${h.url}` + (h.content ? `\n   ${String(h.content).replace(/\s+/g, " ").slice(0, 300)}` : "")).join("\n\n");
+    }
+    return "(no web results)";
+  } catch (e) { return "Web search failed: " + ((e && e.message) || e); }
 }
 
 // ---------- subagent ----------
@@ -245,8 +271,8 @@ export async function execTool(name, a, ctx = {}) {
     case "write_file": { const p = within(a.path); snapshot(p); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, a.content ?? ""); return "wrote " + a.path; }
     case "edit_file": { const p = within(a.path); const t = fs.readFileSync(p, "utf8"); const i = t.indexOf(a.find); if (i < 0) return "ERROR: text to replace not found."; snapshot(p); fs.writeFileSync(p, t.slice(0, i) + a.replace + t.slice(i + a.find.length)); return "edited " + a.path; }
     case "run_command": { try { return (execSync(a.command, { cwd: ROOT, timeout: 120000, stdio: "pipe" }).toString() || "(no output)").slice(0, 8000); } catch (e) { return "Command failed:\n" + String(e.stdout || "") + String(e.stderr || e.message).slice(0, 4000); } }
-    case "web_fetch": return await webGet(a.url, null);
-    case "web_search": return await webGet(null, a.query);
+    case "web_fetch": return await webGet(a.url);
+    case "web_search": return await webSearch(a.query);
     case "spawn_subagent": return await runSubagent(a.task || "", ctx);
     case "load_skill": { const s = SKILLS.find((x) => x.name.toLowerCase() === (a.name || "").toLowerCase()); if (!s) return "No such skill."; try { return fs.readFileSync(s.file, "utf8").slice(0, 20000); } catch { return "Couldn't read skill."; } }
     default: return "unknown tool";

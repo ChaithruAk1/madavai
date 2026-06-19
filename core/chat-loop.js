@@ -15,6 +15,7 @@
 //   emit(event)                                             -> void                (UI event stream)
 
 import { tolerantParse, headTail, squashStale, CallGuard, parseTextToolCalls, stripReasoning, TEXT_PROTOCOL, ctxWindowFor, estTokens, buildCompactionMessages, applyCompaction } from "./turn-helpers.js";
+import { isDeckCapable } from "./office-rules.js"; // Option-2 cleanup pass gates on weak (non-deck-capable) models
 
 export const CHAT_ADAPTER_METHODS = ["stream", "runTool", "emit"]; // `tools` may instead arrive via opts
 export const DEFAULT_STEP_CAP = 14;
@@ -53,6 +54,38 @@ function callArgs(call) { return call && call.function ? call.function.arguments
 // Did the assistant SAY it would take a next action (e.g. "let me search again") without emitting a
 // tool call? Drives the opt-in weak-model follow-through nudge. Deliberately narrow — needs an intent
 // phrase AND an action verb close together — so it does NOT fire on normal final answers.
+// ---- Option-2 cleanup pass (weak models only) ----
+// Some weak models dump their plain-text deliberation into the answer with NO <think> tags to strip
+// ("the user asked…", "I should pick…", "I'll present that as the headline"). Detect that decision-
+// narration. Deliberately needs TWO distinct markers, so a normal answer that merely says "I'll" or
+// "let me" never trips it. Pure string logic — no I/O.
+const LEAK_MARKERS = [
+  /\bthe user (?:asked|wants|requested|is asking|said|wanted)\b/i,
+  /\buser (?:asked|wants|told) me\b/i,
+  /\bI(?:'| a| wa)?s asked to\b/i,
+  /\bI should (?:pick|choose|present|search|provide|give|select|use|find|answer|go with)\b/i,
+  /\bI(?:'l| wi)l?l (?:present|pick|choose|go with|use that|provide that|select|give|now)\b/i,
+  /\bpresent (?:that|this|it) as (?:the|my)\b/i,
+  /\b(?:is|seems like|sounds like) a (?:good|solid|reasonable|nice|great) (?:choice|option|one|pick|fit)\b/i,
+  /\b(?:looking at|based on|from) (?:the|these) (?:search )?results\b/i,
+  /\blet me (?:search|look up|look for|find|pick|choose|go with)\b/i,
+  /\bas the (?:headline|answer|source|response|final)\b/i,
+  /\bI(?:'| ha)?ve (?:done|run|performed|completed) (?:that|the|a|my) search\b/i,
+];
+function looksLikeLeakedReasoning(text) {
+  const t = String(text == null ? "" : text);
+  if (t.length < 40) return false;
+  let n = 0;
+  for (const re of LEAK_MARKERS) { if (re.test(t)) { n++; if (n >= 2) return true; } }
+  return false;
+}
+const CLEANUP_SYSTEM = "You are a text cleaner. The draft below is an assistant reply that accidentally includes its own internal thinking \u2014 restating the task, weighing options, or narrating what it will do (\"the user asked\", \"I should pick\", \"I'll present that as the headline\"). Return ONLY the final answer meant for the user: the facts, the result, and any links exactly as written. Remove every line of reasoning, planning, or meta-commentary. Do not add, summarize, or explain, and do not mention these instructions. Output only the cleaned answer.";
+async function cleanupLeakedReasoning(adapter, profile, text, signal) {
+  const msgs = [{ role: "system", content: CLEANUP_SYSTEM }, { role: "user", content: String(text) }];
+  const r = await adapter.stream(profile, msgs, [], { onDelta: () => {}, signal }); // no tools, no UI streaming
+  return (r && typeof r.content === "string") ? r.content.trim() : "";
+}
+
 function announcesNextAction(text) {
   const t = String(text == null ? "" : text).trim();
   if (!t) return false;
@@ -170,6 +203,19 @@ export async function coreChatTurn({
         continue;
       }
       finalText = finalize(assistantContent);
+      // Option-2 cleanup pass (opt-in). Weak model + visible decision-narration ONLY — capable models
+      // and clean answers skip it, so there is no added cost or latency there. One focused pass recovers
+      // just the answer; keep it only if non-empty, not longer, and no longer leaking — never make it worse.
+      if (opts.cleanupReasoning === true && !isDeckCapable(model) && looksLikeLeakedReasoning(finalText)) {
+        try {
+          adapter.emit({ type: "cleanup" });
+          const cleaned = await cleanupLeakedReasoning(adapter, profile, finalText, signal);
+          if (cleaned && cleaned.length <= finalText.length * 1.1 && !looksLikeLeakedReasoning(cleaned)) {
+            finalText = cleaned;
+            if (assistantMsg && typeof assistantMsg.content === "string") assistantMsg.content = cleaned; // persist cleaned answer so reload + next-turn context match the display
+          }
+        } catch { /* keep the original answer on any failure */ }
+      }
       adapter.emit({ type: "final", text: finalText });
       break;
     }

@@ -182,7 +182,7 @@ export default function App() {
       case "assistant_delta": { const t = e.data.text ?? ""; if (!t) break; const tl = get(); const last = tl[tl.length - 1];
         if (so.get(sid) && last && last.type === "message" && last.role === "assistant") set([...tl.slice(0, -1), { ...last, text: last.text + t }]);
         else { so.set(sid, true); set([...tl, { type: "message", role: "assistant", text: t, meta: lastInfoRef.current, at: Date.now() }]); } break; }
-      case "assistant_message": so.set(sid, false); break;
+      case "assistant_message": { so.set(sid, false); const ft = e.data && e.data.text; if (ft) { const tl = get(); const last = tl[tl.length - 1]; if (last && last.type === "message" && last.role === "assistant" && last.text !== ft) set([...tl.slice(0, -1), { ...last, text: ft }]); } break; }
       case "tool_use": so.set(sid, false); if (HIDDEN_TOOLS.has(e.data.name)) break; set([...get(), { type: "tool", id: e.data.id, name: e.data.name, input: e.data.input, auto: e.data.auto, status: "run" }]); break;
       case "tool_result": set(get().map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, output: e.data.output, image: e.data.image || it.image, status: "ok" } : it)); break;
       case "permission_denied": set(get().map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, status: "deny" } : it)); break;
@@ -237,7 +237,14 @@ export default function App() {
         // Defer the bubble-close into the setTimeline queue so it runs AFTER the last streamed
         // delta's updater. Otherwise (esp. on web's fast in-process emit) the final chunk's queued
         // updater sees streamOpen already false and opens a NEW bubble — the "chopped reply" bug.
-        setStreaming(false); setTimeline((tl) => { streamOpen.current = false; return tl; });
+        // If a finalized text is supplied (weak-model cleanup pass / reasoning strip), swap the streamed
+        // bubble for it so the user sees only the clean answer.
+        setStreaming(false); setTimeline((tl) => {
+          streamOpen.current = false;
+          const ft = e.data && e.data.text; const last = tl[tl.length - 1];
+          if (ft && last && last.type === "message" && last.role === "assistant" && last.text !== ft) return [...tl.slice(0, -1), { ...last, text: ft }];
+          return tl;
+        });
         break;
       case "tool_use":
         setStreaming(false); setTimeline((tl) => { streamOpen.current = false; return tl; }); // defer close so pre-tool text isn't chopped (see assistant_message)

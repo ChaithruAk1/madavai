@@ -40,7 +40,7 @@ export async function runWebChatTurnViaCore(deps) {
   const res = await coreChatTurn({
     adapter, history, prompt: "", system: "",
     model: (profile && profile.model) || "", mode, tools,
-    opts: { stepCap: 16, signal, profile, exactCtx, nudgeFollowThrough: true }, // nudge weak models that announce a next step but don't act
+    opts: { stepCap: 16, signal, profile, exactCtx, nudgeFollowThrough: true, cleanupReasoning: true }, // nudge + clean up weak models
   });
   // Replace session history with the full transcript core produced (append OR compaction).
   history.length = 0;
