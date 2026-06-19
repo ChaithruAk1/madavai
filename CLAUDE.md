@@ -1,5 +1,8 @@
 # Madav — working rules for code changes
 
+## COMMUNICATION RULE — Always guide the owner (Chaithru) in plain English, step by step.
+Whenever the owner needs to DO something — build, test, deploy, commit, run the app, validate, click in the UI — give **numbered, plain-English steps**, each with the exact command or action and what a successful result looks like. No jargon-only directions, no "just wire X up". Say what each step is FOR. Claude makes the code changes and supplies precise, copy-pasteable steps; the owner runs builds/tests/desktop and commits. (Owner preference, recorded 2026-06-18.)
+
 ## RULE 0 — Every fix must work on BOTH web and desktop. Always.
 Madav ships two surfaces from one repo. A change is **not done** until it is correct on **both** web and desktop, and the deploy step for each is stated. Never fix one and assume the other; they have separate prompt copies, separate CSPs, and separate deploy paths. When you change behaviour, walk the map below and patch every surface it touches.
 
