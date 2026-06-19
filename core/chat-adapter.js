@@ -63,11 +63,15 @@ export function makeChatAdapter(platform = {}) {
         ui("tool_result", { id, output: out });
         return out;
       }
-      let output;
-      try { output = await execLeaf(name, args, ctx); }
-      catch (e) { output = "ERROR: " + ((e && e.message) || e); }
+      let output, image;
+      try {
+        const r = await execLeaf(name, args, ctx);
+        // execLeaf may return a string, OR { output, image } (e.g. create_image) to carry an image card.
+        if (r && typeof r === "object" && !Array.isArray(r) && ("output" in r || "image" in r)) { output = r.output; image = r.image; }
+        else output = r;
+      } catch (e) { output = "ERROR: " + ((e && e.message) || e); }
       output = String(output == null ? "" : output);
-      ui("tool_result", { id, output: output.slice(0, 4000) });
+      ui("tool_result", { id, output: output.slice(0, 4000), ...(image ? { image } : {}) });
       return output;
     },
 

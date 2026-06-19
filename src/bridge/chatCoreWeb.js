@@ -22,7 +22,7 @@ export async function runWebChatTurnViaCore(deps) {
   // like desktop); everything else goes through web's executeTool. No approval flow (web is single-user).
   const execLeaf = async (name, args) => {
     if (name === "create_image") {
-      try { await webGenImage(profile, args.prompt); return "Image generated and shown to the user. Describe it in one short sentence and continue."; }
+      try { const image = await webGenImage(profile, args.prompt); return { output: "Image generated and shown to the user. Describe it in one short sentence and continue.", image }; }
       catch (e) { return "ERROR: " + ((e && e.message) || e); }
     }
     return await executeTool(name, args, { sess });

@@ -24,8 +24,8 @@ function makeChatLeafExec(deps) {
       if (isBlocked(permMode, name)) return "(blocked: plan mode is read-only)";
       if (!imagegenOn) return "Image generation is turned off for this install (Settings → Extras).";
       try {
-        const r = await generateImage(profile, args.prompt); // NOTE: image-card emit is a documented M2c gap (no double tool_result)
-        return "Image generated and shown to the user" + (r && r.file ? ` (saved: ${r.file})` : "") + ". Describe it in one short sentence and continue.";
+        const r = await generateImage(profile, args.prompt); // { dataUrl, file }
+        return { output: "Image generated and shown to the user" + (r && r.file ? ` (saved: ${r.file})` : "") + ". Describe it in one short sentence and continue.", image: r && r.dataUrl };
       } catch (e) { return "ERROR: " + ((e && e.message) || e); }
     }
     if (name === "ask_user") {
