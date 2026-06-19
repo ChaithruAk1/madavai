@@ -216,6 +216,9 @@ export async function coreChatTurn({
           }
         } catch { /* keep the original answer on any failure */ }
       }
+      // Never end a turn blank — always show an answer OR a clear reason. Some weak models return an
+      // empty final response (no text and no tool call); surface that instead of exiting silently.
+      if (!String(finalText || "").trim()) finalText = "The model returned an empty response, so there's no answer to show. Please try again, rephrase, or switch to a more capable model.";
       adapter.emit({ type: "final", text: finalText });
       break;
     }
@@ -252,6 +255,10 @@ export async function coreChatTurn({
   if (!finalText && steps >= stepCap) {
     finalText = "[harness] step cap reached (" + stepCap + ") without a final answer.";
     adapter.emit({ type: "cap_reached", stepCap });
+    adapter.emit({ type: "final", text: finalText });
+  } else if (!String(finalText || "").trim()) {
+    finalText = (signal && signal.aborted) ? "Run stopped before an answer was produced." : "The run ended without an answer. Please try again or switch to a more capable model.";
+    adapter.emit({ type: "final", text: finalText });
   }
 
   adapter.emit({ type: "turn_end", steps });

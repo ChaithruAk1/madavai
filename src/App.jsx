@@ -182,7 +182,7 @@ export default function App() {
       case "assistant_delta": { const t = e.data.text ?? ""; if (!t) break; const tl = get(); const last = tl[tl.length - 1];
         if (so.get(sid) && last && last.type === "message" && last.role === "assistant") set([...tl.slice(0, -1), { ...last, text: last.text + t }]);
         else { so.set(sid, true); set([...tl, { type: "message", role: "assistant", text: t, meta: lastInfoRef.current, at: Date.now() }]); } break; }
-      case "assistant_message": { so.set(sid, false); const ft = e.data && e.data.text; if (ft) { const tl = get(); const last = tl[tl.length - 1]; if (last && last.type === "message" && last.role === "assistant" && last.text !== ft) set([...tl.slice(0, -1), { ...last, text: ft }]); } break; }
+      case "assistant_message": { so.set(sid, false); const ft = e.data && e.data.text; if (ft) { const tl = get(); const last = tl[tl.length - 1]; if (last && last.type === "message" && last.role === "assistant") { if (last.text !== ft) set([...tl.slice(0, -1), { ...last, text: ft }]); } else set([...tl, { type: "message", role: "assistant", text: ft, meta: lastInfoRef.current, at: Date.now() }]); } break; }
       case "tool_use": so.set(sid, false); if (HIDDEN_TOOLS.has(e.data.name)) break; set([...get(), { type: "tool", id: e.data.id, name: e.data.name, input: e.data.input, auto: e.data.auto, status: "run" }]); break;
       case "tool_result": set(get().map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, output: e.data.output, image: e.data.image || it.image, status: "ok" } : it)); break;
       case "permission_denied": set(get().map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, status: "deny" } : it)); break;
@@ -241,9 +241,10 @@ export default function App() {
         // bubble for it so the user sees only the clean answer.
         setStreaming(false); setTimeline((tl) => {
           streamOpen.current = false;
-          const ft = e.data && e.data.text; const last = tl[tl.length - 1];
-          if (ft && last && last.type === "message" && last.role === "assistant" && last.text !== ft) return [...tl.slice(0, -1), { ...last, text: ft }];
-          return tl;
+          const ft = e.data && e.data.text; if (!ft) return tl;
+          const last = tl[tl.length - 1];
+          if (last && last.type === "message" && last.role === "assistant") return last.text !== ft ? [...tl.slice(0, -1), { ...last, text: ft }] : tl;
+          return [...tl, { type: "message", role: "assistant", text: ft, meta: lastInfoRef.current, at: Date.now() }]; // model didn't stream a bubble — create one so the answer/reason always shows
         });
         break;
       case "tool_use":
@@ -444,11 +445,17 @@ export default function App() {
     setTimeline((tl) => tl.slice(0, i)); sessionRef.current = null; streamOpen.current = false;
     send(newText, item.images || []);
   };
+  // Re-send a user message as-is (retry the same question as a fresh turn).
+  const resendAt = (i) => {
+    const item = timeline[i]; if (!item) return;
+    setTimeline((tl) => tl.slice(0, i)); sessionRef.current = null; streamOpen.current = false;
+    send(item.text, item.images || []);
+  };
   // Latest-handler indirection: Message is memoized and may keep an old onEdit/onRetry
   // closure — routing through this ref guarantees the call always hits the CURRENT
   // retryAt/editAt (fresh timeline), regardless of which render created the prop.
   const handlersRef = useRef({});
-  handlersRef.current = { retryAt, editAt };
+  handlersRef.current = { retryAt, editAt, resendAt };
 
   // Version history for the open artifact — memoized so long timelines aren't
   // re-scanned (filter + extractArtifacts) on every unrelated render.
@@ -1222,7 +1229,7 @@ export default function App() {
                         const out = []; let buf = [];
                         const renderMsg = (item, i) => (
                           <Message key={i} item={item} onOpenArtifact={setArtifact} userName={_who || "You"}
-                            onRetry={!busy && item.type === "message" && item.role === "assistant" ? () => handlersRef.current.retryAt(i) : undefined}
+                            onRetry={!busy && item.type === "message" ? (item.role === "assistant" ? () => handlersRef.current.retryAt(i) : item.role === "user" ? () => handlersRef.current.resendAt(i) : undefined) : undefined}
                             onEdit={!busy && item.type === "message" && item.role === "user" ? (t) => handlersRef.current.editAt(i, t) : undefined}
                             streaming={streaming && i === timeline.length - 1 && item.type === "message" && item.role === "assistant"} />
                         );

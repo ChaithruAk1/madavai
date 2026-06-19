@@ -106,9 +106,9 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
 
         {!editing && !streaming && (text || "").trim() && (
           <div className="msg-actions">
-            <button className="msg-act" onClick={copy} title={copied ? "Copied" : "Copy"}>{copied ? <Check size={15} /> : <Copy size={15} />}</button>
-            {isUser && onEdit && <button className="msg-act" onClick={startEdit} title="Edit"><Pencil size={15} /></button>}
-            {!isUser && onRetry && <button className="msg-act" onClick={onRetry} title="Retry"><RotateCcw size={15} /></button>}
+            <button className="msg-act" onClick={copy} title={copied ? "Copied" : "Copy"}>{copied ? <Check size={18} /> : <Copy size={18} />}</button>
+            {isUser && onEdit && <button className="msg-act" onClick={startEdit} title="Edit"><Pencil size={18} /></button>}
+            {onRetry && <button className="msg-act" onClick={onRetry} title={isUser ? "Run again" : "Retry"}><RotateCcw size={18} /></button>}
             {item.at ? <span className="msg-time" title={new Date(item.at).toLocaleString()}>{new Date(item.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span> : null}
           </div>
         )}
