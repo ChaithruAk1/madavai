@@ -77,7 +77,7 @@ function destructiveBashGuard(command) {
 const { streamChatTools, streamChat, stripReasoning } = require("./providers.cjs");
 // ADR-0001 / M2c.0 — record-only chat-turn cassette capture (env-gated; no-op unless MADAV_RECORD_TURN set).
 let _makeTurnRecorder = null; try { _makeTurnRecorder = require("./turn-recorder.cjs").makeTurnRecorder; } catch {}
-let _runChatViaCore = null; try { _runChatViaCore = require("./chat-core-runner.cjs").runChatTurnViaCore; } catch {} // ADR-0001 / M2c.3 — flag-guarded core chat path (MADAV_CORE_CHAT, default off)
+let _runChatViaCore = null; try { _runChatViaCore = require("./chat-core-runner.cjs").runChatTurnViaCore; } catch {} // ADR-0001 / M2c.3 + M2e — shared core chat path; default-ON (escape hatch: MADAV_CORE_CHAT=0)
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
 // The discipline layer (PLAN-AGENT-PARITY waves): JSON repair, plan tracking,
@@ -461,7 +461,8 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // unlike heavyweight Deep Research. Reuses research.cjs's search; gated by the same build flag.
   let websearchOn = false;
   try { websearchOn = require("./features.cjs").builtIn("research") && (_pcfg.extras || {}).websearch !== false; } catch {}
-  const webSearchNote = websearchOn ? "\n\nYou can search the web: call the web_search tool for anything current or beyond your training data — news, latest releases, prices, 'today'/'now', recent events. Do NOT say you cannot access the internet or browse; search first, then answer with what you find and cite the sources." : "";
+  // webSearchNote is assembled from the SHARED core rule (SEARCH_ANSWER_RULE) after coreRules() loads
+  // below — ONE copy for web + desktop (was a desktop string plus a separate web copy).
   // ---- Mission state (the harness's memory for this conversation) ----
   // Attached to the history array: custom props on arrays survive in RAM across turns
   // of the same session and are invisible to JSON persistence. Reset on app restart.
@@ -499,7 +500,8 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // Artifact + office rules are appended for EVERY mode AND every agent (systemOverride). Previously
   // they lived only inside SYSTEM("chat") and were lost when an agent's instructions replaced it —
   // which is why a delegated agent insisted it "can't create a .pptx" instead of emitting officedoc.
-  let coreDataRule = ""; try { coreDataRule = (await coreRules()).dataToolsRule({ shell: true }); } catch (e) { console.error("[madav] core/agent-rules load failed:", (e && e.message) || e); }
+  let coreDataRule = "", _searchRule = ""; try { const _cr = await coreRules(); coreDataRule = _cr.dataToolsRule({ shell: true }); _searchRule = _cr.SEARCH_ANSWER_RULE || ""; } catch (e) { console.error("[madav] core/agent-rules load failed:", (e && e.message) || e); }
+  const webSearchNote = (websearchOn && _searchRule) ? "\n\n" + _searchRule : "";
   const sys = (systemOverride || SYSTEM(mode)) + ARTIFACT_RULE_BASE + officeRulePart(model) + webSearchNote + ANSWER_DIRECT_RULE + (noShell ? "" : coreDataRule) + methodRules + tierNote + gi + browserNote + repoMapText + (promptSkills.length ? "\n\n" + skillsMgr.indexText(promptSkills) : "");
   if (history.length === 0) history.push({ role: "system", content: sys });
   else if (history[0] && history[0].role === "system") history[0].content = sys; // refresh index live
@@ -578,9 +580,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // rec is null in normal use (env unset / non-chat / module absent) so every rec hook below is a no-op.
   const rec = (mode === "chat" && process.env.MADAV_RECORD_TURN && _makeTurnRecorder) ? _makeTurnRecorder({ model }) : null;
   if (rec) { const _emit0 = emit; emit = (ev) => { try { rec.event(ev); } catch {} return _emit0(ev); }; rec.start({ system: (history[0] && history[0].role === "system") ? history[0].content : "", input: prompt, model, mode, tools: tools.map((t) => t.function && t.function.name).filter(Boolean) }); }
-  // ADR-0001 / M2c.3 — flag-guarded cutover: route CHAT through the shared core loop. Default OFF =
-  // the legacy loop below runs byte-for-byte unchanged. ON = coreChatTurn + the desktop adapter.
-  if (process.env.MADAV_CORE_CHAT && mode === "chat" && _runChatViaCore) {
+  // ADR-0001 / M2e — desktop DEFAULT: route CHAT through the shared core loop by default. The legacy
+  // loop below is the fallback (kept until M2e step 2 deletes it). Escape hatch: set MADAV_CORE_CHAT=0
+  // to force the legacy path; if _runChatViaCore failed to load we also fall back to legacy automatically.
+  if (process.env.MADAV_CORE_CHAT !== "0" && mode === "chat" && _runChatViaCore) {
     return await _runChatViaCore({
       streamChatTools, streamChat, parseTextToolCalls: harness.parseTextToolCalls,
       quickSearch: require("./research.cjs").quickSearch, generateImage: require("./imagegen.cjs").generateImage,

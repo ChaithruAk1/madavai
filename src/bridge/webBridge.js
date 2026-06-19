@@ -29,7 +29,7 @@ import { runPython } from "./pyodideRunner.js";
 import { tolerantParse, headTail, squashStale, CallGuard } from "../../core/turn-helpers.js"; // ADR-0001 / M2d — single source (was ../shared/harness.js, now retired)
 // In-chat office files: the rule that teaches models the ```officedoc spec.
 import { officeRule, ARTIFACT_RULE } from "../office.js";
-import { dataToolsRule } from "../../core/agent-rules.js"; // ADR-0001 core: ESM single source (web imports natively)
+import { dataToolsRule, SEARCH_ANSWER_RULE } from "../../core/agent-rules.js"; // ADR-0001 core: ESM single source (web imports natively)
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
@@ -416,9 +416,9 @@ async function umLearn(prof, s, userText, replyText) {
 
 function systemPrompt(s, projectId, query = "") {
   const parts = [BASE_BEHAVIOR + ARTIFACT_RULE + ANSWER_DIRECT_RULE + officeRulePart(s)];
-  // Match desktop's answer depth: after searching/fetching, give a COMPLETE, grounded answer with the source
-  // cited — not a bare one-line snippet. (Desktop carries the same guidance; this ends the terse-web gap.)
-  parts.push("When you use web_search, web_fetch or deep_research to answer, give a COMPLETE answer grounded in what you found and CITE the source (title + URL, or publication + date). Do not reply with a bare one-line snippet when the user asked a real question.");
+  // Web-search answer guidance — the SAME shared rule desktop uses (core/agent-rules.js SEARCH_ANSWER_RULE),
+  // so web's chat answers match desktop's depth. One source, both surfaces. Added when web search is available.
+  if (getToken()) parts.push(SEARCH_ANSWER_RULE);
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}, regardless of the language of the question.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
   const um = umBlock(s); if (um) parts.push(um);

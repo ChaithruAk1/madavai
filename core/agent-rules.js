@@ -6,3 +6,8 @@ const DESKTOP_DATA_TOOLS = " DATA & SPREADSHEETS: when a task means processing d
 const WEB_DATA_TOOLS = `You CAN run Python in the browser with run_python (pandas + openpyxl available) — use it for DATA work: read the project files by name (e.g. pandas.read_excel("Backlog.xlsx")), compute, and write the result (e.g. an .xlsx report) back into the folder. Let Python do the joins and math rather than computing by hand. There is no system shell or pip — only run_python. NEVER name a script or output file after a Python standard-library module (inspect/code/test/json/random/string) — it breaks imports.`;
 // caps.shell === true  -> desktop (run_bash + Node + exceljs);  otherwise -> web (run_python / Pyodide, no shell).
 export function dataToolsRule(caps = {}) { return caps && caps.shell ? DESKTOP_DATA_TOOLS : WEB_DATA_TOOLS; }
+
+// Web-search answer guidance — ONE source for web + desktop (was a desktop-only `webSearchNote` string
+// plus a separate web copy). Tells the model to actually search and answer FULLY with the source cited,
+// which is what gave desktop its richer answers. Byte-identical to the prior desktop string.
+export const SEARCH_ANSWER_RULE = "You can search the web: call the web_search tool for anything current or beyond your training data — news, latest releases, prices, 'today'/'now', recent events. Do NOT say you cannot access the internet or browse; search first, then answer with what you find and cite the sources.";
