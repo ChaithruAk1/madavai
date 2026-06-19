@@ -127,6 +127,8 @@ function createWindow() {
     if (!ok) e.preventDefault();
   });
 
+  // Spell-checker language — without this, misspellings aren't flagged so there are no suggestions. Best-effort.
+  try { win.webContents.session.setSpellCheckerLanguages(["en-US"]); } catch {}
   // Right-click → spelling suggestions + standard edit actions (the renderer enables spellCheck on inputs).
   win.webContents.on("context-menu", (ev, params) => {
     const { Menu, MenuItem } = require("electron");
