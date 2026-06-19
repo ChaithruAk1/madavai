@@ -416,6 +416,9 @@ async function umLearn(prof, s, userText, replyText) {
 
 function systemPrompt(s, projectId, query = "") {
   const parts = [BASE_BEHAVIOR + ARTIFACT_RULE + ANSWER_DIRECT_RULE + officeRulePart(s)];
+  // Match desktop's answer depth: after searching/fetching, give a COMPLETE, grounded answer with the source
+  // cited — not a bare one-line snippet. (Desktop carries the same guidance; this ends the terse-web gap.)
+  parts.push("When you use web_search, web_fetch or deep_research to answer, give a COMPLETE answer grounded in what you found and CITE the source (title + URL, or publication + date). Do not reply with a bare one-line snippet when the user asked a real question.");
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}, regardless of the language of the question.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
   const um = umBlock(s); if (um) parts.push(um);
@@ -899,50 +902,23 @@ async function runChatAgentTurn(sess, text, images, prof) {
   emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind });
   const started = Date.now();
   try { if (mcpServersFromSettings(loadSettings()).length) await ensureMcpForSession(sess); } catch {}
-  let usedTools = false, streamedAny = false;
+  // ADR-0001 — plain "Let's Chat" now runs on the SHARED core engine (same as desktop chat + Let's
+  // Collaborate), with the lightweight chat tool set. This ends the web↔desktop divergence and brings
+  // the nudge, compaction and loop-breaker to web chat. A hard tool-calling failure degrades to a plain reply.
+  const netFb = (fn) => async (...a) => { const o = a[a.length - 1] || {}; try { return await fn(...a); } catch (e) { if (isNetworkErr(e) && getToken()) { a[a.length - 1] = { ...o, proxy: proxyCfg() }; return await fn(...a); } throw e; } };
   try {
-    for (let step = 0; step < 8; step++) {
-      let res;
-      try {
-        res = await callChatTools(prof, sess.messages, (c) => { if (c) { streamedAny = true; emit(sess.id, "assistant_delta", { text: c }); } }, sess.ac.signal, (sess.mcpTools || []));
-      } catch (e) {
-        if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
-        if (step === 0 && !usedTools && !streamedAny) { if (toolsUnsupportedErr(e)) markNoTools(prof); return await plainReply(sess, text, prof, started); }
-        throw e;
-      }
-      const { content, toolCalls } = res;
-      if (!toolCalls || !toolCalls.length) {
-        if (!streamedAny && content) emit(sess.id, "assistant_delta", { text: content });
-        sess.messages.push({ role: "assistant", content: content || "", model: prof.model, provider: prof.name });
-        emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
-        maybeAutoTitle(sess, text, content || "");
-        umLearn(prof, loadSettings(), text, content || "");
-        break;
-      }
-      usedTools = true;
-      sess.messages.push({ role: "assistant", content: content || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })) });
-      for (const c of toolCalls) {
-        const args = (tolerantParse(c.arguments || "{}").value) || {};
-        emit(sess.id, "tool_use", { id: c.id, name: c.name, input: args, auto: true });
-        if (c.name === "create_image") {
-          let out, image = null;
-          try { image = await webGenImage(prof, args.prompt); out = "Image generated and shown to the user. Describe it in one short sentence and continue."; }
-          catch (e) { out = "ERROR: " + String((e && e.message) || e); }
-          emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: !!image, output: out, image });
-          sess.messages.push({ role: "tool", tool_call_id: c.id, content: out });
-          continue;
-        }
-        let out;
-        try { out = await executeTool(c.name, args, { sess }); }
-        catch (e) { out = "Error: " + String((e && e.message) || e); }
-        emit(sess.id, "tool_result", { id: c.id, name: c.name, ok: true, output: headTail(String(out), { maxChars: 8000 }) });
-        sess.messages.push({ role: "tool", tool_call_id: c.id, content: headTail(String(out), { maxChars: 24000, headLines: 400, tailLines: 200 }) });
-      }
-    }
-    emit(sess.id, "result", { subtype: "success", duration_ms: Date.now() - started, total_cost_usd: 0 });
+    const res = await runWebChatTurnViaCore({
+      streamChatTools: netFb(streamChatTools), streamChat: netFb(streamChat),
+      executeTool, webGenImage, emit, sessId: sess.id, sess,
+      tools: [...activeChatTools(), ...(sess.mcpTools || [])],
+      history: sess.messages, profile: prof, signal: sess.ac.signal,
+    });
+    maybeAutoTitle(sess, text, (res && res.text) || "");
+    umLearn(prof, loadSettings(), text, (res && res.text) || "");
     persistSession(sess);
   } catch (e) {
     if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
+    if (toolsUnsupportedErr(e)) { markNoTools(prof); return await plainReply(sess, text, prof, started); }
     emit(sess.id, "error", { message: String((e && e.message) || e) });
     emit(sess.id, "result", { subtype: "error" });
   }
