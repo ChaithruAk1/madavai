@@ -1,14 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { createRequire } from "module";
 import { coreChatTurn } from "../../core/chat-loop.js";
+import { makeChatAdapter } from "../../core/chat-adapter.js";
 
 // ADR-0001 / M2c.2 — auto-compaction parity (the last legacy chat behavior). coreChatTurn summarizes
 // history near the model's window (via adapter.summarize, which the desktop adapter wires to streamChat),
 // rebuilds it as [system, notes, ...last turns], and hard-trims oversized kept messages — exactly like
 // the desktop loop. Guarded: only fires when the adapter provides summarize, so other adapters are unaffected.
-const require = createRequire(import.meta.url);
-const { makeDesktopChatAdapter } = require("../../electron/chat-core-adapter.cjs");
-
 function build() {
   const ipc = [];
   const state = { summarize: 0 };
@@ -55,10 +52,10 @@ describe("coreChatTurn — auto-compaction (Wave 1.3)", () => {
 describe("desktop adapter — compaction emit mapping", () => {
   it("maps compacting/compacted -> compact_context tool_use + tool_result (shared id)", () => {
     const ipc = [];
-    const adapter = makeDesktopChatAdapter({
+    const adapter = makeChatAdapter({
       streamChatTools: async () => ({}), streamChat: async () => ({ text: "" }),
       parseTextToolCalls: () => ({ calls: [], stripped: "" }), execLeaf: async () => "",
-      emit: (e) => ipc.push(e), now: () => 0,
+      ui: (kind, data) => ipc.push({ kind, data }), now: () => 0,
     });
     adapter.emit({ type: "compacting", reason: "near window" });
     adapter.emit({ type: "compacted" });

@@ -1,10 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { createRequire } from "module";
 import { coreChatTurn } from "../../core/chat-loop.js";
 import { parseTextToolCalls } from "../../core/turn-helpers.js";
-
-const require = createRequire(import.meta.url);
-const { makeDesktopChatAdapter } = require("../../electron/chat-core-adapter.cjs");
+import { makeChatAdapter } from "../../core/chat-adapter.js";
 
 // ADR-0001 / M2c.2 — text-mode (tier-C / no-native-tools) parity. Without this the core path would
 // BREAK on weak models (and the PROTECTED pipeline runs weak models). Tier-C tool results return as
@@ -67,10 +64,10 @@ describe("coreChatTurn — text-mode (tier-C) parity", () => {
 describe("desktop adapter — native->text fallback", () => {
   it("falls back to the text protocol when native tool-calling errors, and stays sticky", async () => {
     let nativeCalls = 0, textCalls = 0;
-    const adapter = makeDesktopChatAdapter({
+    const adapter = makeChatAdapter({
       streamChatTools: async () => { nativeCalls++; throw new Error("tool calling not supported by this model"); },
       streamChat: async () => { textCalls++; return { text: "ok\n```tool\n{\"name\":\"read_file\",\"args\":{\"path\":\"a\"}}\n```" }; },
-      parseTextToolCalls, execLeaf: async () => "x", emit: () => {}, toolset: [],
+      parseTextToolCalls, execLeaf: async () => "x", ui: () => {}, toolset: [],
     });
     const r1 = await adapter.stream({}, [], [], {});
     expect(r1.textMode).toBe(true);
