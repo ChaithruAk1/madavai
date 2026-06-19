@@ -41,6 +41,9 @@ function makeAuthorize(deps) {
   const { isBlocked, isAuto, askPermission, emit, permissions, permMode } = deps;
   return async function authorize(name, args, id) {
     if (isBlocked(permMode, name)) return { decision: "blocked", auto: false };
+    // Chat's inline tools (web_search / create_image / ask_user) run AUTO in the legacy loop — no approval
+    // popup. Match that (isBlocked above still enforces plan-mode read-only).
+    if (name === "web_search" || name === "create_image" || name === "ask_user") return { decision: "run", auto: true };
     if (isAuto(permMode, name)) return { decision: "run", auto: true };
     const allowed = await askPermission(emit, permissions, id, name, args);
     return { decision: allowed ? "run" : "denied", auto: false };
