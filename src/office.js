@@ -443,6 +443,20 @@ export function renderOfficeHTML(specOrJson) {
   }
 }
 
+// Parse a REAL saved spreadsheet (.xlsx/.xls/.csv as base64) back into the plain-rows preview spec, so a
+// SAVED file (from a run script) gets the SAME in-app right-panel preview an inline officedoc spec does.
+// One preview path, desktop + web. The bytes come from the file_output card's b64.
+export async function xlsxB64ToSpec(b64, name) {
+  const XLSX = await import("xlsx");
+  const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const wb = XLSX.read(u, { type: "array" });
+  const sheets = (wb.SheetNames || []).slice(0, 12).map((sn) => ({
+    name: sn,
+    rows: XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, blankrows: false, defval: "" }).slice(0, 300).map((r) => (Array.isArray(r) ? r.slice(0, 40) : [r])),
+  }));
+  return { type: "xlsx", name: name || "spreadsheet.xlsx", sheets: sheets.length ? sheets : [{ name: "Sheet1", rows: [["(empty)"]] }] };
+}
+
 // Engine prompt rule — taught to the model alongside the artifact rule.
 export const OFFICE_RULE = ` When the user asks for a REAL office file — a spreadsheet/Excel, Word document, PowerPoint deck, or PDF — output ONE fenced block tagged officedoc containing ONLY the JSON spec, like:
 \`\`\`officedoc

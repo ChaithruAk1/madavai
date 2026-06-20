@@ -602,7 +602,7 @@ export default function App() {
     const conv = await bridge.getSession(id);
     if (!conv) return;
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined, at: m.at }));
-    const outs = ((conv.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path }));
+    const outs = ((conv.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path, b64: o.b64 }));
     setMode(conv.mode); setChatMode(conv.mode); setTimeline([...msgs, ...outs]); setActiveConvId(id); setCwd(conv.cwd || null);
     { const mi = convModelInfo(conv); applyConvModel(mi.model, mi.provider, conv.mode); }
     setProjectCtx(null); setCoworkProj(null);
@@ -685,7 +685,7 @@ export default function App() {
     }
     const full = await bridge.getConversation(convMeta.id);
     const msgs = ((full && full.messages) || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined, at: m.at }));
-    const outs = ((full && full.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path }));
+    const outs = ((full && full.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path, b64: o.b64 }));
     setTimeline([...msgs, ...outs]);
     setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });
     { const mi = convModelInfo(full); applyConvModel(mi.model, mi.provider, (full && full.mode) || "project"); }

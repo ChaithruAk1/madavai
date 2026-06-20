@@ -41,7 +41,7 @@ function UserBody({ text }) {
   );
 }
 
-function FileOutCard({ name, path, b64 }) {
+function FileOutCard({ name, path, b64, onOpenArtifact }) {
   const ext = String(name || "").split(".").pop().toLowerCase();
   const t = (ext === "xlsx" || ext === "xls" || ext === "csv") ? "xlsx" : (ext === "docx" || ext === "doc") ? "docx" : (ext === "pptx" || ext === "ppt") ? "pptx" : ext === "pdf" ? "pdf" : "";
   // Web download: a run_python-produced file arrives as base64 (Let's Chat has no folder). Decode to a Blob
@@ -56,11 +56,16 @@ function FileOutCard({ name, path, b64 }) {
     } catch {}
   };
   const webDownloadable = isWeb && !!b64;
+  // In-app preview of the SAVED spreadsheet — parse the bytes back into a spec and open the SAME right-panel
+  // preview an inline officedoc card uses. Identical on desktop + web (bytes come from the card's b64).
+  const canPreview = !!b64 && t === "xlsx";
+  const previewXlsx = async () => { try { const { xlsxB64ToSpec } = await import("../office.js"); const spec = await xlsxB64ToSpec(b64, name); onOpenArtifact && onOpenArtifact({ kind: "office", code: JSON.stringify(spec), office: "xlsx", title: name, previewable: true }); } catch {} };
   return (
     <div className="md-office">
       <span className="md-office-meta"><b>{name}</b><i>{webDownloadable ? "produced by the run · ready to download" : "produced by the run · saved in your folder"}</i></span>
       <span className={"md-office-ico" + (t ? " md-office-ico--" + t : "")}><OfficeIcon type={t} /></span>
       {/* Native open/reveal are desktop-only; on web a Pyodide-produced file downloads in-browser from b64. */}
+      {canPreview && onOpenArtifact && <button className="md-office-open" title="Preview in the side panel" onClick={previewXlsx}>Preview</button>}
       {webDownloadable && <button className="md-office-btn" title="Download the file" onClick={downloadB64}>Download</button>}
       {!isWeb && <button className="md-office-open" title="Show in folder" onClick={() => { try { bridge.showInFolder && bridge.showInFolder(path); } catch {} }}>Folder</button>}
       {!isWeb && <button className="md-office-btn" title="Open the file" onClick={() => { try { bridge.openPath ? bridge.openPath(path) : bridge.openExternal && bridge.openExternal(path); } catch {} }}>{OPEN_LABEL[t] || "Open"}</button>}
@@ -73,7 +78,7 @@ function Message({ item, streaming, onOpenArtifact, userName, onRetry, onEdit })
   const [draft, setDraft] = useState("");
 
   if (item.type === "tool") return <ToolCard {...item} />;
-  if (item.type === "fileout") return <FileOutCard {...item} />;
+  if (item.type === "fileout") return <FileOutCard {...item} onOpenArtifact={onOpenArtifact} />;
 
   const isUser = item.role === "user";
   const text = isUser ? item.text : cleanAssistant(item.text);

@@ -47,7 +47,14 @@ function emitNewOutputs(emit, folder, before) {
     const after = scanOffice(folder);
     for (const [p, mt] of after) {
       const prev = before && before.get(p);
-      if (prev === undefined || mt > prev) { const name = path.basename(p); emit({ kind: "file_output", data: { path: p, name } }); out.push({ path: p, name }); }
+      if (prev === undefined || mt > prev) {
+        const name = path.basename(p);
+        // Attach the file's bytes (base64, small files only) so a SAVED file gets the SAME in-app preview a
+        // web b64 file does — one preview path, desktop + web. The path stays for Open / Folder.
+        let b64 = ""; try { const st = fs.statSync(p); if (st.size <= 2 * 1024 * 1024) b64 = fs.readFileSync(p).toString("base64"); } catch {}
+        emit({ kind: "file_output", data: { path: p, name, b64 } });
+        out.push({ path: p, name, b64 });
+      }
     }
     console.log("[madav] emitNewOutputs folder=%s scanned=%d new=%d", folder, after.size, out.length);
   } catch (e) { console.log("[madav] emitNewOutputs error", (e && e.message) || e); }
