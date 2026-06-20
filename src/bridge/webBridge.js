@@ -1285,6 +1285,7 @@ export const webBridge = {
   async track(type, meta) { const t = getToken(); if (!t) return { ok: false }; try { await fetch(api("/events"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ type, meta: meta || null }) }); return { ok: true }; } catch { return { ok: false }; } },
   async adminStats(adminKey) { return adminGet("stats", adminKey); },
   async adminUsers(adminKey) { return adminGet("users", adminKey); },
+  async adminSearchUsage(adminKey) { return adminGet("search-usage", adminKey); },
   async adminAction(id, action, adminKey) {
     try { const r = await fetch(api(`/admin/users/${encodeURIComponent(id)}/${action}`), { method: "POST", headers: authHeaders(adminKey ? { "x-admin-key": adminKey } : {}) });
       if (r.status === 403) return { error: "forbidden" }; const j = await r.json().catch(() => ({})); return r.ok ? (j || { ok: true }) : { error: (j && j.error) || ("server " + r.status) };

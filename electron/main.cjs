@@ -984,6 +984,7 @@ ipcMain.handle("madav:billingPortal", () => auth.billing("portal", authBase()));
 ipcMain.handle("madav:track", (_e, type, meta) => auth.track(type, meta, authBase()));
 ipcMain.handle("madav:adminStats", (_e, adminKey) => auth.adminGet("stats", adminKey, authBase()));
 ipcMain.handle("madav:adminUsers", (_e, adminKey) => auth.adminGet("users", adminKey, authBase()));
+ipcMain.handle("madav:adminSearchUsage", (_e, adminKey) => auth.adminGet("search-usage", adminKey, authBase()));
 ipcMain.handle("madav:adminAction", (_e, id, action, adminKey) => auth.adminAction(id, action, adminKey, authBase()));
 ipcMain.handle("madav:scoreQuiz", (_e, batch) => auth.scoreQuiz(batch, authBase()));
 // Generic authenticated call to the account server (community forum, product requests, share links).

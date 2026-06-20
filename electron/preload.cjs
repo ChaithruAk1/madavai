@@ -188,6 +188,7 @@ contextBridge.exposeInMainWorld("madav", {
   track: (type, meta) => ipcRenderer.invoke("madav:track", type, meta),
   adminStats: (adminKey) => ipcRenderer.invoke("madav:adminStats", adminKey),
   adminUsers: (adminKey) => ipcRenderer.invoke("madav:adminUsers", adminKey),
+  adminSearchUsage: (adminKey) => ipcRenderer.invoke("madav:adminSearchUsage", adminKey),
   adminAction: (id, action, adminKey) => ipcRenderer.invoke("madav:adminAction", id, action, adminKey),
   scoreQuiz: (batch) => ipcRenderer.invoke("madav:scoreQuiz", batch),
   apiCall: (method, path, body) => ipcRenderer.invoke("madav:apiCall", method, path, body),

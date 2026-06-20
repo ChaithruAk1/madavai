@@ -193,6 +193,7 @@ export const mockBridge = {
   async apiCall() { return { error: "offline" }; },
   async adminStats() { return { counts: { total: 3, trialing: 1, active: 1, expired: 1, suspended: 0, paying: 1, comp: 1, active24h: 2, active7d: 3, new7d: 2 }, last7d: { signup: 2, signin: 9, subscribed: 1 }, events: [{ ts: new Date().toISOString(), userId: "dev:dev@madav.local", type: "signin", meta: { provider: "dev" } }] }; },
   async adminUsers() { return { users: [{ id: "dev:dev@madav.local", name: "Dev User", email: "dev@madav.local", provider: "dev", status: "trialing", daysLeft: 7, createdAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), suspended: false, freeAccess: false, subscriptionActive: false, plan: null }] }; },
+  async adminSearchUsage() { return { configured: true, usage: { month: "2026-06", budgetUsd: 1000, spentUsd: 0.42, remainingUsd: 999.58, paidCalls: 420, freeCalls: 12, mode: "hard", overBudget: false } }; },
   async adminAction() { return { ok: true }; },
   // Agent engine (desktop): memory · track record · missions · versions · swarms · webhooks.
   async getAgentMemory() { return { notes: [] }; },

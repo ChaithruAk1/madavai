@@ -15,6 +15,7 @@ export default function AdminPanel() {
   const [key, setKey] = useState("");
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState(null);
+  const [search, setSearch] = useState(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -23,9 +24,9 @@ export default function AdminPanel() {
   const load = async () => {
     setErr(""); setBusy(true);
     try {
-      const [st, us] = await Promise.all([bridge.adminStats(key), bridge.adminUsers(key)]);
+      const [st, us, se] = await Promise.all([bridge.adminStats(key), bridge.adminUsers(key), bridge.adminSearchUsage ? bridge.adminSearchUsage(key) : null]);
       if (st && st.error) { setErr(st.error === "forbidden" ? "Wrong admin key (server rejected it)." : st.error); setStats(null); setUsers(null); return; }
-      setStats(st); setUsers((us && us.users) || []);
+      setStats(st); setUsers((us && us.users) || []); setSearch(se && !se.error ? se : null);
       const s = await bridge.getSettings?.(); if (s) bridge.saveSettings?.({ ...s, adminKey: key });
     } catch (e) { setErr(String(e && e.message || e)); }
     finally { setBusy(false); }
@@ -71,6 +72,22 @@ export default function AdminPanel() {
             <Stat icon={Sparkles} label="Trialing" v={fmt(C.trialing)} />
             <Stat icon={Activity} label="Active 7d" v={fmt(C.active7d)} />
           </div>
+
+          {search && (
+            <>
+              <div className="adminp-sec"><Globe size={13} /> Search engine <span>this month</span></div>
+              {search.configured === false ? (
+                <div className="adminp-empty">{search.note || "Search engine not configured (no SERP_API_KEY) — using the free DuckDuckGo tier."}</div>
+              ) : (
+                <div className="cons-kpis adminp-kpis">
+                  <Stat icon={CreditCard} label="Spent" v={"$" + Number((search.usage || {}).spentUsd || 0).toFixed(3)} accent sub={"of $" + ((search.usage || {}).budgetUsd ?? 0)} />
+                  <Stat icon={Gift} label="Remaining" v={"$" + Number((search.usage || {}).remainingUsd || 0).toFixed(2)} />
+                  <Stat icon={TrendingUp} label="Paid searches" v={fmt((search.usage || {}).paidCalls)} accent />
+                  <Stat icon={Globe} label="Free searches" v={fmt((search.usage || {}).freeCalls)} />
+                </div>
+              )}
+            </>
+          )}
 
           <Funnel visits={A.uniqueVisitors || 0} signups={F.signup || 0} subs={F.subscribed || 0} />
 
