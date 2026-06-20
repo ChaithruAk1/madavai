@@ -10,6 +10,7 @@
 //     local models) can't run in a browser -> they return a clear "desktop app" result.
 import { streamChat, streamChatTools, listModels as provListModels, ping as provPing, apiBase } from "../shared/providers.js";
 import { runWebChatTurnViaCore } from "./chatCoreWeb.js"; // ADR-0001 / M2d.3 — shared-core chat path (flag-guarded)
+import { categoryFor as mrCategoryFor } from "../../core/model-router.js"; // SINGLE SOURCE model routing — same module desktop uses
 import * as webTrace from "./webTrace.js";
 import { listBundled as _listBundled, readBundled, mergeSkills, userSkills, skillPrefs } from "../webSkills.js"; // + user-authored skills (SK)
 // Bundled packs honor the same Extras gate as the desktop engine (today: EdgeTrader).
@@ -569,11 +570,27 @@ const proxyCfg = () => ({ base: AUTH_BASE, token: getToken() });
 
 // Stream from the provider. Try direct first (keys stay on the device for CORS-friendly providers);
 // if the browser blocks the call, fall back to the server proxy so EVERY provider works — same as desktop.
-async function callModel(prof, messages, signal, onDelta) {
+// Model Routing (web): build THIS turn's routing context — category (from surface + image) + the configured
+// profiles + the user's per-category chains — so the SHARED router can walk the fallback chain. Browser
+// settings live on-device, so web passes them in opts (desktop reads its settings file instead).
+function routingCtx(sess, modeHint) {
+  let cfg = {}; try { cfg = loadSettings() || {}; } catch {}
+  const msgs = (sess && sess.messages) || [];
+  const hasImage = msgs.some((m) => Array.isArray(m.images) && m.images.length > 0);
+  const mode = modeHint || (sess && sess.mode) || "chat";
+  let category = "general"; try { category = mrCategoryFor({ mode, hasImage, needsData: false }); } catch {}
+  return { category, profiles: cfg.profiles || {}, routing: cfg.modelRouting || {} };
+}
+// Wrap a stream fn so every call carries this turn's routing context (category + the chains to walk).
+const withRoute = (fn, ctx, hasTools) => hasTools
+  ? (p, m, t, o = {}) => fn(p, m, t, { ...o, ...ctx })
+  : (p, m, o = {}) => fn(p, m, { ...o, ...ctx });
+
+async function callModel(prof, messages, signal, onDelta, ctx = {}) {
   const od = onDelta || (() => {});
-  try { return await streamChat(prof, messages, { onDelta: od, signal }); }
+  try { return await streamChat(prof, messages, { onDelta: od, signal, ...ctx }); }
   catch (e) {
-    if (isNetworkErr(e) && getToken()) return await streamChat(prof, messages, { onDelta: od, signal, proxy: proxyCfg() });
+    if (isNetworkErr(e) && getToken()) return await streamChat(prof, messages, { onDelta: od, signal, proxy: proxyCfg(), ...ctx });
     throw e;
   }
 }
@@ -773,8 +790,9 @@ async function runAgentTurn(sess, text, images, prof) {
   try { if (mcpServersFromSettings(loadSettings()).length) await ensureMcpForSession(sess); } catch {}
   const netFb = (fn) => async (...a) => { const o = a[a.length - 1] || {}; try { return await fn(...a); } catch (e) { if (isNetworkErr(e) && getToken()) { a[a.length - 1] = { ...o, proxy: proxyCfg() }; return await fn(...a); } throw e; } };
   try {
+    const rc = routingCtx(sess, "cowork");
     await runWebChatTurnViaCore({
-      streamChatTools: netFb(streamChatTools), streamChat: netFb(streamChat),
+      streamChatTools: withRoute(netFb(streamChatTools), rc, true), streamChat: withRoute(netFb(streamChat), rc, false),
       executeTool, webGenImage, emit, sessId: sess.id, sess,
       // Folder-agentic path: the core loop gets the FULL tool set (file tools, run_python, …).
       tools: [...activeTools(), ...(sess.mcpTools || [])],
@@ -894,9 +912,10 @@ async function callChatTools(prof, messages, onDelta, signal, extraTools) {
 // user message is already on sess.messages.
 async function plainReply(sess, text, prof, started) {
   let streamed = false;
-  const { text: reply } = await callModel(prof, sess.messages, sess.ac.signal, (chunk) => { if (chunk) { streamed = true; emit(sess.id, "assistant_delta", { text: chunk }); } });
+  let usedModel = prof.model, usedProvider = prof.name; // Stage 4: the model that ACTUALLY answered (differs after a reroute)
+  const { text: reply } = await callModel(prof, sess.messages, sess.ac.signal, (chunk) => { if (chunk) { streamed = true; emit(sess.id, "assistant_delta", { text: chunk }); } }, { ...routingCtx(sess), onFallback: (m) => { usedModel = m.model; usedProvider = m.name || usedProvider; try { emit(sess.id, "init", { model: usedModel, provider: usedProvider, kind: prof.kind, rerouted: true }); } catch {} } });
   if (!streamed && reply) emit(sess.id, "assistant_delta", { text: reply });
-  sess.messages.push({ role: "assistant", content: reply || "", model: prof.model, provider: prof.name });
+  sess.messages.push({ role: "assistant", content: reply || "", model: usedModel, provider: usedProvider });
   emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
   emit(sess.id, "result", { subtype: "success", num_turns: 1, duration_ms: Date.now() - started, total_cost_usd: 0 });
   persistSession(sess);
@@ -915,8 +934,9 @@ async function runChatAgentTurn(sess, text, images, prof) {
   // the nudge, compaction and loop-breaker to web chat. A hard tool-calling failure degrades to a plain reply.
   const netFb = (fn) => async (...a) => { const o = a[a.length - 1] || {}; try { return await fn(...a); } catch (e) { if (isNetworkErr(e) && getToken()) { a[a.length - 1] = { ...o, proxy: proxyCfg() }; return await fn(...a); } throw e; } };
   try {
+    const rc = routingCtx(sess);
     const res = await runWebChatTurnViaCore({
-      streamChatTools: netFb(streamChatTools), streamChat: netFb(streamChat),
+      streamChatTools: withRoute(netFb(streamChatTools), rc, true), streamChat: withRoute(netFb(streamChat), rc, false),
       executeTool, webGenImage, emit, sessId: sess.id, sess,
       tools: [...activeChatTools(), ...(RUN_PYTHON_TOOL ? [RUN_PYTHON_TOOL] : []), ...(sess.mcpTools || [])],
       history: sess.messages, profile: prof, signal: sess.ac.signal,

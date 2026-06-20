@@ -39,7 +39,7 @@ function Logo({ name, prov }) {
 // `groups` are provider-derived: [{ group: providerName, items: [{id:"pid::model", name, prov, badge}] }]
 // `agenticOnly`: opt-in pre-filter to tool-calling-capable models (used by Agent Studio —
 // agents need function calling). The default global picker behavior is unchanged.
-export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh, agenticOnly = false, compact = false }) {
+export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh, agenticOnly = false, compact = false, placeholder = "" }) {
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false); // bottom half of the screen → the menu opens upward
@@ -132,8 +132,9 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     if (value === "auto") return { id: "auto", name: "✨ Auto", prov: "" };
     for (const g of source) for (const it of g.items) if (it.id === value) return it;
     if (value && value.includes("::")) { const mid = value.slice(value.indexOf("::") + 2); return { id: value, name: mid || "select model", prov: "" }; }
+    if (!value && placeholder) return { id: "", name: placeholder, prov: "" }; // "add a model" use (e.g. Model Routing): show a prompt, not the first model as if chosen
     return source[0]?.items[0] || { name: "no models", prov: "" };
-  }, [value, source]);
+  }, [value, source, placeholder]);
 
   const total = source.reduce((n, g) => n + g.items.length, 0);
   // Unique makers across all loaded models (e.g. nvidia, meta-llama, qwen…), sorted by how many each has.

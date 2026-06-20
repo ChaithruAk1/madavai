@@ -82,6 +82,7 @@ let _runChatViaCore = null; try { _runChatViaCore = require("./chat-core-runner.
 // desktop core chat path and web share ONE parser. Cached dynamic import (core is ESM).
 let _coreHelpersP = null; const _coreHelpers = () => (_coreHelpersP ||= import("../core/turn-helpers.js"));
 let _chatToolsP = null; const _chatTools = () => (_chatToolsP ||= import("../core/chat-tools.js")); // SINGLE SOURCE for shared chat tool schemas (web_search/web_fetch/create_image/deep_research)
+let _mrP = null; const _mr = () => (_mrP ||= import("../core/model-router.js")); // SINGLE SOURCE model routing — categoryFor() picks this turn's fallback chain
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
 // The discipline layer (PLAN-AGENT-PARITY waves): JSON repair, plan tracking,
@@ -595,6 +596,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // rec is null in normal use (env unset / non-chat / module absent) so every rec hook below is a no-op.
   const rec = (mode === "chat" && process.env.MADAV_RECORD_TURN && _makeTurnRecorder) ? _makeTurnRecorder({ model }) : null;
   if (rec) { const _emit0 = emit; emit = (ev) => { try { rec.event(ev); } catch {} return _emit0(ev); }; rec.start({ system: (history[0] && history[0].role === "system") ? history[0].content : "", input: prompt, model, mode, tools: tools.map((t) => t.function && t.function.name).filter(Boolean) }); }
+  // Model Routing: derive THIS turn's category so the shared router picks the right fallback chain. Agent
+  // turns read files via tools (no inline images) → hasImage false. Safe-fails to "general". ONE policy.
+  let category = "general";
+  try { const { categoryFor } = await _mr(); category = categoryFor({ mode, hasImage: false, needsData: !!dataTools }); } catch {}
   // ADR-0001 / M2e — desktop DEFAULT: route CHAT through the shared core loop by default. The legacy
   // loop below is the fallback (kept until M2e step 2 deletes it). Escape hatch: set MADAV_CORE_CHAT=0
   // to force the legacy path; if _runChatViaCore failed to load we also fall back to legacy automatically.
@@ -604,7 +609,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       streamChatTools, streamChat, parseTextToolCalls: coreParseTextToolCalls,
       quickSearch: require("./research.cjs").quickSearch, quickFetch: require("./research.cjs").quickFetch, generateImage: require("./imagegen.cjs").generateImage,
       runTool, askUserQuestion, isAuto, isBlocked, askPermission,
-      emit, permissions, tools, history, profile, mode, caps: { shell: !noShell },
+      emit, permissions, tools, history, profile, mode, caps: { shell: !noShell }, category,
       cwd, skillsDir, mission, agentName, allowAskUser, imagegenOn, permMode, textMode, MAX_STEPS, signal, exactCtx,
     });
   }
@@ -648,13 +653,13 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         // Tier C: plain completion + ```tool block protocol (any chat model can agent).
         const sysC = history[0] && history[0].role === "system" ? history[0] : null;
         if (sysC && !sysC._protocolAdded) { sysC.content += "\n" + harness.TEXT_PROTOCOL(textToolList()); sysC._protocolAdded = true; }
-        const tr = await streamChat(profile, history, { onDelta: () => {}, signal });
+        const tr = await streamChat(profile, history, { onDelta: () => {}, signal, category });
         const text = (tr && tr.text) || "";
         const { calls, stripped } = harness.parseTextToolCalls(text); // assistant text ONLY — never tool results
         result = { content: stripped, toolCalls: calls, _rawText: text };
       } else {
         result = await streamChatTools(profile, history, tools, {
-          signal,
+          signal, category,
           onDelta: streamLive ? (d) => emit({ kind: "assistant_delta", data: { text: d } }) : () => {},
         });
       }

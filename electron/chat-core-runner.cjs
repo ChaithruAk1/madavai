@@ -57,9 +57,12 @@ async function runChatTurnViaCore(deps) {
   const { coreChatTurn } = await coreChatLoop();
   const { makeChatAdapter } = await coreChatAdapter();
   const { streamChatTools, streamChat, parseTextToolCalls, emit, tools, history,
-          profile, mode, caps, textMode, MAX_STEPS, signal, exactCtx } = deps;
+          profile, mode, caps, textMode, MAX_STEPS, signal, exactCtx, category } = deps;
+  // Inject THIS turn's routing category so the shared router (inside streamChat*) walks the right chain.
+  const _sc = category ? (p, m, o = {}) => streamChat(p, m, { ...o, category }) : streamChat;
+  const _sct = category ? (p, m, t, o = {}) => streamChatTools(p, m, t, { ...o, category }) : streamChatTools;
   const adapter = makeChatAdapter({
-    streamChatTools, streamChat, parseTextToolCalls,
+    streamChatTools: _sct, streamChat: _sc, parseTextToolCalls,
     execLeaf: makeChatLeafExec(deps), authorize: makeAuthorize(deps),
     ui: (kind, data) => emit({ kind, data }), // desktop IPC sink
     toolset: tools, textMode,

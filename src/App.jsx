@@ -938,8 +938,8 @@ export default function App() {
   const isConnectors = mode === "connectors";
   const isSkills = mode === "skills";
   const isPlugins = mode === "plugins";
-  const isModels = mode === "models" || mode === "models-overview" || mode === "models-speed";
-  const modelsTab = mode === "models-overview" ? "overview" : mode === "models-speed" ? "speed" : "config";
+  const isModels = mode === "models" || mode === "models-overview" || mode === "models-speed" || mode === "models-routing";
+  const modelsTab = mode === "models-overview" ? "overview" : mode === "models-speed" ? "speed" : mode === "models-routing" ? "routing" : "config";
   const isViaMobile = mode === "viamobile";
   const isScheduler = mode === "scheduler";
   const isConsumption = mode === "consumption";
@@ -1110,7 +1110,7 @@ export default function App() {
           TerminalPanel ? <Suspense fallback={null}><TerminalPanel cwd={cwd} /></Suspense> : <NotInBuild />
         ) : isModels ? (
           <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
-            tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : "models")} />
+            tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : t === "routing" ? "models-routing" : "models")} />
         ) : (mode === "project" && !projectCtx) ? (
           <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} onPutTeamToWork={startRoomTeam} openId={projOpenId} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
         ) : (
