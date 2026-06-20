@@ -268,6 +268,14 @@ function _openRouterFallback(profile) {
   try {
     if (!/nvidia|\bnim\b|integrate\.api\.nvidia|build\.nvidia/i.test((profile && profile.baseUrl) || "")) return null; // only NVIDIA → OpenRouter
     const s = require("./settings.cjs").load();
+    // The user's EXPLICITLY designated fallback wins (settings.fallbackModel = "profileId::modelId") — so a
+    // busy NVIDIA falls back to a model THEY picked (capable), never a weak default. Set it in Settings.
+    if (s.fallbackModel && String(s.fallbackModel).includes("::")) {
+      const i = String(s.fallbackModel).indexOf("::");
+      const p = (s.profiles || {})[String(s.fallbackModel).slice(0, i)];
+      const fm = String(s.fallbackModel).slice(i + 2);
+      if (p && String(p.apiKey || "").trim() && fm) return { baseUrl: p.baseUrl, apiKey: p.apiKey, model: fm, kind: p.kind || "openai", name: p.name || "Fallback" };
+    }
     const or = Object.values(s.profiles || {}).find((x) => /openrouter\.ai/i.test(x.baseUrl || "") && String(x.apiKey || "").trim() && String(x.model || "").trim());
     return or ? { baseUrl: or.baseUrl, apiKey: or.apiKey, model: or.model, kind: or.kind || "openai", name: or.name || "OpenRouter" } : null;
   } catch { return null; }
