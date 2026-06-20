@@ -491,6 +491,9 @@ class SessionManager {
     s.controller = null;
     if (err && err.name === "AbortError") { emit({ kind: "result", data: { subtype: "interrupted" } }); if (s.cwd) emitNewOutputs(emit, s.cwd, beforeFiles); return; }
     const produced = s.cwd ? emitNewOutputs(emit, s.cwd, beforeFiles) : [];
+    // Persist produced files to the conversation so the download card SURVIVES navigating away + back
+    // (mirrors _projectTurn). Without this a Let's Chat file shows live but vanishes on reopen.
+    if (produced.length && s.chatConvId) { try { const conv = sstore.getSession(s.chatConvId); if (conv) { const seen = new Set((conv.outputs || []).map((o) => o.path)); conv.outputs = [...(conv.outputs || []), ...produced.filter((o) => !seen.has(o.path))]; sstore.saveSession(conv); } } catch {} }
     if (produced.length || sawText) { if (err) emit({ kind: "result", data: { subtype: "success" } }); return; } // a file and/or a written reply was shown
     // Nothing produced. NEVER dead-end or exit silently. A transient/credits/auth error keeps its specific
     // message (retry/switch won't change those). Otherwise the model couldn't drive the compute-in-a-script

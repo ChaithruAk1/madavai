@@ -602,7 +602,8 @@ export default function App() {
     const conv = await bridge.getSession(id);
     if (!conv) return;
     const msgs = (conv.messages || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined, at: m.at }));
-    setMode(conv.mode); setChatMode(conv.mode); setTimeline(msgs); setActiveConvId(id); setCwd(conv.cwd || null);
+    const outs = ((conv.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path }));
+    setMode(conv.mode); setChatMode(conv.mode); setTimeline([...msgs, ...outs]); setActiveConvId(id); setCwd(conv.cwd || null);
     { const mi = convModelInfo(conv); applyConvModel(mi.model, mi.provider, conv.mode); }
     setProjectCtx(null); setCoworkProj(null);
     // Re-attach the project scope this Collaborate task ran under (saved on the record).
