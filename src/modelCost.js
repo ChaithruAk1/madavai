@@ -1,9 +1,9 @@
-// src/modelCost.js — SINGLE SOURCE for whether a model is free or paid to the user.
-// Free/paid is a per-PROVIDER property, captured from the provider/endpoint when its models are loaded —
-// NEVER computed from a price number, and NEVER mixed across providers. A model is FREE only when it comes
-// from a free ENDPOINT (NVIDIA's free dev tier, Madav Starter house key, or a Local model). Everything
-// served on the user's own billed key (OpenAI, Anthropic, OpenRouter, …) is PAID. App.jsx stamps this onto
-// each model (item.free) at load time via providerFreeTier; the picker just reads the flag.
+// src/modelCost.js — item-shaped adapters for the picker's free/paid + vision helpers.
+// The free/paid DECISION is single-sourced in ./data/providerRules.js (per-model: a ":free" id suffix or
+// OpenRouter's $0 catalog flag count as free; NVIDIA / Local / Madav Starter endpoints are free by rule;
+// everything else on the user's own billed key is paid). isModelFree(item) just adapts a picker item to it.
+// providerFreeTier (kept) still answers the coarser "is the whole endpoint free?" used for the load-time hint.
+import { isModelFree as classifyModelFree } from "./data/providerRules.js";
 
 // Endpoints/providers that are FREE to the user. Matched against the profile's name + kind + baseUrl + id.
 // Edit this one list to add/remove a free provider. (OpenRouter is intentionally NOT here — it bills per
@@ -23,11 +23,16 @@ function profileIdOf(item) {
   return v.includes("::") ? v.slice(0, v.indexOf("::")) : "";
 }
 
-// THE free/paid decision: the per-provider flag stamped on the item at load (item.free), or — if not
-// stamped — computed straight from the provider. No price, no catalog, no cross-provider mixing.
+// THE free/paid decision for a picker ITEM — delegates to the ONE per-model classifier (providerRules) so
+// it is identical everywhere: honors a ":free" id suffix and OpenRouter's $0 catalog flag (orFree), and
+// still treats NVIDIA / Local / Madav Starter endpoints as free via the provider rules. Returns a strict
+// boolean for the Free/Paid filter (unknown → not free). Pass item.orFree (the OpenRouter catalog $0 flag)
+// when the caller has the catalog — the picker does — for fully accurate per-model pricing.
 export function isModelFree(item = {}) {
-  if (typeof item.free === "boolean") return item.free;
-  return providerFreeTier({ name: item.prov, baseUrl: item.baseUrl, kind: item.kind, id: profileIdOf(item) });
+  const modelId = item.name || item.model || "";
+  const profile = { name: item.prov, baseUrl: item.baseUrl, kind: item.kind, id: profileIdOf(item) };
+  const orFree = typeof item.orFree === "boolean" ? item.orFree : null;
+  return classifyModelFree({ profile, modelId, orFree }) === true;
 }
 
 // Does a model accept IMAGE input (vision)? Name-based — the only reliable per-model signal we have

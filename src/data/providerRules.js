@@ -13,6 +13,9 @@
 export const PROVIDER_RULES = [
   // Local runtimes — always free, no key needed.
   { match: /localhost|127\.0\.0\.1|0\.0\.0\.0|ollama|lm ?studio|llama\.?cpp|:11434|:1234|:8080/i, host: "local", free: true, label: "Local" },
+  // Madav Starter — the zero-setup house key, free to the user. Its profile name ("Madav Starter (free)")
+  // and "/starter" baseUrl both carry "starter", so this matches by name/baseUrl before the OpenRouter rule.
+  { match: /madav\s*starter|\/starter\b|\bstarter\b/i, host: "cloud", free: true, label: "Madav Starter" },
   // Per-model pricing providers (we read exact prices and free flags from their catalog).
   { match: /openrouter/i, host: "cloud", free: "per-model", label: "OpenRouter" },
   // Free-tier hosted APIs.
