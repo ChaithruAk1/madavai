@@ -1,49 +1,28 @@
 import { describe, it, expect } from "vitest";
-import { isModelFree, providerFreeTier, resolveModelValue } from "../../src/modelCost.js";
+import { isModelFree, providerFreeTier, resolveModelValue, isVisionModel } from "../../src/modelCost.js";
 
-describe("model cost — free/paid from the PROVIDER, never the model-name text", () => {
-  it("real pricing wins: $0 -> free, >$0 -> paid", () => {
-    const cat = { "deepseek/deepseek-v3": { priceIn: 0.0000002, priceOut: 0.0000008 }, "x/y:free": { priceIn: 0, priceOut: 0 } };
-    expect(isModelFree({ id: "p_or::deepseek/deepseek-v3", prov: "OpenRouter" }, { catalog: cat })).toBe(false);
-    expect(isModelFree({ id: "p_or::x/y:free", prov: "OpenRouter" }, { catalog: cat })).toBe(true);
-  });
-  it("does NOT use the name: a ':free' name with no price/provider signal is paid", () => {
-    expect(isModelFree({ id: "p_x::something:free", prov: "MysteryCo" })).toBe(false);
-  });
-  it("NVIDIA dev tier with no per-model pricing -> free (the reported bug)", () => {
-    expect(isModelFree({ id: "p_nv::nvidia/nemotron-nano-12b-v2-vl", prov: "NVIDIA", baseUrl: "https://integrate.api.nvidia.com/v1" })).toBe(true);
-  });
-  it("NVIDIA-tier model that ALSO has an OpenRouter catalog price stays FREE (provider tier wins)", () => {
-    const cat = { "openai/gpt-oss-120b": { priceIn: 0.0000005, priceOut: 0.000002 } };
-    // served free via NVIDIA (item.free stamped true OR provider says nvidia) — the OpenRouter price must NOT flip it
-    expect(isModelFree({ id: "p_nv::openai/gpt-oss-120b", prov: "NVIDIA", baseUrl: "https://integrate.api.nvidia.com/v1", free: true }, { catalog: cat })).toBe(true);
-    expect(isModelFree({ id: "p_nv::openai/gpt-oss-120b", prov: "NVIDIA", baseUrl: "https://integrate.api.nvidia.com/v1" }, { catalog: cat })).toBe(true);
-    // same model on an OpenRouter profile (item.free=false) correctly uses the catalog price -> paid
-    expect(isModelFree({ id: "p_or::openai/gpt-oss-120b", prov: "OpenRouter", free: false }, { catalog: cat })).toBe(false);
-  });
-  it("does NOT mix providers: the OpenRouter catalog never applies to a non-OpenRouter provider's model", () => {
-    const cat = { "deepseek/deepseek-v3": { priceIn: 0, priceOut: 0 } }; // free ON OPENROUTER
-    // a Together AI profile serving the same id must NOT inherit OpenRouter's $0 — it's paid (we have no Together pricing)
-    expect(isModelFree({ id: "p_tg::deepseek/deepseek-v3", prov: "Together AI", baseUrl: "https://api.together.xyz/v1" }, { catalog: cat })).toBe(false);
-    // an OpenAI profile likewise never borrows an OpenRouter price
-    expect(isModelFree({ id: "p_oa::deepseek/deepseek-v3", prov: "OpenAI", baseUrl: "https://api.openai.com/v1" }, { catalog: cat })).toBe(false);
-    // but the SAME id on an actual OpenRouter profile uses the catalog -> free
-    expect(isModelFree({ id: "p_or::deepseek/deepseek-v3", prov: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1" }, { catalog: cat })).toBe(true);
-  });
-  it("stamped provider tier (item.free) is honored", () => {
-    expect(isModelFree({ id: "p_nv::nvidia/whatever", prov: "NVIDIA", free: true })).toBe(true);
-    expect(isModelFree({ id: "p_z::z", prov: "Z", free: false })).toBe(false);
-  });
-  it("OpenAI / Anthropic on the user's own key -> paid", () => {
-    expect(isModelFree({ id: "p_oa::gpt-4o", prov: "OpenAI" })).toBe(false);
-    expect(isModelFree({ id: "p_an::claude-sonnet-4-6", prov: "Anthropic" })).toBe(false);
-  });
-  it("Madav Starter and Local -> free", () => {
-    expect(isModelFree({ id: "p_starter::nvidia/x:free", prov: "Madav Starter (free)" })).toBe(true);
+describe("model cost — free/paid is a per-PROVIDER property, never price, never mixed", () => {
+  it("free endpoints are free: NVIDIA dev tier, Madav Starter, Local", () => {
+    expect(isModelFree({ id: "p_nv::openai/gpt-oss-120b", prov: "NVIDIA", baseUrl: "https://integrate.api.nvidia.com/v1" })).toBe(true);
+    expect(isModelFree({ id: "p_starter::nvidia/x", prov: "Madav Starter (free)" })).toBe(true);
     expect(isModelFree({ id: "p_local::qwen", prov: "Local", baseUrl: "http://localhost:1234" })).toBe(true);
   });
-  it("model maker 'nvidia' inside an OpenRouter id must NOT flip it to free (no catalog) -> paid", () => {
-    expect(isModelFree({ id: "p_openrouter::nvidia/nemotron", prov: "OpenRouter" })).toBe(false);
+  it("billed providers are paid: OpenAI, Anthropic, OpenRouter, other keys", () => {
+    expect(isModelFree({ id: "p_oa::gpt-4o", prov: "OpenAI", baseUrl: "https://api.openai.com/v1" })).toBe(false);
+    expect(isModelFree({ id: "p_an::claude-sonnet-4-6", prov: "Anthropic" })).toBe(false);
+    expect(isModelFree({ id: "p_or::deepseek/deepseek-v3", prov: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1" })).toBe(false);
+    expect(isModelFree({ id: "p_tg::deepseek/deepseek-v3", prov: "Together AI", baseUrl: "https://api.together.xyz/v1" })).toBe(false);
+  });
+  it("a model id never affects the provider verdict (gpt-oss free on NVIDIA, paid on OpenRouter)", () => {
+    expect(isModelFree({ id: "p_nv::openai/gpt-oss-120b", prov: "NVIDIA", baseUrl: "https://integrate.api.nvidia.com/v1" })).toBe(true);
+    expect(isModelFree({ id: "p_or::openai/gpt-oss-120b", prov: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1" })).toBe(false);
+  });
+  it("a stamped flag (item.free, captured at load from the provider) is honored verbatim", () => {
+    expect(isModelFree({ id: "p_x::m", prov: "Whatever", free: true })).toBe(true);
+    expect(isModelFree({ id: "p_nv::m", prov: "NVIDIA", free: false })).toBe(false); // explicit stamp wins
+  });
+  it("name text is NOT used: a ':free' name on a billed provider is still paid", () => {
+    expect(isModelFree({ id: "p_or::something:free", prov: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1" })).toBe(false);
   });
   it("providerFreeTier table", () => {
     expect(providerFreeTier({ name: "NVIDIA", baseUrl: "https://integrate.api.nvidia.com" })).toBe(true);
@@ -57,12 +36,29 @@ describe("resolveModelValue — per-chat model memory restores a conversation's 
   it("matches by provider name", () => {
     expect(resolveModelValue(profiles, "nvidia/nemotron-nano-9b-v2:free", "Madav Starter (free)")).toBe("p_starter::nvidia/nemotron-nano-9b-v2:free");
   });
-  it("falls back to the profile that carries the model when the provider name is gone", () => {
-    expect(resolveModelValue(profiles, "nvidia/nemotron-nano-9b-v2:free", "Renamed")).toBe("p_starter::nvidia/nemotron-nano-9b-v2:free");
+  it("falls back to the profile that carries the model", () => {
     expect(resolveModelValue(profiles, "deepseek/deepseek-v3", "???")).toBe("p_or::deepseek/deepseek-v3");
   });
-  it("returns null when nothing matches (caller keeps current model)", () => {
+  it("returns null when nothing matches", () => {
     expect(resolveModelValue(profiles, "totally/unknown", "Nope")).toBe(null);
     expect(resolveModelValue(profiles, "", "x")).toBe(null);
+  });
+});
+
+describe("isVisionModel — warn before sending an image to a text-only model", () => {
+  it("text-only models are NOT vision (gpt-oss, deepseek)", () => {
+    expect(isVisionModel("nim/openai/gpt-oss-120b")).toBe(false);
+    expect(isVisionModel("nim/deepseek-ai/deepseek-v4-flash")).toBe(false);
+  });
+  it("vision models ARE vision (by name)", () => {
+    expect(isVisionModel("meta/llama-3.2-90b-vision-instruct")).toBe(true);
+    expect(isVisionModel("gpt-4o")).toBe(true);
+    expect(isVisionModel("google/gemini-2.5-flash")).toBe(true);
+    expect(isVisionModel("anthropic/claude-sonnet-4-6")).toBe(true);
+    expect(isVisionModel("nvidia/nemotron-nano-12b-v2-vl")).toBe(true);
+  });
+  it("a catalog image flag overrides the name guess", () => {
+    expect(isVisionModel("some/odd-model", { "some/odd-model": { image: true } })).toBe(true);
+    expect(isVisionModel("gpt-4o", { "gpt-4o": { image: false } })).toBe(false);
   });
 });

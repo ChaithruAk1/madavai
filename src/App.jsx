@@ -4,7 +4,7 @@ import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestio
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
-import { providerFreeTier, resolveModelValue } from "./modelCost.js";
+import { providerFreeTier, resolveModelValue, isVisionModel } from "./modelCost.js";
 import Composer from "./components/Composer.jsx";
 import PermissionModal from "./components/PermissionModal.jsx";
 import Settings from "./components/Settings.jsx";
@@ -491,6 +491,21 @@ export default function App() {
   const send = async (text, images = [], agentOv = null, teamOv = null, opts = {}) => {
     const ag = agentOv || agentCtx; // explicit override beats state (avoids a stale closure on seeded launches)
     const tm = teamOv || teamCtx;
+    // Vision guard: attaching an image to a TEXT-ONLY model just yields a confusing "please upload" non-answer.
+    // Catch it up front with a clear message naming a model that CAN read images, instead of calling the model.
+    if (images && images.length && !ag && !tm) {
+      const _surf = ["chat", "cowork", "code", "project"].includes(mode) ? mode : "chat";
+      const _auto = (surfaceModel || {})[_surf] === "auto";
+      const _mid = activeProfile && activeProfile.model;
+      if (!_auto && _mid && !isVisionModel(_mid)) {
+        const _short = String(_mid).split("/").pop();
+        setTimeline((tl) => [...tl,
+          { type: "message", role: "user", text, images, at: Date.now() },
+          { type: "message", role: "assistant", text: `⚠ The model you're using — **${_short}** — is **text-only** and can't read images, so it can't describe or answer questions about the picture you attached.\n\nSwitch to a **vision-capable** model from the picker, then re-send the image:\n\n- On the free NVIDIA tier: **meta/llama-3.2-90b-vision-instruct**\n- On your own key: **gpt-4o**, **google/gemini-2.5-flash**, or a Claude vision model`, at: Date.now() },
+        ]);
+        return;
+      }
+    }
     // Auto model routing — only for a plain (non-agent/team) send on a surface set to "Auto". Picks the
     // best keyed model for THIS request, applies it, and notes it on the message. Fail-open: any
     // problem leaves the current model untouched, so a send can never break here.
