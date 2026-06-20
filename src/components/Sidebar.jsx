@@ -19,9 +19,9 @@ const INTERFACE = [
 ];
 const MODELS = [
   { id: "models", label: "Model configuration", icon: SlidersHorizontal },
+  { id: "models-routing", label: "Model Routing", icon: Share2 },
   { id: "models-overview", label: "Models overview", icon: List },
   { id: "models-speed", label: "Models speed check", icon: Gauge },
-  { id: "models-routing", label: "Model Routing", icon: Share2 },
 ];
 const TAIL = [
   { id: "consumption", label: "Consumption", icon: BarChart3 },

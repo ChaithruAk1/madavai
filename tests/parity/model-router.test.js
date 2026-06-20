@@ -81,9 +81,14 @@ describe("core/model-router — runChain (the ONE shared fallback loop)", () => 
     const r = await runChain({ candidates: list, attempt: (c) => { seen.push(c.model); if (c.model === "A") throw httpErr(429); return "ok-" + c.model; }, onReroute: (e) => reroutes.push(e.from.model + ">" + e.to.model) });
     expect(r).toBe("ok-B"); expect(seen).toEqual(["A", "B"]); expect(reroutes).toEqual(["A>B"]); expect(onCooldown("a")).toBe(true);
   });
-  it("a non-retryable failure throws immediately — no model-swap masking", async () => {
+  it("falls back on ANY failure reason — 404 / 400 / network, not just rate limits", async () => {
     const seen = [];
-    await expect(runChain({ candidates: list, attempt: (c) => { seen.push(c.model); throw httpErr(404); } })).rejects.toMatchObject({ status: 404 });
+    const r = await runChain({ candidates: list, attempt: (c) => { seen.push(c.model); if (c.model === "A") throw httpErr(404); return "ok-" + c.model; } });
+    expect(r).toBe("ok-B"); expect(seen).toEqual(["A", "B"]);
+  });
+  it("does NOT reroute after output already streamed (no double-streamed half reply)", async () => {
+    const seen = [];
+    await expect(runChain({ candidates: list, attempt: (c) => { seen.push(c.model); throw Object.assign(new Error("mid-stream"), { streamed: true }); } })).rejects.toMatchObject({ streamed: true });
     expect(seen).toEqual(["A"]);
   });
   it("a user abort throws immediately and never reroutes", async () => {

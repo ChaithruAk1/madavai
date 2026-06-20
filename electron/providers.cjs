@@ -270,17 +270,28 @@ function _routingInputs(profile, opts) {
   return { category: opts.category || "general", selected: profile, profiles: s.profiles || {}, routing: s.modelRouting || {} };
 }
 function _onReroute(opts) {
-  return ({ from, to, error }) => { try { console.log("[router] " + (from.name || from.model) + " failed (" + ((error && error.status) || "") + ") → trying " + (to.name || to.model) + " · " + to.model); opts.onFallback && opts.onFallback(to); } catch {} };
+  return ({ from, to, error }) => { try { console.log("[router] " + (from.name || from.model) + " failed (" + ((error && (error.status || error.code || (error.message || "").slice(0, 40))) || "") + ") → trying " + (to.name || to.model) + " · " + to.model); opts.onFallback && opts.onFallback(to); } catch {} };
+}
+// Wrap an attempt so a failure AFTER streaming started is flagged (e.streamed) — the router then won't reroute
+// (which would double-stream a half-written answer). A pre-stream failure stays unflagged → the router falls
+// back on ANY reason. Tiny per-platform glue; web's providers.js mirrors it.
+function _track(opts, run) {
+  return async (c) => {
+    let started = false;
+    const o = Object.assign({}, opts, { onDelta: (d, full) => { started = true; return opts.onDelta && opts.onDelta(d, full); } });
+    try { return await run(c, o); }
+    catch (e) { if (started && e && typeof e === "object") { try { e.streamed = true; } catch {} } throw e; }
+  };
 }
 async function streamChat(profile, messages, opts = {}) {
   const router = await loadRouter();
   const cands = router.resolveCandidates(_routingInputs(profile, opts));
-  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: (c) => _streamChat(c, messages, opts), onReroute: _onReroute(opts) });
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: _track(opts, (c, o) => _streamChat(c, messages, o)), onReroute: _onReroute(opts) });
 }
 async function streamChatTools(profile, messages, tools, opts = {}) {
   const router = await loadRouter();
   const cands = router.resolveCandidates(_routingInputs(profile, opts));
-  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: (c) => _streamChatTools(c, messages, tools, opts), onReroute: _onReroute(opts) });
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: _track(opts, (c, o) => _streamChatTools(c, messages, tools, o)), onReroute: _onReroute(opts) });
 }
 
 module.exports = { streamChat, streamChatTools, listModels, ping, stripReasoning };

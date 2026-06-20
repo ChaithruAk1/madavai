@@ -893,6 +893,11 @@ input, textarea, select { font-family: inherit; }
 .mp-rz-se::after { right: 4px; border-right: 2px solid var(--text-2); }
 .mp-rz-sw::after { left: 4px; border-left: 2px solid var(--text-2); }
 .mp-rz-se:hover::after, .mp-rz-sw:hover::after { opacity: .9; border-color: var(--accent); }
+/* Model Routing page: the "add a fallback model" picker opens DOWN-RIGHT (left-anchored) INTO the wide card,
+   so the 720px menu is never clipped on the left edge, and is capped to the page height so it stays fully
+   visible (it scrolls internally). The picker still resizes — a user resize (!important) overrides this cap. */
+.mr-add { position: relative; }
+.mr-add .model-menu { left: 0; right: auto; max-height: 62vh; }
 .model-search {
   width: 100%; background: var(--bg-0); border: 1px solid var(--line);
   color: var(--text-0); border-radius: var(--radius-sm); padding: 9px 11px;

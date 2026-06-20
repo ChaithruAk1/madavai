@@ -107,10 +107,18 @@ function _routingInputs(profile, opts) {
   return { category: (opts && opts.category) || "general", selected: profile, profiles: (opts && opts.profiles) || {}, routing: (opts && opts.routing) || {} };
 }
 const _onReroute = (opts) => ({ to }) => { try { (opts && opts.onFallback) && opts.onFallback(to); } catch {} };
+// Flag a failure that happened AFTER streaming started (e.streamed) so the router won't reroute (which would
+// double-stream a half-written answer). Pre-stream failures stay unflagged → the router falls back on ANY reason.
+const _track = (opts, run) => async (c) => {
+  let started = false;
+  const o = Object.assign({}, opts, { onDelta: (d, full) => { started = true; return opts.onDelta && opts.onDelta(d, full); } });
+  try { return await run(c, o); }
+  catch (e) { if (started && e && typeof e === "object") { try { e.streamed = true; } catch {} } throw e; }
+};
 // PUBLIC: ordered fallback via the SHARED router — identical policy to desktop providers.cjs.
 export function streamChat(profile, messages, opts = {}) {
   const cands = router.resolveCandidates(_routingInputs(profile, opts));
-  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: (c) => _streamChat(c, messages, opts), onReroute: _onReroute(opts) });
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: _track(opts, (c, o) => _streamChat(c, messages, o)), onReroute: _onReroute(opts) });
 }
 
 const ANTHROPIC_MODELS = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest", "claude-3-opus-latest"];
@@ -176,7 +184,7 @@ async function _streamChatTools(profile, messages, tools, { onDelta, signal, pro
 // PUBLIC: tool-calling with ordered fallback via the SHARED router (same policy as streamChat).
 export async function streamChatTools(profile, messages, tools, opts = {}) {
   const cands = router.resolveCandidates(_routingInputs(profile, opts));
-  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: (c) => _streamChatTools(c, messages, tools, opts), onReroute: _onReroute(opts) });
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: _track(opts, (c, o) => _streamChatTools(c, messages, tools, o)), onReroute: _onReroute(opts) });
 }
 
 export async function ping(profile) {

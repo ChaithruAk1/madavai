@@ -101,9 +101,12 @@ export async function runChain({ candidates, attempt, onReroute } = {}) {
     try {
       return await attempt(c, i);
     } catch (e) {
-      if (e && e.name === "AbortError") throw e;     // user navigated away / stopped — never reroute
-      if (!isRetryable(e)) throw e;                  // wrong key/model/request — surface, don't mask
-      noteFailure(c.key, retryAfterMs(e));           // cool this one down so we don't re-hit it this turn
+      // On ANY failure of the chosen model, fall back — the reason is NOT limited (rate limit, bad key, 404,
+      // 400, network, timeout, empty reply, anything). Two exceptions only: a user abort (they stopped — not a
+      // failure), and a failure AFTER output already began streaming (e.streamed) — rerouting there would
+      // double-stream a half-written answer, so surface it instead. Otherwise: cool this model down, try next.
+      if (e && (e.name === "AbortError" || e.streamed)) throw e;
+      noteFailure(c.key, retryAfterMs(e));            // cool this one down so we don't re-hit it this turn
       lastErr = e;
       if (i + 1 < list.length && typeof onReroute === "function") { try { onReroute({ from: c, to: list[i + 1], error: e }); } catch {} }
     }
