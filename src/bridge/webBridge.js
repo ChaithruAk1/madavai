@@ -1071,6 +1071,10 @@ const HISTORY_KEY = "be.sessions";
 // previous write for the same session id. Fire-and-forget from the caller's view; one-time fail warning.
 const _persistChains = new Map(); // sessionId -> Promise
 function persistSession(sess) {
+  // Stamp a time on any message lacking one so web chats show timestamps like desktop (the core loop + the
+  // officedoc path push messages without `at`). New turns get ~now; only pre-existing untimed messages are
+  // approximated. Cheap; runs after every turn.
+  try { const now = Date.now(); for (const m of (sess.messages || [])) { if (m && m.role && !m.at) m.at = now; } } catch {}
   const rec = { id: sess.id, mode: sess.mode || "code", title: sess.title || "Untitled", updatedAt: Date.now(),
     messages: sess.messages, projectId: sess.projectId || null, convId: sess.convId || null,
     model: (sess.profile && sess.profile.model) || null, provider: (sess.profile && sess.profile.name) || null,
