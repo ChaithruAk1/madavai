@@ -82,7 +82,7 @@ export default function AdminPanel() {
                 <div className="cons-kpis adminp-kpis">
                   <Stat icon={CreditCard} label="Spent" v={"$" + Number((search.usage || {}).spentUsd || 0).toFixed(3)} accent sub={"of $" + ((search.usage || {}).budgetUsd ?? 0)} />
                   <Stat icon={Gift} label="Remaining" v={"$" + Number((search.usage || {}).remainingUsd || 0).toFixed(2)} />
-                  <Stat icon={TrendingUp} label="Paid searches" v={fmt((search.usage || {}).paidCalls)} accent />
+                  <Stat icon={TrendingUp} label="Serper credits used" v={fmt((search.usage || {}).paidCalls)} accent />
                   <Stat icon={Globe} label="Free searches" v={fmt((search.usage || {}).freeCalls)} />
                 </div>
               )}
