@@ -1,0 +1,22 @@
+export declare const config: {
+    serpApiKey: string;
+    serpBaseUrl: string;
+    serpCostPerQuery: number;
+    serpStrategy: "always" | "off";
+    budgetMode: "soft" | "hard";
+    monthlyBudgetUsd: number;
+    searxngUrl: string;
+    rerankerProvider: "none" | "openai" | "cohere";
+    embeddingBaseUrl: string;
+    embeddingApiKey: string;
+    embeddingModel: string;
+    cohereApiKey: string;
+    cohereModel: string;
+    fetchTimeoutMs: number;
+    maxConcurrency: number;
+    llmBaseUrl: string;
+    llmApiKey: string;
+    llmModel: string;
+    redisUrl: string;
+    cacheTtlSec: number;
+};

@@ -36,6 +36,20 @@ try {
   }
 } catch {}
 
+// House search engine — the custom `websearch` package (vendor/websearch). Created ONCE, lazily, only when
+// SERP_API_KEY is set. Replaces the legacy house Tavily/Serper/Brave keys with Serper→free + a global budget
+// cap + reranking, all INSIDE the engine. If it can't load (not installed / no key), the search path falls
+// back to the legacy providers so search never breaks. Config comes from env (Render), never from code.
+let _houseSearch, _houseSearchTried = false;
+async function houseSearchEngine() {
+  if (_houseSearchTried) return _houseSearch;
+  _houseSearchTried = true;
+  try {
+    if (process.env.SERP_API_KEY) { const m = await import("../vendor/websearch/websearch-ts/dist/index.js"); _houseSearch = (m.createWebSearch || m.default)(); console.log("[search] house engine: custom websearch (Serper + budget cap + rerank)"); }
+  } catch (e) { console.warn("[search] websearch engine unavailable, using legacy providers:", (e && e.message) || e); }
+  return _houseSearch;
+}
+
 const PORT = +(process.env.PORT || 8787);
 const BASE = process.env.AUTH_BASE_URL || `http://127.0.0.1:${PORT}`;
 const SECRET = process.env.SESSION_SECRET || "dev-insecure-secret-change-me";
@@ -1019,25 +1033,31 @@ const server = http.createServer(async (req, res) => {
       // structured results. Web AND desktop both hit this endpoint, so there is a single search path.
       const { searchWeb, formatResults } = await import("../core/search.js");
       // The caller's bring-your-own key (from Search Engine Settings) wins; otherwise the server's house key.
-      let cfg;
+      let cfg, engine = null;
       if (b.searchKey && b.searchProvider && b.searchProvider !== "auto") {
         cfg = { provider: b.searchProvider, tavilyKey: b.searchProvider === "tavily" ? b.searchKey : "", serperKey: b.searchProvider === "serper" ? b.searchKey : "", braveKey: b.searchProvider === "brave" ? b.searchKey : "" };
       } else if (b.searchProvider === "duckduckgo") {
         cfg = {}; // explicit DuckDuckGo — no key
       } else {
-        // House (paid) search key with the optional per-user MONTHLY cap. Admins/creators are exempt;
-        // once a normal user passes the cap, fall back to DuckDuckGo (free) for the rest of the month
-        // instead of unlimited paid searches. BYO-key and explicit-DuckDuckGo users never reach here.
+        // House search with the optional per-user MONTHLY cap. Admins/creators are exempt; once a normal user
+        // passes the cap, fall back to DuckDuckGo (free) for the rest of the month. BYO-key and explicit-
+        // DuckDuckGo users never reach here.
         let usePaid = true;
         if (SEARCH_MONTHLY_LIMIT > 0) {
           const u = await store.getUser(pl.sub).catch(() => null);
           if (!(u && isAdminEmail(u.email))) usePaid = await searchQuota(pl.sub, SEARCH_MONTHLY_LIMIT);
         }
-        cfg = usePaid
-          ? { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" }
-          : {}; // monthly paid quota used up → DuckDuckGo
+        if (usePaid) {
+          // The custom websearch engine IS the house search now — it REPLACES Tavily outright (Serper → free,
+          // global $ budget cap, rerank). No legacy house Tavily/Serper/Brave keys here anymore. If SERP_API_KEY
+          // isn't set the engine is null and the call drops to DuckDuckGo (the free net) — never back to Tavily.
+          engine = await houseSearchEngine();
+          cfg = {};
+        } else {
+          cfg = {}; // monthly paid quota used up → DuckDuckGo
+        }
       }
-      const results = await searchWeb(String(b.query), { fetchImpl: fetch, cfg, count: Number(b.count) || 6 });
+      const results = await searchWeb(String(b.query), { fetchImpl: fetch, cfg, count: Number(b.count) || 6, engine });
       return json(res, 200, { url: "search:" + b.query, status: 200, text: formatResults(results, b.query), results });
     }
     if (!/^https?:\/\//i.test(target)) return json(res, 400, { error: "http(s) url or query required" });

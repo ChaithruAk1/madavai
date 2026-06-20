@@ -48,3 +48,8 @@ _z_clean.bat
 # M2c turn-recorder local captures (contain real chat content — never commit)
 recorded-chat-turn.json
 desktop-chat-*.json
+
+# Vendored websearch engine ships its PREBUILT dist/ — a `file:` install on Render can't compile the
+# package's TS devDeps, so force-include just that one dist/ (the global `dist/` on line 2 would drop it).
+!vendor/websearch/websearch-ts/dist/
+!vendor/websearch/websearch-ts/dist/**

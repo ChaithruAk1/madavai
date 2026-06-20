@@ -80,9 +80,20 @@ async function duckSearch(query, fetchImpl, signal, count) {
  * automatic fallback on no-key / out-of-credits / error / empty. Always returns a unified
  * [{ title, url, content }] (possibly empty). This is the only search function the app should call.
  */
-export async function searchWeb(query, { fetchImpl, cfg = {}, count = 6, signal } = {}) {
+export async function searchWeb(query, { fetchImpl, cfg = {}, count = 6, signal, engine } = {}) {
   const q = String(query || "").trim();
   if (!q) return [];
+  // Custom in-process search engine (the SERVER injects it for HOUSE search): Serper → free, with a global
+  // budget cap + reranking, all INSIDE the engine. It already returns the unified shape; on a hard throw we
+  // still drop to the DuckDuckGo net so search NEVER dies. BYO-key / explicit-DDG callers pass no engine.
+  if (engine && typeof engine.search === "function") {
+    try {
+      const r = await engine.search(q, { maxResults: count, searchDepth: "advanced" });
+      const hits = (((r && r.results) || []).map((x) => ({ title: (x && (x.title || x.url)) || "", url: (x && x.url) || "", content: (x && x.content) || "" })).filter((x) => x.url));
+      if (hits.length) return hits;
+    } catch { /* engine threw → DuckDuckGo net below */ }
+    try { return typeof fetchImpl === "function" ? await duckSearch(q, fetchImpl, signal, count) : []; } catch { return []; }
+  }
   if (typeof fetchImpl !== "function") throw new Error("searchWeb: fetchImpl is required");
   const provider = pickProvider(cfg);
   if (provider !== "duckduckgo") {

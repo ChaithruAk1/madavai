@@ -1,7 +1,7 @@
 {
   "name": "websearch",
-  "version": "1.0.0",
-  "description": "Embeddable, budget-capped, Google-grade web search for a Node/TS AI engine. Drop-in-ish for the Tavily SDK.",
+  "version": "1.1.0",
+  "description": "Embeddable, budget-capped, Google-grade web search for a Node/TS AI engine. Drop-in-ish for the Tavily SDK. Includes embeddings/Cohere reranker, Readability extraction, $-cap + free fallback, Redis for multi-replica.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,7 +13,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepare": "tsc"
+    "prepare": "tsc",
+    "test": "npm run build && node test/smoke-soft.mjs && node test/smoke-hard.mjs && node test/smoke-cap-free.mjs && node test/smoke-rerank.mjs && node test/smoke-extract.mjs",
+    "verify": "npm test",
+    "bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --external:jsdom --external:@mozilla/readability --external:ioredis --outfile=bundle/websearch.mjs && esbuild src/index.ts --bundle --platform=node --format=cjs --external:jsdom --external:@mozilla/readability --external:ioredis --outfile=bundle/websearch.cjs"
   },
   "engines": {
     "node": ">=18"
@@ -21,10 +24,11 @@
   "optionalDependencies": {
     "@mozilla/readability": "^0.5.0",
     "ioredis": "^5.4.1",
-    "jsdom": "^24.1.0"
+    "jsdom": "^24.1.3"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
+    "esbuild": "^0.23.0",
     "typescript": "^5.5.4"
   }
 }

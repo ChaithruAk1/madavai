@@ -1,52 +1,64 @@
-# PLUG_IN.md — instructions for Claude (Cowork) to wire this package into the user's AI codebase
+# PLUG_IN.md — instructions for Claude (Cowork) to adopt this search engine
 
-You are integrating the `websearch` package (this folder) into the user's Node/TS
-AI project as a **drop-in replacement for the Tavily JS SDK**. It is an in-process
-library — do NOT stand up a separate service. Full reference: README.md, SETUP.md.
+You are integrating the `websearch` package (this folder) into the user's Node/TypeScript
+AI codebase as a **drop-in replacement for the Tavily JS SDK** (`@tavily/core`).
+It is an in-process library — do NOT stand up a separate service. Reference: README.md, SETUP.md.
 
-## What this package is
-- Node/TS library returning Google-grade web search (via Serper) in Tavily's shape.
-- API: `import { createWebSearch } from "websearch"` →
-  `const tvly = createWebSearch(); await tvly.search(query, opts)`,
-  `await tvly.usage()`, `tvly.setBudget(n)`, `tvly.setBudgetMode("soft"|"hard")`.
-- Spend cap is SOFT by default (never blocks searches). Optional Redis for multi-replica.
-  Optional OpenAI-compatible answers via LLM_* env.
+## What this package does
+- Returns Google-grade web search (via Serper) in Tavily's response shape.
+- Pipeline: Serper (Google) → fetch pages → Readability extraction → chunk → **rerank** → optional answer.
+- **Pay-as-you-go, capped, then free:** pays Serper per search up to MONTHLY_BUDGET_USD, then
+  automatically falls back to FREE search (SearXNG if SEARXNG_URL set, else DuckDuckGo). Never stops.
+- Reranker uses the user's existing OpenAI embeddings by default (or Cohere). Graceful lexical fallback.
+- Multi-replica safe via REDIS_URL (shared spend cap + cache).
+- API: `import { createWebSearch } from "websearch"` → `tvly.search(query, opts)`, `tvly.usage()`,
+  `tvly.setBudget(n)`, `tvly.setBudgetMode("soft"|"hard")`.
 
-## First, ask the user for (and wait):
-1. Root path of their AI project (folder containing package.json).
-2. Their package.json contents (module type "module"/"commonjs", TS setup, is @tavily/core present?).
-3. Every place they call search today — grep the repo for: `@tavily/core`, `tavily(`, `.search(`.
-4. Their Serper API key (or confirm SERP_API_KEY is already in their secrets).
-5. Do they run multiple replicas / serverless? If yes, you will set REDIS_URL.
-6. Do they use `includeAnswer` (need LLM_* wired) — and which OpenAI-compatible endpoint?
+## This user's known setup (don't re-ask these)
+- Stack: Node / TypeScript. Currently uses `@tavily/core`.
+- Deployment: MULTIPLE REPLICAS → you MUST set REDIS_URL so the $1000 cap is global.
+- LLM: OpenAI-compatible (use it for the reranker embeddings and optional answers).
+- Spend policy: pay-as-you-go, HARD cap $1000/month, then free search. BUDGET_MODE=hard.
 
 ## Steps
-1. COPY IN: place this folder into their repo (e.g. `vendor/websearch/`) OR from their
-   project root run `npm install <abs-path-to-this-folder>`. Verify
-   `import { createWebSearch } from "websearch"` resolves (add a workspace/path entry if needed).
-2. DEPS (in their project): core needs nothing. Add `ioredis` if multi-replica;
-   add `jsdom @mozilla/readability` for higher-quality page extraction.
-3. BUILD: if shipping the TS source, `npm run build` (outputs dist/). If they use
-   tsx/ts-node/a bundler, import from `src/index.ts` instead and match their toolchain.
-4. REPLACE TAVILY at each call site:
-   - `import { tavily } from "@tavily/core"`  →  `import { createWebSearch } from "websearch"`
-   - `const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY })`  →  `const tvly = createWebSearch()`
-   - `tvly.search(q, { searchDepth, maxResults, includeAnswer, includeDomains, ... })` — unchanged.
-   - Response fields match: `res.results[i].{ title, url, content, score, rawContent }`,
-     `res.answer`, `res.responseTime`. If the user relied on a Tavily-only field, flag it and ask.
-5. ENV: add to their .env / secrets manager:
-   `SERP_API_KEY`, `BUDGET_MODE=soft`, `MONTHLY_BUDGET_USD=500`, `SERP_COST_PER_QUERY=0.001`,
-   `REDIS_URL=...` (if multi-replica), and `LLM_BASE_URL/LLM_API_KEY/LLM_MODEL` (if they use answers).
+1. COPY IN: place this folder in their repo (e.g. `vendor/websearch/`) OR `npm install <abs-path>`
+   from the project root. Verify `import { createWebSearch } from "websearch"` resolves.
+2. INSTALL deps in their project:
+   `npm install jsdom @mozilla/readability ioredis`
+   (jsdom+readability = better extraction; ioredis = shared cap/cache across replicas.)
+3. BUILD: `npm run build` (outputs dist/). If they use tsx/ts-node/a bundler, import from `src/index.ts`
+   instead and match their toolchain/module settings.
+4. REPLACE TAVILY at every call site (grep: `@tavily/core`, `tavily(`, `.search(`):
+   - `import { tavily } from "@tavily/core"`            → `import { createWebSearch } from "websearch"`
+   - `const tvly = tavily({ apiKey: ... })`             → `const tvly = createWebSearch()`
+   - `tvly.search(q, { searchDepth, maxResults, includeAnswer, includeDomains })` — unchanged.
+   - Response unchanged: `res.results[i].{title,url,content,score,rawContent}`, `res.answer`, `res.responseTime`.
+   - If the user relied on a Tavily-only field, flag it and ask.
+5. ENV (add to their secrets manager / .env):
+   SERP_API_KEY=<their serper key>
+   BUDGET_MODE=hard
+   MONTHLY_BUDGET_USD=1000
+   SERP_COST_PER_QUERY=0.001
+   SERP_STRATEGY=always
+   REDIS_URL=<their redis url>            # REQUIRED — they run multiple replicas
+   RERANKER_PROVIDER=openai
+   EMBEDDING_MODEL=text-embedding-3-small
+   LLM_BASE_URL=<their openai-compatible base url>
+   LLM_API_KEY=<their key>
+   LLM_MODEL=<their chat model>           # only needed if they use includeAnswer
+   # optional: SEARXNG_URL=<url> to use SearXNG as the free tier instead of DuckDuckGo
+   # optional: COHERE_API_KEY=<key> + RERANKER_PROVIDER=cohere for a stronger reranker
 6. VERIFY: type-check/build their project; run ONE real search and print `await tvly.usage()`.
-   Confirm results are sensible and `spentUsd`/`paidCalls` increment.
+   Confirm results are sensible and `spentUsd`/`paidCalls` increment. Confirm the reranker is active
+   (set RERANKER_PROVIDER=openai and check results are ordered sensibly).
 7. CLEANUP: remove `@tavily/core` from package.json once all call sites are migrated.
 
 ## Guardrails
 - In-process Node library only — never a Python sidecar.
-- Keep `BUDGET_MODE=soft` unless the user explicitly wants a hard ceiling (soft never blocks).
-- If `import "websearch"` won't resolve in their setup, prefer copying `src/` in and importing
-  by relative path over fighting module resolution.
+- Multi-replica → REDIS_URL is mandatory or the $1000 cap becomes per-instance.
+- Keep BUDGET_MODE=hard (pay-as-you-go up to $1000, then free). Don't switch to soft unless asked.
+- If `import "websearch"` won't resolve in their toolchain, copy `src/` in and import by relative path.
 
 ## Done when
-Their project builds, one live query returns Google-grade results, `usage()` shows spend,
-and the old Tavily import is gone.
+Their project builds, one live query returns Google-grade reranked results, `usage()` shows spend
+incrementing toward the $1000 cap, the free fallback works past the cap, and `@tavily/core` is removed.

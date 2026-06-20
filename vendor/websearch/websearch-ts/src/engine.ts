@@ -3,7 +3,7 @@ import type { SearchOptions, SearchResponse, SearchResultItem } from "./types.js
 import { serperSearch, type Candidate } from "./serper.js";
 import { freeSearch } from "./free.js";
 import { fetchAndExtractMany } from "./extract.js";
-import { chunkText, scoreChunks } from "./rank.js";
+import { chunkText, scoreChunks, rerankTexts } from "./rank.js";
 import { generateAnswer } from "./answer.js";
 import * as budget from "./budget.js";
 import * as cache from "./cache.js";
@@ -16,17 +16,15 @@ function domainOk(url: string, inc?: string[], exc?: string[]): boolean {
   return true;
 }
 
-// Retrieval: pay Google (Serper) while under the cap; once the cap is hit
-// (or Serper fails), fall back to FREE search. Search never stops.
-async function retrieve(query: string, opts: SearchOptions): Promise<{ candidates: Candidate[]; source: "google" | "free" }> {
+async function retrieve(query: string, opts: SearchOptions): Promise<Candidate[]> {
   const canPay = config.serpStrategy !== "off" && !!config.serpApiKey && (await budget.canSpend(config.serpCostPerQuery));
   if (canPay) {
     const paid = await serperSearch(query, opts);
-    if (paid.length) { await budget.recordPaid(config.serpCostPerQuery); return { candidates: paid, source: "google" }; }
+    if (paid.length) { await budget.recordPaid(config.serpCostPerQuery); return paid; }
   }
   const free = await freeSearch(query, opts);
   await budget.recordFree();
-  return { candidates: free, source: "free" };
+  return free;
 }
 
 export async function search(query: string, opts: SearchOptions = {}): Promise<SearchResponse> {
@@ -35,7 +33,7 @@ export async function search(query: string, opts: SearchOptions = {}): Promise<S
   const hit = await cache.cacheGet<SearchResponse>(cacheKey);
   if (hit) return hit;
 
-  const { candidates } = await retrieve(query, opts);
+  const candidates = await retrieve(query, opts);
 
   const seen = new Set<string>();
   const filtered: Candidate[] = [];
@@ -52,25 +50,28 @@ export async function search(query: string, opts: SearchOptions = {}): Promise<S
   let extracted = new Map<string, string | null>();
   if (deep || needRaw || opts.includeAnswer) extracted = await fetchAndExtractMany(top.map((c) => c.url));
 
+  // Build per-result content (advanced: best chunks via fast lexical pre-select; basic: snippet)
   const results: SearchResultItem[] = [];
   const answerCtx: string[] = [];
   for (const c of top) {
     const raw = extracted.get(c.url) ?? null;
     let content = c.content;
-    let score = 0;
     if (deep && raw) {
       const chunks = chunkText(raw, 500);
       const scores = scoreChunks(query, chunks);
       const ranked = chunks.map((ch, i) => [ch, scores[i]] as [string, number]).sort((a, b) => b[1] - a[1]).slice(0, 3);
       content = ranked.length ? ranked.map((r) => r[0]).join(" [...] ") : c.content;
-      score = ranked.length ? ranked[0][1] : 0;
-    } else {
-      score = content ? scoreChunks(query, [content])[0] : 0;
     }
-    results.push({ title: c.title, url: c.url, content, score: +score.toFixed(6), rawContent: needRaw ? raw : null });
+    results.push({ title: c.title, url: c.url, content, score: 0, rawContent: needRaw ? raw : null });
     if (raw) answerCtx.push(content);
   }
-  results.sort((a, b) => b.score - a.score);
+
+  // FINAL relevance ordering via the reranker (embeddings/Cohere; lexical fallback).
+  if (results.length) {
+    const scores = await rerankTexts(query, results.map((r) => r.content));
+    results.forEach((r, i) => { r.score = +Number(scores[i] ?? 0).toFixed(6); });
+    results.sort((a, b) => b.score - a.score);
+  }
 
   let answer: string | null = null;
   if (opts.includeAnswer) answer = await generateAnswer(query, (answerCtx.length ? answerCtx : results.map((r) => r.content)).slice(0, 6), false);
