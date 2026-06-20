@@ -32,6 +32,21 @@ export function parseOfficeSpec(jsonText) {
 const _XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const _sheetName = (s) => String(s || "Sheet").slice(0, 28).replace(/[\\/?*[\]:]/g, " ");
 const _normRows = (sh) => (Array.isArray(sh.rows) ? sh.rows : []).slice(0, 5000).map((r) => (Array.isArray(r) ? r.slice(0, 64) : [r]));
+// Does the xlsx spec carry ANY real data? Guards against shipping a blank workbook when a model's
+// officedoc spec came back truncated/empty (the old "downloaded an empty file" bug). True if any sheet
+// has rich content (inputs/metrics/columns/kpis/data) or at least one non-empty cell in its rows.
+function _xlsxHasData(spec) {
+  const sheets = Array.isArray(spec.sheets) && spec.sheets.length ? spec.sheets : [{ rows: spec.rows || [] }];
+  for (const sh of sheets) {
+    if (!sh) continue;
+    if ((sh.inputs && sh.inputs.length) || (sh.metrics && sh.metrics.length) || (sh.columns && sh.columns.length) || (sh.kpis && sh.kpis.length) || (sh.data && sh.data.length)) return true;
+    for (const r of (Array.isArray(sh.rows) ? sh.rows : [])) {
+      const cells = Array.isArray(r) ? r : [r];
+      if (cells.some((c) => c != null && String(c).trim() !== "")) return true;
+    }
+  }
+  return false;
+}
 // Styled spreadsheets via ExcelJS (header fill, banded rows, auto widths, frozen header,
 // auto-filter, numeric formatting) — this is what gives Excel the "designed" look. Falls
 // back to the SheetJS writer if ExcelJS can't load (e.g. a trimmed public web bundle).
@@ -49,6 +64,7 @@ async function buildXlsxTemplate(spec) {
   return new Blob([buf], { type: _XLSX_MIME });
 }
 async function buildXlsx(spec) {
+  if (!_xlsxHasData(spec)) throw new Error("The spreadsheet came back empty — the model didn't include any data (often a complex request that got cut off). Try again, simplify it, or use a stronger model.");
   if (_isRichXlsx(spec)) { try { return await buildXlsxTemplate(spec); } catch (e) {} }
   let ExcelJS = null;
   try { const m = await import("exceljs"); ExcelJS = m.default || m; } catch { ExcelJS = null; }

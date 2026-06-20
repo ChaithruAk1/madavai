@@ -4,7 +4,7 @@ import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestio
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
-import { providerFreeTier, resolveModelValue, isVisionModel } from "./modelCost.js";
+import { providerFreeTier, resolveModelValue, isVisionModel, isModelFree } from "./modelCost.js";
 import Composer from "./components/Composer.jsx";
 import PermissionModal from "./components/PermissionModal.jsx";
 import Settings from "./components/Settings.jsx";
@@ -499,9 +499,14 @@ export default function App() {
       const _mid = activeProfile && activeProfile.model;
       if (!_auto && _mid && !isVisionModel(_mid)) {
         const _short = String(_mid).split("/").pop();
+        // List the user's own FREE vision models (no paid suggestions) so they can switch without leaving the free tier.
+        const _freeVision = [...new Set((pickerGroups || []).flatMap((g) => g.items || []).filter((it) => isModelFree(it) && isVisionModel(it.name)).map((it) => it.name))].slice(0, 12);
+        const _list = _freeVision.length
+          ? "Free vision models you can use — switch to one and re-send the image:\n\n" + _freeVision.map((m) => "- **" + m + "**").join("\n")
+          : "You don't have a free vision model loaded. Add one on the free NVIDIA tier (e.g. **meta/llama-3.2-90b-vision-instruct**), then re-send the image.";
         setTimeline((tl) => [...tl,
           { type: "message", role: "user", text, images, at: Date.now() },
-          { type: "message", role: "assistant", text: `⚠ The model you're using — **${_short}** — is **text-only** and can't read images, so it can't describe or answer questions about the picture you attached.\n\nSwitch to a **vision-capable** model from the picker, then re-send the image:\n\n- On the free NVIDIA tier: **meta/llama-3.2-90b-vision-instruct**\n- On your own key: **gpt-4o**, **google/gemini-2.5-flash**, or a Claude vision model`, at: Date.now() },
+          { type: "message", role: "assistant", text: `⚠ **${_short}** is **text-only** and can't read images.\n\n${_list}`, at: Date.now() },
         ]);
         return;
       }

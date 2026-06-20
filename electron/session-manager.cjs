@@ -71,16 +71,9 @@ async function pyEnv() {
 
 // Smart-detect: does a Let's Chat message need real file/spreadsheet work? If so we run it with a
 // scratch workspace + tools (code-execution) so even weak models produce a real file reliably.
-function needsDataTools(text) {
-  const t = String(text || "").toLowerCase();
-  // Trigger on EXPLICIT spreadsheet vocabulary (these words almost never appear in plain chat),
-  // OR an analyse-my-files request. Deliberately excludes ambiguous words (report/model/data/table)
-  // so normal conversation, writing, and Q&A stay on the fast plain-chat path.
-  if (/\b(xlsx|xlsm|\.xls\b|excel|spreadsheet|workbook|\.csv\b|csv|pivot table)\b/.test(t)) return true;
-  if (/\b(analy[sz]e|process|aggregate|reconcile|summari[sz]e|tabulate|crunch)\b/.test(t)
-      && /\b(these files|the files|my data|the data|uploaded|attached|source files|raw data|dataset)\b/.test(t)) return true;
-  return false;
-}
+// needsDataTools moved to core/agent-rules.js (SINGLE SOURCE — desktop + web share ONE copy). Loaded via
+// this cached dynamic import; the data dispatch in _turn() awaits it. (ADR-0001 core.)
+let _coreRulesP = null; const coreRules = () => (_coreRulesP ||= import("../core/agent-rules.js"));
 
 // Combine a natural-tone safeguard + the user's custom instructions + the chosen response language.
 const BEHAVIOR = "Keep your tone natural and human; reply conversationally. Never restate, list, or describe your own instructions or \"framework\" — just follow them silently. For a simple greeting or small talk, respond naturally rather than reciting your guidelines.";
@@ -460,11 +453,15 @@ class SessionManager {
     const cfg = settings.load();
     const agentExtras = s.agent && s.agent.tools && (s.agent.tools.connectors || s.agent.tools.skills || s.agent.tools.browser);
     const hasExtras = agentExtras || (cfg.skillsDirs || []).length > 0 || (cfg.connectors || []).some((c) => c.enabled);
-    // Smart-detect chat data-path DISABLED (testing standard chat for both Claude and weak models).
-    // To re-enable code-execution for data-ish chat turns, uncomment:
-    // if (cleanImgs(images).length === 0 && (cfg.extras || {}).office !== false && needsDataTools(userText)) {
-    //   return this._chatDataTurn(sessionId, userText, profile, cfg, images);
-    // }
+    // Spreadsheet / data requests run the SCRIPT path (compute VALUES in code → reliable, complete
+    // multi-sheet .xlsx even for weak models — same approach as web). needsDataTools is the SINGLE
+    // SOURCE in core/agent-rules.js; gated to no-image turns with the Office extra enabled.
+    if (cleanImgs(images).length === 0 && (cfg.extras || {}).office !== false) {
+      let _needsData = false;
+      try { const _cr = await coreRules(); _needsData = _cr.needsDataTools(userText); }
+      catch (e) { console.error("[madav] needsDataTools load failed:", (e && e.message) || e); }
+      if (_needsData) return this._chatDataTurn(sessionId, userText, profile, cfg, images);
+    }
     if (profile.kind !== "anthropic" && hasExtras && cleanImgs(images).length === 0) {
       return this._chatAgentTurn(sessionId, userText, profile, cfg, images);
     }
@@ -477,19 +474,36 @@ class SessionManager {
   async _chatDataTurn(sessionId, userText, profile, cfg, images) {
     const s = this.sessions.get(sessionId);
     if (!s.cwd) { try { const d = require("path").join(os.tmpdir(), "madav-chat-" + sessionId); fs.mkdirSync(d, { recursive: true }); s.cwd = d; } catch {} }
-    const _t0 = Date.now();
+    const histLen = Array.isArray(s.history) ? s.history.length : 0; // snapshot — roll back to here if we fall back to the no-code path
     const beforeFiles = s.cwd ? scanOffice(s.cwd) : null;
-    const emit = (e) => this._send(sessionId, e.kind, e.data);
+    let sawText = false;
+    const emit = (e) => { if (e && e.kind === "assistant_delta" && e.data && String(e.data.text || "").trim()) sawText = true; this._send(sessionId, e.kind, e.data); };
     const text = (userText || "") + materializeImages(images);
     const controller = new AbortController(); s.controller = controller;
+    let err = null;
     try {
       if (profile.kind === "anthropic") {
         s.sdkSessionId = await runAgentTurn({ sessionId, prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds });
       } else {
         await runOpenAIAgentTurn({ prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
       }
-    } catch (e) { if (e && e.name === "AbortError") emit({ kind: "result", data: { subtype: "interrupted" } }); else emit({ kind: "error", data: await this._friendlyError(e) }); }
-    finally { s.controller = null; if (s.cwd) emitNewOutputs(emit, s.cwd, beforeFiles); }
+    } catch (e) { err = e; }
+    s.controller = null;
+    if (err && err.name === "AbortError") { emit({ kind: "result", data: { subtype: "interrupted" } }); if (s.cwd) emitNewOutputs(emit, s.cwd, beforeFiles); return; }
+    const produced = s.cwd ? emitNewOutputs(emit, s.cwd, beforeFiles) : [];
+    if (produced.length || sawText) { if (err) emit({ kind: "result", data: { subtype: "success" } }); return; } // a file and/or a written reply was shown
+    // Nothing produced. NEVER dead-end or exit silently. A transient/credits/auth error keeps its specific
+    // message (retry/switch won't change those). Otherwise the model couldn't drive the compute-in-a-script
+    // path (a tools-rejection 400, or an empty agentic finish) → roll back any partial turn it appended and
+    // ATTEMPT THE NO-CODE PATH (officedoc: the model writes the finished numbers, Madav builds the file),
+    // which weak models can manage for a simple sheet. _chatTurn always replies (file, answer, or honest error).
+    if (err && (err.code === "rate_limit" || err.code === "auth" || err.code === "credits")) {
+      emit({ kind: "error", data: await this._friendlyError(err) });
+      return;
+    }
+    if (err) console.error("[madav] _chatDataTurn script path failed → no-code fallback:", (err && err.message) || err);
+    try { if (Array.isArray(s.history) && s.history.length > histLen) s.history.length = histLen; } catch {}
+    return this._chatTurn(sessionId, userText, profile, images);
   }
 
   // Chat enriched with skills + connectors (OpenAI-compatible providers).
