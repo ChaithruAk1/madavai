@@ -736,7 +736,7 @@ async function executeTool(name, args, ctx) {
       } catch {}
       const r = await runPython(args.code || "", files);
       const written = [];
-      for (const fl of (r.files || [])) { try { await webfs.writeBinaryB64(fl.name, fl.base64); written.push(fl.name); if (sess) { recordCheckpoint(sess, "create", fl.name, "", "(binary file)"); emit(sess.id, "file_output", { name: fl.name, b64: fl.base64 }); } } catch {} }
+      for (const fl of (r.files || [])) { try { await webfs.writeBinaryB64(fl.name, fl.base64); written.push(fl.name); if (sess) { recordCheckpoint(sess, "create", fl.name, "", "(binary file)"); sess.outputs = sess.outputs || []; sess.outputs.push({ name: fl.name, b64: fl.base64 }); emit(sess.id, "file_output", { name: fl.name, b64: fl.base64 }); } } catch {} }
       let msg = (r.stdout || "").trim();
       if (!r.ok && r.stderr) msg += (msg ? "\n" : "") + "ERROR:\n" + r.stderr.trim();
       if (written.length) msg += (msg ? "\n\n" : "") + "Saved to the folder: " + written.join(", ");
@@ -1054,7 +1054,8 @@ function persistSession(sess) {
   const rec = { id: sess.id, mode: sess.mode || "code", title: sess.title || "Untitled", updatedAt: Date.now(),
     messages: sess.messages, projectId: sess.projectId || null, convId: sess.convId || null,
     model: (sess.profile && sess.profile.model) || null, provider: (sess.profile && sess.profile.name) || null,
-    agent: sess.agent || null, team: sess.team ? { name: sess.team.name, mode: sess.team.mode, members: sess.team.members, identity: sess.team.identity } : null };
+    agent: sess.agent || null, team: sess.team ? { name: sess.team.name, mode: sess.team.mode, members: sess.team.members, identity: sess.team.identity } : null,
+    outputs: sess.outputs || [] }; // file cards (Pyodide-produced .xlsx etc. with b64) so they survive reopen — parity with desktop
   // Surface save failures instead of losing history silently: warn once per session in the
   // chat (as a system-style event) + always in the console, then keep running.
   const prev = _persistChains.get(sess.id) || Promise.resolve();
@@ -1289,7 +1290,7 @@ export const webBridge = {
     const asText = (c) => (typeof c === "string" ? c : (Array.isArray(c) ? (c.find((p) => p.type === "text")?.text || "") : ""));
     // The renderer maps conv.messages -> bubbles; strip system and flatten content to text.
     const messages = (rec.messages || []).filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: asText(m.content) }));
-    return { id: rec.id, mode: rec.mode, title: rec.title, messages, projectId: rec.projectId || null, cwd: rec.cwd || null };
+    return { id: rec.id, mode: rec.mode, title: rec.title, messages, projectId: rec.projectId || null, cwd: rec.cwd || null, outputs: rec.outputs || [] };
   },
   async deleteSession(id) { await idbDel(id); try { recordChatTombstone(id); chatMaybePush(); } catch {} return true; },
   async renameSession(id, title) { try { const rec = await idbGet(id); if (rec) { const t = String(title || "").slice(0, 200); if (t) { rec.title = t; rec.updatedAt = Date.now(); await idbPut(rec); try { chatMaybePush(); } catch {} } } } catch {} return true; },

@@ -260,7 +260,10 @@ async function ping(profile) {
 // surfacing the error. Fires only on a pre-stream HTTP status error (e.status set by ensureOk), so a
 // mid-stream break or user abort never double-streams. No-op unless an OpenRouter profile with a key AND
 // a model is configured. The over-the-wire model becomes OpenRouter's; the user gets an answer instead of a 429.
-function _retryableStatus(e) { const st = e && e.status; return st === 429 || st === 503 || st === 502 || st === 500 || st === 404 || st === 402; }
+// Only fall back to OpenRouter on a GENUINELY transient/busy NVIDIA error. NOT 404 (the model simply
+// isn't hosted on NVIDIA — silently swapping to a different model misleads the user; surface it instead)
+// and NOT 402 (a billing issue, not "busy"). 429 = rate limit, 5xx = server hiccup → those retry.
+function _retryableStatus(e) { const st = e && e.status; return st === 429 || st === 503 || st === 502 || st === 500; }
 function _openRouterFallback(profile) {
   try {
     if (!/nvidia|\bnim\b|integrate\.api\.nvidia|build\.nvidia/i.test((profile && profile.baseUrl) || "")) return null; // only NVIDIA → OpenRouter
