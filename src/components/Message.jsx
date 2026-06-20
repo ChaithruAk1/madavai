@@ -55,20 +55,18 @@ function FileOutCard({ name, path, b64, onOpenArtifact }) {
       setTimeout(() => URL.revokeObjectURL(url), 4000);
     } catch {}
   };
-  const webDownloadable = isWeb && !!b64;
+  const canDownload = !!b64; // BOTH surfaces now — desktop downloads to your Downloads folder too (same a.click blob the officedoc cards use), unified with web. No desktop-only scratch-folder reveal.
   // In-app preview of the SAVED spreadsheet — parse the bytes back into a spec and open the SAME right-panel
   // preview an inline officedoc card uses. Identical on desktop + web (bytes come from the card's b64).
   const canPreview = !!b64 && t === "xlsx";
   const previewXlsx = async () => { try { const { xlsxB64ToSpec } = await import("../office.js"); const spec = await xlsxB64ToSpec(b64, name); onOpenArtifact && onOpenArtifact({ kind: "office", code: JSON.stringify(spec), office: "xlsx", title: name, previewable: true }); } catch {} };
   return (
     <div className="md-office">
-      <span className="md-office-meta"><b>{name}</b><i>{webDownloadable ? "produced by the run · ready to download" : "produced by the run · saved in your folder"}</i></span>
+      <span className="md-office-meta"><b>{name}</b><i>produced by the run · ready to download</i></span>
       <span className={"md-office-ico" + (t ? " md-office-ico--" + t : "")}><OfficeIcon type={t} /></span>
-      {/* Native open/reveal are desktop-only; on web a Pyodide-produced file downloads in-browser from b64. */}
+      {/* UNIFIED delivery — Preview + Download, IDENTICAL on desktop and web (bytes from b64). No desktop-only folder/open. */}
       {canPreview && onOpenArtifact && <button className="md-office-open" title="Preview in the side panel" onClick={previewXlsx}>Preview</button>}
-      {webDownloadable && <button className="md-office-btn" title="Download the file" onClick={downloadB64}>Download</button>}
-      {!isWeb && <button className="md-office-open" title="Show in folder" onClick={() => { try { bridge.showInFolder && bridge.showInFolder(path); } catch {} }}>Folder</button>}
-      {!isWeb && <button className="md-office-btn" title="Open the file" onClick={() => { try { bridge.openPath ? bridge.openPath(path) : bridge.openExternal && bridge.openExternal(path); } catch {} }}>{OPEN_LABEL[t] || "Open"}</button>}
+      {canDownload && <button className="md-office-btn" title="Download the file" onClick={downloadB64}>Download</button>}
     </div>
   );
 }
