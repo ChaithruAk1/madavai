@@ -96,9 +96,17 @@ describe("core/model-router — runChain (the ONE shared fallback loop)", () => 
     await expect(runChain({ candidates: list, attempt: (c) => { seen.push(c.model); throw Object.assign(new Error("abort"), { name: "AbortError" }); } })).rejects.toMatchObject({ name: "AbortError" });
     expect(seen).toEqual(["A"]);
   });
-  it("throws the last error once the whole chain is exhausted", async () => {
+  it("when the whole chain is exhausted, surfaces the FIRST (selected-model) failure, not the last fallback's", async () => {
     const seen = [];
-    await expect(runChain({ candidates: list, attempt: (c) => { seen.push(c.model); throw httpErr(503); } })).rejects.toMatchObject({ status: 503 });
+    // First model 429 (rate-limited), last a dead 404 fallback id — the user must see the 429, NEVER the 404.
+    await expect(runChain({ candidates: list, attempt: (c) => { seen.push(c.model); throw httpErr(c.model === "A" ? 429 : 404); } })).rejects.toMatchObject({ status: 429 });
     expect(seen).toEqual(["A", "B"]);
+  });
+  it("the exhausted-chain message is plain-language: names the reason, the backup count, and the next step", async () => {
+    let msg = "";
+    try { await runChain({ candidates: list, attempt: () => { throw httpErr(429); } }); } catch (e) { msg = e.message; }
+    expect(msg).toMatch(/rate-limited/i);
+    expect(msg).toMatch(/backup/i);
+    expect(msg).toMatch(/different model/i);
   });
 });

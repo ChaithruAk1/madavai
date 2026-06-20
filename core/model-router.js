@@ -87,6 +87,32 @@ export function retryAfterMs(e) {
   return null;
 }
 
+// ---- exhausted-chain error (HONEST: led by the FIRST failure, never the last fallback's message) ----
+// Plain-language reason for one failure, used in the summary shown when EVERY candidate failed.
+function failureReason(e) {
+  const st = e && (e.status || e.statusCode);
+  if (st === 429) return "is rate-limited (too busy)";
+  if (st === 402) return "is out of credit";
+  if (st === 401 || st === 403) return "rejected the API key";
+  if (st === 404) return "is unavailable";
+  if (st >= 500 && st < 600) return "hit a server error";
+  const m = e && e.message ? String(e.message) : "";
+  return m ? ("failed (" + m.slice(0, 50) + ")") : "failed";
+}
+// Build ONE clear error when the whole chain failed. Leads with the FIRST attempt (usually the user's selected
+// model) — the most actionable signal — and copies its status/code so downstream handling is unchanged.
+// `failed` = [{ c, e }] in attempt order.
+function chainExhaustedError(failed) {
+  if (!failed || !failed.length) return new Error("model-router: no usable model candidates");
+  const first = failed[0];
+  const who = ((first.c && first.c.name) ? first.c.name + " " : "") + ((first.c && first.c.model) || "your model");
+  const others = failed.length - 1;
+  const extra = others > 0 ? (" and " + others + " backup model" + (others > 1 ? "s" : "") + " also failed") : "";
+  const err = new Error(who + " " + failureReason(first.e) + extra + ". Try again in a moment, or pick a different model.");
+  if (first.e) { err.status = first.e.status || first.e.statusCode; err.code = first.e.code; err.cause = first.e; }
+  return err;
+}
+
 // ---- the fallback loop (SINGLE SOURCE; the platform supplies `attempt` = its real stream call) ----
 // Tries candidates in order. On a RETRYABLE failure: cool the failed model down and advance to the next.
 // On a NON-retryable failure (auth / bad request / user abort): throw immediately — walking the chain can't
@@ -95,7 +121,7 @@ export function retryAfterMs(e) {
 export async function runChain({ candidates, attempt, onReroute } = {}) {
   const list = (candidates || []).filter((c) => c && c.model && c.baseUrl);
   if (!list.length) throw new Error("model-router: no usable model candidates");
-  let lastErr;
+  const failed = []; // { c, e } per attempt — drives an honest exhausted-chain message
   for (let i = 0; i < list.length; i++) {
     const c = list[i];
     try {
@@ -107,9 +133,11 @@ export async function runChain({ candidates, attempt, onReroute } = {}) {
       // double-stream a half-written answer, so surface it instead. Otherwise: cool this model down, try next.
       if (e && (e.name === "AbortError" || e.streamed)) throw e;
       noteFailure(c.key, retryAfterMs(e));            // cool this one down so we don't re-hit it this turn
-      lastErr = e;
+      failed.push({ c, e });
       if (i + 1 < list.length && typeof onReroute === "function") { try { onReroute({ from: c, to: list[i + 1], error: e }); } catch {} }
     }
   }
-  throw lastErr;                                      // whole chain exhausted — surface the last failure
+  // Whole chain exhausted. Surface an HONEST summary LED BY THE FIRST (usually the selected-model) failure —
+  // never the last fallback's misleading message (e.g. a dead OpenRouter id that says "not available").
+  throw chainExhaustedError(failed);
 }
