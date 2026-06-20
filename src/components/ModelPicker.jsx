@@ -6,16 +6,8 @@ import { localCaps } from "../data/localModels.js";
 import HelpDot from "./HelpDot.jsx";
 import { isModelFree } from "../modelCost.js"; // SINGLE SOURCE: free/paid from the provider, not the name
 
-// Best-guess of a model's core purpose from its name (no universal API exposes this).
-export function classify(id) {
-  const n = (id || "").toLowerCase();
-  if (/cod(er|e)\b|coder|deepseek-coder/.test(n)) return "coding";
-  if (/reason|\br1\b|\bo1\b|\bo3\b|qwq|thinking|think\b/.test(n)) return "reasoning";
-  if (/vision|multimodal|\bvl\b|llava|-v\b/.test(n)) return "vision";
-  if (/embed/.test(n)) return "embeddings";
-  if (/flash|mini|lite|haiku|tiny|small|turbo|nano|\b[1-9]b\b/.test(n)) return "fast";
-  return "general";
-}
+// `classify` (a model's purpose from its name) moved to src/data/providerRules.js, so THIS file exports
+// only the ModelPicker component — that keeps React Fast Refresh working (no full app reload on edits).
 const PURPOSE_COLOR = { coding: "#7ee787", reasoning: "#d2a8ff", vision: "#79c0ff", fast: "#ffd479", embeddings: "#79c0ff", agentic: "#f0883e", general: "var(--text-2)" };
 const chipStyle = (active) => ({ padding: "4px 12px", borderRadius: 999, fontSize: 11.5, lineHeight: 1.5, border: "1px solid " + (active ? "var(--accent)" : "var(--line)"), background: active ? "var(--accent)" : "transparent", color: active ? "#04121a" : "var(--text-2)", cursor: "pointer", fontWeight: active ? 600 : 400 });
 const pill = (color) => ({ fontSize: 10, padding: "1px 7px", borderRadius: 999, border: `1px solid color-mix(in srgb, ${color} 40%, transparent)`, background: `color-mix(in srgb, ${color} 12%, transparent)`, color, whiteSpace: "nowrap", lineHeight: 1.6, fontWeight: 600 });
@@ -53,6 +45,34 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const [openUp, setOpenUp] = useState(false); // bottom half of the screen → the menu opens upward
   const [maxH, setMaxH] = useState(520); // measured height cap so the menu never overruns the window (set after render)
   const menuRef = useRef(null);
+  // Per-edge resize that works in EVERY placement (top-bar, composer, Projects, Agents, model-dock — each
+  // anchors the menu differently). The handles are CHILDREN of the menu (CSS-pinned to its real edges), and
+  // on drag we switch the menu to position:fixed at its current on-screen rect, so left/right/top/bottom
+  // ALL resize correctly regardless of how it was originally anchored. `box` = live {x,y,w,h}; null = default.
+  // Resize changes ONLY the size. The menu keeps its existing on-screen anchor (top-bar, composer, Projects,
+  // Agents…), so it stays exactly where it opened and grows/shrinks in place — it never moves across the
+  // screen. `box` = the user's chosen {w,h}; null = the CSS default 720x520.
+  const [box, setBox] = useState(null);
+  useEffect(() => { if (!open) setBox(null); }, [open]); // each reopen starts at the default size
+  const startResize = (dir) => (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const el = menuRef.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY, W = r.width, H = r.height;
+    const maxW = Math.round(window.innerWidth * 0.94), maxH2 = Math.round(window.innerHeight * 0.9);
+    const cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const move = (ev) => {
+      const dx = ev.clientX - sx, dy = ev.clientY - sy;
+      let w = W, h = H;
+      if (dir.indexOf("e") >= 0) w = cl(W + dx, 360, maxW);
+      if (dir.indexOf("w") >= 0) w = cl(W - dx, 360, maxW);
+      if (dir.indexOf("s") >= 0) h = cl(H + dy, 240, maxH2);
+      if (dir.indexOf("n") >= 0) h = cl(H - dy, 240, maxH2);
+      setBox({ w, h });
+    };
+    const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); document.body.style.userSelect = ""; };
+    document.addEventListener("mousemove", move); document.addEventListener("mouseup", up); document.body.style.userSelect = "none";
+  };
   const measure = () => { // choose the open direction from the trigger's position in the window
     try { const r = ref.current && ref.current.getBoundingClientRect(); setOpenUp(!!r && r.top > window.innerHeight * 0.55); } catch {}
   };
@@ -161,9 +181,9 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
         </button>
       )}
       {open && (
-        <div ref={menuRef} className="model-menu mp-menu scroll" style={{ width: 720, maxWidth: "min(94vw, 720px)", maxHeight: maxH, ...(openUp ? { top: "auto", bottom: 46 } : {}) }}>
-          {/* Sticky header — search + maker + filter chips stay put; only the model list scrolls. */}
-          <div className="mp-head" style={{ position: "sticky", top: 0, zIndex: 3, background: "var(--bg-1)", borderBottom: "1px solid var(--line)", paddingBottom: 8, marginBottom: 6 }}>
+        <div ref={menuRef} className="model-menu mp-menu" style={{ ...(openUp ? { top: "auto", bottom: 46 } : {}), ...(box ? { width: box.w, height: box.h } : {}) }}>
+          {/* Header — fixed at the top; only the model list below it scrolls (flex column layout). */}
+          <div className="mp-head" style={{ flex: "none", background: "var(--bg-1)", borderBottom: "1px solid var(--line)", paddingBottom: 8, marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <div style={{ position: "relative", flex: 1 }}>
               <Search size={14} style={{ position: "absolute", left: 11, top: 10, color: "var(--text-2)" }} />
@@ -202,6 +222,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
             <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-3)", fontVariantNumeric: "tabular-nums" }}>{shown} of {total}</span>
           </div>
           </div>{/* /mp-head */}
+          <div className="mp-scroll scroll">
 
           {groups.length === 0 && (
             <div className="model-group" style={{ textTransform: "none", color: "var(--text-2)", padding: 12 }}>
@@ -249,6 +270,15 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
               Showing the first {MAX_RENDER} of {shown} — type in the search box to narrow down.
             </div>
           )}
+          </div>{/* /mp-scroll */}
+          {/* Resize grips — CHILDREN of the menu, pinned by CSS to its own edges, so they are always correct
+              no matter how this screen anchors the menu. Hover shows the edge; each starts a fixed-rect drag. */}
+          <span className="mp-rz mp-rz-e" onMouseDown={startResize("e")} title="Drag to resize width" />
+          <span className="mp-rz mp-rz-w" onMouseDown={startResize("w")} title="Drag to resize width" />
+          <span className="mp-rz mp-rz-s" onMouseDown={startResize("s")} title="Drag to resize height" />
+          <span className="mp-rz mp-rz-n" onMouseDown={startResize("n")} title="Drag to resize height" />
+          <span className="mp-rz mp-rz-se" onMouseDown={startResize("se")} title="Drag to resize" />
+          <span className="mp-rz mp-rz-sw" onMouseDown={startResize("sw")} title="Drag to resize" />
         </div>
       )}
     </div>

@@ -871,6 +871,28 @@ input, textarea, select { font-family: inherit; }
   border: 1px solid var(--line-2); border-radius: var(--radius); padding: 7px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
+/* The FULL model picker. Default stays the original 720x520; size lives in CSS so React never resets it
+   on re-render (that was the jitter). Per-EDGE resize (drag the left edge for width, bottom edge for
+   height, or the corner for both) is done with the .mp-rz overlay strips + component state, because
+   CSS `resize` is corner-only. The menu itself is unchanged. */
+.model-menu.mp-menu { width: 720px; height: 520px; max-width: 94vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+.mp-menu .mp-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+/* Resize grips: absolutely-positioned CHILDREN of the menu, pinned to its OWN edges, so they sit on the
+   real border in every placement (top-bar, composer, Projects, Agents, model-dock). Invisible until hover
+   (a tinted edge line) but the cursor always shows the resize affordance over the 8px strip. */
+.mp-rz { position: absolute; z-index: 6; }
+.mp-rz-e { top: 10px; bottom: 10px; right: 0; width: 8px; cursor: ew-resize; }
+.mp-rz-w { top: 10px; bottom: 10px; left: 0; width: 8px; cursor: ew-resize; }
+.mp-rz-s { left: 10px; right: 10px; bottom: 0; height: 8px; cursor: ns-resize; }
+.mp-rz-n { left: 10px; right: 10px; top: 0; height: 8px; cursor: ns-resize; }
+.mp-rz-se { right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.mp-rz-sw { left: 0; bottom: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+.mp-rz:hover { background: color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 3px; }
+/* Always-visible corner grips so it's obvious the picker is resizable (the edges also work on hover). */
+.mp-rz-se::after, .mp-rz-sw::after { content: ""; position: absolute; bottom: 4px; width: 9px; height: 9px; opacity: .5; border-bottom: 2px solid var(--text-2); pointer-events: none; }
+.mp-rz-se::after { right: 4px; border-right: 2px solid var(--text-2); }
+.mp-rz-sw::after { left: 4px; border-left: 2px solid var(--text-2); }
+.mp-rz-se:hover::after, .mp-rz-sw:hover::after { opacity: .9; border-color: var(--accent); }
 .model-search {
   width: 100%; background: var(--bg-0); border: 1px solid var(--line);
   color: var(--text-0); border-radius: var(--radius-sm); padding: 9px 11px;

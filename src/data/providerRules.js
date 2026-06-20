@@ -57,3 +57,17 @@ export function isModelFree({ profile, modelId, orFree }) {
   if (c.free === true || c.free === false) return c.free;
   return orFree != null ? orFree : null;                          // unknown/future provider
 }
+
+// Best-guess of a model's core PURPOSE from its name (no universal API exposes this). Lives here, in a
+// plain data module, rather than in ModelPicker.jsx so the picker exports ONLY its component — a mixed
+// component + plain-function export breaks React Fast Refresh and forces a FULL app reload on every edit
+// to the picker (which silently interrupts an in-flight chat/Excel run on the desktop dev build).
+export function classify(id) {
+  const n = (id || "").toLowerCase();
+  if (/cod(er|e)\b|coder|deepseek-coder/.test(n)) return "coding";
+  if (/reason|\br1\b|\bo1\b|\bo3\b|qwq|thinking|think\b/.test(n)) return "reasoning";
+  if (/vision|multimodal|\bvl\b|llava|-v\b/.test(n)) return "vision";
+  if (/embed/.test(n)) return "embeddings";
+  if (/flash|mini|lite|haiku|tiny|small|turbo|nano|\b[1-9]b\b/.test(n)) return "fast";
+  return "general";
+}

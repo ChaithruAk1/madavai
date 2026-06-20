@@ -1,9 +1,8 @@
 import { useMemo, useState, useEffect, Fragment } from "react";
 import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench, Scale, Gauge, Gift, Cpu, Layers, ChevronRight, Code2, Cloud, HardDrive } from "lucide-react";
 import { MODELS, CATEGORIES, freeInfo } from "../data/modelCatalog.js";
-import { classifyProvider, isModelFree } from "../data/providerRules.js";
+import { classifyProvider, isModelFree, classify } from "../data/providerRules.js";
 import { benchFor, AGENTIC_RANK, agenticTone, thinkingTone } from "../data/benchmarks.js";
-import { classify } from "./ModelPicker.jsx";
 import { localCaps } from "../data/localModels.js";
 import { bridge } from "../bridge/index.js";
 
