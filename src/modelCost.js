@@ -45,12 +45,25 @@ export function resolveModelValue(profiles, model, provider) {
   return p ? `${p.id}::${model}` : null;
 }
 
+// Is this model served by OpenRouter? Only OpenRouter models may use the OpenRouter price catalog —
+// a same-named model on another provider has its own (different) pricing, so the catalog never applies to it.
+function isOpenRouter(item) {
+  return /openrouter\.ai/i.test((item && item.baseUrl) || "") || /\bopenrouter\b/i.test((item && item.prov) || "");
+}
+
 export function isModelFree(item = {}, { catalog } = {}) {
-  const cat = catalog && catalog[catalogKey(item)];
-  if (cat) {
-    if (cat.priceIn != null || cat.priceOut != null) return num(cat.priceIn) === 0 && num(cat.priceOut) === 0;
-    if (typeof cat.free === "boolean") return cat.free;
+  // STRICTLY per-provider — one provider's pricing never bleeds into another provider's models.
+  // 1) A free PROVIDER TIER (NVIDIA dev / Madav Starter / Local) is free to the user, full stop.
+  if (item.free === true) return true;
+  if (item.free == null && providerFreeTier({ name: item.prov, baseUrl: item.baseUrl, kind: item.kind, id: profileIdOf(item) })) return true;
+  // 2) OpenRouter ONLY → real per-model price from the OpenRouter catalog (the only catalog we have).
+  if (isOpenRouter(item)) {
+    const cat = catalog && catalog[catalogKey(item)];
+    if (cat) {
+      if (cat.priceIn != null || cat.priceOut != null) return num(cat.priceIn) === 0 && num(cat.priceOut) === 0;
+      if (typeof cat.free === "boolean") return cat.free;
+    }
   }
-  if (typeof item.free === "boolean") return item.free;
-  return providerFreeTier({ name: item.prov, baseUrl: item.baseUrl, kind: item.kind, id: profileIdOf(item) });
+  // 3) Any other billed provider (OpenAI/Anthropic/Together/…), or OpenRouter with no catalog row → paid.
+  return false;
 }

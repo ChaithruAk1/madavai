@@ -271,6 +271,28 @@ function starterQuota(uid) {
 }
 if (STARTER_KEY || STARTER_NIM_KEY) console.log(`[auth-server] Madav Starter active — ${[STARTER_KEY && "OpenRouter :free", STARTER_NIM_KEY && "NVIDIA NIM"].filter(Boolean).join(" + ")}, ${STARTER_DAILY}/user/day.`);
 
+// Per-user MONTHLY cap on the shared (paid) house SEARCH key (SEARCH_MONTHLY_LIMIT; 0/unset = unlimited).
+// PERSISTED in the store (col "searchusage", one record per user: {id, month, count}) so a server
+// restart/deploy never resets the month's usage. Returns true while within the cap (use the paid key +
+// count this search), false once over it (caller falls back to DuckDuckGo; the over-limit search is NOT
+// counted). Fails OPEN on any store error so a hiccup never blocks a user. Admins/creators are exempted by the caller.
+const SEARCH_MONTHLY_LIMIT = Number(process.env.SEARCH_MONTHLY_LIMIT) || 0;
+async function searchQuota(uid, limit) {
+  const month = new Date().toISOString().slice(0, 7); // YYYY-MM
+  try {
+    const col = store.col("searchusage");
+    const rec = await col.get(uid);
+    if (!rec || rec.month !== month) { // new user or a new month → start the month at this search
+      if (rec) await col.update(uid, { month, count: 1 }); else await col.insert({ id: uid, month, count: 1 });
+      return true; // 1 <= limit (caller only calls when limit > 0)
+    }
+    if ((rec.count || 0) >= limit) return false; // monthly cap reached -> DuckDuckGo
+    await col.update(uid, { count: (rec.count || 0) + 1 });
+    return true;
+  } catch { return true; } // store error -> allow the paid search rather than block the user
+}
+if (SEARCH_MONTHLY_LIMIT > 0) console.log(`[auth-server] Paid search cap: ${SEARCH_MONTHLY_LIMIT}/user/month, then DuckDuckGo (admins/creators exempt).`);
+
 // Madav Starter eligibility: TRIAL users only (admins/creators exempt — full access). Paid
 // subscribers AND complimentary accounts are excluded — they must add their own provider key.
 async function starterEligible(pl) {
@@ -1003,7 +1025,17 @@ const server = http.createServer(async (req, res) => {
       } else if (b.searchProvider === "duckduckgo") {
         cfg = {}; // explicit DuckDuckGo — no key
       } else {
-        cfg = { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" };
+        // House (paid) search key with the optional per-user MONTHLY cap. Admins/creators are exempt;
+        // once a normal user passes the cap, fall back to DuckDuckGo (free) for the rest of the month
+        // instead of unlimited paid searches. BYO-key and explicit-DuckDuckGo users never reach here.
+        let usePaid = true;
+        if (SEARCH_MONTHLY_LIMIT > 0) {
+          const u = await store.getUser(pl.sub).catch(() => null);
+          if (!(u && isAdminEmail(u.email))) usePaid = await searchQuota(pl.sub, SEARCH_MONTHLY_LIMIT);
+        }
+        cfg = usePaid
+          ? { provider: process.env.SEARCH_PROVIDER || "auto", tavilyKey: process.env.TAVILY_API_KEY || "", serperKey: process.env.SERPER_API_KEY || "", braveKey: process.env.BRAVE_API_KEY || "" }
+          : {}; // monthly paid quota used up → DuckDuckGo
       }
       const results = await searchWeb(String(b.query), { fetchImpl: fetch, cfg, count: Number(b.count) || 6 });
       return json(res, 200, { url: "search:" + b.query, status: 200, text: formatResults(results, b.query), results });
