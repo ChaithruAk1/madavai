@@ -485,7 +485,7 @@ class SessionManager {
       if (profile.kind === "anthropic") {
         s.sdkSessionId = await runAgentTurn({ sessionId, prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds });
       } else {
-        await runOpenAIAgentTurn({ prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
+        await runOpenAIAgentTurn({ prompt: text, mode: "chat", dataTools: true, cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
       }
     } catch (e) { err = e; }
     s.controller = null;

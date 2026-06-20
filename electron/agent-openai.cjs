@@ -449,7 +449,7 @@ function askUserQuestion(emit, permissions, toolUseId, question, options) {
   });
 }
 
-async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, desktop = null, noShell = false, agentName = "", agentOpts = {} }) {
+async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, permissions, signal, permMode = "default", connectors = [], skillsDir = "", disabledSkills = [], systemOverride = null, globalInstructions = "", allowAskUser = false, roster = [], callAgent = null, browser = null, desktop = null, noShell = false, agentName = "", agentOpts = {}, dataTools = false }) {
   const skills = skillsMgr.discover(skillsDir).filter((s) => !disabledSkills.includes(s.dir)); // skillsDir may be a string or an array of folders
   // ---- Per-PROCESS scoping (read from settings here so callers don't thread it through). ----
   // surface = the process this turn runs in. Agents keep their own gates (full skills + research).
@@ -526,7 +526,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   emit({ kind: "init", data: { model: profile.model, cwd, mode, permissionMode: permMode } });
 
   // Build the tool set. Chat gets skills + connectors only; agent modes also get file/shell tools.
-  let tools = mode === "chat" ? [] : [...TOOLS];
+  let tools = (mode === "chat" && !dataTools) ? [] : [...TOOLS]; // dataTools = a Let's Chat spreadsheet/data turn: give it the file+shell tools (run_bash) so it runs the SAME shared core loop as web's run_python — ONE engine, both surfaces.
   const CT = await _chatTools(); // shared schemas (single source) — desktop keeps only the EXECUTORS for these
   // Hard tool gate: when the caller says no shell (e.g. webhook-triggered headless
   // runs, or an agent whose Shell capability is off), run_bash is neither offered
