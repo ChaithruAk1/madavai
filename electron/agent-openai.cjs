@@ -81,6 +81,7 @@ let _runChatViaCore = null; try { _runChatViaCore = require("./chat-core-runner.
 // SINGLE SOURCE — parseTextToolCalls comes from core/turn-helpers.js (NOT the legacy harness copy) so the
 // desktop core chat path and web share ONE parser. Cached dynamic import (core is ESM).
 let _coreHelpersP = null; const _coreHelpers = () => (_coreHelpersP ||= import("../core/turn-helpers.js"));
+let _chatToolsP = null; const _chatTools = () => (_chatToolsP ||= import("../core/chat-tools.js")); // SINGLE SOURCE for shared chat tool schemas (web_search/web_fetch/create_image/deep_research)
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
 // The discipline layer (PLAN-AGENT-PARITY waves): JSON repair, plan tracking,
@@ -118,6 +119,16 @@ const WEB_SEARCH_TOOL = {
     name: "web_search",
     description: "Search the web and return the top results (title + URL) for a query. Use this for ANYTHING current or beyond your training data — news, recent events, latest releases, current prices, 'today'/'now'/'latest'. Quick and lightweight (no approval needed). For an in-depth multi-source cited report use deep_research instead. After searching, answer from the results and cite the URLs — never claim you cannot access the internet.",
     parameters: { type: "object", properties: { query: { type: "string", description: "the search query" } }, required: ["query"] },
+  },
+};
+
+// Fetch a specific URL the user names — returns its readable text (web_search FINDS pages; this READS one).
+const WEB_FETCH_TOOL = {
+  type: "function",
+  function: {
+    name: "web_fetch",
+    description: "Fetch a specific web page by URL and return its readable text. Use when the user gives you a URL or asks you to open/read/summarize a specific page (use web_search to FIND pages by query). No approval needed. Never say you cannot browse a URL \u2014 call this.",
+    parameters: { type: "object", properties: { url: { type: "string", description: "the http(s) URL to fetch" } }, required: ["url"] },
   },
 };
 
@@ -516,6 +527,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
 
   // Build the tool set. Chat gets skills + connectors only; agent modes also get file/shell tools.
   let tools = mode === "chat" ? [] : [...TOOLS];
+  const CT = await _chatTools(); // shared schemas (single source) — desktop keeps only the EXECUTORS for these
   // Hard tool gate: when the caller says no shell (e.g. webhook-triggered headless
   // runs, or an agent whose Shell capability is off), run_bash is neither offered
   // nor executable — the schema is removed AND execution is refused below.
@@ -542,7 +554,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     // popups on simple chat messages). Keep it for Collaborate / Build / Agents work only.
     if (researchOn && require("./features.cjs").builtIn("research") && (require("./settings.cjs").load().extras || {}).research !== false) {
       research = require("./research.cjs");
-      tools.push(research.RESEARCH_TOOL);
+      tools.push(CT.DEEP_RESEARCH_SCHEMA);
     }
   } catch { research = null; }
   // Wave 2.1 — the visible working plan; Wave 5.1 — parallel scouts (folder missions).
@@ -552,8 +564,8 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   // Gated by the Extras switchboard (settings.extras.imagegen !== false).
   let imagegenOn = true;
   try { imagegenOn = require("./features.cjs").builtIn("imagegen") && (require("./settings.cjs").load().extras || {}).imagegen !== false; } catch {}
-  if (imagegenOn) tools.push(CREATE_IMAGE_TOOL);
-  if (websearchOn) tools.push(WEB_SEARCH_TOOL);
+  if (imagegenOn) tools.push(CT.CREATE_IMAGE_SCHEMA);
+  if (websearchOn) { tools.push(CT.WEB_SEARCH_SCHEMA); tools.push(CT.WEB_FETCH_SCHEMA); }
   // Connector (MCP) tools — the caller (session-manager) already scoped these to the process/
   // surface (plain chat is empty unless the user turned connectors on for chat from its + menu),
   // so just load whatever we were given. Empty list = no per-turn connect = fast.
@@ -590,7 +602,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
     const { parseTextToolCalls: coreParseTextToolCalls } = await _coreHelpers(); // one source, not harness's copy
     return await _runChatViaCore({
       streamChatTools, streamChat, parseTextToolCalls: coreParseTextToolCalls,
-      quickSearch: require("./research.cjs").quickSearch, generateImage: require("./imagegen.cjs").generateImage,
+      quickSearch: require("./research.cjs").quickSearch, quickFetch: require("./research.cjs").quickFetch, generateImage: require("./imagegen.cjs").generateImage,
       runTool, askUserQuestion, isAuto, isBlocked, askPermission,
       emit, permissions, tools, history, profile, mode, caps: { shell: !noShell },
       cwd, skillsDir, mission, agentName, allowAskUser, imagegenOn, permMode, textMode, MAX_STEPS, signal, exactCtx,
@@ -768,6 +780,15 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
         emit({ kind: "tool_use", data: { id: tc.id, name: "web_search", input: { query: String(args.query || "").slice(0, 200) }, auto: true } });
         let out;
         try { out = await require("./research.cjs").quickSearch(String(args.query || ""), signal); } catch { out = "(web search failed)"; }
+        emit({ kind: "tool_result", data: { id: tc.id, output: out } });
+        pushToolResult(tc, String(out).slice(0, 8000));
+        continue;
+      }
+      // Fetch a specific URL the user named — readable page text (quick, no approval). Same backend as web.
+      if (tc.name === "web_fetch") {
+        emit({ kind: "tool_use", data: { id: tc.id, name: "web_fetch", input: { url: String(args.url || "").slice(0, 300) }, auto: true } });
+        let out;
+        try { out = await require("./research.cjs").quickFetch(String(args.url || ""), signal); } catch { out = "(web fetch failed)"; }
         emit({ kind: "tool_result", data: { id: tc.id, output: out } });
         pushToolResult(tc, String(out).slice(0, 8000));
         continue;

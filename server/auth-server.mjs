@@ -10,6 +10,7 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { fetchWithBackoff, makeConcurrencyGate } from "../core/backoff.js";
 import path from "node:path";
 import { URL } from "node:url";
 import { makeStore } from "./store.mjs";
@@ -315,6 +316,11 @@ function serveStatic(res, p) {
     res.end(buf);
   });
 }
+// Concurrency cap for the shared free-tier ("Starter") house key: at most STARTER_MAX_CONCURRENCY
+// upstream calls at once, so many simultaneous free users can't collectively blow the provider's
+// per-minute rate limit. Extra requests wait briefly, then shed load with a 503. (Single instance;
+// multi-instance scale would move this to Redis.)
+const houseGate = makeConcurrencyGate(Number(process.env.STARTER_MAX_CONCURRENCY) || 4, Number(process.env.STARTER_WAIT_MS) || 20000);
 const bearer = (req) => (req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
 const html = (res, body) => { res.setHeader("Content-Security-Policy", HTML_CSP); res.writeHead(200, { "Content-Type": "text/html" }); res.end(`<!doctype html><meta charset=utf-8><body style="font-family:system-ui;background:#0b0d12;color:#e6e9ef;display:grid;place-items:center;height:100vh;text-align:center">${body}</body>`); };
 // Body reader with a size cap: over the limit -> respond 413 and destroy the socket, resolve null
@@ -878,16 +884,19 @@ const server = http.createServer(async (req, res) => {
     }
     // Admins ride without limits; everyone else gets the daily Starter quota.
     if (!(await adminOk(req)) && !starterQuota((pl.sub || pl.uid || pl.email || "anon") + "")) return json(res, 429, { error: `Daily Starter limit reached (${STARTER_DAILY} requests). For unlimited use, add your own API key in Settings → Model configuration — it takes two minutes.` });
+    // Shed load if the shared key is saturated (many concurrent free users) instead of hammering upstream.
+    if (!(await houseGate.acquire())) return json(res, 503, { error: "Madav Starter is busy right now \u2014 lots of people are using the free models. Try again in a few seconds, or add your own API key in Settings \u2192 Model configuration for unlimited use." });
     try {
-      const upstream = await fetch(upstreamUrl, {
+      const upstream = await fetchWithBackoff(fetch, upstreamUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + upstreamKey, ...upstreamHeaders },
         body: payload,
-      });
+      }, { tries: 3 });
       res.writeHead(upstream.status, { "Content-Type": upstream.headers.get("content-type") || "text/event-stream", "Cache-Control": "no-cache" });
       if (upstream.body) { const reader = upstream.body.getReader(); while (true) { const { done, value } = await reader.read(); if (done) break; res.write(Buffer.from(value)); } }
       return res.end();
     } catch (e) { if (!res.headersSent) return json(res, 502, { error: "starter upstream", detail: String((e && e.message) || e) }); try { res.end(); } catch {} }
+    finally { houseGate.release(); }
   }
 
   // POST /proxy/chat (Bearer) — forward a streaming chat to the user's provider. Lets the WEB app reach

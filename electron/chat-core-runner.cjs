@@ -14,11 +14,14 @@ const coreChatAdapter = () => (_adapterP ||= import("../core/chat-adapter.js"));
 
 // The chat-mode per-tool executor: inline chat tools specially, everything else via the generic runTool.
 function makeChatLeafExec(deps) {
-  const { quickSearch, generateImage, runTool, askUserQuestion, emit, permissions,
+  const { quickSearch, quickFetch, generateImage, runTool, askUserQuestion, emit, permissions,
           profile, cwd, skillsDir, mission, agentName, allowAskUser, imagegenOn, permMode, isBlocked, signal } = deps;
   return async function execLeaf(name, args) {
     if (name === "web_search") {
       try { return await quickSearch(String(args.query || ""), signal); } catch { return "(web search failed)"; }
+    }
+    if (name === "web_fetch") {
+      try { return await quickFetch(String(args.url || ""), signal); } catch { return "(web fetch failed)"; }
     }
     if (name === "create_image") {
       if (isBlocked(permMode, name)) return "(blocked: plan mode is read-only)";
@@ -43,7 +46,7 @@ function makeAuthorize(deps) {
     if (isBlocked(permMode, name)) return { decision: "blocked", auto: false };
     // Chat's inline tools (web_search / create_image / ask_user) run AUTO in the legacy loop — no approval
     // popup. Match that (isBlocked above still enforces plan-mode read-only).
-    if (name === "web_search" || name === "create_image" || name === "ask_user") return { decision: "run", auto: true };
+    if (name === "web_search" || name === "web_fetch" || name === "create_image" || name === "ask_user") return { decision: "run", auto: true };
     if (isAuto(permMode, name)) return { decision: "run", auto: true };
     const allowed = await askPermission(emit, permissions, id, name, args);
     return { decision: allowed ? "run" : "denied", auto: false };

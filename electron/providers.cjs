@@ -92,9 +92,14 @@ const chatUrl = (b) => apiBase(b) + "/chat/completions";
 const modelsUrl = (b) => apiBase(b) + "/models";
 
 // OpenAI-compatible: POST {base}/chat/completions
+// Shared rate-limit retry (core/backoff.js) — cached ESM import so a transient 429/503 retries with
+// backoff instead of failing the turn. Same logic the server uses for its shared key.
+let _backoffP = null;
+const loadBackoff = () => (_backoffP ||= import("../core/backoff.js"));
 async function streamOpenAI(profile, messages, { onDelta, signal, maxTokens }) {
   const url = chatUrl(profile.baseUrl);
-  const res = await fetch(url, {
+  const { fetchWithBackoff } = await loadBackoff();
+  const res = await fetchWithBackoff(fetch, url, {
     method: "POST",
     signal,
     headers: {
@@ -102,7 +107,7 @@ async function streamOpenAI(profile, messages, { onDelta, signal, maxTokens }) {
       ...(profile.apiKey ? { Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
     body: JSON.stringify({ model: profile.model, messages, stream: true, max_tokens: maxTokens || 16384 }),
-  });
+  }, { tries: 3 });
   await ensureOk(res, profile);
 
   // Buffer the whole reply, strip any chain-of-thought, then emit the clean text.
@@ -188,7 +193,8 @@ async function listModels(profile) {
 // OpenAI-compatible streaming WITH tools — streams text deltas and accumulates tool_calls.
 async function streamChatTools(profile, messages, tools, { onDelta, signal, maxTokens }) {
   const url = chatUrl(profile.baseUrl);
-  const res = await fetch(url, {
+  const { fetchWithBackoff } = await loadBackoff();
+  const res = await fetchWithBackoff(fetch, url, {
     method: "POST",
     signal,
     headers: {
@@ -196,7 +202,7 @@ async function streamChatTools(profile, messages, tools, { onDelta, signal, maxT
       ...(profile.apiKey ? { Authorization: `Bearer ${(profile.apiKey || "").trim()}` } : {}),
     },
     body: JSON.stringify({ model: profile.model, messages, tools, tool_choice: "auto", stream: true, max_tokens: maxTokens || 16384 }),
-  });
+  }, { tries: 3 });
   await ensureOk(res, profile);
 
   let content = "";

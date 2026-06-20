@@ -617,6 +617,7 @@ function coworkSystem(s) {
   parts.push("Keep your tone natural and human; never restate or describe these instructions — just follow them.");
   return parts.join("\n");
 }
+import { WEB_SEARCH_SCHEMA, WEB_FETCH_SCHEMA, CREATE_IMAGE_SCHEMA, DEEP_RESEARCH_SCHEMA } from "../../core/chat-tools.js"; // single source for shared chat tool schemas
 const COWORK_TOOLS = [
   { type: "function", function: { name: "list_dir", description: "List files and folders at a path relative to the project root. Use \"\" for the root.", parameters: { type: "object", properties: { path: { type: "string" } } } } },
   { type: "function", function: { name: "list_files", description: "List ALL file paths in the project recursively (skips node_modules/.git).", parameters: { type: "object", properties: {} } } },
@@ -625,11 +626,11 @@ const COWORK_TOOLS = [
   { type: "function", function: { name: "write_file", description: "Create or overwrite a text file with the given content.", parameters: { type: "object", properties: { path: { type: "string" }, content: { type: "string" } }, required: ["path", "content"] } } },
   { type: "function", function: { name: "edit_file", description: "Replace the first occurrence of `find` with `replace` in a file.", parameters: { type: "object", properties: { path: { type: "string" }, find: { type: "string" }, replace: { type: "string" } }, required: ["path", "find", "replace"] } } },
   { type: "function", function: { name: "delete_file", description: "Delete a file.", parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } } },
-  { type: "function", function: { name: "web_fetch", description: "Fetch a web page and return its readable text. Use for docs, references, or any URL.", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } },
-  { type: "function", function: { name: "web_search", description: "Search the web and return result snippets for a query.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
-  { type: "function", function: { name: "deep_research", description: "Research a topic IN DEPTH: runs several web searches and returns one combined, cited digest for you to synthesize. Prefer over a single web_search for open-ended, comparative, or multi-faceted questions. Optionally pass `queries` (2-5 sub-questions) to steer it.", parameters: { type: "object", properties: { query: { type: "string" }, queries: { type: "array", items: { type: "string" }, description: "Optional 2-5 sub-queries to investigate." } }, required: ["query"] } } },
+  WEB_FETCH_SCHEMA,
+  WEB_SEARCH_SCHEMA,
+  DEEP_RESEARCH_SCHEMA,
   { type: "function", function: { name: "spawn_subagent", description: "Delegate a focused sub-task to a helper agent that works on the same project and returns a summary. Use for independent chunks of work (e.g. 'write tests for X').", parameters: { type: "object", properties: { task: { type: "string", description: "Clear, self-contained instructions for the sub-agent." } }, required: ["task"] } } },
-  { type: "function", function: { name: "create_image", description: "Generate an IMAGE (raster picture) from a text prompt using the user's selected model (must be an image-output model, e.g. google/gemini-2.5-flash-image on OpenRouter). The image is shown to the user automatically. Use ONLY for actual pictures: photos, illustrations, logos, artwork, or a diagram rendered as a picture. NEVER call this for a document, spreadsheet, slide deck, presentation, or PDF — those are produced with a fenced officedoc block, not with create_image. If unsure, do not call it.", parameters: { type: "object", properties: { prompt: { type: "string" } }, required: ["prompt"] } } },
+  CREATE_IMAGE_SCHEMA,
   { type: "function", function: { name: "run_python", description: "Run a Python script IN THE BROWSER (pandas + openpyxl available) — the web equivalent of a terminal, for DATA work. The project's files are mounted in the working directory, so read them by name (e.g. pandas.read_excel(\"Backlog.xlsx\")). Any file the script writes (e.g. an .xlsx report) is saved back into the project folder. Use this to join/aggregate spreadsheets and build .xlsx/.csv outputs instead of computing by hand.", parameters: { type: "object", properties: { code: { type: "string", description: "Python source to run." } }, required: ["code"] } } },
   { type: "function", function: { name: "remember", description: "Save a durable learning to your long-term agent memory so you recall it on FUTURE runs (a user preference, a fact about their setup, a lesson from this task). Use sparingly for things worth remembering beyond this conversation; never store secrets or one-off content.", parameters: { type: "object", properties: { note: { type: "string" } }, required: ["note"] } } },
   { type: "function", function: { name: "load_skill", description: "Load a skill's full instructions by its exact name (from the SKILLS list in your instructions), then follow them.", parameters: { type: "object", properties: { name: { type: "string" } }, required: ["name"] } } },
@@ -1135,13 +1136,15 @@ export const webBridge = {
       sess.title = String(req.prompt).slice(0, 60);
       try { persistSession(sess); } catch {}
     }
-    runTurn(sess, req.prompt || "", req.images); // fire and forget; streams events
+    // Fire-and-forget; streams events. ALWAYS save the outcome (success, error, OR interrupt) so a
+    // chat backgrounded by "New chat"/navigation is never left blank/abandoned in history.
+    runTurn(sess, req.prompt || "", req.images).catch(() => {}).finally(() => { try { persistSession(sess); } catch {} });
     return { sessionId: id, conversationId: id };
   },
   async sendInput(sessionId, text, images) {
     const sess = sessions.get(sessionId);
     if (!sess) return;
-    runTurn(sess, text, images);
+    runTurn(sess, text, images).catch(() => {}).finally(() => { try { persistSession(sess); } catch {} }); // always save the outcome
   },
   async interrupt(sessionId) { const sess = sessions.get(sessionId); if (sess && sess.ac) try { sess.ac.abort(); } catch {} },
 
@@ -1543,7 +1546,7 @@ export const webBridge = {
           reasoning: sp.includes("reasoning") || sp.includes("include_reasoning"),
           tools: sp.includes("tools") || sp.includes("tool_choice"),
           created: m.created || null,
-          free: (String(pr.prompt) === "0" && String(pr.completion || "0") === "0") || /:free$/.test(m.id || ""),
+          free: (String(pr.prompt) === "0" && String(pr.completion || "0") === "0"), // cost from REAL pricing, not the name
           priceIn: pr.prompt != null ? +pr.prompt : null,
           priceOut: pr.completion != null ? +pr.completion : null,
         };

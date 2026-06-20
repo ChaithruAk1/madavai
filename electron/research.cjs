@@ -250,4 +250,19 @@ async function quickSearch(query, signal, limit = 6) {
   } catch (e) { return "(web search failed: " + String((e && e.message) || e).slice(0, 120) + ")"; }
 }
 
-module.exports = { RESEARCH_TOOL, runDeepResearch, isForbiddenTarget, quickSearch };
+// In-chat web_fetch tool — fetch a specific URL through the SAME server backend (/proxy/fetch with
+// { url }, SSRF-guarded) and return its readable text. ONE backend shared with search; no local fetch
+// path on desktop — identical to web. Never throws.
+async function quickFetch(url, signal) {
+  const u = String(url || "").trim();
+  if (!/^https?:\/\//i.test(u)) return "Provide an http(s) URL to fetch.";
+  try {
+    const cfg = require("./settings.cjs").load();
+    const authBaseUrl = cfg.authBaseUrl || "https://madav.ai";
+    const r = await require("./auth.cjs").apiCall("POST", "/proxy/fetch", { url: u }, authBaseUrl);
+    const text = r && typeof r.text === "string" ? r.text : "";
+    return text.trim() ? text.slice(0, 30000) : "(couldn't read that page)";
+  } catch (e) { return "(web fetch failed: " + String((e && e.message) || e).slice(0, 120) + ")"; }
+}
+
+module.exports = { RESEARCH_TOOL, runDeepResearch, isForbiddenTarget, quickSearch, quickFetch };
