@@ -15,7 +15,8 @@ A web change reaches the live site (madav.ai on Render) ONLY when it is **pushed
 ## SEARCH RULE — ALL web search, in ANY process, goes through the ONE backend (`core/search.js`).
 Every place anything in Madav searches the web — chat `web_search`, Deep Research, agents, teams, scheduled tasks, anything now or later — MUST go through the single shared search backend (`core/search.js`: provider by key → DuckDuckGo fallback) via the server's `/proxy/fetch` house-key endpoint. NEVER add a second search implementation, a direct DuckDuckGo/Google scrape, or a per-surface search path. If a new feature needs search, it calls the existing backend; if the backend needs a capability, add it THERE. (Owner preference, recorded 2026-06-18.)
 
-## RULE 0 — Every fix must work on BOTH web and desktop. Always.
+## ROBUSTNESS RULE — Proactively flag cheap / fragile / stop-gap approaches; recommend the robust path.
+Chaithru prioritizes production-grade robustness over the cheapest path, and wants these surfaced WITHOUT being asked. Whenever Claude notices Madav using a cheap, fragile, or stop-gap approach — scraping a free endpoint instead of a real API (e.g. the old DuckDuckGo search), a known-unreliable dependency, a hardcoded limit, a "good enough" hack, a missing or weak fallback, a security shortcut — Claude must PROACTIVELY raise it: what it is, why it's fragile, and the more robust alternative with its cost/tradeoff. Don't stay silent and don't wait for permission to point it out. (Owner preference, recorded 2026-06-18.)
 Madav ships two surfaces from one repo. A change is **not done** until it is correct on **both** web and desktop, and the deploy step for each is stated. Never fix one and assume the other; they have separate prompt copies, separate CSPs, and separate deploy paths. When you change behaviour, walk the map below and patch every surface it touches.
 
 ## Surface map — what affects what, and how it ships

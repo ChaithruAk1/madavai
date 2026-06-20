@@ -317,7 +317,7 @@ export default function App() {
         replyBufRef.current = "";
         break;
       case "file_output":
-        setTimeline((tl) => tl.some((it) => it.type === "fileout" && it.path === e.data.path) ? tl : [...tl, { type: "fileout", name: e.data.name, path: e.data.path }]);
+        setTimeline((tl) => tl.some((it) => it.type === "fileout" && (e.data.path ? it.path === e.data.path : it.name === e.data.name)) ? tl : [...tl, { type: "fileout", name: e.data.name, path: e.data.path, b64: e.data.b64 }]);
         break;
       case "error":
         setStreaming(false); setBusy(false); setTimeline((tl) => { streamOpen.current = false; return tl; }); // defer close (see assistant_message)

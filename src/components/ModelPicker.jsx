@@ -77,7 +77,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     const v = Math.max(220, Math.min(560, Math.floor(avail)));
     if (Math.abs(v - r.height) > 2) setMaxH(v);
   }, [open, openUp, q, maker, cost, host, caps]);
-  const isFree = (it) => isModelFree(it, { catalog: orCat }); // provider pricing/tier — never the model-name text
+  const isFree = (it) => isModelFree(it); // free/paid is a per-PROVIDER property (never price, never the catalog)
   const makerOf = (it, group) => String(it.prov || (group || "").split(" · ")[0] || "").toLowerCase().trim(); // group by PROVIDER profile (OpenRouter/Anthropic/NIM), not model maker
   const ormOf = (it) => { if (!orCat) return null; const id = it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name; return orCat[id] || null; };
   // Local models have no catalog metadata — fall back to the curated family registry (localModels.js).

@@ -415,7 +415,9 @@ async function umLearn(prof, s, userText, replyText) {
 }
 
 function systemPrompt(s, projectId, query = "") {
-  const parts = [BASE_BEHAVIOR + ARTIFACT_RULE + ANSWER_DIRECT_RULE + officeRulePart(s)];
+  // dataToolsRule is added UNCONDITIONALLY here — the SAME single-source recipe the folder/Project path
+  // uses (compute the values in a script, build the real .xlsx). Same logic, every chat surface.
+  const parts = [BASE_BEHAVIOR + ARTIFACT_RULE + ANSWER_DIRECT_RULE + officeRulePart(s) + dataToolsRule({ shell: false })];
   // Web-search answer guidance — the SAME shared rule desktop uses (core/agent-rules.js SEARCH_ANSWER_RULE),
   // so web's chat answers match desktop's depth. One source, both surfaces. Added when web search is available.
   if (getToken()) parts.push(SEARCH_ANSWER_RULE);
@@ -734,7 +736,7 @@ async function executeTool(name, args, ctx) {
       } catch {}
       const r = await runPython(args.code || "", files);
       const written = [];
-      for (const fl of (r.files || [])) { try { await webfs.writeBinaryB64(fl.name, fl.base64); written.push(fl.name); if (sess) recordCheckpoint(sess, "create", fl.name, "", "(binary file)"); } catch {} }
+      for (const fl of (r.files || [])) { try { await webfs.writeBinaryB64(fl.name, fl.base64); written.push(fl.name); if (sess) { recordCheckpoint(sess, "create", fl.name, "", "(binary file)"); emit(sess.id, "file_output", { name: fl.name, b64: fl.base64 }); } } catch {} }
       let msg = (r.stdout || "").trim();
       if (!r.ok && r.stderr) msg += (msg ? "\n" : "") + "ERROR:\n" + r.stderr.trim();
       if (written.length) msg += (msg ? "\n\n" : "") + "Saved to the folder: " + written.join(", ");
@@ -791,6 +793,10 @@ async function runAgentTurn(sess, text, images, prof) {
 // (non-project, non-team, non-folder) chat. Falls back to a normal streamed reply if the model can't
 // tool-call (and remembers that model so it won't retry-and-fail on every message).
 const CHAT_TOOLS = COWORK_TOOLS.filter((t) => ["web_fetch", "web_search", "create_image", "deep_research", "remember"].includes(t.function.name));
+// UNIFY (owner: same logic on every chat surface): Let's Chat gets the SAME in-browser Python tool the
+// folder/Project path already has, so a spreadsheet/data ask runs the reliable compute-the-values script
+// here too. The only difference vs a Project stays the working area (scratch + Download vs a folder).
+const RUN_PYTHON_TOOL = COWORK_TOOLS.find((t) => t.function.name === "run_python");
 const modelKey = (prof) => (prof && (prof.baseUrl || "") + "::" + (prof.model || "")) || "";
 // Models that DEFINITIVELY rejected tool-calling -> use plain chat. TTL'd, and recorded ONLY on a
 // clear "tools unsupported" error (never a transient network/rate error) so a single hiccup can't
@@ -912,7 +918,7 @@ async function runChatAgentTurn(sess, text, images, prof) {
     const res = await runWebChatTurnViaCore({
       streamChatTools: netFb(streamChatTools), streamChat: netFb(streamChat),
       executeTool, webGenImage, emit, sessId: sess.id, sess,
-      tools: [...activeChatTools(), ...(sess.mcpTools || [])],
+      tools: [...activeChatTools(), ...(RUN_PYTHON_TOOL ? [RUN_PYTHON_TOOL] : []), ...(sess.mcpTools || [])],
       history: sess.messages, profile: prof, signal: sess.ac.signal,
     });
     maybeAutoTitle(sess, text, (res && res.text) || "");

@@ -1,0 +1,30 @@
+{
+  "name": "websearch",
+  "version": "1.0.0",
+  "description": "Embeddable, budget-capped, Google-grade web search for a Node/TS AI engine. Drop-in-ish for the Tavily SDK.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@mozilla/readability": "^0.5.0",
+    "ioredis": "^5.4.1",
+    "jsdom": "^24.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.4"
+  }
+}

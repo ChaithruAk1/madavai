@@ -154,7 +154,7 @@ async function streamAnthropic(profile, messages, { onDelta, signal }) {
   return { text };
 }
 
-function streamChat(profile, messages, opts) {
+function _streamChat(profile, messages, opts) {
   return profile.kind === "anthropic"
     ? streamAnthropic(profile, messages, opts)
     : streamOpenAI(profile, messages, opts);
@@ -191,7 +191,7 @@ async function listModels(profile) {
 }
 
 // OpenAI-compatible streaming WITH tools — streams text deltas and accumulates tool_calls.
-async function streamChatTools(profile, messages, tools, { onDelta, signal, maxTokens }) {
+async function _streamChatTools(profile, messages, tools, { onDelta, signal, maxTokens }) {
   const url = chatUrl(profile.baseUrl);
   const { fetchWithBackoff } = await loadBackoff();
   const res = await fetchWithBackoff(fetch, url, {
@@ -252,6 +252,42 @@ async function ping(profile) {
     clearTimeout(t);
     return true;
   } catch { clearTimeout(t); return false; }
+}
+
+// --- NVIDIA → OpenRouter fallback ------------------------------------------------------------------
+// When a NVIDIA call fails RETRYABLY (busy model / 5xx / model-not-found / out-of-credits) — after the
+// in-call backoff already retried — retry the SAME request ONCE on the user's OpenRouter profile before
+// surfacing the error. Fires only on a pre-stream HTTP status error (e.status set by ensureOk), so a
+// mid-stream break or user abort never double-streams. No-op unless an OpenRouter profile with a key AND
+// a model is configured. The over-the-wire model becomes OpenRouter's; the user gets an answer instead of a 429.
+function _retryableStatus(e) { const st = e && e.status; return st === 429 || st === 503 || st === 502 || st === 500 || st === 404 || st === 402; }
+function _openRouterFallback(profile) {
+  try {
+    if (!/nvidia|\bnim\b|integrate\.api\.nvidia|build\.nvidia/i.test((profile && profile.baseUrl) || "")) return null; // only NVIDIA → OpenRouter
+    const s = require("./settings.cjs").load();
+    const or = Object.values(s.profiles || {}).find((x) => /openrouter\.ai/i.test(x.baseUrl || "") && String(x.apiKey || "").trim() && String(x.model || "").trim());
+    return or ? { baseUrl: or.baseUrl, apiKey: or.apiKey, model: or.model, kind: or.kind || "openai", name: or.name || "OpenRouter" } : null;
+  } catch { return null; }
+}
+async function streamChat(profile, messages, opts = {}) {
+  try { return await _streamChat(profile, messages, opts); }
+  catch (e) {
+    if (e && e.name === "AbortError") throw e;
+    const fb = _retryableStatus(e) ? _openRouterFallback(profile) : null;
+    if (!fb) throw e;
+    try { console.log("[providers] NVIDIA busy (" + (e.status || "") + ") — falling back to OpenRouter (" + fb.model + ")"); opts.onFallback && opts.onFallback(fb); } catch {}
+    return await _streamChat(fb, messages, opts);
+  }
+}
+async function streamChatTools(profile, messages, tools, opts = {}) {
+  try { return await _streamChatTools(profile, messages, tools, opts); }
+  catch (e) {
+    if (e && e.name === "AbortError") throw e;
+    const fb = _retryableStatus(e) ? _openRouterFallback(profile) : null;
+    if (!fb) throw e;
+    try { console.log("[providers] NVIDIA busy (" + (e.status || "") + ") — falling back to OpenRouter (" + fb.model + ")"); opts.onFallback && opts.onFallback(fb); } catch {}
+    return await _streamChatTools(fb, messages, tools, opts);
+  }
 }
 
 module.exports = { streamChat, streamChatTools, listModels, ping, stripReasoning };

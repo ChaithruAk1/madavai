@@ -41,15 +41,27 @@ function UserBody({ text }) {
   );
 }
 
-function FileOutCard({ name, path }) {
+function FileOutCard({ name, path, b64 }) {
   const ext = String(name || "").split(".").pop().toLowerCase();
   const t = (ext === "xlsx" || ext === "xls" || ext === "csv") ? "xlsx" : (ext === "docx" || ext === "doc") ? "docx" : (ext === "pptx" || ext === "ppt") ? "pptx" : ext === "pdf" ? "pdf" : "";
+  // Web download: a run_python-produced file arrives as base64 (Let's Chat has no folder). Decode to a Blob
+  // and save it via the browser — the SAME in-browser download the officedoc cards use. One path, all surfaces.
+  const MIME = { xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation", pdf: "application/pdf" };
+  const downloadB64 = () => {
+    try {
+      const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([u], { type: MIME[t] || "application/octet-stream" }));
+      const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } catch {}
+  };
+  const webDownloadable = isWeb && !!b64;
   return (
     <div className="md-office">
-      <span className="md-office-meta"><b>{name}</b><i>produced by the run · saved in your folder</i></span>
+      <span className="md-office-meta"><b>{name}</b><i>{webDownloadable ? "produced by the run · ready to download" : "produced by the run · saved in your folder"}</i></span>
       <span className={"md-office-ico" + (t ? " md-office-ico--" + t : "")}><OfficeIcon type={t} /></span>
-      {/* Native open/reveal are desktop-only; on web the file already lives in the folder the user picked,
-          so we don't render dead buttons (WEB-VS-DESKTOP P0-2). Desktop branch is unchanged. */}
+      {/* Native open/reveal are desktop-only; on web a Pyodide-produced file downloads in-browser from b64. */}
+      {webDownloadable && <button className="md-office-btn" title="Download the file" onClick={downloadB64}>Download</button>}
       {!isWeb && <button className="md-office-open" title="Show in folder" onClick={() => { try { bridge.showInFolder && bridge.showInFolder(path); } catch {} }}>Folder</button>}
       {!isWeb && <button className="md-office-btn" title="Open the file" onClick={() => { try { bridge.openPath ? bridge.openPath(path) : bridge.openExternal && bridge.openExternal(path); } catch {} }}>{OPEN_LABEL[t] || "Open"}</button>}
     </div>
