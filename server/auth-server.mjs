@@ -1029,35 +1029,19 @@ const server = http.createServer(async (req, res) => {
     let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
     let target = String(b.url || "").trim();
     if (b.query && !target) {
-      // Web SEARCH — the ONE backend (core/search.js): Tavily/Serper/Brave by key → DuckDuckGo fallback,
-      // structured results. Web AND desktop both hit this endpoint, so there is a single search path.
+      // Web SEARCH — ONE path: the custom websearch engine is ALWAYS the backend (Serper → free, global $ budget
+      // cap, rerank) with DuckDuckGo as the built-in free fallback. No provider-picker / bring-your-own-key.
+      // Web AND desktop both hit this endpoint, so it's a single search path for both surfaces.
       const { searchWeb, formatResults } = await import("../core/search.js");
-      // The caller's bring-your-own key (from Search Engine Settings) wins; otherwise the server's house key.
-      let cfg, engine = null;
-      if (b.searchKey && b.searchProvider && b.searchProvider !== "auto") {
-        cfg = { provider: b.searchProvider, tavilyKey: b.searchProvider === "tavily" ? b.searchKey : "", serperKey: b.searchProvider === "serper" ? b.searchKey : "", braveKey: b.searchProvider === "brave" ? b.searchKey : "" };
-      } else if (b.searchProvider === "duckduckgo") {
-        cfg = {}; // explicit DuckDuckGo — no key
-      } else {
-        // House search with the optional per-user MONTHLY cap. Admins/creators are exempt; once a normal user
-        // passes the cap, fall back to DuckDuckGo (free) for the rest of the month. BYO-key and explicit-
-        // DuckDuckGo users never reach here.
-        let usePaid = true;
-        if (SEARCH_MONTHLY_LIMIT > 0) {
-          const u = await store.getUser(pl.sub).catch(() => null);
-          if (!(u && isAdminEmail(u.email))) usePaid = await searchQuota(pl.sub, SEARCH_MONTHLY_LIMIT);
-        }
-        if (usePaid) {
-          // The custom websearch engine IS the house search now — it REPLACES Tavily outright (Serper → free,
-          // global $ budget cap, rerank). No legacy house Tavily/Serper/Brave keys here anymore. If SERP_API_KEY
-          // isn't set the engine is null and the call drops to DuckDuckGo (the free net) — never back to Tavily.
-          engine = await houseSearchEngine();
-          cfg = {};
-        } else {
-          cfg = {}; // monthly paid quota used up → DuckDuckGo
-        }
+      // Per-user MONTHLY cap still applies: admins/creators are exempt; a normal user past the cap drops to
+      // DuckDuckGo (free) for the rest of the month instead of more paid (Serper) searches.
+      let usePaid = true;
+      if (SEARCH_MONTHLY_LIMIT > 0) {
+        const u = await store.getUser(pl.sub).catch(() => null);
+        if (!(u && isAdminEmail(u.email))) usePaid = await searchQuota(pl.sub, SEARCH_MONTHLY_LIMIT);
       }
-      const results = await searchWeb(String(b.query), { fetchImpl: fetch, cfg, count: Number(b.count) || 6, engine });
+      const engine = usePaid ? await houseSearchEngine() : null; // engine under quota; over quota / no SERP_API_KEY → DuckDuckGo
+      const results = await searchWeb(String(b.query), { fetchImpl: fetch, cfg: {}, count: Number(b.count) || 6, engine });
       return json(res, 200, { url: "search:" + b.query, status: 200, text: formatResults(results, b.query), results });
     }
     if (!/^https?:\/\//i.test(target)) return json(res, 400, { error: "http(s) url or query required" });
@@ -1175,6 +1159,15 @@ const server = http.createServer(async (req, res) => {
     let b = {}; try { b = JSON.parse(rawReq || "{}"); } catch {}
     try { await connectorVault().remove(user.id, String(b.id || "")); } catch {}
     return json(res, 200, { ok: true });
+  }
+
+  // GET /admin/search-usage (x-admin-key) -> the custom search engine's spend this month (usage()).
+  if (p === "/admin/search-usage" && req.method === "GET") {
+    if (!(await adminOk(req))) return json(res, 403, { error: "forbidden" });
+    const eng = await houseSearchEngine();
+    if (!eng) return json(res, 200, { configured: false, note: "Search engine not configured (SERP_API_KEY unset) — searches use the free DuckDuckGo tier." });
+    try { return json(res, 200, { configured: true, usage: await eng.usage() }); }
+    catch (e) { return json(res, 500, { error: String((e && e.message) || e).slice(0, 200) }); }
   }
 
   // GET /admin/users (x-admin-key) -> all users with computed status + last-seen.
