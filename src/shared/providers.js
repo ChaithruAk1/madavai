@@ -6,6 +6,8 @@
 // the desktop "bring your own key" model. Some providers don't send CORS headers for browser
 // calls; those will fail in the browser and are best used from the desktop app.
 
+import * as router from "../../core/model-router.js"; // SINGLE SOURCE model routing — same module desktop's providers.cjs uses.
+
 export function stripReasoning(str) {
   if (!str) return str || "";
   let s = String(str).replace(/<think>[\s\S]*?<\/think>/gi, "");
@@ -94,8 +96,21 @@ async function streamAnthropic(profile, messages, { onDelta, signal, proxy }) {
   return { text };
 }
 
-export function streamChat(profile, messages, opts) {
+// Internal single attempt. The PUBLIC streamChat (below) wraps this in the shared router's fallback chain.
+function _streamChat(profile, messages, opts) {
   return profile.kind === "anthropic" ? streamAnthropic(profile, messages, opts) : streamOpenAI(profile, messages, opts);
+}
+// Routing inputs. Browser settings live in the app (not a file), so the web CALLER passes the configured
+// profiles + the user's per-category chains via opts. Absent → candidate list is just the selected model
+// (no fallback) — so nothing changes until chains are configured in Models → Model Routing.
+function _routingInputs(profile, opts) {
+  return { category: (opts && opts.category) || "general", selected: profile, profiles: (opts && opts.profiles) || {}, routing: (opts && opts.routing) || {} };
+}
+const _onReroute = (opts) => ({ to }) => { try { (opts && opts.onFallback) && opts.onFallback(to); } catch {} };
+// PUBLIC: ordered fallback via the SHARED router — identical policy to desktop providers.cjs.
+export function streamChat(profile, messages, opts = {}) {
+  const cands = router.resolveCandidates(_routingInputs(profile, opts));
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: (c) => _streamChat(c, messages, opts), onReroute: _onReroute(opts) });
 }
 
 const ANTHROPIC_MODELS = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest", "claude-3-opus-latest"];
@@ -127,7 +142,7 @@ export async function listModels(profile, opts) {
 
 // OpenAI-compatible streaming WITH tools — streams text deltas and accumulates tool_calls.
 // Optional proxy (same shape as streamChat) to reach providers the browser can't call directly.
-export async function streamChatTools(profile, messages, tools, { onDelta, signal, proxy }) {
+async function _streamChatTools(profile, messages, tools, { onDelta, signal, proxy }) {
   const res = proxy
     ? await fetch(proxy.base + "/proxy/chat", { method: "POST", signal,
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + proxy.token },
@@ -157,6 +172,11 @@ export async function streamChatTools(profile, messages, tools, { onDelta, signa
   const toolCalls = Object.values(calls).filter((c) => c.name);
   toolCalls.forEach((c, i) => { if (!c.id) c.id = "call_" + i + "_" + Math.random().toString(36).slice(2, 7); });
   return { content, toolCalls };
+}
+// PUBLIC: tool-calling with ordered fallback via the SHARED router (same policy as streamChat).
+export async function streamChatTools(profile, messages, tools, opts = {}) {
+  const cands = router.resolveCandidates(_routingInputs(profile, opts));
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: (c) => _streamChatTools(c, messages, tools, opts), onReroute: _onReroute(opts) });
 }
 
 export async function ping(profile) {

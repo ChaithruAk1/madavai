@@ -96,6 +96,8 @@ const modelsUrl = (b) => apiBase(b) + "/models";
 // backoff instead of failing the turn. Same logic the server uses for its shared key.
 let _backoffP = null;
 const loadBackoff = () => (_backoffP ||= import("../core/backoff.js"));
+let _routerP = null; // SINGLE SOURCE model routing (selected-first chain + cooldowns); shared with web's providers.js.
+const loadRouter = () => (_routerP ||= import("../core/model-router.js"));
 async function streamOpenAI(profile, messages, { onDelta, signal, maxTokens }) {
   const url = chatUrl(profile.baseUrl);
   const { fetchWithBackoff } = await loadBackoff();
@@ -254,51 +256,31 @@ async function ping(profile) {
   } catch { clearTimeout(t); return false; }
 }
 
-// --- NVIDIA → OpenRouter fallback ------------------------------------------------------------------
-// When a NVIDIA call fails RETRYABLY (busy model / 5xx / model-not-found / out-of-credits) — after the
-// in-call backoff already retried — retry the SAME request ONCE on the user's OpenRouter profile before
-// surfacing the error. Fires only on a pre-stream HTTP status error (e.status set by ensureOk), so a
-// mid-stream break or user abort never double-streams. No-op unless an OpenRouter profile with a key AND
-// a model is configured. The over-the-wire model becomes OpenRouter's; the user gets an answer instead of a 429.
-// Only fall back to OpenRouter on a GENUINELY transient/busy NVIDIA error. NOT 404 (the model simply
-// isn't hosted on NVIDIA — silently swapping to a different model misleads the user; surface it instead)
-// and NOT 402 (a billing issue, not "busy"). 429 = rate limit, 5xx = server hiccup → those retry.
-function _retryableStatus(e) { const st = e && e.status; return st === 429 || st === 503 || st === 502 || st === 500; }
-function _openRouterFallback(profile) {
-  try {
-    if (!/nvidia|\bnim\b|integrate\.api\.nvidia|build\.nvidia/i.test((profile && profile.baseUrl) || "")) return null; // only NVIDIA → OpenRouter
-    const s = require("./settings.cjs").load();
-    // The user's EXPLICITLY designated fallback wins (settings.fallbackModel = "profileId::modelId") — so a
-    // busy NVIDIA falls back to a model THEY picked (capable), never a weak default. Set it in Settings.
-    if (s.fallbackModel && String(s.fallbackModel).includes("::")) {
-      const i = String(s.fallbackModel).indexOf("::");
-      const p = (s.profiles || {})[String(s.fallbackModel).slice(0, i)];
-      const fm = String(s.fallbackModel).slice(i + 2);
-      if (p && String(p.apiKey || "").trim() && fm) return { baseUrl: p.baseUrl, apiKey: p.apiKey, model: fm, kind: p.kind || "openai", name: p.name || "Fallback" };
-    }
-    const or = Object.values(s.profiles || {}).find((x) => /openrouter\.ai/i.test(x.baseUrl || "") && String(x.apiKey || "").trim() && String(x.model || "").trim());
-    return or ? { baseUrl: or.baseUrl, apiKey: or.apiKey, model: or.model, kind: or.kind || "openai", name: or.name || "OpenRouter" } : null;
-  } catch { return null; }
+// --- Model routing: ordered fallback via the SHARED router ----------------------------------------
+// Every model call runs through core/model-router.js. The user's picked model is slot 0; if it fails
+// RETRYABLY (429 / 5xx / transient) the router cools it down and advances to the next model in the user's
+// category chain (settings.modelRouting), trying each until one answers. A NON-retryable error (bad key,
+// missing model, user abort) is surfaced immediately — never masked by silently swapping models (the old
+// behavior, which dropped users onto a weak model). With no chain configured the candidate list is just the
+// selected model — no fallback — so nothing changes until the user builds chains in Models → Model Routing.
+// ONE fallback policy for the whole app; web's providers.js calls the SAME router. (replaces the old
+// hard-coded NVIDIA→OpenRouter swap + settings.fallbackModel.)
+function _routingInputs(profile, opts) {
+  let s = {}; try { s = require("./settings.cjs").load() || {}; } catch {}
+  return { category: opts.category || "general", selected: profile, profiles: s.profiles || {}, routing: s.modelRouting || {} };
+}
+function _onReroute(opts) {
+  return ({ from, to, error }) => { try { console.log("[router] " + (from.name || from.model) + " failed (" + ((error && error.status) || "") + ") → trying " + (to.name || to.model) + " · " + to.model); opts.onFallback && opts.onFallback(to); } catch {} };
 }
 async function streamChat(profile, messages, opts = {}) {
-  try { return await _streamChat(profile, messages, opts); }
-  catch (e) {
-    if (e && e.name === "AbortError") throw e;
-    const fb = _retryableStatus(e) ? _openRouterFallback(profile) : null;
-    if (!fb) throw e;
-    try { console.log("[providers] NVIDIA busy (" + (e.status || "") + ") — falling back to OpenRouter (" + fb.model + ")"); opts.onFallback && opts.onFallback(fb); } catch {}
-    return await _streamChat(fb, messages, opts);
-  }
+  const router = await loadRouter();
+  const cands = router.resolveCandidates(_routingInputs(profile, opts));
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: (c) => _streamChat(c, messages, opts), onReroute: _onReroute(opts) });
 }
 async function streamChatTools(profile, messages, tools, opts = {}) {
-  try { return await _streamChatTools(profile, messages, tools, opts); }
-  catch (e) {
-    if (e && e.name === "AbortError") throw e;
-    const fb = _retryableStatus(e) ? _openRouterFallback(profile) : null;
-    if (!fb) throw e;
-    try { console.log("[providers] NVIDIA busy (" + (e.status || "") + ") — falling back to OpenRouter (" + fb.model + ")"); opts.onFallback && opts.onFallback(fb); } catch {}
-    return await _streamChatTools(fb, messages, tools, opts);
-  }
+  const router = await loadRouter();
+  const cands = router.resolveCandidates(_routingInputs(profile, opts));
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: (c) => _streamChatTools(c, messages, tools, opts), onReroute: _onReroute(opts) });
 }
 
 module.exports = { streamChat, streamChatTools, listModels, ping, stripReasoning };

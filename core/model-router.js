@@ -24,9 +24,9 @@ export function categoryFor({ mode, hasImage, needsData } = {}) {
 
 // ---- cooldowns (per-process; transient rate-limit memory; resets on restart) ----
 const _cool = new Map(); // key -> expiresAt(ms)
-export function noteFailure(key, retryAfterMs) {
+export function noteFailure(key, retryMs) {
   if (!key) return;
-  const ms = Math.min(Math.max(retryAfterMs || 60000, 20000), 5 * 60000); // clamp 20s .. 5m
+  const ms = Math.min(Math.max(retryMs || 60000, 20000), 5 * 60000); // clamp 20s .. 5m
   _cool.set(key, Date.now() + ms);
 }
 export function onCooldown(key) {
@@ -49,7 +49,7 @@ function resolveRef(ref, profiles) {
   const pid = ref.slice(0, i), model = ref.slice(i + 2);
   const p = (profiles || {})[pid];
   if (!p || !String(p.apiKey || "").trim() || !model) return null;
-  return { key: keyOf(p.baseUrl, model), baseUrl: p.baseUrl, apiKey: p.apiKey, model, kind: p.kind || "openai", name: p.name || pid, ref };
+  return { ...p, model, key: keyOf(p.baseUrl, model), kind: p.kind || "openai", name: p.name || pid, ref }; // spread the FULL profile so the stream call keeps every field, just with this ref's model
 }
 
 // ---- the ordered candidate list for THIS turn ----
@@ -62,8 +62,51 @@ export function resolveCandidates({ category, selected, profiles = {}, routing =
   const seen = new Set();
   const push = (c) => { if (c && c.model && c.baseUrl && !seen.has(c.key) && !onCooldown(c.key)) { seen.add(c.key); out.push(c); } };
   if (selected && selected.model && selected.baseUrl) {
-    push({ key: keyOf(selected.baseUrl, selected.model), baseUrl: selected.baseUrl, apiKey: selected.apiKey, model: selected.model, kind: selected.kind || "openai", name: selected.name || "selected", ref: (selected.id ? selected.id + "::" : "") + selected.model });
+    push({ ...selected, key: keyOf(selected.baseUrl, selected.model), kind: selected.kind || "openai", name: selected.name || "selected", ref: (selected.id ? selected.id + "::" : "") + selected.model });
   }
   for (const ref of ((routing && routing[category]) || [])) push(resolveRef(ref, profiles));
   return out;
+}
+
+// ---- retryable classification (SHARED; HTTP status only, no platform code) ----
+// A reroute fires ONLY on a transient/availability error. NOT 401/403 (auth — the same key fails the same
+// way on a retry), NOT 400/404/422 (the request or model id is wrong — surface it, don't mask it by swapping
+// models), NOT 402 (billing). 429 = rate-limited, 408/409/425 = transient, 5xx = server hiccup → advance.
+export function isRetryable(e) {
+  const st = e && (e.status || e.statusCode);
+  return st === 429 || st === 408 || st === 409 || st === 425 || st === 500 || st === 502 || st === 503 || st === 504;
+}
+// Honor a server-provided Retry-After (seconds or HTTP-date) when present; else null → caller's default cooldown.
+export function retryAfterMs(e) {
+  try {
+    const hdr = e && (e.retryAfter || (e.headers && (typeof e.headers.get === "function" ? e.headers.get("retry-after") : e.headers["retry-after"])));
+    if (hdr == null || hdr === "") return null;
+    const secs = Number(hdr); if (Number.isFinite(secs)) return Math.max(0, secs * 1000);
+    const when = Date.parse(hdr); if (Number.isFinite(when)) return Math.max(0, when - Date.now());
+  } catch {}
+  return null;
+}
+
+// ---- the fallback loop (SINGLE SOURCE; the platform supplies `attempt` = its real stream call) ----
+// Tries candidates in order. On a RETRYABLE failure: cool the failed model down and advance to the next.
+// On a NON-retryable failure (auth / bad request / user abort): throw immediately — walking the chain can't
+// help. Returns whatever `attempt` returns (the platform's stream handle). `onReroute({from,to,error})`
+// fires each time we move to the next model, so the UI can show "X was busy → answered with Y".
+export async function runChain({ candidates, attempt, onReroute } = {}) {
+  const list = (candidates || []).filter((c) => c && c.model && c.baseUrl);
+  if (!list.length) throw new Error("model-router: no usable model candidates");
+  let lastErr;
+  for (let i = 0; i < list.length; i++) {
+    const c = list[i];
+    try {
+      return await attempt(c, i);
+    } catch (e) {
+      if (e && e.name === "AbortError") throw e;     // user navigated away / stopped — never reroute
+      if (!isRetryable(e)) throw e;                  // wrong key/model/request — surface, don't mask
+      noteFailure(c.key, retryAfterMs(e));           // cool this one down so we don't re-hit it this turn
+      lastErr = e;
+      if (i + 1 < list.length && typeof onReroute === "function") { try { onReroute({ from: c, to: list[i + 1], error: e }); } catch {} }
+    }
+  }
+  throw lastErr;                                      // whole chain exhausted — surface the last failure
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { categoryFor, resolveCandidates, noteFailure, onCooldown, clearCooldowns } from "../../core/model-router.js";
+import { categoryFor, resolveCandidates, noteFailure, onCooldown, clearCooldowns, isRetryable, retryAfterMs, runChain } from "../../core/model-router.js";
 
 // SINGLE SOURCE model routing (Phase 1, manual). Picker selection is always primary; the category chain
 // is the ordered fallback; cooldowns stop a just-failed model being re-hit. Same module, desktop + web.
@@ -48,5 +48,52 @@ describe("core/model-router — resolveCandidates (selected-first, chain fallbac
     const c1 = resolveCandidates({ category: "general", selected, profiles, routing });
     expect(c1[0].model).toBe("meta/llama-3.3-70b"); // selected skipped while cooling down
     expect(onCooldown(c0[0].key)).toBe(true);
+  });
+});
+
+const httpErr = (status) => Object.assign(new Error("http " + status), { status });
+
+describe("core/model-router — isRetryable (transient/availability only)", () => {
+  it("429 / 408 / 409 / 425 / 5xx → retryable (advance to the next model)", () => {
+    [429, 408, 409, 425, 500, 502, 503, 504].forEach((s) => expect(isRetryable(httpErr(s))).toBe(true));
+  });
+  it("auth / bad-request / not-found / billing → NOT retryable (surface, never mask with a model-swap)", () => {
+    [400, 401, 403, 404, 422, 402].forEach((s) => expect(isRetryable(httpErr(s))).toBe(false));
+    expect(isRetryable(new Error("network"))).toBe(false);
+  });
+});
+
+describe("core/model-router — retryAfterMs (honor server Retry-After)", () => {
+  it("a seconds value → milliseconds", () => expect(retryAfterMs({ headers: { "retry-after": "2" } })).toBe(2000));
+  it("no header → null (caller falls back to the default cooldown)", () => expect(retryAfterMs({})).toBe(null));
+});
+
+describe("core/model-router — runChain (the ONE shared fallback loop)", () => {
+  beforeEach(() => clearCooldowns());
+  const list = [{ key: "a", baseUrl: "u", model: "A" }, { key: "b", baseUrl: "u", model: "B" }];
+  it("returns the first success and does not try the rest", async () => {
+    const seen = [];
+    const r = await runChain({ candidates: list, attempt: (c) => { seen.push(c.model); return "ok-" + c.model; } });
+    expect(r).toBe("ok-A"); expect(seen).toEqual(["A"]);
+  });
+  it("advances on a retryable failure, fires onReroute, and cools the failed model down", async () => {
+    const seen = [], reroutes = [];
+    const r = await runChain({ candidates: list, attempt: (c) => { seen.push(c.model); if (c.model === "A") throw httpErr(429); return "ok-" + c.model; }, onReroute: (e) => reroutes.push(e.from.model + ">" + e.to.model) });
+    expect(r).toBe("ok-B"); expect(seen).toEqual(["A", "B"]); expect(reroutes).toEqual(["A>B"]); expect(onCooldown("a")).toBe(true);
+  });
+  it("a non-retryable failure throws immediately — no model-swap masking", async () => {
+    const seen = [];
+    await expect(runChain({ candidates: list, attempt: (c) => { seen.push(c.model); throw httpErr(404); } })).rejects.toMatchObject({ status: 404 });
+    expect(seen).toEqual(["A"]);
+  });
+  it("a user abort throws immediately and never reroutes", async () => {
+    const seen = [];
+    await expect(runChain({ candidates: list, attempt: (c) => { seen.push(c.model); throw Object.assign(new Error("abort"), { name: "AbortError" }); } })).rejects.toMatchObject({ name: "AbortError" });
+    expect(seen).toEqual(["A"]);
+  });
+  it("throws the last error once the whole chain is exhausted", async () => {
+    const seen = [];
+    await expect(runChain({ candidates: list, attempt: (c) => { seen.push(c.model); throw httpErr(503); } })).rejects.toMatchObject({ status: 503 });
+    expect(seen).toEqual(["A", "B"]);
   });
 });
