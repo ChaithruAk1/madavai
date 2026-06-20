@@ -1830,7 +1830,10 @@ textarea.model-search { line-height: 1.5; }
 /* Blueprint's pinned-model picker: the default menu is right-anchored (fine in top bars),
    but here the trigger sits at the pane's LEFT edge — so anchor left and open upward,
    sized to the pane, or the 480px menu clips outside the pane. */
-.ags-bp .model-menu { left: 0; right: auto; top: auto; bottom: 44px; width: min(460px, 42vw) !important; max-height: min(440px, 62vh) !important; }
+/* Agent Studio blueprint picker: a smaller default footprint. NO !important on width/max-height — that
+   blocked the user's drag-resize (React inline styles can't override !important). Source order already makes
+   this win over .mp-menu's 720x520 default at rest; once the user resizes, the inline size takes over. */
+.ags-bp .model-menu { left: 0; right: auto; top: auto; bottom: 44px; width: min(460px, 42vw); max-height: min(440px, 62vh); }
 .ags-bp-tools { display: flex; flex-wrap: wrap; gap: 6px; }
 .ags-bp-tool { cursor: pointer; background: var(--bg-1); }
 .ags-bp-tool.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-weak); }

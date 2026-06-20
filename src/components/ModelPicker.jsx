@@ -45,13 +45,10 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const [openUp, setOpenUp] = useState(false); // bottom half of the screen → the menu opens upward
   const [maxH, setMaxH] = useState(520); // measured height cap so the menu never overruns the window (set after render)
   const menuRef = useRef(null);
-  // Per-edge resize that works in EVERY placement (top-bar, composer, Projects, Agents, model-dock — each
-  // anchors the menu differently). The handles are CHILDREN of the menu (CSS-pinned to its real edges), and
-  // on drag we switch the menu to position:fixed at its current on-screen rect, so left/right/top/bottom
-  // ALL resize correctly regardless of how it was originally anchored. `box` = live {x,y,w,h}; null = default.
-  // Resize changes ONLY the size. The menu keeps its existing on-screen anchor (top-bar, composer, Projects,
-  // Agents…), so it stays exactly where it opened and grows/shrinks in place — it never moves across the
-  // screen. `box` = the user's chosen {w,h}; null = the CSS default 720x520.
+  // Per-edge resize that works in EVERY placement (top-bar, composer, Projects, Agents, model-dock). The
+  // handles are CHILDREN of the menu (CSS-pinned to its real edges), so they sit on the real border wherever
+  // the menu is anchored. Resize changes ONLY the size — the menu keeps its on-screen anchor, so it grows and
+  // shrinks in place and never drifts across the screen. `box` = the user's chosen {w,h}; null = default 720x520.
   const [box, setBox] = useState(null);
   useEffect(() => { if (!open) setBox(null); }, [open]); // each reopen starts at the default size
   const startResize = (dir) => (e) => {
@@ -73,6 +70,15 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); document.body.style.userSelect = ""; };
     document.addEventListener("mousemove", move); document.addEventListener("mouseup", up); document.body.style.userSelect = "none";
   };
+  // CORE DESIGN: apply the resize with !important straight from the shared picker, so the user's size wins
+  // over ANY placement's CSS (Agent Studio pins its picker size; future screens may too). Drag-resize is
+  // therefore a guaranteed behavior of the ONE shared ModelPicker — identical on every screen, web + desktop,
+  // with no per-screen CSS patch ever needed. (React inline styles can't carry !important, so we set it here.)
+  useLayoutEffect(() => {
+    const el = menuRef.current; if (!el) return;
+    if (box) { el.style.setProperty("width", box.w + "px", "important"); el.style.setProperty("height", box.h + "px", "important"); el.style.setProperty("max-width", "none", "important"); el.style.setProperty("max-height", "none", "important"); }
+    else { ["width", "height", "max-width", "max-height"].forEach((p) => el.style.removeProperty(p)); }
+  }, [box, open]);
   const measure = () => { // choose the open direction from the trigger's position in the window
     try { const r = ref.current && ref.current.getBoundingClientRect(); setOpenUp(!!r && r.top > window.innerHeight * 0.55); } catch {}
   };
@@ -181,7 +187,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
         </button>
       )}
       {open && (
-        <div ref={menuRef} className="model-menu mp-menu" style={{ ...(openUp ? { top: "auto", bottom: 46 } : {}), ...(box ? { width: box.w, height: box.h } : {}) }}>
+        <div ref={menuRef} className="model-menu mp-menu" style={openUp ? { top: "auto", bottom: 46 } : undefined}>
           {/* Header — fixed at the top; only the model list below it scrolls (flex column layout). */}
           <div className="mp-head" style={{ flex: "none", background: "var(--bg-1)", borderBottom: "1px solid var(--line)", paddingBottom: 8, marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
