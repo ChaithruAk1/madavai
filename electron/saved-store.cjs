@@ -1,17 +1,27 @@
 // Personal "Saved" library — interesting Madav responses the user bookmarks.
 // One JSON file in userData. Each item:
 //   { id, text, question, meta:{model,provider}, convId, mode, note, tags:[], createdAt }
-const { app } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
+
+// Resolve Electron's userData dir. DEFENSIVE: outside a running Electron app — headless, or unit
+// tests where `electron` is stubbed and app.getPath may be unavailable — calling it would throw and
+// every save would silently vanish. Fall back to a temp dir so the store still round-trips anywhere.
+let _app = null;
+try { _app = require("electron").app || null; } catch {}
+function userData() {
+  try { if (_app && typeof _app.getPath === "function") return _app.getPath("userData"); } catch {}
+  return path.join(os.tmpdir(), "madav-test");
+}
 
 const rand = (p) => p + Math.random().toString(36).slice(2, 9);
 try {
-  const legacy = path.join(app.getPath("userData"), ("brain" + "edge") + "-saved.json");
-  const nf = path.join(app.getPath("userData"), "madav-saved.json");
+  const legacy = path.join(userData(), ("brain" + "edge") + "-saved.json");
+  const nf = path.join(userData(), "madav-saved.json");
   if (!fs.existsSync(nf) && fs.existsSync(legacy)) fs.renameSync(legacy, nf);
 } catch {}
-const file = () => path.join(app.getPath("userData"), "madav-saved.json");
+const file = () => path.join(userData(), "madav-saved.json");
 
 function load() {
   try { return JSON.parse(fs.readFileSync(file(), "utf8")); } catch { return []; }
