@@ -1185,7 +1185,7 @@ export default function App() {
                     ) : (
                       <div className="hero-greet"><MadavMark size={44} /><h1 className="greeting">{greeting}</h1></div>
                     )}
-                    <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} permissionMode={permissionMode} onPermissionChange={changePermission} />
+                    <Composer mode={mode} busy={busy || streaming || !!(soloRun && !soloRun.finished) || !!(teamRun && !teamRun.finished)} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {modelRow}
                   </div>
                 </div>
@@ -1310,7 +1310,7 @@ export default function App() {
                       )}
                     </div>
                   </div>
-                  <Composer mode={mode} busy={busy} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} />
+                  <Composer mode={mode} busy={busy || streaming || !!(soloRun && !soloRun.finished) || !!(teamRun && !teamRun.finished)} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} />
                   {modelRow}
                 </>
               )}
