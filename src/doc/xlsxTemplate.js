@@ -258,22 +258,48 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
   }
 
   // ---- resolve charts ----
+  // GLOBAL column index (by key AND header, case-insensitive) -> { sheet, letter }, so a chart declared on
+  // a dashboard/Summary sheet still binds to its data columns wherever they live (cross-sheet). Without this,
+  // a chart that references the projection from a Summary sheet silently dropped ("charts left out").
+  const colIndex = {};
+  for (const sh2 of sheets) {
+    const nm = sh2._name, map = colKeyLetter[nm] || {};
+    for (const key of Object.keys(map)) { const lk = String(key).toLowerCase(); if (!colIndex[lk]) colIndex[lk] = { sheet: nm, letter: map[key] }; }
+    if (Array.isArray(sh2.columns)) for (const c of sh2.columns) { const L = map[c.key]; if (!L) continue; const h = String(c.header || "").toLowerCase(); if (h && !colIndex[h]) colIndex[h] = { sheet: nm, letter: L }; }
+  }
+  const findCol = (ref) => (ref == null ? null : colIndex[String(ref).toLowerCase()] || null);
   const charts = [];
   for (const { sheet, def } of chartsRaw) {
     try {
-      let categories = null; const series = [];
-      if (def.x === "periods" && periodCols[sheet]) {
-        const cols = periodCols[sheet]; const hdr = periodHdrRow[sheet];
-        categories = `${colLetters(cols[0])}${hdr}:${colLetters(cols[cols.length - 1])}${hdr}`;
-        for (const s of (def.series || [])) { const row = metricRow[sheet][s.metric]; if (!row) continue; series.push({ name: s.name || s.metric, values: `${colLetters(cols[0])}${row}:${colLetters(cols[cols.length - 1])}${row}` }); }
-      } else if (def.x && colKeyLetter[sheet][def.x]) {
-        const ds = tableStart[sheet]; const rows = tableRowCount[sheet] || 0; const L = colKeyLetter[sheet][def.x];
-        categories = `${L}${ds}:${L}${ds + rows - 1}`;
-        for (const s of (def.series || [])) { const CL = colKeyLetter[sheet][s.col]; if (!CL) continue; series.push({ name: s.name || s.col, values: `${CL}${ds}:${CL}${ds + rows - 1}` }); }
+      if (def.x === "periods" && periodCols[sheet]) {   // legacy metrics path (values specs use columns)
+        const cols = periodCols[sheet], hdr = periodHdrRow[sheet], ser0 = [];
+        const cats0 = `${sheet}!${colLetters(cols[0])}${hdr}:${colLetters(cols[cols.length - 1])}${hdr}`;
+        for (const s of (def.series || [])) { const row = metricRow[sheet][s.metric]; if (!row) continue; ser0.push({ name: s.name || s.metric, values: `${sheet}!${colLetters(cols[0])}${row}:${colLetters(cols[cols.length - 1])}${row}` }); }
+        if (ser0.length) charts.push({ sheet, type: def.type || "line", title: def.title || "", categories: cats0, series: ser0, anchor: def.anchor || autoAnchor(sheet), w: def.w, h: def.h });
+        continue;
       }
-      if (categories && series.length) charts.push({ sheet, type: def.type || "line", title: def.title || "", categories, series, anchor: def.anchor || autoAnchor(sheet), w: def.w, h: def.h });
-      else console.warn(`[xlsxTemplate] chart "${def.title || ""}" on ${sheet} dropped \u2014 unresolved ${categories ? "series" : "x/categories"} (x=${def.x}, series=${(def.series || []).length})`);
+      const xc = findCol(def.x);
+      if (!xc) { console.warn(`[xlsxTemplate] chart "${def.title || ""}" dropped \u2014 x column "${def.x}" not found on any sheet`); continue; }
+      const dsheet = xc.sheet, ds = tableStart[dsheet], rows = tableRowCount[dsheet] || 0;
+      if (!ds || rows < 1) { console.warn(`[xlsxTemplate] chart "${def.title || ""}" dropped \u2014 data sheet "${dsheet}" has no rows`); continue; }
+      const categories = `${dsheet}!${xc.letter}${ds}:${xc.letter}${ds + rows - 1}`;
+      const series = [];
+      for (const s of (def.series || [])) {
+        const sc = findCol(s.col != null ? s.col : s.metric);
+        if (!sc || sc.sheet !== dsheet) continue;        // every series must live on the same data sheet as x
+        series.push({ name: s.name || s.col || s.metric, values: `${dsheet}!${sc.letter}${ds}:${sc.letter}${ds + rows - 1}` });
+      }
+      if (series.length) charts.push({ sheet, type: def.type || "line", title: def.title || "", categories, series, anchor: def.anchor || autoAnchor(sheet), w: def.w, h: def.h });
+      else console.warn(`[xlsxTemplate] chart "${def.title || ""}" dropped \u2014 no series columns resolved (series=${(def.series || []).length})`);
     } catch (e) { console.warn("[xlsxTemplate] chart resolve error:", (e && e.message) || e); }
+  }
+  // Put EVERY chart on ONE dedicated "Charts" dashboard sheet in a 2-up grid — consistent placement, no
+  // overlap with data, independent of which sheet the model declared a chart on. The series/category refs
+  // are already fully-qualified (cross-sheet), so each chart binds to its data wherever it lives.
+  if (charts.length) {
+    const cName = "Charts"; const cws = wb.addWorksheet(cName);
+    cws.getCell("A1").value = "Charts"; cws.getCell("A1").font = f({ size: 15, bold: true, color: { argb: ACCENT } }); cws.getRow(1).height = 24;
+    charts.forEach((ch, i) => { const r = Math.floor(i / 2), c = i % 2; ch.sheet = cName; ch.anchor = `${colLetters(2 + c * 9)}${2 + r * 16}`; ch.w = 8; ch.h = 15; });
   }
   function autoAnchor(sheet) {
     if (periodCols[sheet]) return `${colLetters((periodCols[sheet].slice(-1)[0]) + 2)}3`;

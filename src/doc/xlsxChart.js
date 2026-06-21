@@ -7,7 +7,7 @@ import JSZip from "jszip";
 const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const qsheet = (n) => /[^A-Za-z0-9_]/.test(n) ? "'" + String(n).replace(/'/g, "''") + "'" : String(n);
 const absR = (r) => String(r).replace(/([A-Za-z]+)(\d+)/g, "$$$1$$$2"); // A2:A13 -> $A$2:$A$13
-const fullRef = (sheet, range) => qsheet(sheet) + "!" + absR(range);
+const fullRef = (sheet, range) => { const r = String(range), bang = r.indexOf("!"); return bang >= 0 ? qsheet(r.slice(0, bang).replace(/^'|'$/g, "")) + "!" + absR(r.slice(bang + 1)) : qsheet(sheet) + "!" + absR(range); }; // a range may already be sheet-qualified (cross-sheet chart)
 function colNum(letters) { let n = 0; for (const ch of String(letters).toUpperCase()) n = n * 26 + (ch.charCodeAt(0) - 64); return n; }
 function parseAnchor(a) { // 'P2' -> {col,row} 0-based; default size added by caller
   const m = /^([A-Za-z]+)(\d+)$/.exec(String(a || "P2")); const c = m ? colNum(m[1]) - 1 : 15; const r = m ? parseInt(m[2], 10) - 1 : 1; return { col: c, row: r };
