@@ -4,6 +4,7 @@ import { FolderOpen, FolderKanban, Smartphone, Bot, X, Zap, MessageCircleQuestio
 import Sidebar from "./components/Sidebar.jsx";
 import TopNav from "./components/TopNav.jsx";
 import Message from "./components/Message.jsx";
+import { OfficeSaveDir } from "./markdown.jsx";
 import { providerFreeTier, resolveModelValue, isVisionModel, isModelFree } from "./modelCost.js";
 import Composer from "./components/Composer.jsx";
 import PermissionModal from "./components/PermissionModal.jsx";
@@ -1265,7 +1266,7 @@ export default function App() {
                   )}
                   <div className="chat scroll" ref={chatRef}>
                     <div className="chat-inner">
-                      {(() => {
+                      <OfficeSaveDir.Provider value={cwd}>{(() => {
                         // Conversation-first rendering: consecutive routine tool steps
                         // collapse into ONE quiet "worked" strip (expandable); only the
                         // user's words, the agent's words, images and questions stand
@@ -1294,7 +1295,7 @@ export default function App() {
                         });
                         flush();
                         return out;
-                      })()}
+                      })()}</OfficeSaveDir.Provider>
                       {busy && !streaming && (
                         <div className="msg assistant">
                           <div className="avatar" />

@@ -4,7 +4,7 @@
 // output cannot inject markup or scripts. Covers the constructs models actually emit:
 // headings, bold/italic/strikethrough, inline code, fenced code blocks, links,
 // bullet/numbered lists, blockquotes, horizontal rules, tables (basic).
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, createContext, useContext } from "react";
 import { parseOfficeSpec, downloadOffice, buildOfficeBlob } from "./office.js";
 import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
 import { deckPreviewHTML } from "./deck/deckPreview.js";
@@ -76,9 +76,16 @@ export function OfficeIcon({ type, size = 36 }) {
     </svg>
   );
 }
+// A folder-linked room (Project / Collaborate / Agent) sets this to its folder path; an OfficeCard then
+// auto-builds the file and SAVES it into that folder (instead of a download), matching the old script path's
+// "the file lands in the folder" behaviour. Null in Let's Chat → the normal download/open card.
+export const OfficeSaveDir = createContext(null);
+
 function OfficeCard({ code, streaming }) {
-  const [state, setState] = useState(""); // "" | building | done | error:<msg>
+  const saveDir = useContext(OfficeSaveDir);            // non-null in a folder-linked room → save INTO the folder
+  const [state, setState] = useState(""); // "" | building | done | saved | error:<msg>
   const [stuck, setStuck] = useState(false);
+  const [savedPath, setSavedPath] = useState("");
   const parsed = parseOfficeSpec(code, { lenient: !streaming }); // strict while streaming → a partial spec stays a quiet "Preparing…" placeholder instead of flickering a half-built preview
   // Don't hang on "Preparing…" forever: if the content never becomes a valid spec, surface a friendly dead-end.
   useEffect(() => {
@@ -86,6 +93,25 @@ function OfficeCard({ code, streaming }) {
     const id = setTimeout(() => setStuck(true), 6000);
     return () => clearTimeout(id);
   }, [code, !!parsed]);
+  // Folder-linked room: build the file ONCE when the spec is complete and SAVE it into the room's folder
+  // (parity with the old script path). Then the card shows Open / Show-in-folder. Let's Chat (saveDir null)
+  // skips this and keeps the manual Download button below.
+  useEffect(() => {
+    if (!saveDir || !parsed || streaming || savedPath || state === "building") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setState("building");
+        const blob = await buildOfficeBlob(parsed);
+        const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(blob); });
+        const out = (bridge && bridge.saveAndOpen) ? await bridge.saveAndOpen(parsed.name, b64, saveDir) : null;
+        if (cancelled) return;
+        if (out && out.ok) { setSavedPath(out.path || ""); setState("saved"); }
+        else { await downloadOffice(parsed); setState("done"); }            // no desktop bridge (web) → download instead
+      } catch (e) { if (!cancelled) setState("error:" + String((e && e.message) || e).slice(0, 120)); }
+    })();
+    return () => { cancelled = true; };
+  }, [saveDir, !!parsed, streaming]);
   if (!parsed) {
     if (stuck) return (
       <div className="md-office md-office-pending">
@@ -123,12 +149,21 @@ function OfficeCard({ code, streaming }) {
   // Open a live preview in the side panel ("window next to it"). The same spec
   // renders to HTML there; Download still builds the real file.
   const open = () => { try { window.dispatchEvent(new CustomEvent("madav:openoffice", { detail: { code, name: parsed.name, type: parsed.type } })); } catch {} };
+  // Saved into a folder-linked room → Open + Show-in-folder instead of a Download button.
+  if (savedPath) return (
+    <div className="md-office">
+      <span className="md-office-meta" onClick={open} style={{ cursor: "pointer" }} title="Open preview"><b>{parsed.name}</b><i>{OFFICE_LABEL[parsed.type]} · {count} · saved to the folder</i></span>
+      <span className={"md-office-ico md-office-ico--" + parsed.type} onClick={open} style={{ cursor: "pointer" }} title="Open preview"><OfficeIcon type={parsed.type} /></span>
+      <button className="md-office-btn" onClick={() => { try { bridge && bridge.openPath && bridge.openPath(savedPath); } catch {} }}>Open</button>
+      <button className="md-office-open" onClick={() => { try { bridge && bridge.showInFolder && bridge.showInFolder(savedPath); } catch {} }}>Show in folder</button>
+    </div>
+  );
   return (
     <div className="md-office">
       <span className="md-office-meta" onClick={open} style={{ cursor: "pointer" }} title="Open preview"><b>{parsed.name}</b><i>{OFFICE_LABEL[parsed.type]} · {count} · built on your device</i></span>
       <span className={"md-office-ico md-office-ico--" + parsed.type} onClick={open} style={{ cursor: "pointer" }} title="Open preview"><OfficeIcon type={parsed.type} /></span>
       <button className="md-office-btn" disabled={state === "building"} onClick={dl}>
-        {state === "building" ? "Building…" : state === "done" ? "Saved ✓" : (OPEN_LABEL[parsed.type] || "Download")}
+        {state === "building" ? (saveDir ? "Saving…" : "Building…") : state === "done" ? "Saved ✓" : (OPEN_LABEL[parsed.type] || "Download")}
       </button>
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
       {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
