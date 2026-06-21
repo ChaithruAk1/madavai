@@ -975,6 +975,7 @@ class SessionManager {
         const fu = msgs.find((m) => m.role === "user");
         if (fu) conv.title = String(fu.content).slice(0, 48);
       }
+      if (profile && profile.model) { conv.model = profile.model; conv.provider = profile.name; } // remember the model this chat ran with so re-opening restores it (parity with Let's Chat)
       store.saveConversation(conv);
     }
   }
