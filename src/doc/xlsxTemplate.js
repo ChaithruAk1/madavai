@@ -64,7 +64,12 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
         const rr = r + Math.floor(i / 2) * 4;
         ws.mergeCells(`${c1}${rr}:${c2}${rr + 1}`); ws.mergeCells(`${c1}${rr + 2}:${c2}${rr + 2}`);
         const num = ws.getCell(`${c1}${rr}`);
-        pending.push({ sheet: name, cellRef: `${c1}${rr}`, expr: k.ref || k.expr || "0", ctx: { kind: "cell", sheet: name } });
+        // VALUES-FIRST: a KPI tile holds a FINISHED number — write it directly. Only a bracketed [id]
+        // reference (legacy formula spec) goes through the compile pass, where the safety net guards it.
+        const kraw = (k.value != null && k.value !== "") ? k.value : (k.ref != null ? k.ref : k.expr);
+        const kstr = String(kraw == null ? "" : kraw);
+        if (/\[/.test(kstr)) pending.push({ sheet: name, cellRef: `${c1}${rr}`, expr: kstr, ctx: { kind: "cell", sheet: name } });
+        else { const kn = typeof kraw === "number" ? kraw : Number(kstr.replace(/[,$%\s]/g, "")); num.value = Number.isFinite(kn) ? kn : 0; }
         num.numFmt = fmtOf(k.fmt) || FMT.num; num.font = f({ size: 20, bold: true, color: { argb: ACCENT } });
         num.alignment = { horizontal: "center", vertical: "middle" };
         const lab = ws.getCell(`${c1}${rr + 2}`); lab.value = String(k.label || "").toUpperCase();
@@ -223,18 +228,33 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
     if (named[sh] && named[sh][id]) return `${named[sh][id]}`;
     return "#REF!";
   }
+  // SAFETY NET — a formula is safe to write only if, after stripping quoted sheet names, valid cell/range
+  // references, function-call names, numbers and operators, NOTHING is left over. Anything remaining is a
+  // bare label or identifier the model put where a reference belongs (e.g. "CAC:LTV Ratio", "ending_mrr").
+  // Excel rejects the WHOLE workbook for such a formula ("we found a problem with content"), so we refuse
+  // to write it as a formula and the caller falls back to a literal instead — a corrupt file is impossible.
+  function isSafeFormula(s) {
+    let t = String(s == null ? "" : s);
+    if (t === "") return true;
+    t = t.replace(/'[^']*'/g, "Q");                                                                       // quoted sheet names
+    t = t.replace(/(?:[A-Za-z_][\w.]*!|Q!)?\$?[A-Za-z]{1,3}\$?\d{1,7}(?::\$?[A-Za-z]{1,3}\$?\d{1,7})?/g, "R"); // cell/range refs (optional sheet!)
+    t = t.replace(/[A-Za-z][\w.]*\s*\(/g, "(");                                                            // function calls: NAME( -> (
+    t = t.replace(/\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g, "N");                                                  // numbers
+    t = t.replace(/[\sQRN()+\-*/^%,:.;&<>=!$"]/g, "");                                                      // operators / punctuation / placeholders
+    return t.length === 0;                                                                                 // leftover letters/words → unsafe
+  }
   function resolve(expr, ctx) {
     let out = String(expr == null ? "" : expr).replace(/^=/, "").replace(/\[([^\]]+)\]/g, (_, t) => resolveToken(t, ctx));
     // A model can reference an id/sheet/period that does not exist (resolveToken returns #REF! for those).
     // NEVER let #REF!/#NAME?/undefined/NaN reach a saved formula — Excel flags such a workbook as corrupt.
-    // Neutralise to 0 so the file is ALWAYS valid and opens cleanly. (We also count these for validation.)
     if (/#REF!|#NAME\?|\bundefined\b|\bNaN\b/.test(out)) { _unresolved++; out = out.replace(/#REF!|#NAME\?/g, "0").replace(/\bundefined\b|\bNaN\b/g, "0"); }
+    if (!isSafeFormula(out)) { _unresolved++; return null; }   // unsafe → caller writes a literal, never a broken formula
     return out;
   }
   for (const pd of pending) {
     const ws = wsOf[pd.sheet]; const cell = ws.getCell(pd.cellRef);
     const formula = resolve(pd.expr, pd.ctx);
-    cell.value = { formula };
+    cell.value = (formula == null) ? 0 : { formula };   // safety net: an unverifiable formula becomes a safe literal 0
   }
 
   // ---- resolve charts ----
