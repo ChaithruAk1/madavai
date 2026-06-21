@@ -65,4 +65,25 @@ describe("xlsxTemplate — values-only build is bulletproof", () => {
     const withChart = await injectCharts(buf, charts);
     expect(withChart.byteLength).toBeGreaterThan(buf.byteLength); // native-chart injection runs + adds parts
   });
+
+  it("compiles metric relationships into live Excel formulas (the formula-driven path)", () => {
+    const fspec = { type: "xlsx", name: "f.xlsx", sheets: [
+      { name: "Assumptions", title: "Assumptions", inputs: [
+        { id: "start_mrr", label: "Starting MRR", value: 25000, fmt: "usd" },
+        { id: "growth", label: "Monthly Growth", value: 0.05, fmt: "pct" },
+      ] },
+      { name: "Projection", title: "Projection", periods: { count: 3, label: "M%d" }, metrics: [
+        { id: "mrr", label: "MRR", fmt: "usd", firstExpr: "[Assumptions!start_mrr]", expr: "[mrr@-1]*(1+[Assumptions!growth])" },
+      ] },
+      { name: "Summary", title: "Summary", kpis: [{ label: "End MRR", ref: "[Projection!mrr#3]", fmt: "usd" }] },
+    ] };
+    const { wb } = buildTemplateWorkbook(ExcelJS, fspec, {});
+    const pj = wb.getWorksheet("Projection");
+    expect(isFormula(pj.getCell("B4").value)).toBe(true);                      // period-1 MRR is a formula…
+    expect(String(pj.getCell("B4").value.formula)).toContain("Assumptions");   // …referencing the assumption
+    expect(isFormula(pj.getCell("C4").value)).toBe(true);                      // period-2 references the previous period
+    const kpi = wb.getWorksheet("Summary").getCell("B3").value;                // a KPI pulls a metric at a period
+    expect(isFormula(kpi)).toBe(true);
+    expect(String(kpi.formula)).toContain("Projection");
+  });
 });
