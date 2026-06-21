@@ -433,13 +433,16 @@ ipcMain.handle("madav:saveAndOpen", (_e, payload) => {
     if (!SAFE.has(ext)) return { ok: false, error: "unsupported file type" };
     const buf = Buffer.from(String((payload && payload.b64) || ""), "base64");
     if (!buf.length) return { ok: false, error: "empty file" };
-    const dir = app.getPath("downloads");
+    // A folder-linked Project passes its folder as `dir` → the file lands THERE and we reveal it. Plain Let's
+    // Chat passes no dir → Downloads + open in the native app, exactly as before. dir is validated to be a real dir.
+    let dir = app.getPath("downloads"), intoFolder = false;
+    try { const d = payload && payload.dir ? String(payload.dir) : ""; if (d && fs.existsSync(d) && fs.statSync(d).isDirectory()) { dir = d; intoFolder = true; } } catch {}
     const base = name.slice(0, name.length - ext.length - 1);
     let file = path.join(dir, name);
     for (let i = 1; fs.existsSync(file); i++) file = path.join(dir, base + " (" + i + ")." + ext);
     fs.writeFileSync(file, buf);
-    shell.openPath(file);
-    return { ok: true, path: file };
+    if (intoFolder) shell.showItemInFolder(file); else shell.openPath(file);
+    return { ok: true, path: file, inFolder: intoFolder };
   } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
 });
 

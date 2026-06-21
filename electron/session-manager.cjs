@@ -461,17 +461,11 @@ class SessionManager {
     const cfg = settings.load();
     const agentExtras = s.agent && s.agent.tools && (s.agent.tools.connectors || s.agent.tools.skills || s.agent.tools.browser);
     const hasExtras = agentExtras || (cfg.skillsDirs || []).length > 0 || (cfg.connectors || []).some((c) => c.enabled);
-    // Spreadsheet / data requests: CAPABLE models build the workbook as an in-browser officedoc (rich preview
-    // + charts) via the normal chat path + the shared office rule — IDENTICAL execution + output to web. Only
-    // WEAK/small models take the Python file-save SCRIPT path (the protected pipeline they need to produce a
-    // complete, correct multi-sheet .xlsx). ONE shared gate (isDeckCapable) → same behaviour desktop + web.
-    if (cleanImgs(images).length === 0 && (cfg.extras || {}).office !== false) {
-      let _needsData = false;
-      try { const _cr = await coreRules(); _needsData = _cr.needsDataTools(userText); }
-      catch (e) { console.error("[madav] needsDataTools load failed:", (e && e.message) || e); }
-      let _capable = true; try { _capable = require("../shared/office-rules.cjs").isDeckCapable(profile.model || ""); } catch {}
-      if (_needsData && !_capable) return this._chatDataTurn(sessionId, userText, profile, cfg, images);
-    }
+    // Let's Chat = pure GENERATION (prompt -> output): EVERY model (weak + strong) builds office files through
+    // the in-browser officedoc engine via _chatTurn below. The engine is now robust for weak models, so the old
+    // "weak model -> Python file-save script" detour is removed — it only ever wasted a failing attempt before
+    // falling back here anyway. Tasks that must READ a user-provided template/data file live in the folder
+    // surfaces (projects / collaborate / agents), where the script path can open and process real files.
     if (profile.kind !== "anthropic" && hasExtras && cleanImgs(images).length === 0) {
       return this._chatAgentTurn(sessionId, userText, profile, cfg, images);
     }
