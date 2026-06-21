@@ -216,6 +216,15 @@ export async function coreChatTurn({
           }
         } catch { /* keep the original answer on any failure */ }
       }
+      // If stripping the chain-of-thought emptied the answer but the model DID emit a file spec INSIDE its
+      // reasoning (common for weak "thinking" models that monologue, then bury the officedoc/deck block in
+      // <think>), recover just that block so the user still gets the file instead of a dead-end. Pure upside:
+      // only runs when the answer is already empty, and only keeps a recognisable office/deck spec.
+      if (!String(finalText || "").trim()) {
+        const _blocks = String(assistantContent || "").match(/```[\s\S]*?```/g) || [];
+        const _spec = _blocks.find((b) => /```(?:officedoc|deckjs|xlsxjs|docxjs|pdfjs)\b/i.test(b) || /"type"\s*:\s*"(?:xlsx|docx|pptx|pdf)"/.test(b) || /"(?:sheets|slides|sections)"\s*:/.test(b));
+        if (_spec) finalText = _spec;
+      }
       // Never end a turn blank — always show an answer OR a clear reason. Some weak models return an
       // empty final response (no text and no tool call); surface that instead of exiting silently.
       if (!String(finalText || "").trim()) finalText = "The model returned an empty response, so there's no answer to show. Please try again, rephrase, or switch to a more capable model.";
