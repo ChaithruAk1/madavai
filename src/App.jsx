@@ -679,7 +679,7 @@ export default function App() {
     if (sid && runBuffers.current.has(sid)) {
       const running = runBusy.current.get(sid) === true;
       setTimeline(runBuffers.current.get(sid) || []);
-      setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: convMeta.title });
+      setProjectCtx({ projectId: project.id, projectName: project.name, folder: project.folder || null, conversationId: convMeta.id, title: convMeta.title });
       if (running) { sessionRef.current = sid; streamOpen.current = !!runStreamOpen.current.get(sid); setBusy(true); }
       else { sessionRef.current = null; streamOpen.current = false; setBusy(false); }
       return;
@@ -688,7 +688,7 @@ export default function App() {
     const msgs = ((full && full.messages) || []).map((m) => ({ type: "message", role: m.role, text: m.content, meta: m.model ? { model: m.model, provider: m.provider } : undefined, at: m.at }));
     const outs = ((full && full.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path, b64: o.b64 }));
     setTimeline([...msgs, ...outs]);
-    setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });
+    setProjectCtx({ projectId: project.id, projectName: project.name, folder: project.folder || null, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });
     { const mi = convModelInfo(full); applyConvModel(mi.model, mi.provider, (full && full.mode) || "project"); }
     sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
@@ -705,7 +705,7 @@ export default function App() {
   const startProjectChat = async (project, text) => {
     setAgentCtx(null); setTeamCtx(null); setTeamRun(null); // project context is exclusive with agent/team
     const conv = await bridge.createConversation(project.id);
-    setProjectCtx({ projectId: project.id, projectName: project.name, conversationId: conv.id, title: (text || "").slice(0, 48) || "New conversation" });
+    setProjectCtx({ projectId: project.id, projectName: project.name, folder: project.folder || null, conversationId: conv.id, title: (text || "").slice(0, 48) || "New conversation" });
     setTimeline(text ? [{ type: "message", role: "user", text, at: Date.now() }] : []);
     sessionRef.current = null; streamOpen.current = false;
     if (text) {
@@ -1266,7 +1266,7 @@ export default function App() {
                   )}
                   <div className="chat scroll" ref={chatRef}>
                     <div className="chat-inner">
-                      <OfficeSaveDir.Provider value={cwd}>{(() => {
+                      <OfficeSaveDir.Provider value={cwd || (projectCtx && projectCtx.folder) || null}>{(() => {
                         // Conversation-first rendering: consecutive routine tool steps
                         // collapse into ONE quiet "worked" strip (expandable); only the
                         // user's words, the agent's words, images and questions stand
