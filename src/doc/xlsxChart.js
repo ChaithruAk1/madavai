@@ -51,8 +51,11 @@ async function sheetFileMap(z) {
 }
 
 export async function injectCharts(buf, charts) {
-  if (!charts || !charts.length) return buf;
   const z = await JSZip.loadAsync(buf);
+  // Force recalc on open: ExcelJS writes every formula with NO cached value, so without this flag the formula
+  // cells (and any chart bound to them) render blank until the user presses F9 — a complete file looks empty.
+  try { let wx = await z.file("xl/workbook.xml").async("string"); if (!/fullCalcOnLoad/.test(wx)) { wx = /<calcPr\b/.test(wx) ? wx.replace(/<calcPr\b([^>]*?)\/>/, '<calcPr$1 fullCalcOnLoad="1"/>') : wx.replace(/<\/workbook>/, '<calcPr fullCalcOnLoad="1"/></workbook>'); z.file("xl/workbook.xml", wx); } } catch (e) {}
+  if (!charts || !charts.length) return z.generateAsync({ type: "arraybuffer", compression: "DEFLATE" });
   const map = await sheetFileMap(z);
   // group charts by sheet
   const bySheet = {}; for (const c of charts) { if (!map[c.sheet]) continue; (bySheet[c.sheet] = bySheet[c.sheet] || []).push(c); }

@@ -76,10 +76,10 @@ export function OfficeIcon({ type, size = 36 }) {
     </svg>
   );
 }
-function OfficeCard({ code }) {
+function OfficeCard({ code, streaming }) {
   const [state, setState] = useState(""); // "" | building | done | error:<msg>
   const [stuck, setStuck] = useState(false);
-  const parsed = parseOfficeSpec(code);
+  const parsed = parseOfficeSpec(code, { lenient: !streaming }); // strict while streaming → a partial spec stays a quiet "Preparing…" placeholder instead of flickering a half-built preview
   // Don't hang on "Preparing…" forever: if the content never becomes a valid spec, surface a friendly dead-end.
   useEffect(() => {
     if (parsed) { setStuck(false); return; }
@@ -209,15 +209,15 @@ export default function Markdown({ text, streaming }) {
         const _c = buf.join("\n");
         const _isDeckCode = /\bpptx\s*\.\s*addSlide|\bpptx\s*\.\s*(?:ShapeType|ChartType)|\.\s*addSlide\s*\(/.test(_c);
         if (_isDeckCode || (fence[1] === "deckjs" && !/^\s*\{/.test(_c.trim()))) blocks.push(<DeckCard key={key()} code={_c} streaming={streaming} />);
-        else blocks.push(<OfficeCard key={key()} code={_c} />);
+        else blocks.push(<OfficeCard key={key()} code={_c} streaming={streaming} />);
       } else if (FEAT_OFFICE && /"type"\s*:\s*"(?:xlsx|docx|pptx|pdf)"/.test(buf.join("\n")) && !/\bpptx\s*\.\s*addSlide|\.\s*addSlide\s*\(/.test(buf.join("\n"))) {
         // A spreadsheet/Word/PDF spec emitted with the WRONG fence (```xlsx / ```json / untagged) is still
         // a file, never a raw snippet — render it as the downloadable card with Open/Download.
-        blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
+        blocks.push(<OfficeCard key={key()} code={buf.join("\n")} streaming={streaming} />);
       } else if (FEAT_OFFICE && /^\s*\{/.test(buf.join("\n").trim()) && /"(?:sheets|slides|sections)"\s*:/.test(buf.join("\n"))) {
         // A weak model dumped a partial/failed office spec as raw JSON - useless to the user. Route it to the
         // office card: a valid spec becomes the file, an invalid one shows a clean placeholder. Never raw JSON.
-        blocks.push(<OfficeCard key={key()} code={buf.join("\n")} />);
+        blocks.push(<OfficeCard key={key()} code={buf.join("\n")} streaming={streaming} />);
       } else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
       continue;
     }

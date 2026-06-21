@@ -66,6 +66,15 @@ describe("xlsxTemplate — values-only build is bulletproof", () => {
     expect(withChart.byteLength).toBeGreaterThan(buf.byteLength); // native-chart injection runs + adds parts
   });
 
+  it("forces recalc on open (fullCalcOnLoad) so formula cells and charts aren't blank until F9", async () => {
+    const { wb, charts } = buildTemplateWorkbook(ExcelJS, spec, {});
+    let buf = await wb.xlsx.writeBuffer();
+    buf = await injectCharts(buf, charts);
+    const JSZip = (await import("jszip")).default;
+    const wx = await (await JSZip.loadAsync(buf)).file("xl/workbook.xml").async("string");
+    expect(/fullCalcOnLoad="1"/.test(wx)).toBe(true);
+  });
+
   it("compiles metric relationships into live Excel formulas (the formula-driven path)", () => {
     const fspec = { type: "xlsx", name: "f.xlsx", sheets: [
       { name: "Assumptions", title: "Assumptions", inputs: [
@@ -85,5 +94,55 @@ describe("xlsxTemplate — values-only build is bulletproof", () => {
     const kpi = wb.getWorksheet("Summary").getCell("B3").value;                // a KPI pulls a metric at a period
     expect(isFormula(kpi)).toBe(true);
     expect(String(kpi.formula)).toContain("Projection");
+  });
+
+  it("a [ref] dropped into an input value compiles to a formula, never raw text", () => {
+    const s = { type: "xlsx", name: "s.xlsx", sheets: [
+      { name: "Projection", periods: { count: 2, label: "M%d" }, metrics: [{ id: "mrr", label: "MRR", firstExpr: "100", expr: "[mrr@-1]*2" }] },
+      { name: "Summary", inputs: [{ label: "End MRR", value: "[Projection!mrr#2]", fmt: "usd" }] }, // ref placed in an INPUT value
+    ] };
+    const { wb } = buildTemplateWorkbook(ExcelJS, s, {});
+    const cell = wb.getWorksheet("Summary").getCell("B3").value;
+    expect(isFormula(cell)).toBe(true);
+    expect(String(cell.formula)).toContain("Projection");
+  });
+
+  it("resolves a KPI however the model writes the reference — bracketed id, bare id, or raw Sheet!A1", () => {
+    const s = { type: "xlsx", name: "k.xlsx", sheets: [
+      { name: "Assumptions", title: "Assumptions", inputs: [{ id: "arpu", label: "ARPU", value: 490, fmt: "usd" }] },
+      { name: "Summary", title: "Summary", kpis: [
+        { label: "ARPU bracketed", ref: "[Assumptions!arpu]", fmt: "usd" }, // i0 -> B3
+        { label: "ARPU bare", ref: "arpu", fmt: "usd" },                     // i1 -> E3  (no sheet -> cross-sheet search)
+        { label: "ARPU raw A1", ref: "Assumptions!B3", fmt: "usd" },         // i2 -> B7
+      ] },
+    ] };
+    const { wb } = buildTemplateWorkbook(ExcelJS, s, {});
+    const sum = wb.getWorksheet("Summary");
+    expect(isFormula(sum.getCell("B3").value)).toBe(true); // bracketed id resolves
+    expect(isFormula(sum.getCell("E3").value)).toBe(true); // bare id resolves via cross-sheet fallback (no more 0)
+    expect(isFormula(sum.getCell("B7").value)).toBe(true); // raw Sheet!A1 reference resolves
+  });
+
+  it("builds the generic cell-map (A1) format weak models emit — literals + safe formulas, self-refs neutralised, opens clean", async () => {
+    const cellSpec = { type: "xlsx", name: "c.xlsx", sheets: [
+      { name: "Inputs", cells: {
+        "A1": "=BOLD(20) SaaS Model",   // weak-model pseudo-style directive -> bold text, not a broken formula
+        "A3": "Starting MRR", "B3": 12000,
+        "B4": "=B3*1.1",                // a safe formula -> kept
+        "C8": "=C8+B6",                 // self-reference (circular) -> neutralised
+        "A9": "=",                      // placeholder junk -> blank
+      } },
+    ] };
+    const { wb } = buildTemplateWorkbook(ExcelJS, cellSpec, {});
+    const ws = wb.getWorksheet("Inputs");
+    expect(ws.getCell("B3").value).toBe(12000);                          // literal kept
+    expect(isFormula(ws.getCell("B4").value)).toBe(true);               // safe formula kept
+    expect(String(ws.getCell("B4").value.formula)).toBe("B3*1.1");
+    expect(isFormula(ws.getCell("C8").value)).toBe(false);             // circular self-ref is NOT written as a formula…
+    expect(ws.getCell("C8").value).toBe(0);                             // …it becomes a safe literal (no circular-ref error)
+    expect(String(ws.getCell("A1").value)).toContain("SaaS Model");    // BOLD(20) stripped -> plain bold text
+    const buf = await wb.xlsx.writeBuffer();
+    const wb2 = new ExcelJS.Workbook(); await wb2.xlsx.load(buf);       // throws if malformed -> proves the cell-map build can't corrupt
+    expect(wb2.getWorksheet("Inputs").getCell("B3").value).toBe(12000);
   });
 });

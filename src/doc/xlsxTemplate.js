@@ -67,9 +67,14 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
         // VALUES-FIRST: a KPI tile holds a FINISHED number — write it directly. Only a bracketed [id]
         // reference (legacy formula spec) goes through the compile pass, where the safety net guards it.
         const kraw = (k.value != null && k.value !== "") ? k.value : (k.ref != null ? k.ref : k.expr);
-        const kstr = String(kraw == null ? "" : kraw);
-        if (/\[/.test(kstr)) pending.push({ sheet: name, cellRef: `${c1}${rr}`, expr: kstr, ctx: { kind: "cell", sheet: name } });
-        else { const kn = typeof kraw === "number" ? kraw : Number(kstr.replace(/[,$%\s]/g, "")); num.value = Number.isFinite(kn) ? kn : 0; }
+        const kstr = String(kraw == null ? "" : kraw).trim();
+        const kNum = typeof kraw === "number" ? kraw : Number(kstr.replace(/[,$%\s]/g, ""));
+        // A KPI holds a finished number OR a reference. A plain number → literal; ANYTHING with a letter/!/=/[
+        // (a [id] ref, a raw Sheet!A1 ref, or a formula) → compile pass, so the model can express a KPI however it
+        // likes and a simple "Starting MRR" tile resolves instead of falling through to 0. Safety net still guards it.
+        if (kstr !== "" && Number.isFinite(kNum) && !/[A-Za-z!=[]/.test(kstr)) num.value = kNum;
+        else if (kstr !== "") pending.push({ sheet: name, cellRef: `${c1}${rr}`, expr: kstr, ctx: { kind: "cell", sheet: name } });
+        else num.value = 0;
         num.numFmt = fmtOf(k.fmt) || FMT.num; num.font = f({ size: 20, bold: true, color: { argb: ACCENT } });
         num.alignment = { horizontal: "center", vertical: "middle" };
         const lab = ws.getCell(`${c1}${rr + 2}`); lab.value = String(k.label || "").toUpperCase();
@@ -96,8 +101,9 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
           ws.getRow(r).height = 18; r++;
         }
         ws.getCell(`A${r}`).value = String(inp.label || ""); ws.getCell(`A${r}`).font = f();
-        const vc = ws.getCell(`B${r}`); vc.value = inp.value; vc.font = f({ color: { argb: PAL.blue } });
+        const vc = ws.getCell(`B${r}`); vc.font = f({ color: { argb: PAL.blue } });
         vc.alignment = { horizontal: "right" }; const ff = fmtOf(inp.fmt); if (ff) vc.numFmt = ff;
+        { const _iv = String(inp.value == null ? "" : inp.value); if (/\[/.test(_iv)) pending.push({ sheet: name, cellRef: `B${r}`, expr: _iv, ctx: { kind: "cell", sheet: name } }); else vc.value = inp.value; } // a [ref] in an input value compiles to a formula (e.g. a Summary that used inputs for ref-pulls), never raw text
         if (inp.note) { ws.getCell(`C${r}`).value = String(inp.note); ws.getCell(`C${r}`).font = f({ size: 9, italic: true, color: { argb: PAL.gray } }); }
         if (inp.id) named[name][inp.id] = `$B$${r}`;
         ws.getRow(r).height = 16; r++;
@@ -171,6 +177,7 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
           cell.font = f({ color: { argb: c.role === "link" ? PAL.green : PAL.black } }); cell.alignment = { horizontal: ci === 0 ? "left" : "right" };
           const v = rowObj[c.key];
           if (v && typeof v === "object" && v.expr != null) pending.push({ sheet: name, cellRef: `${L}${rr}`, expr: v.expr, ctx: { kind: "table", sheet: name, rowIndex: ri, dataStart } });
+          else if (typeof v === "string" && /\[/.test(v)) pending.push({ sheet: name, cellRef: `${L}${rr}`, expr: v, ctx: { kind: "table", sheet: name, rowIndex: ri, dataStart } }); // a bare "[ref]" string in a row cell -> formula too, never raw text
           else cell.value = v == null ? null : v;
           cell.border = allB();
           if (ri % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PAL.band } };
@@ -179,6 +186,31 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
       });
       ws.getColumn(1).width = 14; for (let ci = 1; ci < cols.length; ci++) ws.getColumn(1 + ci).width = 14;
       widthUsed = Math.max(widthUsed, cols.length);
+    }
+
+    // generic cell map (A1 -> value/formula) — the format weak models fall back to when they ignore the
+    // structured spec. Build it directly so their output is still a real file, never a raw "snippet". A
+    // "=formula" passes the same safety net; a self-referencing formula (C8 "=C8+B6") is neutralised so
+    // Excel never opens with a circular-reference error.
+    if (sh.cells && typeof sh.cells === "object" && !Array.isArray(sh.cells)) {
+      let maxCol = 1;
+      for (const addr of Object.keys(sh.cells)) {
+        const am = /^([A-Za-z]{1,3})(\d{1,7})$/.exec(String(addr).trim()); if (!am) continue;
+        const col = am[1].toUpperCase(), rowN = am[2];
+        const colN = [...col].reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0); if (colN > maxCol) maxCol = colN;
+        const cell = ws.getCell(col + rowN); const raw = sh.cells[addr];
+        if (typeof raw === "string" && raw[0] === "=") {
+          const fx = raw.slice(1).trim();
+          const bold = /^BOLD(?:\s*\(\s*(\d+)\s*\))?\s+/i.exec(fx);                 // weak-model pseudo-style "=BOLD(20) Title"
+          if (bold) { cell.value = fx.slice(bold[0].length).trim(); cell.font = f({ bold: true, size: bold[1] ? Math.min(+bold[1], 28) : 13, color: { argb: ACCENT } }); continue; }
+          if (!/[A-Za-z0-9]/.test(fx)) continue;                                    // "=", "=[" placeholder → leave blank
+          const selfRef = (fx.toUpperCase().match(/\$?[A-Z]{1,3}\$?\d{1,7}/g) || []).some((rf) => rf.replace(/\$/g, "") === col + rowN);
+          cell.value = (selfRef || !isSafeFormula(fx)) ? 0 : { formula: fx };       // circular / unverifiable → safe literal
+          cell.font = f();
+        } else if (raw != null && raw !== "") { cell.value = raw; cell.font = f(); }
+      }
+      for (let c = 1; c <= Math.min(maxCol, 30); c++) ws.getColumn(c).width = c === 1 ? 26 : 13;
+      widthUsed = Math.max(widthUsed, Math.min(maxCol, 30));
     }
 
     // collect charts (resolved in pass 2)
@@ -224,8 +256,11 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
       const L = colKeyLetter[sh] && colKeyLetter[sh][id]; if (!L) return "#REF!";
       return `${L}${ctx.dataStart + ctx.rowIndex + off}`;
     }
-    // cell/derived/kpi ctx: local named cell (strip absolute $ for in-formula use is fine to keep)
+    // cell/derived/kpi ctx: local named cell first; then ANY sheet (a KPI/derived referencing a value by
+    // bare id — the model often drops the sheet qualifier — still resolves instead of falling through to 0).
     if (named[sh] && named[sh][id]) return `${named[sh][id]}`;
+    for (const osh of Object.keys(named)) if (named[osh][id]) return `${qsheet(osh)}!${named[osh][id]}`;
+    for (const osh of Object.keys(metricRow)) if (metricRow[osh][id] && periodCols[osh] && periodCols[osh].length) { const L = periodColLetter(osh, periodCols[osh].length); if (L) return `${qsheet(osh)}!${L}${metricRow[osh][id]}`; }
     return "#REF!";
   }
   // SAFETY NET — a formula is safe to write only if, after stripping quoted sheet names, valid cell/range
@@ -240,14 +275,20 @@ export function buildTemplateWorkbook(ExcelJS, spec, opts) {
     t = t.replace(/(?:[A-Za-z_][\w.]*!|Q!)?\$?[A-Za-z]{1,3}\$?\d{1,7}(?::\$?[A-Za-z]{1,3}\$?\d{1,7})?/g, "R"); // cell/range refs (optional sheet!)
     t = t.replace(/[A-Za-z][\w.]*\s*\(/g, "(");                                                            // function calls: NAME( -> (
     t = t.replace(/\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g, "N");                                                  // numbers
+    t = t.replace(/\b(?:TRUE|FALSE)\b/gi, "N");                                                            // boolean literals (e.g. MATCH(TRUE,…))
     t = t.replace(/[\sQRN()+\-*/^%,:.;&<>=!$"]/g, "");                                                      // operators / punctuation / placeholders
     return t.length === 0;                                                                                 // leftover letters/words → unsafe
   }
   function resolve(expr, ctx) {
     let out = String(expr == null ? "" : expr).replace(/^=/, "").replace(/\[([^\]]+)\]/g, (_, t) => resolveToken(t, ctx));
+    // a lone bare identifier (a KPI/derived ref the model wrote WITHOUT brackets, e.g. "arpu") is a reference too —
+    // resolve it like a token so it doesn't fall through to 0; if it names nothing it stays put and is caught below.
+    const _bare = out.trim();
+    if (/^[A-Za-z_][\w]*$/.test(_bare)) { const r = resolveToken(_bare, ctx); if (r && !/#REF!|#NAME/.test(r)) out = r; }
     // A model can reference an id/sheet/period that does not exist (resolveToken returns #REF! for those).
     // NEVER let #REF!/#NAME?/undefined/NaN reach a saved formula — Excel flags such a workbook as corrupt.
     if (/#REF!|#NAME\?|\bundefined\b|\bNaN\b/.test(out)) { _unresolved++; out = out.replace(/#REF!|#NAME\?/g, "0").replace(/\bundefined\b|\bNaN\b/g, "0"); }
+    out = out.replace(/\bAVG(\s*\()/gi, "AVERAGE$1");          // Excel's function is AVERAGE, not AVG — a bare AVG( would open as #NAME?
     if (!isSafeFormula(out)) { _unresolved++; return null; }   // unsafe → caller writes a literal, never a broken formula
     return out;
   }
