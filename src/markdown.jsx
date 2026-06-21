@@ -4,7 +4,7 @@
 // output cannot inject markup or scripts. Covers the constructs models actually emit:
 // headings, bold/italic/strikethrough, inline code, fenced code blocks, links,
 // bullet/numbered lists, blockquotes, horizontal rules, tables (basic).
-import { Fragment, useState, useEffect, createContext, useContext } from "react";
+import { Fragment, useState, useEffect, useRef, createContext, useContext } from "react";
 import { parseOfficeSpec, downloadOffice, buildOfficeBlob } from "./office.js";
 import { runDeckCode, deckNameFrom } from "./deck/deckRunner.js";
 import { deckPreviewHTML } from "./deck/deckPreview.js";
@@ -93,11 +93,15 @@ function OfficeCard({ code, streaming }) {
     const id = setTimeout(() => setStuck(true), 6000);
     return () => clearTimeout(id);
   }, [code, !!parsed]);
-  // Folder-linked room: build the file ONCE when the spec is complete and SAVE it into the room's folder
-  // (parity with the old script path). Then the card shows Open / Show-in-folder. Let's Chat (saveDir null)
-  // skips this and keeps the manual Download button below.
+  // Folder-linked room: build the file ONCE when the spec STREAMS IN LIVE and SAVE it into the room's folder
+  // (parity with the old script path); then the card shows Open / Show-in-folder. CRITICAL: only auto-save a
+  // spec that actually streamed this mount. A card re-mounted from HISTORY (re-opening the conversation) was
+  // already saved on its original run — re-saving would duplicate the file in the folder on every open.
+  const sawStream = useRef(false);
+  useEffect(() => { if (streaming) sawStream.current = true; }, [streaming]);
   useEffect(() => {
     if (!saveDir || !parsed || streaming || savedPath || state === "building") return;
+    if (!sawStream.current) return; // re-opened from history (never streamed this mount) → already on disk, don't duplicate
     let cancelled = false;
     (async () => {
       try {
