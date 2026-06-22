@@ -959,11 +959,11 @@ input, textarea, select { font-family: inherit; }
 .composer-pill .plus-wrap { margin-right: auto; }
 .composer-pill .plus-wrap, .composer-pill .icon-btn, .composer-pill .send { margin-bottom: 1px; }
 /* Naked icons (no background box), exactly like Gemini's bar. */
-.composer-pill .icon-btn.bare { background: transparent; border: none; box-shadow: none; width: 36px; height: 36px; color: var(--text-1); }
+.composer-pill .icon-btn.bare { background: transparent; border: none; box-shadow: none; width: 34px; height: 34px; border-radius: 50%; color: var(--text-1); }
 .composer-pill .icon-btn.bare:hover { background: rgba(255,255,255,0.06); border-radius: 50%; color: var(--text-0); }
-.composer-pill .icon-btn.bare.rec { color: var(--danger); }
+.composer-pill .icon-btn.bare.rec, .composer-pill .icon-btn.bare.speak-on { background: var(--accent-weak); color: var(--accent); border-radius: 50%; }
 /* Round theme-colored send that pops in while typing. */
-.composer-pill .send { width: 38px; height: 38px; border-radius: 50%; margin-left: 2px; }
+.composer-pill .send { width: 34px; height: 34px; border-radius: 50%; margin-left: 2px; }
 .composer-pill .send.pop { animation: sendpop .18s ease-out; }
 @keyframes sendpop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .composer-subrow { display: flex; justify-content: center; }

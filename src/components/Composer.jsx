@@ -445,7 +445,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
           <input ref={fileRef} type="file" multiple style={{ display: "none" }} onChange={onPick} />
 
           <div className="plus-wrap" ref={menuRef}>
-            <button className="icon-btn bare" onClick={() => setMenuOpen((o) => !o)} title="Add"><Plus size={19} /></button>
+            <button className="icon-btn bare" onClick={() => setMenuOpen((o) => !o)} title="Add"><Plus size={18} /></button>
             {menuOpen && (
               <div className="plus-menu">
                 <button className="plus-item" onClick={pickFiles}><Paperclip size={15} /> Add files or photos <span className="kbd">Ctrl+U</span></button>
@@ -526,9 +526,9 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
           )}
           {voiceOn && <button className={`icon-btn bare ${listening ? "rec" : ""}`} onClick={toggleMic} title="Voice input"><Mic size={18} /></button>}
           {busy ? (
-            <button className="icon-btn bare" onClick={onStop} title="Stop — Madav is working"><Square size={18} /></button>
+            <button className="send pop" onClick={onStop} title="Stop — Madav is working"><Square size={18} /></button>
           ) : canSend ? (
-            <button className="send pop" onClick={submit} title="Send"><ArrowUp size={17} /></button>
+            <button className="send pop" onClick={submit} title="Send"><ArrowUp size={18} /></button>
           ) : null}
         </div>
         {controls && <div className="composer-subrow">{controls}</div>}
