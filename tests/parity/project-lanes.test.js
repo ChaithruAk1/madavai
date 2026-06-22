@@ -7,6 +7,10 @@ describe("project lanes — route by what the task needs, safely", () => {
     expect(decideLane({ task: "create a SaaS unit economics model", hasDataFiles: false })).toBe(LANE.DOCUMENT);
     expect(decideLane({ task: "make a one-pager on our roadmap", hasDataFiles: false })).toBe(LANE.DOCUMENT);
   });
+  it("A: a clearly generative document uses the engine EVEN when the folder has files", () => {
+    expect(decideLane({ task: "build a 12-month SaaS budget template", hasDataFiles: true })).toBe(LANE.DOCUMENT);
+    expect(decideLane({ task: "create a board deck", hasDataFiles: true })).toBe(LANE.DOCUMENT);
+  });
   it("C: real data work (folder has files + a data task) -> caged agent loop", () => {
     expect(decideLane({ task: "execute the DTC report for March", hasDataFiles: true })).toBe(LANE.IMPROVISE);
     expect(decideLane({ task: "reconcile these files", hasDataFiles: true })).toBe(LANE.IMPROVISE);

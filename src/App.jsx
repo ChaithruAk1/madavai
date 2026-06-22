@@ -919,6 +919,11 @@ export default function App() {
 
   // App-wide: keep every floating menu/flyout/popover inside the viewport (never past any edge).
   useEffect(() => { startOverlayGuard(); }, []);
+  // Step 4 — on a project's detail page (no chat open), show THAT project's model in the picker.
+  useEffect(() => {
+    if (!projOpenId || projectCtx) return;
+    (async () => { try { const p = await bridge.getProject(projOpenId); if (p && p.model) applyConvModel(p.model, p.provider, "project"); } catch {} })();
+  }, [projOpenId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Selecting a model sets BOTH the active provider and that provider's model.
   // Re-read from disk first so we never clobber a profile added in the Settings panel.
@@ -932,6 +937,11 @@ export default function App() {
     setSettings(next); await bridge.saveSettings(next);
   };
   const refreshModels = () => loadModelsFor(settings);
+  // Step 4 — the Workrooms project-page model picker saves to THAT project (projOpenId), not globally.
+  const onSelectProjectModel = async (value) => {
+    await selectModel(value);
+    if (projOpenId && value && value !== "auto") { try { const j = value.indexOf("::"); const prof = settings && settings.profiles && settings.profiles[value.slice(0, j)]; await bridge.updateProject(projOpenId, { model: value.slice(j + 2), provider: (prof && prof.name) || "" }); } catch {} }
+  };
   // Per-surface model + Auto. The dock shows "auto" when this surface is set to Auto; otherwise the
   // real active model. Picking a concrete model also applies it globally (selectModel); picking Auto
   // just records the preference — routing happens at send time.
@@ -943,8 +953,8 @@ export default function App() {
     if (v === "auto" && surfaceModel[curSurface] === "auto") v = activeValue || null;
     setSurfaceModel((prev) => { const next = { ...prev }; if (v) next[curSurface] = v; else delete next[curSurface]; try { localStorage.setItem("madav.surfaceModel", JSON.stringify(next)); } catch {} return next; });
     if (v && v !== "auto") await selectModel(v); // persist before any subsequent send uses it
-    // Step 4 — in a project, the picked model is THAT project's default (not global), so different projects keep different models.
-    if (projectCtx && projectCtx.projectId && v && v !== "auto") { try { const j = v.indexOf("::"); const prof = settings && settings.profiles && settings.profiles[v.slice(0, j)]; await bridge.updateProject(projectCtx.projectId, { model: v.slice(j + 2), provider: (prof && prof.name) || "" }); } catch {} }
+    // NOTE: the chat picker is CHAT-specific — the conversation remembers its own model (stamped on each
+    // run, restored on reopen). It deliberately does NOT change the project default; that's the project-page picker.
   };
 
   const _hour = new Date().getHours();
@@ -1132,7 +1142,7 @@ export default function App() {
           <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
             tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : t === "routing" ? "models-routing" : "models")} />
         ) : (mode === "project" && !projectCtx) ? (
-          <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} onPutTeamToWork={startRoomTeam} openId={projOpenId} groups={pickerGroups} activeValue={activeValue} onSelectModel={selectModel} onRefresh={refreshModels} />
+          <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} onPutTeamToWork={startRoomTeam} openId={projOpenId} groups={pickerGroups} activeValue={activeValue} onSelectModel={onSelectProjectModel} onRefresh={refreshModels} />
         ) : (
           <div className="work-split">
             <div className="work-main">
