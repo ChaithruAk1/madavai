@@ -145,10 +145,16 @@ function createConversation(projectId) {
 function saveConversation(c) { ensure(); c.updatedAt = Date.now(); fs.writeFileSync(convFile(c.id), JSON.stringify(c, null, 2)); return c; }
 function deleteConversation(id) { try { fs.unlinkSync(convFile(id)); } catch {} return true; }
 function renameConversation(id, title) { const c = getConversation(id); if (!c) return null; const t = String(title == null ? "" : title).trim().slice(0, 200); if (t) c.title = t; return saveConversation(c); }
+// Stage 3 — per-project recipe cache ("learn once, replay"). Stored OUTSIDE projects.json (script content
+// can be large) so the hot project list stays lean. The one-per-taskKey upsert logic lives in core/recipes.js.
+const recipeDir = () => path.join(baseDir(), "recipes");
+function getRecipes(projectId) { try { return JSON.parse(fs.readFileSync(path.join(recipeDir(), String(projectId) + ".json"), "utf8")) || []; } catch { return []; } }
+function saveRecipes(projectId, list) { try { fs.mkdirSync(recipeDir(), { recursive: true }); fs.writeFileSync(path.join(recipeDir(), String(projectId) + ".json"), JSON.stringify(Array.isArray(list) ? list : [], null, 2)); } catch {} return list; }
 
 module.exports = {
   listProjects, getProject, createProject, updateProject, deleteProject,
   assignAgent, unassignAgent, assignTeam, unassignTeam,
   addKnowledge, removeKnowledge, projectSystem,
   listConversations, getConversation, createConversation, saveConversation, deleteConversation, renameConversation,
+  getRecipes, saveRecipes,
 };

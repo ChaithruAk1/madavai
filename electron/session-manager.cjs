@@ -19,6 +19,7 @@ const os = require("os");
 const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
 let _plP = null; const _pl = () => (_plP ||= import("../core/project-lanes.js")); // SINGLE SOURCE lane decision (A=engine / B=recipe / C=caged loop)
+let _recP = null; const _rec = () => (_recP ||= import("../core/recipes.js")); // SINGLE SOURCE recipes — learn once, replay
 
 // Surface office files the agent produced as Open/Download cards in the chat. Works for ANY model
 // (Claude SDK + the OpenAI loop both covered). Robust by DIFF: snapshot the folder before the run,
@@ -36,6 +37,23 @@ function scanOffice(folder) {
       if (ent.isDirectory()) { if (depth > 0 && !/^(node_modules|\.git)$/i.test(ent.name)) walk(p, depth - 1); continue; }
       if (!OFFICE_RE.test(ent.name)) continue;
       try { out.set(p, fs.statSync(p).mtimeMs); } catch {}
+    }
+  };
+  walk(folder, 1);
+  return out;
+}
+// Stage 3 — snapshot the .py scripts in a folder (one level deep) so a successful run's NEW scripts can
+// be captured as a reusable recipe. Mirrors scanOffice; returns a Set of absolute paths.
+function scanScripts(folder) {
+  const out = new Set();
+  const path = require("path");
+  const walk = (dir, depth) => {
+    let ents = [];
+    try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const ent of ents) {
+      const p = path.join(dir, ent.name);
+      if (ent.isDirectory()) { if (depth > 0 && !/^(node_modules|\.git)$/i.test(ent.name)) walk(p, depth - 1); continue; }
+      if (/\.py$/i.test(ent.name)) out.add(p);
     }
   };
   walk(folder, 1);
@@ -910,6 +928,9 @@ class SessionManager {
       if (pe && pe.py) { pyNote = 'Python is available as "' + pe.py + '" (pandas: ' + (pe.pandas ? "yes" : "no") + ", openpyxl: " + (pe.openpyxl ? "yes" : "no") + ")."; if (!pe.pandas || !pe.openpyxl) pyNote += " Install the missing libraries first: " + pe.py + " -m pip install --user pandas openpyxl."; }
       else { pyNote = "No Python was detected on this machine — install Python 3 with pandas + openpyxl, or compute the result inline without scripts."; }
     }
+    const beforeScripts = useFolder ? scanScripts(project.folder) : null;
+    let recipeBlock = "", laneUsed = "C"; // Stage 3 — recipe priming + the lane actually used (captured in finally)
+    try { const R = await _rec(); const rcp = R.matchRecipe(store.getRecipes(s.projectId), userText); recipeBlock = R.recipePromptBlock(rcp); } catch {}
     const gi = settings.load().globalInstructions;
     const sys = store.projectSystem(project) + ARTIFACT_RULE_BASE + officeRulePart() +
       (useFolder ? `\n\nThis room is linked to a folder at: ${project.folder}. DEFAULT \u2014 to GENERATE a report / spreadsheet / deck / document from a description, emit ONE officedoc block (per the office rules above) and nothing else for that deliverable: Madav builds the polished file with its engine and saves it directly INTO this folder, so do NOT write a script for pure generation. Use your file / script tools ONLY when the task needs you to READ and process files that ALREADY EXIST in this folder (e.g. summarise a provided CSV, or fill a template the user placed here) \u2014 then read them, compute, and SAVE the finished file into this folder by name (e.g. result.to_excel("Summary.xlsx")). ${pyNote} Either way the deliverable ends up in this folder; then reply with ONE short, plain-English sentence naming it.` : "") +
@@ -924,6 +945,7 @@ class SessionManager {
     if (!s.history.length) s.history.push({ role: "system", content: sys });
     else if (s.history[0].role === "system") s.history[0].content = sys;
     else s.history.unshift({ role: "system", content: sys });
+    if (recipeBlock && s.history[0] && s.history[0].role === "system") s.history[0].content += recipeBlock; // Stage 3 — prime with the proven recipe
 
     try {
       if (profile.kind === "anthropic" && useFolder) {
@@ -957,7 +979,8 @@ class SessionManager {
         // unchanged). decideLane only picks DOCUMENT when there are no data files, so nothing is fabricated.
         // Fail-open: any error -> lane "C" -> exactly today's behavior.
         let lane = "C";
-        try { const { decideLane } = await _pl(); lane = decideLane({ hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText }); } catch {}
+        try { const { decideLane } = await _pl(); lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText }); } catch {}
+        laneUsed = lane;
         const laneMode = lane === "A" ? "chat" : (useFolder ? "cowork" : "chat");
         await runOpenAIAgentTurn({
           prompt: userText + materializeImages(images), mode: laneMode, cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
@@ -987,6 +1010,19 @@ class SessionManager {
       }
       if (profile && profile.model) { conv.model = profile.model; conv.provider = profile.name; } // remember the model this chat ran with so re-opening restores it (parity with Let's Chat)
       store.saveConversation(conv);
+      // Stage 3 — capture: a run that produced a deliverable becomes a reusable recipe for this task
+      // (the NEW .py scripts it wrote + the output names), replayed next time via recipePromptBlock. Fail-open.
+      try {
+        if (useFolder && project.folder && newOuts.length) {
+          const path = require("path");
+          const after = scanScripts(project.folder);
+          const scripts = [...after].filter((p) => !beforeScripts || !beforeScripts.has(p)).slice(0, 4)
+            .map((p) => { let content = ""; try { content = fs.readFileSync(p, "utf8"); } catch {} return { name: path.basename(p), content }; });
+          const R = await _rec();
+          const recipe = R.makeRecipe({ task: userText, scripts, outputs: newOuts.map((o) => o.name), lane: laneUsed, model: (profile && profile.model) || "" });
+          store.saveRecipes(s.projectId, R.upsertRecipe(store.getRecipes(s.projectId), recipe));
+        }
+      } catch {}
     }
   }
 
