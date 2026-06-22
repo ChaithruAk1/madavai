@@ -928,7 +928,7 @@ export default function App() {
   useEffect(() => {
     if (!projOpenId || projectCtx) return;
     (async () => { try { const p = await bridge.getProject(projOpenId); if (p && p.model) applyConvModel(p.model, p.provider, "project"); } catch {} })();
-  }, [projOpenId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [projOpenId, projectCtx]); // re-apply THIS project's model whenever you return to its page (projectCtx -> null); chats keep their own (guarded above)
 
   // Selecting a model sets BOTH the active provider and that provider's model.
   // Re-read from disk first so we never clobber a profile added in the Settings panel.
