@@ -324,6 +324,8 @@ export default function App() {
         setStreaming(false); setBusy(false); setTimeline((tl) => { streamOpen.current = false; return tl.map((it) => it.type === "tool" && it.status === "run" ? { ...it, status: "done" } : it); }); // defer close + settle any lingering tool steps
         if (sessionRef.current) runBusy.current.set(sessionRef.current, false);
         setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ ${e.data?.message || "Error"}` }]);
+        setSoloRun((r) => r ? { ...r, finished: true, endedAt: Date.now(), steps: r.steps.map((s) => s.status === "run" ? { ...s, status: "done" } : s) } : r);
+        setTeamRun((r) => r ? { ...r, finished: true } : r);
         setHistRefresh((n) => n + 1); // keep the saved-chat list fresh even if the first turn errors
         break;
       default: break;
@@ -781,7 +783,13 @@ export default function App() {
     setCwd(folder); sessionRef.current = null; setTimeline([]); setActiveConvId(null);
   };
 
-  const stop = () => { if (sessionRef.current) bridge.interrupt(sessionRef.current); setBusy(false); };
+  const stop = () => {
+    if (sessionRef.current) bridge.interrupt(sessionRef.current);
+    setBusy(false); setStreaming(false);
+    setSoloRun((r) => r ? { ...r, finished: true, endedAt: Date.now(), steps: r.steps.map((s) => s.status === "run" ? { ...s, status: "done" } : s) } : r);
+    setTeamRun((r) => r ? { ...r, finished: true } : r);
+    setTimeline((tl) => tl.map((it) => it.type === "tool" && it.status === "run" ? { ...it, status: "done" } : it));
+  };
 
   const resolve = (behavior) => {
     if (!perm) return;

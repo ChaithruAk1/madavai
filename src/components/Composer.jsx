@@ -526,7 +526,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
           )}
           {voiceOn && <button className={`icon-btn bare ${listening ? "rec" : ""}`} onClick={toggleMic} title="Voice input"><Mic size={18} /></button>}
           {busy ? (
-            <button className="send pop" onClick={onStop} title="Stop — Madav is working"><Square size={14} /></button>
+            <button className="icon-btn bare" onClick={onStop} title="Stop — Madav is working"><Square size={18} /></button>
           ) : canSend ? (
             <button className="send pop" onClick={submit} title="Send"><ArrowUp size={17} /></button>
           ) : null}

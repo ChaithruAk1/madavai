@@ -64,21 +64,34 @@ function describe(name, input = {}) {
 // Shell commands get a plain-English headline ("Created folder ABCD", never
 // "Ran mkdir ABCD"); the literal command stays in the card's expandable detail.
 function humanizeCommand(cmd) {
-  const c = String(cmd || "").trim();
+  let c = String(cmd || "").trim();
+  // Unwrap things that hide the real command from the matcher (so steps aren't all "the terminal"):
+  // a leading `cd <dir> &&`/`;`, a `set FOO=bar &&` or `FOO=bar ` env prefix, and `bash -c "…"`.
+  c = c.replace(/^cd\s+(?:"[^"]*"|'[^']*'|\S+)\s*(?:&&|;)\s*/i, "");
+  c = c.replace(/^set\s+\w+=\S*\s*(?:&&|;)\s*/i, "");
+  c = c.replace(/^(?:\w+=\S*\s+)+/, "");
+  const wrap = /^(?:bash|sh|cmd(?:\s+\/c)?|powershell|pwsh)\s+(?:-\S+\s+)*["']([\s\S]+?)["']\s*$/i.exec(c);
+  if (wrap && wrap[1]) c = wrap[1].trim();
   const arg = (re) => { const m = re.exec(c); return (m && m[1] || "").replace(/^["']|["']$/g, ""); };
-  let verb = "Worked in", obj = "the terminal";
-  if (/^mkdir\s/i.test(c)) { verb = "Created folder"; obj = arg(/^mkdir\s+(?:-p\s+)?(\S+)/i); }
-  else if (/^(rmdir|rm|del|Remove-Item)\s/i.test(c)) { verb = "Deleted"; obj = arg(/\s(?:-\S+\s+)*(\S+)\s*$/); }
-  else if (/^(copy|cp|Copy-Item)\s/i.test(c)) { verb = "Copied"; obj = arg(/^\S+\s+(?:-\S+\s+)*(\S+)/); }
-  else if (/^(move|mv|ren|rename|Move-Item)\s/i.test(c)) { verb = "Moved"; obj = arg(/^\S+\s+(\S+)/); }
-  else if (/^(dir|ls)\b/i.test(c)) { verb = "Listed"; obj = "a folder"; }
-  else if (/^(type|cat|Get-Content)\s/i.test(c)) { verb = "Viewed"; obj = arg(/^\S+\s+(\S+)/); }
+  const base = (p) => String(p || "").replace(/^["']|["']$/g, "").split(/[\\/]/).pop();
+  let verb = "Ran", obj = "";
+  if (/^mkdir\s/i.test(c)) { verb = "Created folder"; obj = base(arg(/^mkdir\s+(?:-p\s+)?(\S+)/i)); }
+  else if (/^(rmdir|rm|del|Remove-Item)\s/i.test(c)) { verb = "Deleted"; obj = base(arg(/\s(?:-\S+\s+)*(\S+)\s*$/)); }
+  else if (/^(copy|cp|Copy-Item)\s/i.test(c)) { verb = "Copied"; obj = base(arg(/^\S+\s+(?:-\S+\s+)*(\S+)/)); }
+  else if (/^(move|mv|ren|rename|Move-Item)\s/i.test(c)) { verb = "Moved"; obj = base(arg(/^\S+\s+(\S+)/)); }
+  else if (/^(dir|ls|Get-ChildItem)\b/i.test(c)) { verb = "Listed"; obj = "a folder"; }
+  else if (/^(type|cat|Get-Content|head|tail|more)\s/i.test(c)) { verb = "Viewed"; obj = base(arg(/^\S+\s+(?:-\S+\s+)*(\S+)/)); }
   else if (/^git\s+(\w+)/i.test(c)) { verb = "Git:"; obj = arg(/^git\s+(\w+)/i); }
   else if (/^npm\s+(?:i|install)\b/i.test(c)) { verb = "Installed"; obj = "packages"; }
   else if (/^npm\s+(?:run\s+)?(\S+)/i.test(c)) { verb = "Ran the"; obj = arg(/^npm\s+(?:run\s+)?(\S+)/i) + " script"; }
-  else if (/^(node|python|python3|py)\s+(\S+)/i.test(c)) { verb = "Ran"; obj = arg(/^\S+\s+(\S+)/); }
+  else if (/^(node|python|python3|py)\b/i.test(c)) {
+    verb = "Ran";
+    if (/\s-c\b/.test(c)) obj = "a calculation";
+    else { const s = (/(?:^|\s)(\S+\.(?:py|js|mjs|cjs|ts|sh))\b/i.exec(c) || [])[1]; obj = s ? base(s) : "a script"; }
+  }
   else if (/^(curl|wget|Invoke-WebRequest)\s/i.test(c)) { verb = "Downloaded"; obj = "from the web"; }
-  return { icon: TerminalSquare, verb, obj: obj || "", mono: false };
+  else { const snip = c.split(/\s+/).slice(0, 4).join(" "); obj = snip.length > 48 ? (snip.slice(0, 48) + "…") : snip; } // informative default — a snippet, never just "the terminal"
+  return { icon: TerminalSquare, verb, obj: obj || "a command", mono: false };
 }
 
 // Heuristic: does this tool output look like a unified diff we should color?

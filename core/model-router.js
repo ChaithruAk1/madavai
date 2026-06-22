@@ -96,8 +96,10 @@ function failureReason(e) {
   if (st === 401 || st === 403) return "rejected the API key";
   if (st === 404) return "is unavailable";
   if (st >= 500 && st < 600) return "hit a server error";
-  const m = e && e.message ? String(e.message) : "";
-  return m ? ("failed (" + m.slice(0, 50) + ")") : "failed";
+  const m = (e && e.message ? String(e.message) : "").trim();
+  if (!m) return "failed";
+  const short = m.length > 140 ? (m.slice(0, 140).replace(/\s+\S*$/, "") + "…") : m; // trim at a word boundary — never mid-word (the old 50-char cut produced "Try )")
+  return "failed — " + short;
 }
 // Build ONE clear error when the whole chain failed. Leads with the FIRST attempt (usually the user's selected
 // model) — the most actionable signal — and copies its status/code so downstream handling is unchanged.
