@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { ChevronDown, Check, Search, RefreshCw } from "lucide-react";
+import { ChevronDown, Check, Search, RefreshCw, HelpCircle } from "lucide-react";
 import { MODELS } from "../bridge/contract.js";
 import { bridge } from "../bridge/index.js";
 import { localCaps } from "../data/localModels.js";
@@ -12,8 +12,11 @@ import { modelFit, taskNeedsStrong, FIT_RANK } from "../../core/model-fit.js"; /
 const PURPOSE_COLOR = { coding: "#7ee787", reasoning: "#d2a8ff", vision: "#79c0ff", fast: "#ffd479", embeddings: "#79c0ff", agentic: "#f0883e", general: "var(--text-2)" };
 const chipStyle = (active) => ({ padding: "4px 12px", borderRadius: 999, fontSize: 11.5, lineHeight: 1.5, border: "1px solid " + (active ? "var(--accent)" : "var(--line)"), background: active ? "var(--accent)" : "transparent", color: active ? "#04121a" : "var(--text-2)", cursor: "pointer", fontWeight: active ? 600 : 400 });
 const pill = (color) => ({ fontSize: 10, padding: "1px 7px", borderRadius: 999, border: `1px solid color-mix(in srgb, ${color} 40%, transparent)`, background: `color-mix(in srgb, ${color} 12%, transparent)`, color, whiteSpace: "nowrap", lineHeight: 1.6, fontWeight: 600 });
-const FIT_COLOR = { good: "#7ee787", recipe: "#79c0ff", weak: "#ffd479" }; // task-aware fit badge colors
-const fitPill = (fit) => pill(FIT_COLOR[fit] || "var(--text-2)");
+// Fit badge: colors NOT used by capability/host pills (no green/purple/blue/orange/yellow/teal),
+// rendered as a bright FILLED pill so the fit signal clearly stands apart from the muted pills.
+const FIT_COLOR = { good: "#3fb950", recipe: "#7c83ff", weak: "#ff7b72" }; // green = recommended; indigo = needs a recipe; coral = may struggle
+const fitPill = (fit) => { const c = FIT_COLOR[fit] || "var(--accent)"; return { fontSize: 10, padding: "1px 8px", borderRadius: 999, background: c, color: "#fff", border: "1px solid " + c, whiteSpace: "nowrap", lineHeight: 1.6, fontWeight: 700 }; };
+const legendDot = { display: "inline-block", width: 9, height: 9, borderRadius: 999, marginRight: 6, verticalAlign: "middle" };
 
 // Provider → domain, for real logos (site favicons).
 const DOMAIN = {
@@ -87,6 +90,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   };
   const toggleOpen = () => { if (!open) measure(); setOpen((o) => !o); };
   const [q, setQ] = useState("");
+  const [showHelp, setShowHelp] = useState(false); // detailed "?" help panel in the picker header
   const [cost, setCost] = useState("all");       // all | free | paid
   const [host, setHost] = useState("all");       // all | cloud | local (where the model runs)
   const [caps, setCaps] = useState(() => new Set()); // active capability filters (multi-select, AND-combined)
@@ -167,7 +171,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
       if (host === "local" && !local) return false;
       for (const k of caps) { if (CAPS[k] && !CAPS[k](it, g.group)) return false; } // multi-select, AND-combined
       return true;
-    }); if (task) items = items.slice().sort((a, b) => ((FIT_RANK[fitOf(a, g.group)?.fit] ?? 1) - (FIT_RANK[fitOf(b, g.group)?.fit] ?? 1))); return { ...g, items }; })
+    }); if (heavyTask) items = items.slice().sort((a, b) => ((FIT_RANK[fitOf(a, g.group)?.fit] ?? 1) - (FIT_RANK[fitOf(b, g.group)?.fit] ?? 1)) || String(a.name || "").localeCompare(String(b.name || ""))); return { ...g, items }; })
     .filter((g) => g.items.length);
   const shown = groups.reduce((n, g) => n + g.items.length, 0);
   // Render cap: 250 rows max in the DOM (filters/search still cover everything) — keeps the
@@ -204,6 +208,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
               <input className="model-search" style={{ paddingLeft: 32, marginBottom: 0 }} autoFocus placeholder={`Search ${total} models…`} value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
             {onRefresh && <button className="btn" title="Reload models from providers" onClick={doRefresh} style={{ padding: "8px 9px" }}><RefreshCw size={14} className={refreshing ? "spin" : ""} /></button>}
+            <button className="btn" title="What do these badges and filters mean?" onClick={() => setShowHelp((v) => !v)} style={{ padding: "8px 9px" }}><HelpCircle size={14} /></button>
           </div>
 
           {makers.length > 1 && (
@@ -238,6 +243,20 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
           </div>{/* /mp-head */}
           <div className="mp-scroll scroll">
 
+          {showHelp && (
+            <div className="mp-help" style={{ fontSize: 12, lineHeight: 1.6, color: "var(--text-2)", background: "var(--bg-1)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px", margin: "0 2px 10px" }}>
+              <div style={{ fontWeight: 700, marginBottom: 6, color: "var(--text-1)" }}>How to choose a model</div>
+              <p style={{ margin: "0 0 8px" }}>The colored badge on the right shows how well each model fits <b>this</b> screen's kind of work. It shows up for multi-step work (Projects, Agents, Collaborate); plain chat shows no badge because any model handles it.</p>
+              <div style={{ display: "grid", gap: 6, margin: "0 0 10px" }}>
+                <div><span style={{ ...legendDot, background: FIT_COLOR.good }} /><b>Recommended</b> — strong enough to do this task directly, start to finish.</div>
+                <div><span style={{ ...legendDot, background: FIT_COLOR.recipe }} /><b>Needs a recipe</b> — a lighter model. In a <b>Project</b> it becomes reliable once Madav saves a "recipe" from one good run, then replays it.</div>
+                <div><span style={{ ...legendDot, background: FIT_COLOR.weak }} /><b>May struggle</b> — likely to stall on multi-step work; best kept for quick chat and drafts.</div>
+              </div>
+              <p style={{ margin: "0 0 8px" }}>How it's decided: the model's strength (its size and family) combined with what this screen does. The same model can show a different badge in Chat, Projects, Agents, and Collaborate — the recommendation is per task, not one-size-fits-all.</p>
+              <p style={{ margin: "0 0 8px" }}><b>Auto</b> (top of the list) lets Madav pick a strong model for each request automatically.</p>
+              <p style={{ margin: 0 }}>Filters: <b>Free / Paid</b> and <b>Cloud / Local</b> narrow by cost and where the model runs; the tag chips (Coding, Reasoning, Vision, Fast, Agentic) narrow by capability. The <b>Free / Cloud / Local</b> pill on each row shows that model's cost and where it runs.</p>
+            </div>
+          )}
           {heavyTask && (
             <div className="mp-fit-hint">
               {task.mode === "project"
@@ -278,9 +297,9 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
                   <div key={it.id} title={it.name} className={`model-row ${it.id === value ? "sel" : ""}`} onClick={() => { onChange(it.id); setOpen(false); }} style={{ gap: 9 }}>
                     <Logo name={it.name} prov={it.prov || g.group} />
                     <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                    {heavyTask && (() => { const f = fitOf(it, g.group); return f ? <span style={fitPill(f.fit)} title={f.why}>{f.label}</span> : null; })()}
                     {tags.slice(0, 3).map((t) => <span key={t} style={pill(PURPOSE_COLOR[t])}>{t}</span>)}
                     <span style={pill(hostColor)}>{hostLabel}</span>
+                    {heavyTask && (() => { const f = fitOf(it, g.group); return f ? <span style={fitPill(f.fit)} title={f.why}>{f.label}</span> : null; })()}
                     {it.id === value && <Check size={15} className="check" style={{ flex: "none" }} />}
                   </div>
                 );

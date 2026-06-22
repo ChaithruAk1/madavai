@@ -122,12 +122,17 @@ const ARTIFACT_RULE_BASE = require("../shared/office-rules.cjs").ARTIFACT_RULE; 
 // In-chat office files (keep this spec in sync with OFFICE_RULE in src/office.js).
 // Gated by the Extras switchboard (settings.extras.office !== false) — evaluated per turn.
 const { officeRule, isDeckCapable, ARTIFACT_RULE } = require("../shared/office-rules.cjs");
-function officeRulePart() {
+function officeRulePart(model) {
   try { if (!require("./features.cjs").builtIn("office")) return ""; } catch {}
   try { if ((settings.load().extras || {}).office === false) return ""; } catch {}
-  let _model = "";
-  try { const _c = settings.load(); _model = String(((_c.profiles || {})[_c.activeProfileId] || {}).model || ""); } catch {}
+  let _model = model || "";
+  if (!_model) { try { const _c = settings.load(); _model = String(((_c.profiles || {})[_c.activeProfileId] || {}).model || ""); } catch {} } // no model passed (e.g. Let's Chat) -> active profile, unchanged
   return officeRule(_model);
+}
+// Rigid one-pass recipe for LIGHTER models doing data work in a folder (the verified weak-model
+// pipeline). ONE definition — the single source for this guidance on the desktop project path.
+function weakDataProc() {
+  return `\n\nIMPORTANT — you are running a lighter model, so when a task needs you to READ and process files that already exist in this folder, follow this EXACT procedure and do NOT improvise or explore: (1) inspect with AT MOST 2 quick commands (list the folder; peek at ONE file); (2) write ONE script that reads the needed files, computes everything, and SAVES the finished .xlsx into this folder (e.g. result.to_excel("Report.xlsx")); (3) run it ONCE — if it errors, FIX that SAME script and re-run, never write a new script; (4) then STOP and reply with ONE short, plain-English sentence naming the file you saved.`;
 }
 function withLang(cfg) {
   const gi = cfg.globalInstructions || "";
@@ -945,10 +950,11 @@ class SessionManager {
     let recipeBlock = "", laneUsed = "C"; // Stage 3 — recipe priming + the lane actually used (captured in finally)
     try { const R = await _rec(); const recs = store.getRecipes(s.projectId); const clean = recs.filter((r) => R.recipeInScope(r, project.folder)); if (clean.length !== recs.length) store.saveRecipes(s.projectId, clean); const rcp = R.matchRecipe(clean, userText); if (rcp) recipeBlock = R.recipePromptBlock(rcp); } catch {}
     const gi = settings.load().globalInstructions;
-    const sys = store.projectSystem(project) + ARTIFACT_RULE_BASE + officeRulePart() +
+    const weakProc = (useFolder && !isDeckCapable((profile && profile.model) || "")) ? weakDataProc() : ""; // weak model + folder -> restore the rigid one-pass recipe
+    const sys = store.projectSystem(project) + ARTIFACT_RULE_BASE + officeRulePart((profile && profile.model) || "") +
       (useFolder ? `\n\nThis room is linked to a folder at: ${project.folder}. DEFAULT \u2014 to GENERATE a report / spreadsheet / deck / document from a description, emit ONE officedoc block (per the office rules above) and nothing else for that deliverable: Madav builds the polished file with its engine and saves it directly INTO this folder, so do NOT write a script for pure generation. Use your file / script tools ONLY when the task needs you to READ and process files that ALREADY EXIST in this folder (e.g. summarise a provided CSV, or fill a template the user placed here) \u2014 then read them, compute, and SAVE the finished file into this folder by name (e.g. result.to_excel("Summary.xlsx")). ${pyNote} Either way the deliverable ends up in this folder; then reply with ONE short, plain-English sentence naming it.` : "") +
       " After you have produced and saved the deliverable, write the user a short, friendly 1-2 sentence summary in plain everyday English of what you made and where it is. (Keep all the real numbers and detail INSIDE the spreadsheet/document/deck — only the chat message itself should be brief. This rule never reduces what goes into the file.)" +
-      (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
+      (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "") + weakProc;
     const cfg = settings.load();
     const emit = (e) => this._send(sessionId, e.kind, e.data);
     const controller = new AbortController();
