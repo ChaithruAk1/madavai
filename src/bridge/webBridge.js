@@ -425,7 +425,7 @@ function systemPrompt(s, projectId, query = "") {
   if (getToken()) parts.push(SEARCH_ANSWER_RULE);
   if (s.responseLanguage && s.responseLanguage !== "model") parts.push(`Always respond in ${s.responseLanguage}, regardless of the language of the question.`);
   if (s.globalInstructions) parts.push(s.globalInstructions);
-  const um = umBlock(s); if (um) parts.push(um);
+  if (!projectId) { const um = umBlock(s); if (um) parts.push(um); } // projects stay scoped — no cross-chat memory (it can carry OTHER projects' paths/facts)
   if (projectId) {
     const p = LS.get("be.projects", {})[projectId];
     if (p) {
@@ -1060,7 +1060,7 @@ async function runTurn(sess, text, images) {
     // Step 4/5 — capture: a project reply that produced an officedoc deliverable becomes a reusable recipe.
     try { if (sess.projectId && reply) { const block = (String(reply).match(/```officedoc[\s\S]*?```/) || [])[0]; if (block) { const recs = LS.get("be.recipes", {}); recs[sess.projectId] = upsertRecipe(recs[sess.projectId] || [], makeRecipe({ task: text, scripts: [{ name: "officedoc", content: block }], lane: "A", model: prof.model })); LS.set("be.recipes", recs); } } } catch {}
     maybeAutoTitle(sess, text, reply); // Claude-style smart title from the first exchange (async, fail-open)
-    umLearn(prof, loadSettings(), text, reply); // cross-chat memory: fire-and-forget, throttled
+    if (!sess.projectId) umLearn(prof, loadSettings(), text, reply); // cross-chat memory — NOT from project runs, so a project's facts never leak into other chats
   } catch (e) {
     if (e && (e.name === "AbortError")) { emit(sess.id, "result", { subtype: "interrupted" }); return; }
     emit(sess.id, "error", { message: String((e && e.message) || e) });
