@@ -16,6 +16,7 @@
 
 import { tolerantParse, headTail, squashStale, CallGuard, parseTextToolCalls, stripReasoning, TEXT_PROTOCOL, ctxWindowFor, estTokens, buildCompactionMessages, applyCompaction } from "./turn-helpers.js";
 import { isDeckCapable } from "./office-rules.js"; // Option-2 cleanup pass gates on weak (non-deck-capable) models
+import { createRunGuard, guardStopMessage } from "./run-guard.js"; // SINGLE SOURCE run guard — same wall-clock + loop caps as desktop
 
 export const CHAT_ADAPTER_METHODS = ["stream", "runTool", "emit"]; // `tools` may instead arrive via opts
 export const DEFAULT_STEP_CAP = 14;
@@ -117,6 +118,7 @@ export async function coreChatTurn({
   if (prompt != null && prompt !== "") messages.push({ role: "user", content: String(prompt) });
 
   const guard = new CallGuard();
+  const runGuard = createRunGuard({ maxMs: 8 * 60 * 1000 }); // wall-clock backstop so a web project run can never hang
   const observedTools = [];
   let steps = 0;
   let finalText = "";
@@ -136,6 +138,7 @@ export async function coreChatTurn({
   while (steps < stepCap) {
     if (signal && signal.aborted) { adapter.emit({ type: "aborted" }); break; }
     steps++;
+    { const g = runGuard.check(); if (g.stop) { finalText = guardStopMessage(g.code); adapter.emit({ type: "guard_stop", code: g.code }); adapter.emit({ type: "final", text: finalText }); break; } }
 
     // Wave 1.3 — auto-compaction: near the model's window, summarize history into working notes,
     // then rebuild as [system, notes, ...last turns]. Never compact two steps in a row.
@@ -259,6 +262,7 @@ export async function coreChatTurn({
       messages.push(toolResultMsg(call, resultText, textMode));
       adapter.emit({ type: "tool_result", name, ok });
     }
+    { const _sig = toolCalls.map((c) => callName(c)).join("+"); const n = runGuard.note(_sig); if (n.stop) { finalText = guardStopMessage(n.code); adapter.emit({ type: "guard_stop", code: n.code }); adapter.emit({ type: "final", text: finalText }); break; } }
   }
 
   if (!finalText && steps >= stepCap) {

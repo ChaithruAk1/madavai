@@ -83,6 +83,7 @@ let _runChatViaCore = null; try { _runChatViaCore = require("./chat-core-runner.
 let _coreHelpersP = null; const _coreHelpers = () => (_coreHelpersP ||= import("../core/turn-helpers.js"));
 let _chatToolsP = null; const _chatTools = () => (_chatToolsP ||= import("../core/chat-tools.js")); // SINGLE SOURCE for shared chat tool schemas (web_search/web_fetch/create_image/deep_research)
 let _mrP = null; const _mr = () => (_mrP ||= import("../core/model-router.js")); // SINGLE SOURCE model routing — categoryFor() picks this turn's fallback chain
+let _rgP = null; const _rg = () => (_rgP ||= import("../core/run-guard.js")); // SINGLE SOURCE run guard — wall-clock + loop caps so a project run can never hang
 const mcp = require("./mcp-manager.cjs");
 const skillsMgr = require("./skills-manager.cjs");
 // The discipline layer (PLAN-AGENT-PARITY waves): JSON repair, plan tracking,
@@ -613,7 +614,10 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       cwd, skillsDir, mission, agentName, allowAskUser, imagegenOn, permMode, textMode, MAX_STEPS, signal, exactCtx,
     });
   }
+  const { createRunGuard, guardStopMessage } = await _rg();
+  const runGuard = createRunGuard({ maxMs: 8 * 60 * 1000 }); // wall-clock backstop; the for-loop still caps steps
   for (let step = 0; step < MAX_STEPS; step++) {
+    { const g = runGuard.check(); if (g.stop) { const m = guardStopMessage(g.code); emit({ kind: "assistant_delta", data: { text: m } }); emit({ kind: "assistant_message", data: { stop_reason: "guard" } }); if (rec) rec.finish({ text: m, numTurns: step, capped: true }); modelStats.bump(model, "maxSteps"); emit({ kind: "result", data: { subtype: "guard_" + g.code, num_turns: step, duration_ms: Date.now() - started } }); return; } }
     // Wave 1.3 — auto-compaction: at ~70% of the model's window, compress the
     // mission into working notes (exactly what /compact does in the CLI). Guard
     // against a no-progress loop: never compact two steps in a row, and after
@@ -709,6 +713,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       modelStats.bump(model, "success");
       return;
     }
+    { const _sig = toolCalls.map((tc) => tc.name).join("+"); const n = runGuard.note(_sig); if (n.stop) { const m = guardStopMessage(n.code); emit({ kind: "assistant_delta", data: { text: m } }); emit({ kind: "assistant_message", data: { stop_reason: "guard" } }); if (rec) rec.finish({ text: m, numTurns: step + 1, capped: true }); modelStats.bump(model, "maxSteps"); emit({ kind: "result", data: { subtype: "guard_" + n.code, num_turns: step + 1, duration_ms: Date.now() - started } }); return; } }
     // Tool-calling step: suppress the model's pre-tool narration so it can't claim
     // success before the user approves. The tool cards convey the action.
 
