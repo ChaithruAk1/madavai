@@ -151,6 +151,9 @@ function renameConversation(id, title) { const c = getConversation(id); if (!c) 
 const recipeDir = () => path.join(baseDir(), "recipes");
 function getRecipes(projectId) { try { return JSON.parse(fs.readFileSync(path.join(recipeDir(), String(projectId) + ".json"), "utf8")) || []; } catch { return []; } }
 function saveRecipes(projectId, list) { try { fs.mkdirSync(recipeDir(), { recursive: true }); fs.writeFileSync(path.join(recipeDir(), String(projectId) + ".json"), JSON.stringify(Array.isArray(list) ? list : [], null, 2)); } catch {} return list; }
+const jobDir = () => path.join(baseDir(), "jobs");
+function getJobs(projectId) { try { return JSON.parse(fs.readFileSync(path.join(jobDir(), String(projectId) + ".json"), "utf8")) || []; } catch { return []; } }
+function saveJobs(projectId, list) { try { fs.mkdirSync(jobDir(), { recursive: true }); fs.writeFileSync(path.join(jobDir(), String(projectId) + ".json"), JSON.stringify(Array.isArray(list) ? list : [], null, 2)); } catch {} return list; }
 
 module.exports = {
   listProjects, getProject, createProject, updateProject, deleteProject,
@@ -158,4 +161,5 @@ module.exports = {
   addKnowledge, removeKnowledge, projectSystem,
   listConversations, getConversation, createConversation, saveConversation, deleteConversation, renameConversation,
   getRecipes, saveRecipes,
+  getJobs, saveJobs,
 };

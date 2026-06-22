@@ -77,3 +77,32 @@ export function validateOutputs(job, produced) {
   const missing = want.filter((w) => !have.has(w));
   return { ok: want.length > 0 && missing.length === 0, missing };
 }
+
+// --- authoring prompt (SINGLE SOURCE: desktop + web ask the model for the script identically) ---
+// Given the task + instructions + the already-inspected schema, ask for ONE complete script.
+// The whole point: the model gets the data shape up front, so it writes the script in one shot
+// instead of wandering through an inspect/calculate loop.
+export function authoringPrompt({ task, instructions, schema, fixError, prevScript } = {}) {
+  const files = (schema || []).map((f) => {
+    if (f && f.error) return `- ${f.file}: COULD NOT READ (${f.error})`;
+    const cols = ((f && f.columns) || []).join(" | ");
+    const sample = ((f && f.sample) || []).slice(0, 2).map((r) => JSON.stringify(r)).join("\n      ");
+    return `- ${f.file} (${f && f.rows != null ? f.rows + " rows" : "?"})\n    columns: ${cols}` + (sample ? `\n    sample rows:\n      ${sample}` : "");
+  }).join("\n");
+  const parts = [
+    "Write ONE complete, self-contained Python script (pandas + openpyxl) to produce this deliverable. Do NOT explore or re-inspect the data — it is already inspected for you below.",
+    `TASK: ${task || "(produce the deliverable)"}`,
+    instructions ? `INSTRUCTIONS (follow exactly):\n${instructions}` : "",
+    `DATA FILES in the current working folder — use these EXACT file and column names:\n${files || "(no data files found)"}`,
+    "Requirements: read the files with pandas; compute everything the instructions require; SAVE the finished output file(s) into the current folder by the name the instructions specify. The saved file IS the deliverable. Output ONLY the script inside a single ```python code block — no prose before or after.",
+  ];
+  if (fixError) parts.push(`Your previous script FAILED with this error:\n${String(fixError).slice(0, 1500)}\n\nPrevious script:\n${String(prevScript || "").slice(0, 4000)}\n\nReturn a CORRECTED, complete script (again, ONLY the \`\`\`python block).`);
+  return parts.filter(Boolean).join("\n\n");
+}
+
+// Pull the python script out of the model's reply (fenced block preferred; otherwise the raw text).
+export function extractScript(text) {
+  const s = String(text || "");
+  const m = s.match(/```(?:python|py)?\s*\n?([\s\S]*?)```/);
+  return (m ? m[1] : s).trim();
+}
