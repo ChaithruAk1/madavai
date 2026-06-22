@@ -877,6 +877,8 @@ input, textarea, select { font-family: inherit; }
    CSS `resize` is corner-only. The menu itself is unchanged. */
 .model-menu.mp-menu { width: 720px; height: 520px; max-width: 94vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
 .mp-menu .mp-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+/* Task-aware fit hint banner at the top of the model list (shown only for multi-step tasks). */
+.mp-fit-hint { margin: 0 2px 8px; padding: 7px 10px; border-radius: 8px; font-size: 11.5px; line-height: 1.5; color: var(--text-2); background: color-mix(in srgb, var(--accent) 9%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); }
 /* Resize grips: absolutely-positioned CHILDREN of the menu, pinned to its OWN edges, so they sit on the
    real border in every placement (top-bar, composer, Projects, Agents, model-dock). Invisible until hover
    (a tinted edge line) but the cursor always shows the resize affordance over the 8px strip. */

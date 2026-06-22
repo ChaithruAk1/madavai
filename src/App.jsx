@@ -1067,7 +1067,7 @@ export default function App() {
     <>
     <div className="model-dock">
       {isAgentMode && <EnvPicker cwd={cwd} onPickFolder={pickFolder} onUseFolder={useFolder} onAddRepoUrl={addRepo} github={mode !== "cowork"} />}
-      <ModelPicker value={dockValue} groups={pickerGroups} onChange={onPickModel} onRefresh={refreshModels} />
+      <ModelPicker value={dockValue} groups={pickerGroups} onChange={onPickModel} onRefresh={refreshModels} task={{ mode }} />
       {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
     </div>
     <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-3, var(--text-2))", marginTop: 6, opacity: 0.72 }}>Madav is AI and can make mistakes. Please double-check responses.</div>

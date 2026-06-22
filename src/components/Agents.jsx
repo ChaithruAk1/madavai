@@ -1786,7 +1786,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           </div>
           <div className="ag-head-right">
             <span className={`ags-mp ${needModel ? "need" : ""}`}>
-              <ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} agenticOnly />
+              <ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} agenticOnly task={{ mode: "agent" }} />
             </span>
           </div>
         </div>
@@ -1925,7 +1925,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
                         <div className="rcr-cfg-box">
                           <div className="rcr-cfg-h">Team model<HelpDot mode="agents" section="teammodel" /></div>
                           <div className="ag-model-row">
-                            <ModelPicker value={team.applyModel || undefined} groups={groups} onChange={(v) => setRcProposal({ ...rcProposal, team: { ...team, applyModel: v } })} onRefresh={onRefresh} agenticOnly />
+                            <ModelPicker value={team.applyModel || undefined} groups={groups} onChange={(v) => setRcProposal({ ...rcProposal, team: { ...team, applyModel: v } })} onRefresh={onRefresh} agenticOnly task={{ mode: "team" }} />
                             {team.applyModel && <button className="btn ghost" onClick={() => setRcProposal({ ...rcProposal, team: { ...team, applyModel: "" } })}>Unpin</button>}
                           </div>
                           {!team.applyModel && <span className="ag-hint" style={{ margin: "4px 0 0" }}>Unpinned — each uses the live selector.</span>}
@@ -2405,7 +2405,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
         <div className="ags-topbar-right">
           {saved && <span className="ag-saved"><Check size={12} /> Saved</span>}
           {saveErr && <span className="ag-err" style={{ margin: 0 }}>{saveErr}</span>}
-          <span className="ags-mp"><ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} agenticOnly /></span>
+          <span className="ags-mp"><ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} agenticOnly task={{ mode: "agent" }} /></span>
           <button className="btn ghost" disabled={saveBusy} onClick={() => saveDraft(false)}>{saveBusy ? "Saving…" : "Save"}</button>
           <button className="btn primary" disabled={!canRun || saveBusy} onClick={launch}><Rocket size={13} /> Put to work</button>
         </div>
@@ -2638,7 +2638,7 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
               </>)}
               <label>Pinned model <span>— overrides the live selector for this agent</span><HelpDot mode="agents" section="pinnedmodel" /></label>
               <div className="ag-model-row">
-                <ModelPicker value={draft.model || undefined} groups={groups} onChange={(v) => setDraft({ ...draft, model: v })} onRefresh={onRefresh} agenticOnly />
+                <ModelPicker value={draft.model || undefined} groups={groups} onChange={(v) => setDraft({ ...draft, model: v })} onRefresh={onRefresh} agenticOnly task={{ mode: "agent" }} />
                 {draft.model
                   ? <button className="btn ghost" onClick={() => setDraft({ ...draft, model: "" })}>Unpin</button>
                   : <span className="ag-hint" style={{ margin: 0 }}>Unpinned — uses the live selector.</span>}

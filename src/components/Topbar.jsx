@@ -68,7 +68,7 @@ export default function Topbar({ mode, model, groups, onModel, onRefresh, permis
       )}
       {agent && <PermissionPicker value={permissionMode} onChange={onPermissionChange} />}
       {agent && <HelpDot mode="cowork" section="permission" />}
-      {mode !== "settings" && <ModelPicker value={model} groups={groups} onChange={onModel} onRefresh={onRefresh} />}
+      {mode !== "settings" && <ModelPicker value={model} groups={groups} onChange={onModel} onRefresh={onRefresh} task={{ mode }} />}
       {mode !== "settings" && <HelpDot mode="chat" section="model" />}
     </div>
   );

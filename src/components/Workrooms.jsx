@@ -861,7 +861,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
           {/* CENTER — the work feed */}
           <main className="wr-feed">
             <Composer mode="project" busy={false} onSend={(text) => onStartChat && onStartChat(room, text)} onStop={() => {}} />
-            {onSelectModel && <div className="model-dock"><ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} /></div>}
+            {onSelectModel && <div className="model-dock"><ModelPicker value={activeValue} groups={groups} onChange={onSelectModel} onRefresh={onRefresh} task={{ mode: "project", hasFolder: !!room.folder }} /></div>}
             <button className="pjd-cowork" onClick={() => onStartCowork && onStartCowork(room)}>
               <Users size={15} /> Work in the room's folder (Let's Collaborate)
             </button>

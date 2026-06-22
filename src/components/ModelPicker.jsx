@@ -5,12 +5,15 @@ import { bridge } from "../bridge/index.js";
 import { localCaps } from "../data/localModels.js";
 import HelpDot from "./HelpDot.jsx";
 import { isModelFree } from "../modelCost.js"; // SINGLE SOURCE: free/paid from the provider, not the name
+import { modelFit, taskNeedsStrong, FIT_RANK } from "../../core/model-fit.js"; // SINGLE SOURCE: task-aware fit, shared web+desktop
 
 // `classify` (a model's purpose from its name) moved to src/data/providerRules.js, so THIS file exports
 // only the ModelPicker component — that keeps React Fast Refresh working (no full app reload on edits).
 const PURPOSE_COLOR = { coding: "#7ee787", reasoning: "#d2a8ff", vision: "#79c0ff", fast: "#ffd479", embeddings: "#79c0ff", agentic: "#f0883e", general: "var(--text-2)" };
 const chipStyle = (active) => ({ padding: "4px 12px", borderRadius: 999, fontSize: 11.5, lineHeight: 1.5, border: "1px solid " + (active ? "var(--accent)" : "var(--line)"), background: active ? "var(--accent)" : "transparent", color: active ? "#04121a" : "var(--text-2)", cursor: "pointer", fontWeight: active ? 600 : 400 });
 const pill = (color) => ({ fontSize: 10, padding: "1px 7px", borderRadius: 999, border: `1px solid color-mix(in srgb, ${color} 40%, transparent)`, background: `color-mix(in srgb, ${color} 12%, transparent)`, color, whiteSpace: "nowrap", lineHeight: 1.6, fontWeight: 600 });
+const FIT_COLOR = { good: "#7ee787", recipe: "#79c0ff", weak: "#ffd479" }; // task-aware fit badge colors
+const fitPill = (fit) => pill(FIT_COLOR[fit] || "var(--text-2)");
 
 // Provider → domain, for real logos (site favicons).
 const DOMAIN = {
@@ -39,7 +42,7 @@ function Logo({ name, prov }) {
 // `groups` are provider-derived: [{ group: providerName, items: [{id:"pid::model", name, prov, badge}] }]
 // `agenticOnly`: opt-in pre-filter to tool-calling-capable models (used by Agent Studio —
 // agents need function calling). The default global picker behavior is unchanged.
-export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh, agenticOnly = false, compact = false, placeholder = "" }) {
+export default function ModelPicker({ value, onChange, groups: groupsProp, onRefresh, agenticOnly = false, compact = false, placeholder = "", task = null }) {
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false); // bottom half of the screen → the menu opens upward
@@ -118,6 +121,10 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
     fast: (it) => /flash|mini|lite|haiku|tiny|small|turbo|nano/i.test(it.name || ""),
     agentic: (it, group) => agenticOf(it, group),
   };
+  // Task-aware fit (single source: core/model-fit.js). Null when no task context is passed.
+  const modelStrOf = (it) => (it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name) || it.name || "";
+  const fitOf = (it, group) => task ? modelFit(modelStrOf(it), { agentic: agenticOf(it, group), fast: CAPS.fast(it), free: isFree(it) }, task) : null;
+  const heavyTask = !!task && taskNeedsStrong(task);
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -148,7 +155,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   // can switch on; off by default, every model is selectable.
   const [agOnly, setAgOnly] = useState(false);
   const groups = source
-    .map((g) => ({ ...g, items: g.items.filter((it) => {
+    .map((g) => { let items = g.items.filter((it) => {
       if (!(it.name + it.id).toLowerCase().includes(q.toLowerCase())) return false;
       if (agOnly && !CAPS.agentic(it, g.group)) return false; // only when the user opts in
       if (maker !== "all" && makerOf(it, g.group) !== maker) return false;
@@ -160,7 +167,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
       if (host === "local" && !local) return false;
       for (const k of caps) { if (CAPS[k] && !CAPS[k](it, g.group)) return false; } // multi-select, AND-combined
       return true;
-    }) }))
+    }); if (task) items = items.slice().sort((a, b) => ((FIT_RANK[fitOf(a, g.group)?.fit] ?? 1) - (FIT_RANK[fitOf(b, g.group)?.fit] ?? 1))); return { ...g, items }; })
     .filter((g) => g.items.length);
   const shown = groups.reduce((n, g) => n + g.items.length, 0);
   // Render cap: 250 rows max in the DOM (filters/search still cover everything) — keeps the
@@ -231,6 +238,13 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
           </div>{/* /mp-head */}
           <div className="mp-scroll scroll">
 
+          {heavyTask && (
+            <div className="mp-fit-hint">
+              {task.mode === "project"
+                ? "This project runs multi-step jobs. ✓ Recommended models do it directly; lighter ones work once a recipe is saved."
+                : "This task needs multi-step tool use. ✓ Recommended models handle it; lighter ones may stall."}
+            </div>
+          )}
           {groups.length === 0 && (
             <div className="model-group" style={{ textTransform: "none", color: "var(--text-2)", padding: 12 }}>
               No models match these filters. Clear a filter, or open Settings to add a provider.
@@ -264,6 +278,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
                   <div key={it.id} title={it.name} className={`model-row ${it.id === value ? "sel" : ""}`} onClick={() => { onChange(it.id); setOpen(false); }} style={{ gap: 9 }}>
                     <Logo name={it.name} prov={it.prov || g.group} />
                     <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                    {heavyTask && (() => { const f = fitOf(it, g.group); return f ? <span style={fitPill(f.fit)} title={f.why}>{f.label}</span> : null; })()}
                     {tags.slice(0, 3).map((t) => <span key={t} style={pill(PURPOSE_COLOR[t])}>{t}</span>)}
                     <span style={pill(hostColor)}>{hostLabel}</span>
                     {it.id === value && <Check size={15} className="check" style={{ flex: "none" }} />}
