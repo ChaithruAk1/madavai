@@ -9,7 +9,16 @@ describe("model-fit — task-aware model fit (single source)", () => {
   it("heavy task + capable model = recommended", () => {
     expect(modelFit("claude-opus", { agentic: true }, { mode: "agent" }).fit).toBe("good");
     expect(modelFit("deepseek-chat", { agentic: true }, { mode: "project", hasFolder: true }).fit).toBe("good");
-    expect(modelFit("openai/gpt-oss-120b", {}, { mode: "agent" }).fit).toBe("good"); // 120B clears the gate
+    expect(modelFit("meta-llama/llama-3.3-70b-instruct", {}, { mode: "agent" }).fit).toBe("good");
+  });
+  it("large-active MoE (a22b) clears the gate; small-active (a12b) does not", () => {
+    expect(modelFit("qwen3-235b-a22b", {}, { mode: "agent" }).fit).toBe("good");
+    expect(modelFit("nemotron-3-super-120b-a12b:free", {}, { mode: "project", hasFolder: true }).fit).toBe("recipe");
+    expect(modelFit("nemotron-3-super-120b-a12b:free", {}, { mode: "agent" }).fit).toBe("weak");
+  });
+  it("gpt-oss family is treated as light (small-active MoE)", () => {
+    expect(modelFit("openai/gpt-oss-120b", {}, { mode: "project" }).fit).toBe("recipe");
+    expect(modelFit("openai/gpt-oss-120b", {}, { mode: "agent" }).fit).toBe("weak");
   });
   it("project + weak model = recipe path (not a dead end)", () => {
     expect(modelFit("stepfun-ai/step-3.5-flash", {}, { mode: "project", hasFolder: true }).fit).toBe("recipe");
