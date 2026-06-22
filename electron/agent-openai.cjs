@@ -330,7 +330,25 @@ async function execTool(cwd, name, args, mission) {
     case "run_bash": {
       const _blocked = destructiveBashGuard(args.command);
       if (_blocked) return _blocked;
-      return harness.headTail(await execAsync(args.command, { cwd, encoding: "utf8", timeout: 120000, maxBuffer: 8 * 1024 * 1024, env: runnerEnv() }), { maxChars: 8000 });
+      let _cmd = args.command, _tmpPy = null;
+      // Windows cmd.exe (how exec runs) mangles a MULTI-LINE `python -c "..."`: the embedded newlines
+      // break the command, it returns nothing, and the agent loops forever (the DTC report regression,
+      // 2026-06-22). Detect that exact pattern and run the inline script from a temp .py file instead --
+      // reliable on every shell. Single-line -c is left untouched.
+      try {
+        const _m = /^([\s\S]*?\b(?:python3?|py)\s+-c\s+)"([\s\S]*)"(\s*2>&1)?\s*$/.exec(_cmd);
+        if (_m && _m[2] && _m[2].includes("\n")) {
+          const _os = require("os");
+          _tmpPy = path.join(_os.tmpdir(), `madav_inline_${Date.now()}_${Math.floor(Math.random() * 1e4)}.py`);
+          fs.writeFileSync(_tmpPy, _m[2]);
+          _cmd = _m[1].replace(/\s+-c\s+$/, " ") + `"${_tmpPy}"` + (_m[3] || "");
+        }
+      } catch {}
+      try {
+        return harness.headTail(await execAsync(_cmd, { cwd, encoding: "utf8", timeout: 120000, maxBuffer: 8 * 1024 * 1024, env: runnerEnv() }), { maxChars: 8000 });
+      } finally {
+        if (_tmpPy) { try { fs.unlinkSync(_tmpPy); } catch {} }
+      }
     }
     case "find_files": {
       const out = [];
