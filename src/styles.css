@@ -963,7 +963,7 @@ input, textarea, select { font-family: inherit; }
 .composer-pill .icon-btn.bare:hover { background: rgba(255,255,255,0.06); border-radius: 50%; color: var(--text-0); }
 .composer-pill .icon-btn.bare.rec, .composer-pill .icon-btn.bare.speak-on { background: var(--accent-weak); color: var(--accent); border-radius: 50%; }
 /* Round theme-colored send that pops in while typing. */
-.composer-pill .send { width: 34px; height: 34px; border-radius: 50%; margin-left: 2px; }
+.composer-pill .send { width: 30px; height: 30px; border-radius: 50%; margin-left: 2px; }
 .composer-pill .send.pop { animation: sendpop .18s ease-out; }
 @keyframes sendpop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .composer-subrow { display: flex; justify-content: center; }
