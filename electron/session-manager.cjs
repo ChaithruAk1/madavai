@@ -5,7 +5,7 @@
 // Both emit normalized UiEvents via emit().
 const { streamChat } = require("./providers.cjs");
 const { runAgentTurn } = require("./agent-transport.cjs");
-const { runOpenAIAgentTurn } = require("./agent-openai.cjs");
+const { runOpenAIAgentTurn, runScriptInFolder } = require("./agent-openai.cjs");
 const settings = require("./settings.cjs");
 const store = require("./projects-store.cjs");
 const sstore = require("./sessions-store.cjs");
@@ -20,6 +20,8 @@ const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
 let _plP = null; const _pl = () => (_plP ||= import("../core/project-lanes.js")); // SINGLE SOURCE lane decision (A=engine / B=recipe / C=caged loop)
 let _recP = null; const _rec = () => (_recP ||= import("../core/recipes.js")); // SINGLE SOURCE recipes — learn once, replay
+let _pjP = null; const _pj = () => (_pjP ||= import("../core/project-job.js")); // SINGLE SOURCE job engine
+let _prP = null; const _pr = () => (_prP ||= import("../core/project-runner.js")); // SINGLE SOURCE orchestrator
 
 // Surface office files the agent produced as Open/Download cards in the chat. Works for ANY model
 // (Claude SDK + the OpenAI loop both covered). Robust by DIFF: snapshot the folder before the run,
@@ -932,6 +934,45 @@ class SessionManager {
   }
 
   // ---- project conversations (persisted, knowledge-grounded chat) ----
+  // Deterministic project engine (single source: core/project-runner.js). For a folder-linked DATA
+  // task: inspect the files ourselves, then either REPLAY the saved job or AUTHOR one script (bounded
+  // repair), validate the output, and save the job. Returns true if it handled the turn; false/throw
+  // -> caller falls open to the caged agent loop. Web uses the SAME core orchestrator with its adapters.
+  async _tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }) {
+    if (!(project.folder && beforeFiles && beforeFiles.size > 0)) return false;
+    const PJ = await _pj(), PR = await _pr();
+    const path2 = require("path");
+    const pybin = (pe && pe.py) || "python";
+    const adapters = {
+      model: profile.model, provider: profile.name,
+      emit: (kind, data) => { if (kind === "status" && data && data.reason) emit({ kind: "assistant_delta", data: { text: "\n\u2022 " + data.phase + ": " + data.reason } }); },
+      inspect: async (folder) => { const r = await runScriptInFolder(PR.INSPECT_PY, folder, { bin: pybin }); try { return JSON.parse(r.output); } catch { return []; } },
+      loadJobs: async () => store.getJobs(s.projectId),
+      saveJobs: async (list) => store.saveJobs(s.projectId, list),
+      author: async ({ task, instructions, schema, fixError, prevScript }) => {
+        const prompt = PJ.authoringPrompt({ task, instructions, schema, fixError, prevScript });
+        const out = await streamChat(profile, [{ role: "system", content: "You write ONE complete Python script. Output only a single python code block, no prose." }, { role: "user", content: prompt }], { signal: controller.signal });
+        return { script: PJ.extractScript(out && out.text), outputs: [] };
+      },
+      run: async (script, folder) => {
+        const before = scanOffice(folder);
+        await runScriptInFolder(script, folder, { bin: pybin });
+        const after = scanOffice(folder);
+        const produced = [...after].filter(([p, m]) => before.get(p) !== m).map(([p]) => path2.basename(p));
+        return { ok: produced.length > 0, error: produced.length ? "" : "the script produced no output file", produced };
+      },
+    };
+    const result = await PR.runProjectJob({ task: userText, instructions: project.instructions || "", folder: project.folder }, adapters);
+    const note = result.ok
+      ? (result.mode === "replay" ? "Done \u2014 reused this project's saved, proven procedure on the current data." : "Done \u2014 built the deliverable. Please review it; once you confirm it's right, Madav reuses this exact procedure next time.")
+      : ("I couldn't finish this within a bounded number of attempts. Last error: " + (result.error || "unknown") + ".");
+    s.history.push({ role: "assistant", content: note });
+    emit({ kind: "assistant_delta", data: { text: "\n\n" + note } });
+    emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
+    emit({ kind: "result", data: { subtype: result.ok ? "success" : "failed" } });
+    return true;
+  }
+
   async _projectTurn(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
     const project = store.getProject(s.projectId);
@@ -1001,7 +1042,9 @@ class SessionManager {
         try { const { decideLane } = await _pl(); lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText }); } catch {}
         laneUsed = lane;
         const laneMode = lane === "A" ? "chat" : (useFolder ? "cowork" : "chat");
-        await runOpenAIAgentTurn({
+        let handled = false;
+        if (useFolder && lane !== "A") { try { handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); } catch (oe) { handled = false; } }
+        if (!handled) await runOpenAIAgentTurn({
           prompt: userText + materializeImages(images), mode: laneMode, cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
           connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),

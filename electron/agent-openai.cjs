@@ -49,6 +49,20 @@ const execAsync = (command, opts) => new Promise((resolve) => {
 // Review H3: hard deny-list for CATASTROPHIC shell commands, enforced even under auto-approve /
 // bypassPermissions. The weak-model office pipeline runs ONE python script, so this never trips it;
 // it is defense-in-depth against prompt-injection, NOT a replacement for the permission gate.
+// SINGLE desktop execution path for Madav/model-authored scripts: write to a temp file and run it
+// (never inline multi-line -c). Returns { ok, output }. Shared by the project-job adapters
+// (inspect/run) so there is ONE hardened runner.
+async function runScriptInFolder(script, cwd, opts = {}) {
+  const osMod = require("os");
+  const ext = opts.ext || ".py", bin = opts.bin || "python", timeout = opts.timeout || 120000;
+  const tmp = path.join(osMod.tmpdir(), "madav_job_" + Date.now() + "_" + Math.floor(Math.random() * 1e4) + ext);
+  try { fs.writeFileSync(tmp, String(script == null ? "" : script)); } catch (e) { return { ok: false, output: "ERROR: cannot write script: " + (e && e.message) }; }
+  try {
+    const out = await execAsync(bin + ' "' + tmp + '"', { cwd, encoding: "utf8", timeout, maxBuffer: 8 * 1024 * 1024, env: runnerEnv() });
+    return { ok: !/^ERROR:/.test(out), output: out };
+  } finally { try { fs.unlinkSync(tmp); } catch {} }
+}
+
 function destructiveBashGuard(command) {
   const c = String(command || "");
   const DANGER = [
@@ -1041,4 +1055,4 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
   emit({ kind: "result", data: { subtype: "max_steps", duration_ms: Date.now() - started } });
 }
 
-module.exports = { runOpenAIAgentTurn };
+module.exports = { runOpenAIAgentTurn, runScriptInFolder };
