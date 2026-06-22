@@ -713,7 +713,7 @@ async function runOpenAIAgentTurn({ prompt, mode, cwd, profile, history, emit, p
       modelStats.bump(model, "success");
       return;
     }
-    { const _sig = toolCalls.map((tc) => tc.name).join("+"); const n = runGuard.note(_sig); if (n.stop) { const m = guardStopMessage(n.code); emit({ kind: "assistant_delta", data: { text: m } }); emit({ kind: "assistant_message", data: { stop_reason: "guard" } }); if (rec) rec.finish({ text: m, numTurns: step + 1, capped: true }); modelStats.bump(model, "maxSteps"); emit({ kind: "result", data: { subtype: "guard_" + n.code, num_turns: step + 1, duration_ms: Date.now() - started } }); return; } }
+    { const _sig = toolCalls.map((tc) => tc.name + ":" + String(tc.arguments == null ? "" : tc.arguments).slice(0, 300)).join("+"); const n = runGuard.note(_sig); // args-aware: only an IDENTICAL repeated call is a loop, not just the same tool name if (n.stop) { const m = guardStopMessage(n.code); emit({ kind: "assistant_delta", data: { text: m } }); emit({ kind: "assistant_message", data: { stop_reason: "guard" } }); if (rec) rec.finish({ text: m, numTurns: step + 1, capped: true }); modelStats.bump(model, "maxSteps"); emit({ kind: "result", data: { subtype: "guard_" + n.code, num_turns: step + 1, duration_ms: Date.now() - started } }); return; } }
     // Tool-calling step: suppress the model's pre-tool narration so it can't claim
     // success before the user approves. The tool cards convey the action.
 
