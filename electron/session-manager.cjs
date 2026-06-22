@@ -930,7 +930,7 @@ class SessionManager {
     }
     const beforeScripts = useFolder ? scanScripts(project.folder) : null;
     let recipeBlock = "", laneUsed = "C"; // Stage 3 — recipe priming + the lane actually used (captured in finally)
-    try { const R = await _rec(); const rcp = R.matchRecipe(store.getRecipes(s.projectId), userText); recipeBlock = R.recipePromptBlock(rcp); } catch {}
+    try { const R = await _rec(); const recs = store.getRecipes(s.projectId); const clean = recs.filter((r) => R.recipeInScope(r, project.folder)); if (clean.length !== recs.length) store.saveRecipes(s.projectId, clean); const rcp = R.matchRecipe(clean, userText); if (rcp) recipeBlock = R.recipePromptBlock(rcp); } catch {}
     const gi = settings.load().globalInstructions;
     const sys = store.projectSystem(project) + ARTIFACT_RULE_BASE + officeRulePart() +
       (useFolder ? `\n\nThis room is linked to a folder at: ${project.folder}. DEFAULT \u2014 to GENERATE a report / spreadsheet / deck / document from a description, emit ONE officedoc block (per the office rules above) and nothing else for that deliverable: Madav builds the polished file with its engine and saves it directly INTO this folder, so do NOT write a script for pure generation. Use your file / script tools ONLY when the task needs you to READ and process files that ALREADY EXIST in this folder (e.g. summarise a provided CSV, or fill a template the user placed here) \u2014 then read them, compute, and SAVE the finished file into this folder by name (e.g. result.to_excel("Summary.xlsx")). ${pyNote} Either way the deliverable ends up in this folder; then reply with ONE short, plain-English sentence naming it.` : "") +
@@ -1020,7 +1020,7 @@ class SessionManager {
             .map((p) => { let content = ""; try { content = fs.readFileSync(p, "utf8"); } catch {} return { name: path.basename(p), content }; });
           const R = await _rec();
           const recipe = R.makeRecipe({ task: userText, scripts, outputs: newOuts.map((o) => o.name), lane: laneUsed, model: (profile && profile.model) || "" });
-          store.saveRecipes(s.projectId, R.upsertRecipe(store.getRecipes(s.projectId), recipe));
+          if (R.recipeInScope(recipe, project.folder)) store.saveRecipes(s.projectId, R.upsertRecipe(store.getRecipes(s.projectId), recipe));
         }
       } catch {}
     }

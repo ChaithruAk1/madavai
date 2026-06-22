@@ -54,6 +54,20 @@ export function upsertRecipe(recipes, recipe) {
   return list.slice(-50);
 }
 
+// Is a recipe SAFE to use in this project's folder? A recipe must NEVER carry another project's path.
+// Returns true only if its scripts/outputs reference paths under `folder` (or no absolute paths at all).
+// This keeps every project's operations scoped to its OWN folder. Pure logic.
+export function recipeInScope(recipe, folder) {
+  if (!recipe) return false;
+  if (!folder) return true; // nothing to scope against (e.g. web projects have no local folder)
+  const norm = (s) => String(s || "").replace(/\//g, "\\").replace(/\\+$/, "").toLowerCase();
+  const root = norm(folder);
+  const text = (recipe.scripts || []).map((s) => (s && s.content) || "").join("\n") + "\n" + (recipe.outputs || []).join("\n");
+  const paths = text.match(/[a-zA-Z]:[\\/][^\s"'`]*/g) || [];
+  for (const p of paths) { const np = norm(p); if (np !== root && !np.startsWith(root + "\\")) return false; } // a path outside the project folder
+  return true;
+}
+
 // Render the proven recipe as a system-prompt block: hand the model the known-good script(s) to reuse.
 export function recipePromptBlock(recipe) {
   if (!recipe) return "";

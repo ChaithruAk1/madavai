@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { taskKeyOf, makeRecipe, matchRecipe, upsertRecipe, recipePromptBlock } from "../../core/recipes.js";
+import { taskKeyOf, makeRecipe, matchRecipe, upsertRecipe, recipePromptBlock, recipeInScope } from "../../core/recipes.js";
 
 describe("recipes — learn once, replay", () => {
   it("maps the same task across months/years/numbers to ONE key", () => {
@@ -33,5 +33,13 @@ describe("recipes — learn once, replay", () => {
   });
   it("recipePromptBlock is empty for no recipe", () => {
     expect(recipePromptBlock(null)).toBe("");
+  });
+  it("recipeInScope rejects a recipe that references ANOTHER project's folder", () => {
+    const good = makeRecipe({ task: "execute report", scripts: [{ name: "r.py", content: "df.to_excel('C:/Testing/Report.xlsx')" }] });
+    const bad = makeRecipe({ task: "execute report", scripts: [{ name: "r.py", content: "df.to_excel('C:/DTCKPI/Report.xlsx')" }] });
+    expect(recipeInScope(good, "C:\\Testing")).toBe(true);
+    expect(recipeInScope(bad, "C:\\Testing")).toBe(false);
+    expect(recipeInScope(bad, "")).toBe(true); // no folder -> no scope restriction (e.g. web)
+    expect(recipeInScope(good, "C:\\Testing2")).toBe(false); // sibling folder is NOT in scope
   });
 });
