@@ -1,0 +1,79 @@
+// core/project-job.js — SINGLE SOURCE for the recurring "project job" lifecycle.
+// A Job is a saved, deterministic procedure for a recurring project task. It is REPLAYED
+// (run the saved script, no model) when nothing structural changed, and RE-AUTHORED
+// (the model writes a fresh script once, then it's reviewed) when the instructions OR the
+// data SHAPE change. Pure ESM — shared by desktop and web. This module owns the decision
+// logic + fingerprints; the actual inspection/execution is platform plumbing the caller does.
+import { taskKeyOf } from "./recipes.js";
+
+// Tiny stable string hash (djb2) — same input -> same short token, cross-platform.
+function djb2(s) {
+  let h = 5381; const str = String(s == null ? "" : s);
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+// schema: [{ file, columns:[...], dtypes:{col:type} }] -> a stable signature of the DATA SHAPE
+// (file names + column names; NOT the values). New rows / a new month keep the same signature;
+// a renamed/added/removed column or file changes it.
+export function schemaSignature(schema) {
+  if (!Array.isArray(schema)) return "";
+  const norm = schema
+    .map((f) => ({
+      file: String((f && f.file) || "").trim().toLowerCase(),
+      cols: ((f && f.columns) || []).map((c) => String(c).trim().toLowerCase()).sort(),
+    }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+  return djb2(JSON.stringify(norm));
+}
+
+// Normalize instructions so trivial whitespace/case edits don't force a re-author, but real
+// wording changes do.
+export function instructionsHash(text) {
+  return djb2(String(text || "").replace(/\s+/g, " ").trim().toLowerCase());
+}
+
+export function makeJob({ task, instructions, schema, script, outputs, model, provider } = {}) {
+  return {
+    taskKey: taskKeyOf(task || ""),
+    task: task || "",
+    instr: instructionsHash(instructions),
+    schemaSig: schemaSignature(schema),
+    script: script || null,        // the proven build script (the procedure)
+    outputs: (outputs || []).slice(), // expected output file names (for validation)
+    model: model || "", provider: provider || "",
+    status: "active",              // "active" = trusted for replay; "provisional" = awaiting review
+    createdAt: Date.now(),
+  };
+}
+
+export function findJob(jobs, task) {
+  const key = taskKeyOf(task || "");
+  const hits = (jobs || []).filter((j) => j && j.taskKey === key && j.status !== "retired");
+  return hits.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] || null;
+}
+
+// THE decision: given the saved job + the CURRENT instructions and schema, replay or re-author?
+// -> { action: "replay" | "author", reason }
+export function decideRun(job, currentInstructions, currentSchema) {
+  if (!job || !job.script) return { action: "author", reason: "no saved procedure yet" };
+  if (job.status === "provisional") return { action: "author", reason: "the saved procedure is not confirmed yet" };
+  if (job.instr !== instructionsHash(currentInstructions)) return { action: "author", reason: "the instructions changed" };
+  if (job.schemaSig !== schemaSignature(currentSchema)) return { action: "author", reason: "the data files or columns changed" };
+  return { action: "replay", reason: "same task, same data shape" };
+}
+
+export function upsertJob(jobs, job) {
+  const out = (jobs || []).filter((j) => j && j.taskKey !== job.taskKey);
+  out.push(job);
+  return out;
+}
+
+// Did the run actually produce the expected output files? produced = file names seen after the run.
+// -> { ok, missing }
+export function validateOutputs(job, produced) {
+  const want = ((job && job.outputs) || []).map((s) => String(s).toLowerCase());
+  const have = new Set((produced || []).map((s) => String(s).toLowerCase()));
+  const missing = want.filter((w) => !have.has(w));
+  return { ok: want.length > 0 && missing.length === 0, missing };
+}
