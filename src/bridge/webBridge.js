@@ -1385,6 +1385,7 @@ export const webBridge = {
   async getConversation(id) { return LS.get("be.convs", {})[id] || null; },
   async createConversation(projectId) { const all = LS.get("be.convs", {}); const c = { id: rid("cnv_"), projectId, title: "New conversation", messages: [], updatedAt: Date.now() }; all[c.id] = c; LS.set("be.convs", all); return c; },
   async deleteConversation(id) { const all = LS.get("be.convs", {}); delete all[id]; LS.set("be.convs", all); return true; },
+  async renameConversation(id, title) { const all = LS.get("be.convs", {}); if (all[id]) { const t = String(title == null ? "" : title).trim().slice(0, 200); if (t) all[id].title = t; all[id].updatedAt = Date.now(); LS.set("be.convs", all); } return all[id] || null; },
 
   // ---- scheduled tasks: implemented by the Phase 3 S4 server-backed adapter above (managed runner) ----
 

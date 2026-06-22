@@ -300,7 +300,7 @@ export default function App() {
         setTimeline((tl) => tl.map((it) => it.type === "tool" && it.id === e.data.id ? { ...it, status: "deny" } : it));
         break;
       case "result":
-        setStreaming(false); setBusy(false); setTimeline((tl) => { streamOpen.current = false; return tl; }); // defer close (see assistant_message)
+        setStreaming(false); setBusy(false); setTimeline((tl) => { streamOpen.current = false; return tl.map((it) => it.type === "tool" && it.status === "run" ? { ...it, status: "done" } : it); }); // defer close + settle any lingering tool steps
         if (sessionRef.current) runBusy.current.set(sessionRef.current, false);
         setTeamRun((r) => r ? { ...r, finished: true, synth: r.synth === "working" ? "done" : r.synth } : r);
         setSoloRun((r) => r ? { ...r, finished: true, endedAt: Date.now(), steps: r.steps.map((s) => s.status === "run" ? { ...s, status: "done" } : s) } : r);
@@ -321,7 +321,7 @@ export default function App() {
         setTimeline((tl) => tl.some((it) => it.type === "fileout" && (e.data.path ? it.path === e.data.path : it.name === e.data.name)) ? tl : [...tl, { type: "fileout", name: e.data.name, path: e.data.path, b64: e.data.b64 }]);
         break;
       case "error":
-        setStreaming(false); setBusy(false); setTimeline((tl) => { streamOpen.current = false; return tl; }); // defer close (see assistant_message)
+        setStreaming(false); setBusy(false); setTimeline((tl) => { streamOpen.current = false; return tl.map((it) => it.type === "tool" && it.status === "run" ? { ...it, status: "done" } : it); }); // defer close + settle any lingering tool steps
         if (sessionRef.current) runBusy.current.set(sessionRef.current, false);
         setTimeline((tl) => [...tl, { type: "message", role: "assistant", text: `⚠ ${e.data?.message || "Error"}` }]);
         setHistRefresh((n) => n + 1); // keep the saved-chat list fresh even if the first turn errors
@@ -699,6 +699,14 @@ export default function App() {
     setProjOpenId(coworkProj.id);
     setMode("project"); setProjectCtx(null); setCoworkProj(null);
     setTimeline([]); setActiveConvId(null); sessionRef.current = null; streamOpen.current = false; setBusy(false);
+  };
+  // Back from a project CHAT to THAT project's own page (its chat list) — not the all-projects list.
+  const backToProjectPage = () => {
+    const pid = projectCtx && projectCtx.projectId;
+    if (!pid) return backToProjects();
+    modeCacheRef.current.project = null;
+    setProjectCtx(null); setTimeline([]); sessionRef.current = null; setBusy(false);
+    setProjOpenId(pid);
   };
 
   // Start a new project conversation from the Projects detail composer (opens the chat surface + sends).
@@ -1125,7 +1133,7 @@ export default function App() {
                     <div className="hero-ctx">
                       {projectCtx && (
                         <div className="hero-opts">
-                          <button className="chip" onClick={backToProjects}>← Projects</button>
+                          <button className="chip" onClick={backToProjectPage}>← Back</button>
                           <span className="chip">{projectCtx.projectName} · {projectCtx.title}</span>
                         </div>
                       )}
@@ -1185,7 +1193,7 @@ export default function App() {
                     ) : (
                       <div className="hero-greet"><MadavMark size={44} /><h1 className="greeting">{greeting}</h1></div>
                     )}
-                    <Composer mode={mode} busy={busy || streaming || !!(soloRun && !soloRun.finished) || !!(teamRun && !teamRun.finished)} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} permissionMode={permissionMode} onPermissionChange={changePermission} />
+                    <Composer mode={mode} busy={busy || streaming || !!(soloRun && !soloRun.finished) || !!(teamRun && !teamRun.finished) || timeline.some((it) => it.type === "tool" && it.status === "run")} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {modelRow}
                   </div>
                 </div>
@@ -1224,7 +1232,7 @@ export default function App() {
                   )}
                   {projectCtx && (
                     <div className="folder-bar">
-                      <button className="btn ghost" onClick={backToProjects} style={{ padding: "4px 8px" }}>← Projects</button>
+                      <button className="btn ghost" onClick={backToProjectPage} style={{ padding: "4px 8px" }}>← Back</button>
                       <FolderKanban size={14} />
                       <span className="path">{projectCtx.projectName}</span>
                       <span style={{ color: "var(--text-2)" }}>· {projectCtx.title}</span>
@@ -1310,7 +1318,7 @@ export default function App() {
                       )}
                     </div>
                   </div>
-                  <Composer mode={mode} busy={busy || streaming || !!(soloRun && !soloRun.finished) || !!(teamRun && !teamRun.finished)} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} />
+                  <Composer mode={mode} busy={busy || streaming || !!(soloRun && !soloRun.finished) || !!(teamRun && !teamRun.finished) || timeline.some((it) => it.type === "tool" && it.status === "run")} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} />
                   {modelRow}
                 </>
               )}

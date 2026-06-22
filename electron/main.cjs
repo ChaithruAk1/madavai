@@ -813,6 +813,7 @@ ipcMain.handle("madav:listConversations", (_e, projectId) => store.listConversat
 ipcMain.handle("madav:getConversation", (_e, id) => store.getConversation(id));
 ipcMain.handle("madav:createConversation", (_e, projectId) => store.createConversation(projectId));
 ipcMain.handle("madav:deleteConversation", (_e, id) => store.deleteConversation(id));
+ipcMain.handle("madav:renameConversation", (_e, id, title) => store.renameConversation(id, title));
 
 // ---- IPC: agent engine (memory · history · missions · versions · share files) ----
 const agentMemory = require("./agent-memory.cjs");

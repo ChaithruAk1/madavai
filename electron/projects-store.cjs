@@ -144,10 +144,11 @@ function createConversation(projectId) {
 }
 function saveConversation(c) { ensure(); c.updatedAt = Date.now(); fs.writeFileSync(convFile(c.id), JSON.stringify(c, null, 2)); return c; }
 function deleteConversation(id) { try { fs.unlinkSync(convFile(id)); } catch {} return true; }
+function renameConversation(id, title) { const c = getConversation(id); if (!c) return null; const t = String(title == null ? "" : title).trim().slice(0, 200); if (t) c.title = t; return saveConversation(c); }
 
 module.exports = {
   listProjects, getProject, createProject, updateProject, deleteProject,
   assignAgent, unassignAgent, assignTeam, unassignTeam,
   addKnowledge, removeKnowledge, projectSystem,
-  listConversations, getConversation, createConversation, saveConversation, deleteConversation,
+  listConversations, getConversation, createConversation, saveConversation, deleteConversation, renameConversation,
 };

@@ -130,6 +130,7 @@ contextBridge.exposeInMainWorld("madav", {
   getConversation: (id) => ipcRenderer.invoke("madav:getConversation", id),
   createConversation: (projectId) => ipcRenderer.invoke("madav:createConversation", projectId),
   deleteConversation: (id) => ipcRenderer.invoke("madav:deleteConversation", id),
+  renameConversation: (id, title) => ipcRenderer.invoke("madav:renameConversation", id, title),
 
   // --- agent engine: memory · track record · missions · versions · swarms · webhooks ---
   getAgentMemory: (agentId) => ipcRenderer.invoke("madav:getAgentMemory", agentId),

@@ -9,10 +9,10 @@
 // Engine contract: project.{identity,agentIds} (projects-store), assign/unassign IPC,
 // runs tagged projectId, getProjectAgentHistory for the room record.
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Trash2, FileText, FileUp, MessageSquare, Github, FolderInput, RefreshCw, Search, ArrowUpDown, ArrowLeft, Users, UserPlus, Hammer, BookOpen, Sparkles, Share2, Upload, X, Maximize2, LayoutGrid, List, Plug, GraduationCap, Play, BookOpen as BookIcon, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check, Archive, ListChecks, Copy, FileStack } from "lucide-react";
+import { Plus, Trash2, Pencil, FileText, FileUp, MessageSquare, Github, FolderInput, RefreshCw, Search, ArrowUpDown, ArrowLeft, Users, UserPlus, Hammer, BookOpen, Sparkles, Share2, Upload, X, Maximize2, LayoutGrid, List, Plug, GraduationCap, Play, BookOpen as BookIcon, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check, Archive, ListChecks, Copy, FileStack } from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
-import { madavAlert, madavConfirm } from "../dialogs.jsx";
+import { madavAlert, madavConfirm, madavPrompt } from "../dialogs.jsx";
 import Composer from "./Composer.jsx";
 import Portrait from "./Portrait.jsx";
 import ModelPicker from "./ModelPicker.jsx";
@@ -552,6 +552,13 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
     if (item.kind === "chat") { await bridge.deleteConversation(item.id); setConvs(await bridge.listConversations(selId)); }
     else { await bridge.deleteSession(item.id); loadSessions(); }
   };
+  const renameFeedItem = async (item) => {
+    if (item.kind !== "chat") return; // tasks aren't renameable
+    const t = await madavPrompt("Rename chat", { value: item.title || "", placeholder: "Chat name", okLabel: "Rename" });
+    if (!t) return;
+    await bridge.renameConversation(item.id, t);
+    setConvs(await bridge.listConversations(selId));
+  };
   const openFeedItem = (item) => {
     if (item.kind === "chat") onOpen && onOpen(room, { id: item.id, title: item.title });
     else onOpenTask && onOpenTask(item.id);
@@ -881,6 +888,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
                     <span className="wr-feedtitle">{it.title}</span>
                     {it.agentName && <span className="chip wr-feedagent">{it.agentName}</span>}
                     <span className="mo-sub">{it.count || 0} msgs · {rel(it.updatedAt)}</span>
+                    {it.kind === "chat" && <button className="btn ghost" onClick={(e) => { e.stopPropagation(); renameFeedItem(it); }} style={{ padding: "2px 6px" }} title="Rename"><Pencil size={13} /></button>}
                     <button className="btn ghost" onClick={(e) => { e.stopPropagation(); delFeedItem(it); }} style={{ padding: "2px 6px" }}><Trash2 size={13} /></button>
                   </div>
                 ))}
