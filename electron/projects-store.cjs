@@ -48,6 +48,7 @@ function listProjects() {
     knowledgeBytes: (p.knowledge || []).reduce((n, k) => n + String(k.content || "").length, 0),
     identity: p.identity, agentIds: p.agentIds, teamIds: p.teamIds, pinnedSkills: p.pinnedSkills, goals: p.goals, archived: p.archived, autoApprove: !!p.autoApprove, folder: p.folder || "", githubUrl: p.githubUrl || "",
     sim: !!p.sim, // built-in Project Simulation room (Workrooms guide) — delete-protected in the UI
+    model: p.model || "", provider: p.provider || "", // per-project model default (Step 4)
     convCount: (convMeta[p.id] || {}).count || 0, lastConvAt: (convMeta[p.id] || {}).lastAt || 0,
   }));
 }

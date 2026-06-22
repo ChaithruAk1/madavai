@@ -691,7 +691,7 @@ export default function App() {
     const outs = ((full && full.outputs) || []).map((o) => ({ type: "fileout", name: o.name, path: o.path, b64: o.b64 }));
     setTimeline([...msgs, ...outs]);
     setProjectCtx({ projectId: project.id, projectName: project.name, folder: project.folder || null, conversationId: convMeta.id, title: (full && full.title) || convMeta.title });
-    { const mi = convModelInfo(full); applyConvModel(mi.model, mi.provider, (full && full.mode) || "project"); }
+    { const mi = convModelInfo(full); const m2 = mi.model ? mi : { model: project.model, provider: project.provider }; applyConvModel(m2.model, m2.provider, (full && full.mode) || "project"); }
     sessionRef.current = null; streamOpen.current = false; setBusy(false);
   };
   const backToProjects = () => { modeCacheRef.current.project = null; setProjectCtx(null); setTimeline([]); sessionRef.current = null; setBusy(false); };
@@ -716,6 +716,7 @@ export default function App() {
     setAgentCtx(null); setTeamCtx(null); setTeamRun(null); // project context is exclusive with agent/team
     const conv = await bridge.createConversation(project.id);
     setProjectCtx({ projectId: project.id, projectName: project.name, folder: project.folder || null, conversationId: conv.id, title: (text || "").slice(0, 48) || "New conversation" });
+    if (project.model) applyConvModel(project.model, project.provider, "project"); // Step 4 — new project chats use THIS project's model, not the global one
     setTimeline(text ? [{ type: "message", role: "user", text, at: Date.now() }] : []);
     sessionRef.current = null; streamOpen.current = false;
     if (text) {
@@ -942,6 +943,8 @@ export default function App() {
     if (v === "auto" && surfaceModel[curSurface] === "auto") v = activeValue || null;
     setSurfaceModel((prev) => { const next = { ...prev }; if (v) next[curSurface] = v; else delete next[curSurface]; try { localStorage.setItem("madav.surfaceModel", JSON.stringify(next)); } catch {} return next; });
     if (v && v !== "auto") await selectModel(v); // persist before any subsequent send uses it
+    // Step 4 — in a project, the picked model is THAT project's default (not global), so different projects keep different models.
+    if (projectCtx && projectCtx.projectId && v && v !== "auto") { try { const j = v.indexOf("::"); const prof = settings && settings.profiles && settings.profiles[v.slice(0, j)]; await bridge.updateProject(projectCtx.projectId, { model: v.slice(j + 2), provider: (prof && prof.name) || "" }); } catch {} }
   };
 
   const _hour = new Date().getHours();
