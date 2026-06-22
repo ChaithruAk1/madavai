@@ -60,9 +60,9 @@ export async function runProjectJob({ task, instructions, folder }, adapters, op
     if (r.ok && r.produced && r.produced.length) {
       const outputs = authored.outputs && authored.outputs.length ? authored.outputs : r.produced;
       const newJob = makeJob({ task, instructions, schema, script: authored.script, outputs, model: adapters.model, provider: adapters.provider });
-      newJob.status = "provisional"; // awaits the user's review (Stage 5) before it is trusted for replay
+      newJob.status = "active"; // validated run -> reusable; replay reuses it next time, and re-authors automatically if instructions/files change
       await adapters.saveJobs(upsertJob(jobs, newJob));
-      emit("done", { mode: "authored", produced: r.produced, provisional: true });
+      emit("done", { mode: "authored", produced: r.produced });
       return { ok: true, mode: "authored", produced: r.produced };
     }
     if (attempt < maxRepair) {

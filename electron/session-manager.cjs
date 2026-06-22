@@ -945,14 +945,16 @@ class SessionManager {
     const pybin = (pe && pe.py) || "python";
     const adapters = {
       model: profile.model, provider: profile.name,
-      emit: (kind, data) => { if (kind === "status" && data && data.reason) emit({ kind: "assistant_delta", data: { text: "\n\u2022 " + data.phase + ": " + data.reason } }); },
+      emit: (kind, data) => { if (kind !== "status") return; const _m = { inspect: "Inspecting your files…", author: "Writing the script…", replay: "Reusing this project\u2019s saved procedure…", repair: "Fixing the script and retrying…" }; const _t = _m[data && data.phase] || (data && data.reason) || ""; if (_t) emit({ kind: "assistant_delta", data: { text: "\n• " + _t } }); },
       inspect: async (folder) => { const r = await runScriptInFolder(PR.INSPECT_PY, folder, { bin: pybin }); try { return JSON.parse(r.output); } catch { return []; } },
       loadJobs: async () => store.getJobs(s.projectId),
       saveJobs: async (list) => store.saveJobs(s.projectId, list),
       author: async ({ task, instructions, schema, fixError, prevScript }) => {
         const prompt = PJ.authoringPrompt({ task, instructions, schema, fixError, prevScript });
-        const out = await streamChat(profile, [{ role: "system", content: "You write ONE complete Python script. Output only a single python code block, no prose." }, { role: "user", content: prompt }], { signal: controller.signal });
-        return { script: PJ.extractScript(out && out.text), outputs: [] };
+        try {
+          const out = await streamChat(profile, [{ role: "system", content: "You write ONE complete Python script. Output only a single python code block, no prose." }, { role: "user", content: prompt }], { signal: controller.signal });
+          return { script: PJ.extractScript(out && out.text), outputs: [] };
+        } catch (e) { return { script: "", outputs: [] }; }
       },
       run: async (script, folder) => {
         const before = scanOffice(folder);
@@ -962,9 +964,21 @@ class SessionManager {
         return { ok: produced.length > 0, error: produced.length ? "" : "the script produced no output file", produced };
       },
     };
-    const result = await PR.runProjectJob({ task: userText, instructions: project.instructions || "", folder: project.folder }, adapters);
+    let _hardStop;
+    const _budget = new Promise((res) => { _hardStop = setTimeout(() => { try { controller.abort(); } catch {} res({ ok: false, error: "exceeded the time limit", timedOut: true }); }, 4 * 60 * 1000); });
+    let result;
+    try { result = await Promise.race([PR.runProjectJob({ task: userText, instructions: project.instructions || "", folder: project.folder }, adapters), _budget]); }
+    finally { clearTimeout(_hardStop); }
+    if (result && result.timedOut) {
+      const tm = "I stopped this run - it passed the time limit without finishing. Free model endpoints often stall on the build step; for the first build use a capable paid model (e.g. deepseek-v4-pro).";
+      s.history.push({ role: "assistant", content: tm });
+      emit({ kind: "assistant_delta", data: { text: "\n\n" + tm } });
+      emit({ kind: "assistant_message", data: { stop_reason: "guard" } });
+      emit({ kind: "result", data: { subtype: "guard_time" } });
+      return true;
+    }
     const note = result.ok
-      ? (result.mode === "replay" ? "Done \u2014 reused this project's saved, proven procedure on the current data." : "Done \u2014 built the deliverable. Please review it; once you confirm it's right, Madav reuses this exact procedure next time.")
+      ? (result.mode === "replay" ? "Done - reused this project's saved procedure on the current data (no model needed)." : "Done - built the report. Please review it. I've saved this procedure, so the next run reuses it exactly. If anything looks off, tweak the project instructions and re-run and I'll rebuild it.")
       : ("I couldn't finish this within a bounded number of attempts. Last error: " + (result.error || "unknown") + ".");
     s.history.push({ role: "assistant", content: note });
     emit({ kind: "assistant_delta", data: { text: "\n\n" + note } });

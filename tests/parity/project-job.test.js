@@ -27,9 +27,9 @@ describe("project-runner — shared flow (fake adapters, single source for web+d
       run: over.run || (async () => ({ ok: true, produced: ["Report.xlsx"] })), emit: () => {} };
   }
   const activeJob = () => { const j = makeJob({ task: "DTC March", instructions: "3 sheets", schema, script: "print(1)", outputs: ["Report.xlsx"] }); j.status = "active"; return j; };
-  it("authors + saves a provisional job when none exists", async () => {
+  it("authors + saves an active (reusable) job when none exists", async () => {
     const a = mk(); const r = await runProjectJob({ task: "DTC March", instructions: "3 sheets", folder: "/x" }, a);
-    expect(r.mode).toBe("authored"); expect(a.saved[0].status).toBe("provisional"); expect(a.calls.author).toBe(1);
+    expect(r.mode).toBe("authored"); expect(a.saved[0].status).toBe("active"); expect(a.calls.author).toBe(1);
   });
   it("replays an active job on a new month WITHOUT calling the model", async () => {
     const b = mk({ jobs: upsertJob([], activeJob()) }); const r = await runProjectJob({ task: "DTC April", instructions: "3 sheets", folder: "/x" }, b);
