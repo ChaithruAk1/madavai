@@ -5,7 +5,7 @@ import { bridge } from "../bridge/index.js";
 import { localCaps } from "../data/localModels.js";
 import HelpDot from "./HelpDot.jsx";
 import { isModelFree } from "../modelCost.js"; // SINGLE SOURCE: free/paid from the provider, not the name
-import { modelFit, taskNeedsStrong, FIT_RANK } from "../../core/model-fit.js"; // SINGLE SOURCE: task-aware fit, shared web+desktop
+import { modelFit, taskNeedsStrong } from "../../core/model-fit.js"; // SINGLE SOURCE: task-aware fit, shared web+desktop
 
 // `classify` (a model's purpose from its name) moved to src/data/providerRules.js, so THIS file exports
 // only the ModelPicker component — that keeps React Fast Refresh working (no full app reload on edits).
@@ -15,8 +15,9 @@ const pill = (color) => ({ fontSize: 10, padding: "1px 7px", borderRadius: 999, 
 // Fit badge: colors NOT used by capability/host pills (no green/purple/blue/orange/yellow/teal),
 // rendered as a bright FILLED pill so the fit signal clearly stands apart from the muted pills.
 const FIT_COLOR = { good: "#3fb950", recipe: "#7c83ff", weak: "#ff7b72" }; // green = recommended; indigo = needs a recipe; coral = may struggle
-const fitPill = (fit) => { const c = FIT_COLOR[fit] || "var(--accent)"; return { fontSize: 10, padding: "1px 8px", borderRadius: 999, background: c, color: "#fff", border: "1px solid " + c, whiteSpace: "nowrap", lineHeight: 1.6, fontWeight: 700 }; };
+const fitPill = (fit) => { const c = FIT_COLOR[fit] || "var(--accent)"; return { fontSize: 10, padding: "1px 8px", borderRadius: 999, background: `color-mix(in srgb, ${c} 68%, #000 32%)`, color: "#fff", border: `1px solid color-mix(in srgb, ${c} 85%, #000 15%)`, whiteSpace: "nowrap", lineHeight: 1.6, fontWeight: 700 }; };
 const legendDot = { display: "inline-block", width: 9, height: 9, borderRadius: 999, marginRight: 6, verticalAlign: "middle" };
+const shortName = (n) => { const s = String(n || ""); const i = s.indexOf("/"); return i >= 0 ? s.slice(i + 1) : s; }; // display only — drop the provider prefix (e.g. "nvidia/"); selection/search still use the full id
 
 // Provider → domain, for real logos (site favicons).
 const DOMAIN = {
@@ -171,7 +172,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
       if (host === "local" && !local) return false;
       for (const k of caps) { if (CAPS[k] && !CAPS[k](it, g.group)) return false; } // multi-select, AND-combined
       return true;
-    }); if (heavyTask) items = items.slice().sort((a, b) => ((FIT_RANK[fitOf(a, g.group)?.fit] ?? 1) - (FIT_RANK[fitOf(b, g.group)?.fit] ?? 1)) || String(a.name || "").localeCompare(String(b.name || ""))); return { ...g, items }; })
+    }); if (task) items = items.slice().sort((a, b) => shortName(a.name).localeCompare(shortName(b.name), undefined, { sensitivity: "base" })); return { ...g, items }; })
     .filter((g) => g.items.length);
   const shown = groups.reduce((n, g) => n + g.items.length, 0);
   // Render cap: 250 rows max in the DOM (filters/search still cover everything) — keeps the
@@ -195,7 +196,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
         </button>
       ) : (
         <button className="model-btn" onClick={toggleOpen}>
-          {current.prov && <span className="prov">{current.prov}</span>} {current.name} <ChevronDown size={14} />
+          {shortName(current.name)} <ChevronDown size={14} />
         </button>
       )}
       {open && (
@@ -291,12 +292,12 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
                 if (CAPS.vision(it, g.group)) tags.push("vision");
                 if (CAPS.agentic(it, g.group)) tags.push("agentic");
                 if (!tags.length && CAPS.fast(it)) tags.push("fast");
-                const hostLabel = isLocal ? "Local" : free ? "Free" : "Cloud";
+                const hostLabel = isLocal ? "Local" : free ? "Free" : "Paid";
                 const hostColor = isLocal ? "var(--ok)" : free ? "#7ee787" : "var(--accent)";
                 return (
                   <div key={it.id} title={it.name} className={`model-row ${it.id === value ? "sel" : ""}`} onClick={() => { onChange(it.id); setOpen(false); }} style={{ gap: 9 }}>
                     <Logo name={it.name} prov={it.prov || g.group} />
-                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shortName(it.name)}</span>
                     {tags.slice(0, 3).map((t) => <span key={t} style={pill(PURPOSE_COLOR[t])}>{t}</span>)}
                     <span style={pill(hostColor)}>{hostLabel}</span>
                     {heavyTask && (() => { const f = fitOf(it, g.group); return f ? <span style={fitPill(f.fit)} title={f.why}>{f.label}</span> : null; })()}
