@@ -262,7 +262,7 @@ export async function coreChatTurn({
       messages.push(toolResultMsg(call, resultText, textMode));
       adapter.emit({ type: "tool_result", name, ok });
     }
-    { const _sig = toolCalls.map((c) => callName(c) + ":" + String(callArgs(c) == null ? "" : callArgs(c)).slice(0, 300)).join("+"); const n = runGuard.note(_sig); // args-aware: only an IDENTICAL repeated call is a loop, not just the same tool name if (n.stop) { finalText = guardStopMessage(n.code); adapter.emit({ type: "guard_stop", code: n.code }); adapter.emit({ type: "final", text: finalText }); break; } }
+    { const _sig = toolCalls.map((c) => callName(c) + ":" + String(callArgs(c) == null ? "" : callArgs(c)).slice(0, 300)).join("+"); const n = runGuard.note(_sig); if (n.stop) { finalText = guardStopMessage(n.code); adapter.emit({ type: "guard_stop", code: n.code }); adapter.emit({ type: "final", text: finalText }); break; } }
   }
 
   if (!finalText && steps >= stepCap) {
