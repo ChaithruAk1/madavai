@@ -31,6 +31,7 @@ import { tolerantParse, headTail, squashStale, CallGuard } from "../../core/turn
 // In-chat office files: the rule that teaches models the ```officedoc spec.
 import { officeRule, ARTIFACT_RULE } from "../office.js";
 import { dataToolsRule, SEARCH_ANSWER_RULE } from "../../core/agent-rules.js"; // ADR-0001 core: ESM single source (web imports natively)
+import { matchRecipe, recipePromptBlock, makeRecipe, upsertRecipe } from "../../core/recipes.js"; // Step 4 — recipes (single source, shared with desktop)
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
@@ -433,6 +434,7 @@ function systemPrompt(s, projectId, query = "") {
       const kctx = buildKnowledgeContext(query, kdocs); // RAG-lite: whole docs when small; ranked excerpts when large
       if (kctx) parts.push(kctx);
     }
+    try { const rb = recipePromptBlock(matchRecipe(LS.get("be.recipes", {})[projectId] || [], query)); if (rb) parts.push(rb); } catch {}
   }
   return parts.join("\n\n").trim();
 }
@@ -1055,6 +1057,8 @@ async function runTurn(sess, text, images) {
     emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
     emit(sess.id, "result", { subtype: "success", num_turns: 1, duration_ms: Date.now() - started, total_cost_usd: 0 });
     persistSession(sess);
+    // Step 4/5 — capture: a project reply that produced an officedoc deliverable becomes a reusable recipe.
+    try { if (sess.projectId && reply) { const block = (String(reply).match(/```officedoc[\s\S]*?```/) || [])[0]; if (block) { const recs = LS.get("be.recipes", {}); recs[sess.projectId] = upsertRecipe(recs[sess.projectId] || [], makeRecipe({ task: text, scripts: [{ name: "officedoc", content: block }], lane: "A", model: prof.model })); LS.set("be.recipes", recs); } } } catch {}
     maybeAutoTitle(sess, text, reply); // Claude-style smart title from the first exchange (async, fail-open)
     umLearn(prof, loadSettings(), text, reply); // cross-chat memory: fire-and-forget, throttled
   } catch (e) {
@@ -1372,6 +1376,8 @@ export const webBridge = {
   async assignProjectTeam(projectId, teamId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p || !teamId) return null; if (!p.teamIds.includes(teamId)) p.teamIds.push(teamId); p.updatedAt = Date.now(); all[projectId] = p; wrSaveProjects(all); return p; },
   async unassignProjectTeam(projectId, teamId) { const all = LS.get("be.projects", {}); const p = wrNormalizeProject(all[projectId]); if (!p) return null; p.teamIds = p.teamIds.filter((x) => x !== teamId); p.updatedAt = Date.now(); all[projectId] = p; wrSaveProjects(all); return p; },
   async updateProject(id, patch) { const all = LS.get("be.projects", {}); all[id] = { ...all[id], ...patch }; wrSaveProjects(all); return all[id]; },
+  async getRecipes(projectId) { return LS.get("be.recipes", {})[projectId] || []; },
+  async saveRecipes(projectId, list) { const all = LS.get("be.recipes", {}); all[projectId] = Array.isArray(list) ? list : []; LS.set("be.recipes", all); return all[projectId]; },
   async deleteProject(id) { const all = LS.get("be.projects", {}); delete all[id]; wrSaveProjects(all); return true; },
   async addKnowledgeText(projectId, name, content) { const all = LS.get("be.projects", {}); const p = all[projectId]; p.knowledge = p.knowledge || []; p.knowledge.push({ id: rid("kn_"), name, type: "text", content }); wrSaveProjects(all); return p; },
   async addKnowledgeFile() { return { error: "Uploading files into a project is available in the desktop app." }; },
