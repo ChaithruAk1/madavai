@@ -18,6 +18,7 @@ const fs = require("fs");
 const os = require("os");
 const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
+let _plP = null; const _pl = () => (_plP ||= import("../core/project-lanes.js")); // SINGLE SOURCE lane decision (A=engine / B=recipe / C=caged loop)
 
 // Surface office files the agent produced as Open/Download cards in the chat. Works for ANY model
 // (Claude SDK + the OpenAI loop both covered). Robust by DIFF: snapshot the folder before the run,
@@ -949,8 +950,17 @@ class SessionManager {
         emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
         emit({ kind: "result", data: { subtype: "success", duration_ms: Date.now() - started } });
       } else {
+        // Stage 2 — lane routing (single source: core/project-lanes.js). A "produce a document" task with
+        // NO data files to read is forced down the deterministic engine path: mode "chat" = no script tools,
+        // so the model MUST emit ONE officedoc block, which Madav's engine renders into the folder. Data work
+        // and everything else keep the caged agent loop ("cowork" — the protected weak-model data pipeline,
+        // unchanged). decideLane only picks DOCUMENT when there are no data files, so nothing is fabricated.
+        // Fail-open: any error -> lane "C" -> exactly today's behavior.
+        let lane = "C";
+        try { const { decideLane } = await _pl(); lane = decideLane({ hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText }); } catch {}
+        const laneMode = lane === "A" ? "chat" : (useFolder ? "cowork" : "chat");
         await runOpenAIAgentTurn({
-          prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
+          prompt: userText + materializeImages(images), mode: laneMode, cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
           connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
           systemOverride: sys,
