@@ -59,6 +59,18 @@ function scanScripts(folder) {
   walk(folder, 1);
   return out;
 }
+// Keep DATA project folders pristine: move stray working scripts (.py) out of the root into a hidden
+// .madav-scratch subfolder, so they never clutter the folder or confuse the next run. The CALLER gates on
+// the folder being a DATA folder (has office files); code/repo folders — where .py ARE the work — are never touched.
+function tidyScratchPy(folder) {
+  const path = require("path");
+  let ents = []; try { ents = fs.readdirSync(folder, { withFileTypes: true }); } catch { return; }
+  const stray = ents.filter((e) => e.isFile() && /\.py$/i.test(e.name)).map((e) => e.name);
+  if (!stray.length) return;
+  const scratch = path.join(folder, ".madav-scratch");
+  try { fs.mkdirSync(scratch, { recursive: true }); } catch {}
+  for (const nm of stray) { const dest = path.join(scratch, nm); try { fs.unlinkSync(dest); } catch {} try { fs.renameSync(path.join(folder, nm), dest); } catch {} }
+}
 function emitNewOutputs(emit, folder, before) {
   const out = [];
   try {
@@ -928,6 +940,7 @@ class SessionManager {
       if (pe && pe.py) { pyNote = 'Python is available as "' + pe.py + '" (pandas: ' + (pe.pandas ? "yes" : "no") + ", openpyxl: " + (pe.openpyxl ? "yes" : "no") + ")."; if (!pe.pandas || !pe.openpyxl) pyNote += " Install the missing libraries first: " + pe.py + " -m pip install --user pandas openpyxl."; }
       else { pyNote = "No Python was detected on this machine — install Python 3 with pandas + openpyxl, or compute the result inline without scripts."; }
     }
+    if (useFolder && beforeFiles && beforeFiles.size > 0) tidyScratchPy(project.folder); // keep the data folder pristine — stash stray scripts BEFORE the run so the model never trips over old ones
     const beforeScripts = useFolder ? scanScripts(project.folder) : null;
     let recipeBlock = "", laneUsed = "C"; // Stage 3 — recipe priming + the lane actually used (captured in finally)
     try { const R = await _rec(); const recs = store.getRecipes(s.projectId); const clean = recs.filter((r) => R.recipeInScope(r, project.folder)); if (clean.length !== recs.length) store.saveRecipes(s.projectId, clean); const rcp = R.matchRecipe(clean, userText); if (rcp) recipeBlock = R.recipePromptBlock(rcp); } catch {}
@@ -1023,6 +1036,7 @@ class SessionManager {
           if (R.recipeInScope(recipe, project.folder)) store.saveRecipes(s.projectId, R.upsertRecipe(store.getRecipes(s.projectId), recipe));
         }
       } catch {}
+      try { if (useFolder && beforeFiles && beforeFiles.size > 0) tidyScratchPy(project.folder); } catch {} // and clean the script(s) THIS run wrote, so the folder stays pristine
     }
   }
 
