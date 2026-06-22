@@ -682,6 +682,7 @@ export default function App() {
       const running = runBusy.current.get(sid) === true;
       setTimeline(runBuffers.current.get(sid) || []);
       setProjectCtx({ projectId: project.id, projectName: project.name, folder: project.folder || null, conversationId: convMeta.id, title: convMeta.title });
+      try { const full0 = await bridge.getConversation(convMeta.id); const mi0 = convModelInfo(full0); if (mi0.model) applyConvModel(mi0.model, mi0.provider, "project"); } catch {} // restore THIS chat's own model, even when re-attaching to a buffered run
       if (running) { sessionRef.current = sid; streamOpen.current = !!runStreamOpen.current.get(sid); setBusy(true); }
       else { sessionRef.current = null; streamOpen.current = false; setBusy(false); }
       return;
