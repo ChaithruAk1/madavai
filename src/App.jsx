@@ -716,8 +716,12 @@ export default function App() {
   const startProjectChat = async (project, text) => {
     setAgentCtx(null); setTeamCtx(null); setTeamRun(null); // project context is exclusive with agent/team
     const conv = await bridge.createConversation(project.id);
+    // The page picker may have just changed this project's model; the passed `project` can be stale,
+    // so read the project's CURRENT saved model from the store before opening the new chat.
+    let _pm = project.model, _pp = project.provider;
+    try { const _fresh = await bridge.getProject(project.id); if (_fresh && _fresh.model) { _pm = _fresh.model; _pp = _fresh.provider; } } catch {}
     setProjectCtx({ projectId: project.id, projectName: project.name, folder: project.folder || null, conversationId: conv.id, title: (text || "").slice(0, 48) || "New conversation" });
-    if (project.model) applyConvModel(project.model, project.provider, "project"); // Step 4 — new project chats use THIS project's model, not the global one
+    if (_pm) applyConvModel(_pm, _pp, "project"); // Step 4 — new project chats use THIS project's CURRENT model, not the global one
     setTimeline(text ? [{ type: "message", role: "user", text, at: Date.now() }] : []);
     sessionRef.current = null; streamOpen.current = false;
     if (text) {
