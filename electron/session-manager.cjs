@@ -1008,6 +1008,18 @@ class SessionManager {
     } finally {
       s.controller = null;
       const newOuts = (useFolder && project.folder) ? emitNewOutputs(emit, project.folder, beforeFiles) : [];
+      // False-success guard: if the model CLAIMED it made a file but none appeared, tell the user — never let a false "done" stand.
+      try {
+        if (useFolder && newOuts.length === 0) {
+          const lastA = [...s.history].reverse().find((m) => m && m.role === "assistant" && typeof m.content === "string");
+          const rt = (lastA && lastA.content) || "";
+          if (/\b(created|saved|generated|wrote|exported|produced)\b[\s\S]{0,90}\.(xlsx|xlsm|docx|pptx|pdf|csv)\b/i.test(rt) || /\.(xlsx|xlsm|docx|pptx|pdf|csv)\b[\s\S]{0,50}\b(created|saved|generated|ready)\b/i.test(rt)) {
+            const warn = "⚠ Heads up: I reported creating a file, but no new file actually appeared in this folder — the run didn't truly complete (often a weaker model claiming success without it). Please re-run, ideally on a more capable model.";
+            s.history.push({ role: "assistant", content: warn });
+            emit({ kind: "assistant_delta", data: { text: "\n\n" + warn } });
+          }
+        }
+      } catch {}
       const msgs = s.history.filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.length);
       const conv = store.getConversation(s.conversationId) || { id: s.conversationId, projectId: s.projectId, title: "New conversation", createdAt: Date.now() };
       conv.messages = msgs;

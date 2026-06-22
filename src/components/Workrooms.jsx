@@ -366,6 +366,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
 
   // ---- ARCHIVE ----
   const toggleArchive = async () => { await bridge.updateProject(selId, { archived: !room.archived }); refreshRoom(); loadList(); };
+  const renameRoom = async () => { if (!room) return; const t = await madavPrompt("Rename workroom", { value: room.name || "", placeholder: "Workroom name", okLabel: "Rename" }); if (!t) return; await bridge.updateProject(selId, { name: t }); refreshRoom(); loadList(); };
 
   // ---- DIGEST (room writes its own summary) ----
   const writeDigest = () => {
@@ -755,6 +756,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
             <h1 className="wr-roomname">{room.name}</h1>
             <div className="wr-pulse">{pulseLine(room, sessions, convs)}</div>
           </div>
+          <button className="icon-btn" title="Rename this workroom" onClick={renameRoom}><Pencil size={15} /></button>
           <button className="icon-btn" title="Write a digest of this room's recent work" onClick={writeDigest}><FileStack size={15} /></button>
           <button className="icon-btn" title="Save this room as a reusable template" onClick={saveAsTemplate}><Copy size={15} /></button>
           <button className="icon-btn" title="Share this workroom — exports a .madavroom.json with the brief, knowledge, and crew agents" onClick={shareRoom}><Share2 size={15} /></button>
@@ -838,6 +840,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
                   {room.githubUrl ? <Github size={14} /> : <FolderInput size={14} />}
                   <span className="path" style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{room.folder}</span>
                   {room.githubUrl && <button className="btn ghost" onClick={pull} title="git pull" style={{ padding: "4px 7px" }}><RefreshCw size={13} /></button>}
+                  <button className="btn ghost" onClick={() => bridge.openPath && bridge.openPath(room.folder)} title="Open this folder on your computer" style={{ padding: "4px 8px" }}>Open</button>
                   <button className="btn ghost danger" onClick={unlinkSrc} style={{ padding: "4px 8px" }}>Unlink</button>
                 </div>
               ) : (
