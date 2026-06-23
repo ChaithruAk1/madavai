@@ -59,7 +59,9 @@ export function decideRun(job, currentInstructions, currentSchema) {
   if (!job || !job.script) return { action: "author", reason: "no saved procedure yet" };
   if (job.status === "provisional") return { action: "author", reason: "the saved procedure is not confirmed yet" };
   if (job.instr !== instructionsHash(currentInstructions)) return { action: "author", reason: "the instructions changed" };
-  if (job.schemaSig !== schemaSignature(currentSchema)) return { action: "author", reason: "the data files or columns changed" };
+  const _outs = new Set(((job && job.outputs) || []).map((x) => String(x).toLowerCase()));
+  const _inputs = (currentSchema || []).filter((ff) => !_outs.has(String((ff && ff.file) || "").toLowerCase())); // ignore the report we produced last time
+  if (job.schemaSig !== schemaSignature(_inputs)) return { action: "author", reason: "the data files or columns changed" };
   return { action: "replay", reason: "same task, same data shape" };
 }
 

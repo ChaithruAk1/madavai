@@ -678,7 +678,7 @@ export default function App() {
   const openConversation = async (project, convMeta) => {
     setAgentCtx(null); setTeamCtx(null); setTeamRun(null); // project context is exclusive with agent/team
     const sid = convSession.current.get(convMeta.id);
-    if (sid && (runBuffers.current.has(sid) || runBusy.current.get(sid) === true)) {
+    if (sid && runBusy.current.get(sid) === true) {
       const running = runBusy.current.get(sid) === true;
       setTimeline(runBuffers.current.get(sid) || []);
       setProjectCtx({ projectId: project.id, projectName: project.name, folder: project.folder || null, conversationId: convMeta.id, title: convMeta.title });
@@ -856,7 +856,7 @@ export default function App() {
         setSoloRun(null);
         const cid = c ? c.convId : null;
         const sid = cid ? convSession.current.get(cid) : null;
-        if (sid && (runBuffers.current.has(sid) || runBusy.current.get(sid) === true)) {
+        if (sid && runBusy.current.get(sid) === true) {
           // A run streamed (or finished) in the background — show the buffered timeline, not a stale snapshot.
           const running = runBusy.current.get(sid) === true;
           setTimeline(runBuffers.current.get(sid) || (c ? c.timeline : []));
@@ -879,7 +879,7 @@ export default function App() {
         // Returning to the project conversation that was open — restore it instead of dumping to the list.
         setProjOpenId(null); setProjectCtx(pc.projectCtx);
         const sid = convSession.current.get(pc.projectCtx.conversationId);
-        if (sid && (runBuffers.current.has(sid) || runBusy.current.get(sid) === true)) {
+        if (sid && runBusy.current.get(sid) === true) {
           const running = runBusy.current.get(sid) === true;
           setTimeline(runBuffers.current.get(sid) || pc.timeline || []);
           if (running) { sessionRef.current = sid; streamOpen.current = !!runStreamOpen.current.get(sid); setBusy(true); }

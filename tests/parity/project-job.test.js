@@ -14,6 +14,11 @@ describe("project-job — fingerprints & replay/author decision", () => {
   it("re-authors on instruction change", () => { expect(decideRun(job, "4 sheets", A).action).toBe("author"); });
   it("re-authors on schema change", () => { expect(decideRun(job, "3 sheets", B).action).toBe("author"); });
   it("authors when no job / unconfirmed", () => { expect(decideRun(null, "x", A).action).toBe("author"); expect(decideRun({ ...job, status: "provisional" }, "3 sheets", A).action).toBe("author"); });
+  it("replays even after its own output file lands in the folder", () => {
+    const j = makeJob({ task: "rep", instructions: "i", schema: A, script: "p", outputs: ["Report.xlsx"] }); j.status = "active";
+    const withOut = [...A, { file: "Report.xlsx", columns: ["x"] }];
+    expect(decideRun(j, "i", withOut).action).toBe("replay");
+  });
   it("validates expected outputs", () => { expect(validateOutputs(job, ["Report.xlsx"]).ok).toBe(true); expect(validateOutputs(job, ["x.xlsx"]).ok).toBe(false); });
 });
 
