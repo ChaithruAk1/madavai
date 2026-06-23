@@ -20,6 +20,11 @@ describe("model-fit — task-aware model fit (single source)", () => {
     expect(modelFit("openai/gpt-oss-120b", {}, { mode: "project" }).fit).toBe("recipe");
     expect(modelFit("openai/gpt-oss-120b", {}, { mode: "agent" }).fit).toBe("weak");
   });
+  it("a capable model is Recommended for PROJECTS even without advertised tool-calling", () => {
+    expect(modelFit("deepseek-v4-pro", { agentic: false }, { mode: "project", hasFolder: true }).fit).toBe("good");
+    expect(modelFit("deepseek-v4-pro", {}, { mode: "project" }).fit).toBe("good");
+    expect(modelFit("deepseek-v4-pro", { agentic: false }, { mode: "agent" }).fit).toBe("weak");
+  });
   it("project + weak model = recipe path (not a dead end)", () => {
     expect(modelFit("stepfun-ai/step-3.5-flash", {}, { mode: "project", hasFolder: true }).fit).toBe("recipe");
     expect(modelFit("qwen-2.5-7b", {}, { mode: "project" }).fit).toBe("recipe");

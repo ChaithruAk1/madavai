@@ -6,6 +6,8 @@
 // logic + fingerprints; the actual inspection/execution is platform plumbing the caller does.
 import { taskKeyOf } from "./recipes.js";
 
+export const OUTPUT_DIR = "Madav Results"; // run outputs go into this subfolder of the project folder, keeping the source data clean
+
 // Tiny stable string hash (djb2) — same input -> same short token, cross-platform.
 function djb2(s) {
   let h = 5381; const str = String(s == null ? "" : s);
@@ -96,7 +98,7 @@ export function authoringPrompt({ task, instructions, schema, fixError, prevScri
     `TASK: ${task || "(produce the deliverable)"}`,
     instructions ? `INSTRUCTIONS (follow exactly):\n${instructions}` : "",
     `DATA FILES in the current working folder — use these EXACT file and column names:\n${files || "(no data files found)"}`,
-    "Requirements: read the files with pandas; compute everything the instructions require; SAVE the finished output file(s) into the current folder by the name the instructions specify. The saved file IS the deliverable. Output ONLY the script inside a single ```python code block — no prose before or after.",
+    "Requirements: read the files with pandas; compute everything the instructions require; create an output folder with os.makedirs('" + OUTPUT_DIR + "', exist_ok=True) and SAVE the finished file(s) THERE using the filename the instructions specify (e.g. df.to_excel('" + OUTPUT_DIR + "/Report.xlsx')). The saved file IS the deliverable. Output ONLY the script inside a single ```python code block — no prose before or after.",
   ];
   if (fixError) parts.push(`Your previous script FAILED with this error:\n${String(fixError).slice(0, 1500)}\n\nPrevious script:\n${String(prevScript || "").slice(0, 4000)}\n\nReturn a CORRECTED, complete script (again, ONLY the \`\`\`python block).`);
   return parts.filter(Boolean).join("\n\n");

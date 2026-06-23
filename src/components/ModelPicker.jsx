@@ -170,6 +170,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
       const local = /local/i.test(it.prov || g.group || "");
       if (host === "cloud" && local) return false;
       if (host === "local" && !local) return false;
+      if (caps.has("recommended")) { const _rf = fitOf(it, g.group); if (!_rf || _rf.fit !== "good") return false; }
       for (const k of caps) { if (CAPS[k] && !CAPS[k](it, g.group)) return false; } // multi-select, AND-combined
       return true;
     }); if (task) items = items.slice().sort((a, b) => shortName(a.name).localeCompare(shortName(b.name), undefined, { sensitivity: "base" })); return { ...g, items }; })
@@ -231,6 +232,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
               <button key={k} onClick={() => setHost((h) => (h === k ? "all" : k))} style={chipStyle(host === k)} title={k === "local" ? "Models running on this machine (Ollama / LM Studio)" : "Hosted models"}>{label}</button>
             ))}
             <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "2px 4px" }} />
+            {heavyTask && <button onClick={() => setCaps((s) => { const n = new Set(s); n.has("recommended") ? n.delete("recommended") : n.add("recommended"); return n; })} style={chipStyle(caps.has("recommended"))} title="Show only models recommended for this task">✓ Recommended</button>}
             {[["coding", "Coding"], ["reasoning", "Reasoning"], ["vision", "Vision"], ["fast", "Fast"], ["agentic", "Agentic"]].map(([k, label]) => (
               <button key={k} onClick={() => setCaps((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; })} style={chipStyle(caps.has(k))}>{label}</button>
             ))}
