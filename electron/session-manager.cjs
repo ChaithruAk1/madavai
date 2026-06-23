@@ -945,34 +945,49 @@ class SessionManager {
     const PJ = await _pj(), PR = await _pr();
     const path2 = require("path");
     const pybin = (pe && pe.py) || "python";
+    const withHeartbeat = async (label, fn) => { const t0 = Date.now(); const hb = setInterval(() => { if (!controller.signal.aborted) emit({ kind: "assistant_delta", data: { text: "\n  …still " + label + " (" + Math.round((Date.now() - t0) / 1000) + "s)" } }); }, 30000); try { return await fn(); } finally { clearInterval(hb); } };
     const adapters = {
       model: profile.model, provider: profile.name,
-      emit: (kind, data) => { if (kind !== "status") return; const _m = { inspect: "Inspecting your files…", author: "Writing the script…", replay: "Reusing this project\u2019s saved procedure…", repair: "Fixing the script and retrying…" }; const _t = _m[data && data.phase] || (data && data.reason) || ""; if (_t) emit({ kind: "assistant_delta", data: { text: "\n• " + _t } }); },
+      emit: (kind, data) => {
+        if (kind !== "status") return;
+        const p = data && data.phase; let t = "";
+        if (p === "inspect") t = "Taking a look at your files…";
+        else if (p === "inspected") t = "Got your data — " + (data.count || 0) + " file(s)" + (data.files && data.files.length ? " (" + data.files.join(", ") + ")" : "") + ".";
+        else if (p === "author") t = "Building your report…";
+        else if (p === "running") t = "Crunching the numbers…";
+        else if (p === "replay") t = "Reusing the steps from last time — this should be quick…";
+        else if (p === "repair") t = "That didn't come out right — adjusting and trying again…";
+        else t = (data && data.reason) || "";
+        if (t) emit({ kind: "assistant_delta", data: { text: "\n• " + t } });
+      },
       inspect: async (folder) => { const r = await runScriptInFolder(PR.INSPECT_PY, folder, { bin: pybin }); try { return JSON.parse(r.output); } catch { return []; } },
       loadJobs: async () => store.getJobs(s.projectId),
       saveJobs: async (list) => store.saveJobs(s.projectId, list),
       author: async ({ task, instructions, schema, fixError, prevScript }) => {
+        if (controller.signal.aborted) return { script: "", outputs: [] };
         const prompt = PJ.authoringPrompt({ task, instructions, schema, fixError, prevScript });
         try {
-          const out = await streamChat(profile, [{ role: "system", content: "You write ONE complete Python script. Output only a single python code block, no prose." }, { role: "user", content: prompt }], { signal: controller.signal });
+          const out = await withHeartbeat("building your report", () => streamChat(profile, [{ role: "system", content: "You write ONE complete Python script. Output only a single python code block, no prose." }, { role: "user", content: prompt }], { signal: controller.signal }));
           return { script: PJ.extractScript(out && out.text), outputs: [] };
         } catch (e) { return { script: "", outputs: [] }; }
       },
       run: async (script, folder) => {
+        if (controller.signal.aborted) return { ok: false, error: "stopped", produced: [] };
         const before = scanOffice(folder);
-        await runScriptInFolder(script, folder, { bin: pybin });
+        const _res = await withHeartbeat("crunching the numbers", () => runScriptInFolder(script, folder, { bin: pybin }));
         const after = scanOffice(folder);
         const produced = [...after].filter(([p, m]) => before.get(p) !== m).map(([p]) => path2.basename(p));
-        return { ok: produced.length > 0, error: produced.length ? "" : "the script produced no output file", produced };
+        const _err = produced.length ? "" : (_res && _res.output ? String(_res.output).slice(-2000) : "the script produced no output file");
+        return { ok: produced.length > 0, error: _err, produced };
       },
     };
-    let _hardStop;
-    const _budget = new Promise((res) => { _hardStop = setTimeout(() => { try { controller.abort(); } catch {} res({ ok: false, error: "exceeded the time limit", timedOut: true }); }, 4 * 60 * 1000); });
+    let _hardStop, _timedOut = false;
+    _hardStop = setTimeout(() => { _timedOut = true; try { controller.abort(); } catch {} }, 8 * 60 * 1000);
     let result;
-    try { result = await Promise.race([PR.runProjectJob({ task: userText, instructions: project.instructions || "", folder: project.folder }, adapters), _budget]); }
+    try { result = await PR.runProjectJob({ task: userText, instructions: project.instructions || "", folder: project.folder }, adapters, { signal: controller.signal, maxRepair: 3 }); }
     finally { clearTimeout(_hardStop); }
-    if (result && result.timedOut) {
-      const tm = "I stopped this run - it passed the time limit without finishing. Free model endpoints often stall on the build step; for the first build use a capable paid model (e.g. deepseek-v4-pro).";
+    if (_timedOut || (result && result.aborted)) {
+      const tm = "This one took longer than expected, so I stopped it rather than let it hang. Often a second run gets it; if it keeps taking too long, try simplifying the report a little.";
       s.history.push({ role: "assistant", content: tm });
       emit({ kind: "assistant_delta", data: { text: "\n\n" + tm } });
       emit({ kind: "assistant_message", data: { stop_reason: "guard" } });
@@ -980,8 +995,8 @@ class SessionManager {
       return true;
     }
     const note = result.ok
-      ? (result.mode === "replay" ? "Done - reused this project's saved procedure on the current data (no model needed)." : "Done - built the report. Please review it. I've saved this procedure, so the next run reuses it exactly. If anything looks off, tweak the project instructions and re-run and I'll rebuild it.")
-      : ("I couldn't finish this within a bounded number of attempts. Last error: " + (result.error || "unknown") + ".");
+      ? (result.mode === "replay" ? "All done — I reused the steps from last time on your current data, so this was quick." : "All done — your report is ready below. Take a look; I've saved these steps, so next time runs instantly. If anything looks off, tweak the project instructions and run it again.")
+      : ("I wasn't able to finish this one — it kept running into: " + (result.error ? String(result.error).split("\n").filter(Boolean).pop().slice(0, 200) : "an unexpected problem") + ". Want me to take a look, or try simplifying the report a little?");
     s.history.push({ role: "assistant", content: note });
     emit({ kind: "assistant_delta", data: { text: "\n\n" + note } });
     emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });

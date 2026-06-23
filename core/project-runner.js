@@ -36,8 +36,10 @@ export const INSPECT_PY = [
 export async function runProjectJob({ task, instructions, folder }, adapters, opts = {}) {
   const maxRepair = opts.maxRepair == null ? 2 : opts.maxRepair;
   const emit = adapters.emit || (() => {});
+  const aborted = () => !!(opts.signal && opts.signal.aborted);
   emit("status", { phase: "inspect" });
   const schema = await adapters.inspect(folder);
+  emit("status", { phase: "inspected", count: Array.isArray(schema) ? schema.length : 0, files: (schema || []).map((x) => x && x.file).filter(Boolean) });
   const jobs = (await adapters.loadJobs()) || [];
   const job = findJob(jobs, task);
   const decision = decideRun(job, instructions, schema);
@@ -45,6 +47,8 @@ export async function runProjectJob({ task, instructions, folder }, adapters, op
 
   // REPLAY — run the saved procedure deterministically (no model). Self-heals to authoring if it fails.
   if (decision.action === "replay") {
+    if (aborted()) return { ok: false, aborted: true };
+    emit("status", { phase: "running" });
     const r = await adapters.run(job.script, folder);
     const v = validateOutputs(job, r.produced);
     if (r.ok && v.ok) { emit("done", { mode: "replay", produced: r.produced }); return { ok: true, mode: "replay", produced: r.produced }; }
@@ -52,9 +56,12 @@ export async function runProjectJob({ task, instructions, folder }, adapters, op
   }
 
   // AUTHOR — model writes ONE complete script from the spec + inspected schema; run once; bounded repair.
+  if (aborted()) return { ok: false, aborted: true };
   let authored = await adapters.author({ task, instructions, schema });
   let last = null;
   for (let attempt = 0; attempt <= maxRepair; attempt++) {
+    if (aborted()) return { ok: false, aborted: true };
+    emit("status", { phase: "running" });
     const r = await adapters.run(authored.script, folder);
     last = r;
     if (r.ok && r.produced && r.produced.length) {
@@ -66,6 +73,7 @@ export async function runProjectJob({ task, instructions, folder }, adapters, op
       return { ok: true, mode: "authored", produced: r.produced };
     }
     if (attempt < maxRepair) {
+      if (aborted()) return { ok: false, aborted: true };
       emit("status", { phase: "repair", attempt: attempt + 1, error: r.error });
       authored = await adapters.author({ task, instructions, schema, fixError: r.error, prevScript: authored.script });
     }

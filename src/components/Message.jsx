@@ -43,6 +43,7 @@ function UserBody({ text }) {
 
 function FileOutCard({ name, path, b64, onOpenArtifact }) {
   const ext = String(name || "").split(".").pop().toLowerCase();
+  const onDisk = !!path && !!(bridge && bridge.openPath); // a real saved file on this machine -> Open in place, not download
   const t = (ext === "xlsx" || ext === "xls" || ext === "csv") ? "xlsx" : (ext === "docx" || ext === "doc") ? "docx" : (ext === "pptx" || ext === "ppt") ? "pptx" : ext === "pdf" ? "pdf" : "";
   // Web download: a run_python-produced file arrives as base64 (Let's Chat has no folder). Decode to a Blob
   // and save it via the browser — the SAME in-browser download the officedoc cards use. One path, all surfaces.
@@ -62,11 +63,13 @@ function FileOutCard({ name, path, b64, onOpenArtifact }) {
   const previewXlsx = async () => { try { const { xlsxB64ToSpec } = await import("../office.js"); const spec = await xlsxB64ToSpec(b64, name); onOpenArtifact && onOpenArtifact({ kind: "office", code: JSON.stringify(spec), office: "xlsx", title: name, previewable: true }); } catch {} };
   return (
     <div className="md-office">
-      <span className="md-office-meta"><b>{name}</b><i>produced by the run · ready to download</i></span>
+      <span className="md-office-meta"><b>{name}</b><i>{onDisk ? "saved in your project folder" : "produced by the run · ready to download"}</i></span>
       <span className={"md-office-ico" + (t ? " md-office-ico--" + t : "")}><OfficeIcon type={t} /></span>
-      {/* UNIFIED delivery — Preview + Download, IDENTICAL on desktop and web (bytes from b64). No desktop-only folder/open. */}
+      {/* Desktop folder output -> Open / Open folder (already on disk). Web (bytes only) -> Download. One card, path-driven. */}
       {canPreview && onOpenArtifact && <button className="md-office-open" title="Preview in the side panel" onClick={previewXlsx}>Preview</button>}
-      {canDownload && <button className="md-office-btn" title="Download the file" onClick={downloadB64}>Download</button>}
+      {onDisk && <button className="md-office-btn" title="Open the file" onClick={() => { try { bridge.openPath(path); } catch {} }}>Open</button>}
+      {onDisk && <button className="md-office-open" title="Show it in your folder" onClick={() => { try { bridge.showInFolder(path); } catch {} }}>Open folder</button>}
+      {!onDisk && canDownload && <button className="md-office-btn" title="Download the file" onClick={downloadB64}>Download</button>}
     </div>
   );
 }
