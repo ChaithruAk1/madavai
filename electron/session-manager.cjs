@@ -978,7 +978,19 @@ class SessionManager {
         const before = scanOffice(folder);
         const _res = await withHeartbeat("crunching the numbers", () => runScriptInFolder(script, folder, { bin: pybin }));
         const after = scanOffice(folder);
-        const produced = [...after].filter(([p, m]) => before.get(p) !== m).map(([p]) => path2.basename(p));
+        const _producedPaths = [...after].filter(([p, m]) => before.get(p) !== m).map(([p]) => p);
+        // Versioning: stamp each produced file as <stem>_DDMMYYYY[_N].<ext> so every run keeps its OWN file.
+        // Old files are NEVER moved or deleted; same-day re-runs get a _2, _3 counter so nothing is overwritten.
+        const produced = [];
+        for (const _p of _producedPaths) {
+          try {
+            const _dir = path2.dirname(_p), _bn = path2.basename(_p);
+            let _seq = 1, _name = PJ.datedName(_bn, new Date(), 1);
+            while (fs.existsSync(path2.join(_dir, _name))) { _seq++; _name = PJ.datedName(_bn, new Date(), _seq); }
+            fs.renameSync(_p, path2.join(_dir, _name));
+            produced.push(_name);
+          } catch { produced.push(path2.basename(_p)); }
+        }
         const _err = produced.length ? "" : (_res && _res.output ? String(_res.output).slice(-2000) : "the script produced no output file");
         return { ok: produced.length > 0, error: _err, produced };
       },
@@ -1042,6 +1054,21 @@ class SessionManager {
 
     try {
       if (profile.kind === "anthropic" && useFolder) {
+        // Single-source stability fix: route a DATA/report task through the SAME bounded deterministic
+        // engine the other models use (inspect -> author ONE script -> run via the hardened temp-file
+        // runner -> validate -> stop) instead of the open-ended Agent SDK loop that wanders with raw
+        // PowerShell here-strings (the slow multi-minute Sonnet runs). DATA lanes (B/C) only; fall open to
+        // the Agent SDK for generative/doc tasks (lane A) or on ANY error. Escape hatch: MADAV_PROJECT_ENGINE_ALL=0.
+        let _handled = false;
+        if (process.env.MADAV_PROJECT_ENGINE_ALL !== "0") {
+          let _lane = "C";
+          try { const { decideLane } = await _pl(); _lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText }); } catch {}
+          if (_lane !== "A") {
+            try { _handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); }
+            catch (oe) { _handled = false; try { if (s.history.length && s.history[s.history.length - 1].role === "user") s.history.pop(); } catch {} }
+          }
+        }
+        if (!_handled) {
         // Folder-linked room with Claude: use the Agent SDK so it gets real file tools
         // (read_file/list_dir/run_bash) over the room's folder — not a tool-less Q&A.
         s.history.push({ role: "user", content: userText });
@@ -1053,6 +1080,7 @@ class SessionManager {
           resume: s.sdkSessionId, emit: emitAcc, permissions: this.permissions, holds: this.holds,
         });
         if (acc) s.history.push({ role: "assistant", content: acc });
+        }
       } else if (profile.kind === "anthropic") {
         s.history.push({ role: "user", content: inlineContent(userText, images, "anthropic") });
         emit({ kind: "init", data: { model: profile.model, mode: "project", provider: profile.name } });

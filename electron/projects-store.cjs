@@ -5,6 +5,13 @@ const { app } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
+// Single source for project-knowledge assembly (ADR-0001): core/projects/context.js (ESM), loaded
+// once via cached dynamic import(). projectSystem() stays synchronous; until the import resolves
+// (first tick) or if it fails, it degrades to an inline whole-doc dump. The SAME core builder powers
+// web (via the src/bridge/ragLite.js shim) — one copy, both surfaces.
+let _projCtx = null;
+(async () => { try { _projCtx = await import("../core/projects/context.js"); } catch (e) { try { console.log("[madav] projects context core load failed:", (e && e.message) || e); } catch {} } })();
+
 const rand = (p) => p + Math.random().toString(36).slice(2, 9);
 const baseDir = () => path.join(app.getPath("userData"), "projects-data");
 const convDir = () => path.join(baseDir(), "conversations");
@@ -110,7 +117,14 @@ function projectSystem(project) {
   let s = `You are Madav, a helpful AI assistant working within the project "${project.name}".`;
   if (project.instructions) s += `\n\nProject instructions:\n${project.instructions}`;
   const kn = project.knowledge || [];
-  if (kn.length) s += `\n\nProject knowledge (reference material you can use):\n` + kn.map((k) => `### ${k.name}\n${k.content}`).join("\n\n");
+  if (kn.length) {
+    // ONE source (core/projects/context.js): small knowledge -> whole docs (as before); large ->
+    // bounded excerpts instead of an unbounded dump. Fallback runs only before the cached import resolves.
+    const block = _projCtx
+      ? _projCtx.buildKnowledgeContext("", kn)
+      : kn.map((k) => `# ${k.name}\n${k.content}`).join("\n\n");
+    s += `\n\nProject knowledge (reference material you can use):\n` + block;
+  }
   // Room playbook — pinned plays pre-loaded so every chat/mission here has them in hand.
   try {
     const names = project.pinnedSkills || [];

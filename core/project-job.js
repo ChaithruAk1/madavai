@@ -8,6 +8,30 @@ import { taskKeyOf } from "./recipes.js";
 
 export const OUTPUT_DIR = "Madav Results"; // run outputs go into this subfolder of the project folder, keeping the source data clean
 
+// Date-stamped output name so each run keeps its OWN file and NEVER overwrites a previous one.
+// "Report.xlsx" + 23 Jun 2026 14:30:05 -> "Report_23062026_143005.xlsx" (date + time, so every run is unique).
+// SINGLE SOURCE (desktop + web).
+export function datedName(name, date = new Date(), seq = 1) {
+  const s = String(name || "file");
+  const dot = s.lastIndexOf(".");
+  const stem = dot > 0 ? s.slice(0, dot) : s;
+  const ext = dot > 0 ? s.slice(dot) : "";
+  const p = (n) => String(n).padStart(2, "0");
+  const dmy = `${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}`;
+  const hms = `${p(date.getHours())}${p(date.getMinutes())}${p(date.getSeconds())}`;
+  return `${stem}_${dmy}_${hms}${seq > 1 ? "_" + seq : ""}${ext}`;
+}
+
+// The "base" of an output name with any trailing _DDMMYYYY (and optional _N counter) removed, so replay
+// recognises today's dated file as the SAME deliverable that was saved on the previous run.
+export function outputBase(name) {
+  const s = String(name || "");
+  const dot = s.lastIndexOf(".");
+  const stem = (dot > 0 ? s.slice(0, dot) : s).replace(/_\d{8}(_\d{6})?(_\d+)?$/, "");
+  const ext = dot > 0 ? s.slice(dot) : "";
+  return (stem + ext).toLowerCase();
+}
+
 // Tiny stable string hash (djb2) — same input -> same short token, cross-platform.
 function djb2(s) {
   let h = 5381; const str = String(s == null ? "" : s);
@@ -76,8 +100,8 @@ export function upsertJob(jobs, job) {
 // Did the run actually produce the expected output files? produced = file names seen after the run.
 // -> { ok, missing }
 export function validateOutputs(job, produced) {
-  const want = ((job && job.outputs) || []).map((s) => String(s).toLowerCase());
-  const have = new Set((produced || []).map((s) => String(s).toLowerCase()));
+  const want = ((job && job.outputs) || []).map(outputBase);
+  const have = new Set((produced || []).map(outputBase));
   const missing = want.filter((w) => !have.has(w));
   return { ok: want.length > 0 && missing.length === 0, missing };
 }
