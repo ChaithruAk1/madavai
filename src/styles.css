@@ -1409,8 +1409,18 @@ textarea.model-search { line-height: 1.5; }
 .scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); background-clip: padding-box; }
 
 /* ---------- bold glossy sidebar ---------- */
-.sidebar.glass { position: relative; background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0) 22%), var(--bg-1); }
-.sidebar.glass::after { content: ""; position: absolute; top: 0; right: 0; width: 1px; height: 100%; background: linear-gradient(180deg, rgba(var(--accent-rgb),0.4), transparent 40%); pointer-events: none; }
+/* Claude-style floating sidebar: a rounded, softly-lifted panel inset from the
+   window edges with a gap to the main area — replaces the flush, hard-divider rail. */
+.sidebar.glass {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 24%), var(--bg-1);
+  margin: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.22), 0 8px 28px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+/* the old accent edge-line read as a stray vertical hairline on the floating panel */
+.sidebar.glass::after { display: none; }
 .brand .mark.tea { background: linear-gradient(135deg, var(--accent), #4f46e5 60%, var(--accent-2)); }
 .brand .mark.tea svg { display: block; }
 .brand .mark.tea .steam path { animation: steam 2.6s ease-in-out infinite; }
