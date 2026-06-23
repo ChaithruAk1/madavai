@@ -25,6 +25,8 @@ const bundledIndex = () => {
 };
 import * as webfs from "./webfs.js";
 import { runPython } from "./pyodideRunner.js";
+import { runProjectJobWeb } from "./projectEngineWeb.js";
+import { decideLane } from "../../core/project-lanes.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
 // head+tail truncation, stale-result squash, identical-call loop breaker.
 import { tolerantParse, headTail, squashStale, CallGuard } from "../../core/turn-helpers.js"; // ADR-0001 / M2d — single source (was ../shared/harness.js, now retired)
@@ -1022,6 +1024,51 @@ async function maybeAutoTitle(sess, userText, replyText) {
   } catch {}
 }
 
+// WEB project report engine (flag-gated; default OFF). Runs the SAME core engine desktop uses, in the
+// browser via Pyodide, when a project task wants a data FILE and a folder is selected. Turn on in the
+// browser console: localStorage.setItem("MADAV_PROJECT_ENGINE","1") then reload. Inert until then.
+function projectEngineOn() { try { return localStorage.getItem("MADAV_PROJECT_ENGINE") === "1"; } catch { return false; } }
+function projInstructions(id) {
+  try { const ps = LS.get("be.projects", {}); const p = Array.isArray(ps) ? ps.find((x) => x && x.id === id) : (ps && ps[id]); return (p && p.instructions) || ""; } catch { return ""; }
+}
+async function runProjectEngineTurnWeb(sess, text, prof) {
+  sess.messages.push({ role: "user", content: text });
+  if (!sess.title) sess.title = text.slice(0, 60);
+  sess.ac = new AbortController();
+  emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind, mode: "project" });
+  const started = Date.now();
+  const files = [];
+  try {
+    for (const e of await webfs.listDir("")) {
+      if (e && e.dir) continue;
+      const name = (e && e.name) || e;
+      if (/\.(xlsx|xlsm|xls|csv)$/i.test(String(name))) { try { files.push({ name, base64: await webfs.readBinaryB64(name) }); } catch {} }
+    }
+  } catch {}
+  const jobsKey = "be.projjobs." + sess.projectId;
+  try {
+    const result = await runProjectJobWeb({
+      task: text, instructions: projInstructions(sess.projectId), files,
+      callModel: (msgs, sig) => callModel(prof, msgs, sig),
+      loadJobs: async () => { try { return LS.get(jobsKey, []); } catch { return []; } },
+      saveJobs: async (list) => { try { LS.set(jobsKey, list); } catch {} },
+      emit: (k, d) => emit(sess.id, k, d),
+      signal: sess.ac.signal, model: prof.model, provider: prof.name,
+      onStatus: (t) => emit(sess.id, "assistant_delta", { text: "\n• " + t }),
+    });
+    const note = result && result.ok
+      ? (result.mode === "replay" ? "All done — I reused the saved steps on your current data, so this was quick." : "All done — your report is ready below. I've saved these steps, so next time runs instantly.")
+      : ("I wasn't able to finish this one" + (result && result.error ? " (" + String(result.error).split("\n").filter(Boolean).pop().slice(0, 160) + ")" : "") + ". Try a stronger model, or simplify the report.");
+    emit(sess.id, "assistant_delta", { text: "\n\n" + note });
+    sess.messages.push({ role: "assistant", content: note, model: prof.model, provider: prof.name });
+    emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
+    emit(sess.id, "result", { subtype: result && result.ok ? "success" : "failed", duration_ms: Date.now() - started });
+  } catch (e) {
+    if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
+    emit(sess.id, "error", { message: String((e && e.message) || e) }); emit(sess.id, "result", { subtype: "error" });
+  }
+  persistSession(sess);
+}
 async function runTurn(sess, text, images) {
   const s = loadSettings();
   const prof = activeProfile(s);   // re-resolve each turn so switching model in the picker applies
@@ -1032,6 +1079,12 @@ async function runTurn(sess, text, images) {
   if (sess.team) return runTeamTurn(sess, text);
   // Folder selected → run the file-tool agent (collaborate). Tool calling needs an OpenAI-style provider.
   if (sess.agentic && webfs.hasRoot() && prof.kind !== "anthropic") return runAgentTurn(sess, text, images, prof);
+  // WEB project report engine (flag-gated; default OFF): a data/report task in a project with a folder
+  // selected runs the bounded engine in-browser. Digest/chat (intent "chat" or a non-data lane) -> chat.
+  if (projectEngineOn() && sess.projectId && webfs.hasRoot() && sess.intent !== "chat") {
+    let lane = "D"; try { lane = decideLane({ recipe: null, hasDataFiles: true, task: text }); } catch {}
+    if (lane === "B" || lane === "C") return runProjectEngineTurnWeb(sess, text, prof);
+  }
   // Plain "Let's Chat" on web gets a lightweight tool loop (web_search/web_fetch/create_image) for
   // OpenAI-style models, when no images, not a Project, and a tool is actually useful (signed in or
   // image-gen on). Anthropic + tool-incapable models fall through to the normal reply below.
@@ -1161,7 +1214,7 @@ export const webBridge = {
       if (ab) sys = sys ? `${ab}\n\n${sys}` : ab; // agent identity leads; base behavior/tool guidance follows
       if (sys) messages.push({ role: "system", content: sys }); title = "";
     }
-    const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, convId: id, title, agentic, cwd: req.cwd || null, agent,
+    const sess = { id, profile: activeProfile(s), messages, mode: req.mode || "code", projectId: req.projectId || null, intent: req.intent || null, convId: id, title, agentic, cwd: req.cwd || null, agent,
       team: (req.team && Array.isArray(req.team.members) && req.team.members.length) ? req.team : null };
     sessions.set(id, sess);
     if (!prior && sess.agent && sess.agent.id) { try { amSave(recordAgentRun(amGet(), sess.agent.id)); } catch {} } // track record

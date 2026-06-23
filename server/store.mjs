@@ -16,6 +16,16 @@
 import fs from "node:fs";
 import path from "node:path";
 
+// Crash-safe write: temp file -> fsync -> atomic rename, so a bad/interrupted write can never
+// corrupt users.json (parity with the desktop store). The Postgres backend is already transactional.
+function atomicWriteFileSync(file, data) {
+  const tmp = path.join(path.dirname(file), "." + path.basename(file) + ".tmp-" + process.pid + "-" + Date.now());
+  let fd;
+  try { fd = fs.openSync(tmp, "w"); fs.writeFileSync(fd, data); try { fs.fsyncSync(fd); } catch {} }
+  finally { if (fd !== undefined) { try { fs.closeSync(fd); } catch {} } }
+  try { fs.renameSync(tmp, file); } catch (e) { try { fs.unlinkSync(tmp); } catch {} throw e; }
+}
+
 const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 7);
 const EVENT_CAP = 5000; // JSON backend keeps only the most recent N events
 
@@ -33,7 +43,7 @@ const COLLECTIONS = ["shares", "requests", "threads", "posts", "workspaces", "co
 // ---- JSON file backend ----
 function jsonStore(file) {
   const load = () => { try { const d = JSON.parse(fs.readFileSync(file, "utf8")); if (!d.events) d.events = []; for (const c of COLLECTIONS) if (!d[c]) d[c] = []; return d; } catch { const d = { users: {}, events: [] }; for (const c of COLLECTIONS) d[c] = []; return d; } };
-  const save = (db) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(db, null, 2)); };
+  const save = (db) => { fs.mkdirSync(path.dirname(file), { recursive: true }); atomicWriteFileSync(file, JSON.stringify(db, null, 2)); };
   // Generic id-keyed collection backed by a JSON array; mirrors the Postgres col() shape below.
   const jcol = (name) => ({
     async all() { return load()[name].slice(); },

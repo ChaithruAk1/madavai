@@ -7,6 +7,15 @@
 import fs from "node:fs";
 import path from "node:path";
 
+// Crash-safe write: temp file -> fsync -> atomic rename (parity with the desktop + main server store).
+function atomicWriteFileSync(file, data) {
+  const tmp = path.join(path.dirname(file), "." + path.basename(file) + ".tmp-" + process.pid + "-" + Date.now());
+  let fd;
+  try { fd = fs.openSync(tmp, "w"); fs.writeFileSync(fd, data); try { fs.fsyncSync(fd); } catch {} }
+  finally { if (fd !== undefined) { try { fs.closeSync(fd); } catch {} } }
+  try { fs.renameSync(tmp, file); } catch (e) { try { fs.unlinkSync(tmp); } catch {} throw e; }
+}
+
 const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 7);
 const EVENT_CAP = 5000; // JSON backend keeps only the most recent N events
 
@@ -19,7 +28,7 @@ const newUser = (idn) => ({
 
 function jsonStore(file) {
   const load = () => { try { const d = JSON.parse(fs.readFileSync(file, "utf8")); if (!d.events) d.events = []; return d; } catch { return { users: {}, events: [] }; } };
-  const save = (db) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(db, null, 2)); };
+  const save = (db) => { fs.mkdirSync(path.dirname(file), { recursive: true }); atomicWriteFileSync(file, JSON.stringify(db, null, 2)); };
   return {
     kind: "json",
     async getUser(id) { return load().users[id] || null; },
