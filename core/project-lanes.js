@@ -11,7 +11,7 @@
 // fabricate — the task is inherently generative. Any task that touches real data falls to B or C, where
 // the model actually reads the files. When unsure we return C (it can do anything). Pure logic; no deps.
 
-export const LANE = { DOCUMENT: "A", JOB: "B", IMPROVISE: "C" };
+export const LANE = { DOCUMENT: "A", JOB: "B", IMPROVISE: "C", CHAT: "D" };
 
 const DATA_VERB = /\b(execute|run|refresh|reconcile|analy[sz]e|process|aggregate|pivot|summari[sz]e|extract|parse|clean|merge|import|recalc|recompute|update|compute)\b/;
 const DATA_NOUN = /\b(data|dataset|datasets|csv|xlsx|workbook|records?|rows?|ledger|export|actuals|the folder|these files|the files|the data)\b/;
@@ -35,6 +35,8 @@ export function decideLane({ recipe = null, hasDataFiles = false, task = "" } = 
   if (MAKE_VERB.test(t) && GEN_NOUN.test(t)) return LANE.DOCUMENT;
   // Ambiguous "make a report/spreadsheet" -> engine ONLY when there are no data files (else it may need them).
   if (!hasDataFiles && MAKE_VERB.test(t) && DOC_AMBIG.test(t)) return LANE.DOCUMENT;
+  // Names a report/spreadsheet/document WITH data present -> produce a FILE via the data engine.
+  if (DOC_AMBIG.test(t)) return LANE.IMPROVISE;
   // Default: the caged agent loop. Safe — it can do anything; it is just less deterministic.
-  return LANE.IMPROVISE;
+  return LANE.CHAT;
 }

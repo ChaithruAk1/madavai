@@ -713,7 +713,7 @@ export default function App() {
   };
 
   // Start a new project conversation from the Projects detail composer (opens the chat surface + sends).
-  const startProjectChat = async (project, text) => {
+  const startProjectChat = async (project, text, opts = {}) => {
     setAgentCtx(null); setTeamCtx(null); setTeamRun(null); // project context is exclusive with agent/team
     const conv = await bridge.createConversation(project.id);
     // The page picker may have just changed this project's model; the passed `project` can be stale,
@@ -727,7 +727,7 @@ export default function App() {
     if (text) {
       setBusy(true);
       try {
-        const { sessionId } = await bridge.start({ mode: "project", prompt: text, projectId: project.id, conversationId: conv.id });
+        const { sessionId } = await bridge.start({ mode: "project", prompt: text, projectId: project.id, conversationId: conv.id, intent: opts.intent });
         sessionRef.current = sessionId;
         convSession.current.set(conv.id, sessionId);
       } catch (e) {

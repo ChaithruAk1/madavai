@@ -302,6 +302,7 @@ class SessionManager {
     if (req.mode === "project") {
       s.projectId = req.projectId;
       s.conversationId = req.conversationId;
+      s.intent = req.intent; // "chat" => Madav-generated TEXT task (e.g. digest); never run the data engine
       const conv = store.getConversation(req.conversationId);
       s.history = [{ role: "system", content: "" }, ...((conv && conv.messages) || [])]; // index 0 reserved for project system
     } else {
@@ -1020,6 +1021,7 @@ class SessionManager {
 
   async _projectTurn(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
+    const chatOnly = !!(s && s.intent === "chat"); // digest / Madav text task -> skip the data engine
     const project = store.getProject(s.projectId);
     if (!project) { this._send(sessionId, "error", { code: "no_project", message: "Project not found." }); return; }
     const useFolder = !!project.folder;
@@ -1063,7 +1065,7 @@ class SessionManager {
         if (process.env.MADAV_PROJECT_ENGINE_ALL !== "0") {
           let _lane = "C";
           try { const { decideLane } = await _pl(); _lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText }); } catch {}
-          if (_lane !== "A") {
+          if (!chatOnly && (_lane === "B" || _lane === "C")) {
             try { _handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); }
             catch (oe) { _handled = false; try { if (s.history.length && s.history[s.history.length - 1].role === "user") s.history.pop(); } catch {} }
           }
@@ -1104,7 +1106,7 @@ class SessionManager {
         laneUsed = lane;
         const laneMode = lane === "A" ? "chat" : (useFolder ? "cowork" : "chat");
         let handled = false;
-        if (useFolder && lane !== "A") { try { handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); } catch (oe) { handled = false; try { if (s.history.length && s.history[s.history.length - 1].role === "user") s.history.pop(); } catch {} } }
+        if (!chatOnly && useFolder && (lane === "B" || lane === "C")) { try { handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); } catch (oe) { handled = false; try { if (s.history.length && s.history[s.history.length - 1].role === "user") s.history.pop(); } catch {} } }
         if (!handled) await runOpenAIAgentTurn({
           prompt: userText + materializeImages(images), mode: laneMode, cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,

@@ -373,7 +373,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
     const recent = sessions.filter((x) => x.projectId === selId).slice(0, 8).map((x) => `- ${x.title || "(untitled)"}${x.agentName ? " · " + x.agentName : ""}`).join("\n");
     const convLines = convs.slice(0, 8).map((c) => `- ${c.title || "Conversation"}`).join("\n");
     const prompt = `Write a short digest of this workroom's recent work for me. Use the room's instructions and knowledge as context, plus this activity:\n\nCHATS:\n${convLines || "(none)"}\n\nMISSIONS:\n${recent || "(none)"}\n\nGive: 1) a 2-3 sentence summary of what's been happening, 2) progress against the room's goals if any, 3) one suggested next step. Warm, plain language, under 180 words.`;
-    onStartChat && onStartChat(room, prompt);
+    onStartChat && onStartChat(room, prompt, { intent: "chat" });
   };
 
   // ---- TEMPLATES ----

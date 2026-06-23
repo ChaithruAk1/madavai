@@ -25,7 +25,7 @@ describe("project lanes — route by what the task needs, safely", () => {
     expect(decideLane({ task: "create a spreadsheet", hasDataFiles: true })).toBe(LANE.IMPROVISE);
   });
   it("defaults to the caged loop when unsure", () => {
-    expect(decideLane({ task: "do the thing", hasDataFiles: false })).toBe(LANE.IMPROVISE);
-    expect(decideLane({ task: "", hasDataFiles: false })).toBe(LANE.IMPROVISE);
+    expect(decideLane({ task: "do the thing", hasDataFiles: false })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "", hasDataFiles: false })).toBe(LANE.CHAT);
   });
 });
