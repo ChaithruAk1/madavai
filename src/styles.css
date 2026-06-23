@@ -155,7 +155,7 @@ input, textarea, select { font-family: inherit; }
   color: var(--text-0); border-color: var(--accent-line);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(var(--accent-rgb),0.18);
 }
-.nav-item.active svg, .sk-item.active svg { color: var(--accent-2); animation: tabpulse 2.6s ease-in-out infinite; filter: drop-shadow(0 0 5px rgba(var(--accent2-rgb),0.45)); }
+.nav-item.active svg, .sk-item.active svg { color: var(--accent); animation: tabpulse 2.6s ease-in-out infinite; filter: drop-shadow(0 0 5px rgba(var(--accent-rgb),0.45)); }
 .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: transparent; margin-left: auto; }
 .nav-item.active .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .nav-group .nav-caret { margin-left: auto; display: inline-flex; color: var(--text-2); }
@@ -1443,7 +1443,7 @@ textarea.model-search { line-height: 1.5; }
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 6px 18px rgba(var(--accent-rgb),0.16);
 }
 .mt-ico { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 9px; background: linear-gradient(160deg, var(--bg-3), var(--bg-2)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); color: var(--text-1); }
-.mode-tile.active .mt-ico { background: linear-gradient(160deg, var(--accent), var(--accent) 70%, var(--accent-2)); color: #06070a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px rgba(var(--accent-rgb),0.4); }
+.mode-tile.active .mt-ico { background: var(--accent); color: #06070a; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px rgba(var(--accent-rgb),0.4); }
 .mt-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
 .mt-name { font-size: 13.5px; font-weight: 500; }
 .mt-sub { font-size: 10.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1554,7 +1554,7 @@ textarea.model-search { line-height: 1.5; }
 .tn-tab:not(.active) { background: linear-gradient(135deg, rgba(var(--accent-rgb),0.16), rgba(var(--accent-rgb),0.05)); border-color: rgba(var(--accent-rgb),0.30); box-shadow: none; opacity: 0.9; }
 .tn-tab:not(.active):hover { background: linear-gradient(135deg, rgba(var(--accent-rgb),0.30), rgba(var(--accent-rgb),0.10)); border-color: rgba(var(--accent-rgb),0.5); box-shadow: 0 4px 14px rgba(var(--accent-rgb),0.22); opacity: 1; }
 .tn-tab:hover .tn-tabicon { transform: translateY(-1px) scale(1.05); filter: drop-shadow(0 0 5px currentColor); }
-.tn-tab.active .tn-tabicon { color: var(--accent-2); animation: tabpulse 2.6s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(var(--accent2-rgb),0.6)); }
+.tn-tab.active .tn-tabicon { color: var(--accent); animation: tabpulse 2.6s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(var(--accent-rgb),0.6)); }
 @keyframes tabpulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: 0.75; } }
 .tn-right { position: absolute; right: 16px; top: 0; height: 64px; display: flex; align-items: center; gap: 10px; }
 .tn-status { gap: 7px; }
@@ -2864,7 +2864,7 @@ svg.lucide { color: var(--accent); }
 
 /* Model selector dock — outside the chat window, centered beneath it.
    (NOT .model-row — that's the picker menu's per-model row class.) */
-.model-dock { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 4px; position: relative; flex-wrap: wrap; }
+.model-dock { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 2px; position: relative; flex-wrap: wrap; }
 /* The MODEL dropdown centers under the CHAT WINDOW: its picker stops being the
    positioning parent (menu anchors to the full-width dock) and centering uses margin
    (NOT transform — the pop-in open animation overwrites transform and broke it).
@@ -3094,8 +3094,8 @@ textarea.model-search { border-radius: 14px; }
 /* MULTI-COLOR ACCENT — when a gradient accent is chosen (--accent-grad set), primary
    surfaces wear it; text/borders/icons keep the solid mid-stop for readability.
    Single-color and default accents are untouched (the var falls back to --accent). */
-:root[data-accent="custom"] .btn.primary { background: var(--accent-grad, var(--accent)); color: var(--accent-ink, #fff); }
-:root[data-accent="custom"] .send { background: var(--accent-grad, var(--accent)); }
+:root[data-accent="custom"] .btn.primary { background: var(--accent); color: var(--accent-ink, #fff); }
+:root[data-accent="custom"] .send { background: var(--accent); }
 :root[data-accent="custom"] .wr-meterfill { background: var(--accent-grad, linear-gradient(90deg, var(--wr), color-mix(in srgb, var(--wr) 55%, #ffffff))); }
 
 /* Top-bar workflow recorder — quiet chip at rest, unmistakable while recording */
@@ -3266,3 +3266,6 @@ textarea.model-search { border-radius: 14px; }
 
 /* Sidebar: whole nav + recents scroll together; profile/copyright stay pinned (Claude-style). */
 .sb-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
+
+/* Disclaimer pinned to the very bottom of the work area (out of the centered hero). */
+.app-foot { text-align: center; font-size: 11px; color: var(--text-3, var(--text-2)); opacity: 0.72; padding: 8px 0 5px; margin-top: auto; }
