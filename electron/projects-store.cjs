@@ -3,6 +3,7 @@
 // and a set of conversations whose messages persist across restarts.
 const { app } = require("electron");
 const fs = require("fs");
+const { atomicWriteFileSync } = require("./atomic-write.cjs"); // crash-safe writes so a bad write cannot lose projects
 const path = require("path");
 
 // Single source for project-knowledge assembly (ADR-0001): core/projects/context.js (ESM), loaded
@@ -39,7 +40,7 @@ function normalize(p) {
 }
 
 function loadProjects() { try { return (JSON.parse(fs.readFileSync(projFile(), "utf8")).projects || []).map(normalize); } catch { return []; } }
-function saveProjects(arr) { ensure(); fs.writeFileSync(projFile(), JSON.stringify({ projects: arr }, null, 2)); }
+function saveProjects(arr) { ensure(); atomicWriteFileSync(projFile(), JSON.stringify({ projects: arr }, null, 2)); }
 
 function listProjects() {
   // Shelf data: identity, crew, knowledge meter, and pulse (last conversation activity).
@@ -157,17 +158,17 @@ function createConversation(projectId) {
   const c = { id: rand("cnv_"), projectId, title: "New conversation", messages: [], createdAt: Date.now(), updatedAt: Date.now() };
   saveConversation(c); return c;
 }
-function saveConversation(c) { ensure(); c.updatedAt = Date.now(); fs.writeFileSync(convFile(c.id), JSON.stringify(c, null, 2)); return c; }
+function saveConversation(c) { ensure(); c.updatedAt = Date.now(); atomicWriteFileSync(convFile(c.id), JSON.stringify(c, null, 2)); return c; }
 function deleteConversation(id) { try { fs.unlinkSync(convFile(id)); } catch {} return true; }
 function renameConversation(id, title) { const c = getConversation(id); if (!c) return null; const t = String(title == null ? "" : title).trim().slice(0, 200); if (t) c.title = t; return saveConversation(c); }
 // Stage 3 — per-project recipe cache ("learn once, replay"). Stored OUTSIDE projects.json (script content
 // can be large) so the hot project list stays lean. The one-per-taskKey upsert logic lives in core/recipes.js.
 const recipeDir = () => path.join(baseDir(), "recipes");
 function getRecipes(projectId) { try { return JSON.parse(fs.readFileSync(path.join(recipeDir(), String(projectId) + ".json"), "utf8")) || []; } catch { return []; } }
-function saveRecipes(projectId, list) { try { fs.mkdirSync(recipeDir(), { recursive: true }); fs.writeFileSync(path.join(recipeDir(), String(projectId) + ".json"), JSON.stringify(Array.isArray(list) ? list : [], null, 2)); } catch {} return list; }
+function saveRecipes(projectId, list) { try { fs.mkdirSync(recipeDir(), { recursive: true }); atomicWriteFileSync(path.join(recipeDir(), String(projectId) + ".json"), JSON.stringify(Array.isArray(list) ? list : [], null, 2)); } catch {} return list; }
 const jobDir = () => path.join(baseDir(), "jobs");
 function getJobs(projectId) { try { return JSON.parse(fs.readFileSync(path.join(jobDir(), String(projectId) + ".json"), "utf8")) || []; } catch { return []; } }
-function saveJobs(projectId, list) { try { fs.mkdirSync(jobDir(), { recursive: true }); fs.writeFileSync(path.join(jobDir(), String(projectId) + ".json"), JSON.stringify(Array.isArray(list) ? list : [], null, 2)); } catch {} return list; }
+function saveJobs(projectId, list) { try { fs.mkdirSync(jobDir(), { recursive: true }); atomicWriteFileSync(path.join(jobDir(), String(projectId) + ".json"), JSON.stringify(Array.isArray(list) ? list : [], null, 2)); } catch {} return list; }
 
 module.exports = {
   listProjects, getProject, createProject, updateProject, deleteProject,

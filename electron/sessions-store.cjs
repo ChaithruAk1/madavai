@@ -2,6 +2,7 @@
 // Each task = { id, mode, cwd, title, messages:[{role,content}], updatedAt }. Survives restart.
 const { app } = require("electron");
 const fs = require("fs");
+const { atomicWriteFileSync } = require("./atomic-write.cjs"); // crash-safe writes
 const path = require("path");
 
 const rand = (p) => p + Math.random().toString(36).slice(2, 9);
@@ -10,7 +11,7 @@ const file = (id) => path.join(dir(), id + ".json");
 const ensure = () => fs.mkdirSync(dir(), { recursive: true });
 const tombFile = () => path.join(app.getPath("userData"), "chat-tombstones.json");
 function getTombstones() { try { const a = JSON.parse(fs.readFileSync(tombFile(), "utf8")); return Array.isArray(a) ? a : []; } catch { return []; } }
-function setTombstones(arr) { try { fs.writeFileSync(tombFile(), JSON.stringify((arr || []).slice(-1000))); } catch {} }
+function setTombstones(arr) { try { atomicWriteFileSync(tombFile(), JSON.stringify((arr || []).slice(-1000))); } catch {} }
 function addTombstone(id) { if (!id) return; const t = getTombstones().filter((x) => x && x.id !== id); t.push({ id, deletedAt: Date.now() }); setTombstones(t); }
 
 function raw() {
@@ -40,8 +41,8 @@ function listSessions(mode, agentScope) {
 }
 function getSession(id) { try { return JSON.parse(fs.readFileSync(file(id), "utf8")); } catch { return null; } }
 function createSession(mode, cwd, projectId) { const s = { id: rand("ses_"), mode, cwd: cwd || "", projectId: projectId || null, title: "New task", messages: [], createdAt: Date.now(), updatedAt: Date.now() }; saveSession(s); return s; }
-function saveSession(s) { ensure(); s.updatedAt = Date.now(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); try { require("./chat-sync.cjs").maybePush(); } catch {} return s; }
-function saveSessionRaw(s) { ensure(); fs.writeFileSync(file(s.id), JSON.stringify(s, null, 2)); return s; } // used by chat-sync pull (must NOT bump updatedAt or re-push)
+function saveSession(s) { ensure(); s.updatedAt = Date.now(); atomicWriteFileSync(file(s.id), JSON.stringify(s, null, 2)); try { require("./chat-sync.cjs").maybePush(); } catch {} return s; }
+function saveSessionRaw(s) { ensure(); atomicWriteFileSync(file(s.id), JSON.stringify(s, null, 2)); return s; } // used by chat-sync pull (must NOT bump updatedAt or re-push)
 function allSessions() { try { return raw(); } catch { return []; } }
 function deleteSession(id) { try { fs.unlinkSync(file(id)); } catch {} try { addTombstone(id); } catch {} try { require("./chat-sync.cjs").maybePush(); } catch {} return true; }
 function purgeSession(id) { try { fs.unlinkSync(file(id)); } catch {} return true; } // unlink WITHOUT a tombstone/push (used by chat-sync pull applying a remote deletion)
