@@ -1,6 +1,6 @@
 # Madav — working memory (web↔desktop parity effort)
 
-_Last updated: 2026-06-18. Durable handoff. Pair with `docs/WEB-PARITY-PLAN.md`, `docs/PARITY-SCORECARD.md`,
+_Last updated: 2026-06-22. Durable handoff. Pair with `docs/WEB-PARITY-PLAN.md`, `docs/PARITY-SCORECARD.md`,
 `docs/PARITY-PHASE-TESTS.md` (all manual test scenarios), `docs/adr/0001-architecture.md`,
 `docs/adr/0001-MIGRATION-PLAN.md`, `docs/adr/0001-M2-CHAT-LOOP-DESIGN.md`, and the `docs/PHASE3-*` / `*-WEB-DESIGN.md` notes._
 
@@ -58,6 +58,14 @@ Replicate Claude's proven agent patterns for stability/longevity. Be honest abou
   default → delete the legacy chat path in `agent-openai.cjs` + collapse the `harness.cjs`/`providers.cjs` helper copies.
   Gate before M2d/M2e: broad desktop shakeout of the flag. Two trivial gaps left (low-value): tier-B re-pin, create_image card.
 
+## PROJECTS ORCHESTRATOR (deterministic job engine) — single-source, ACTIVE (2026-06-22)
+Goal: Projects "just work" CONSISTENTLY on BOTH surfaces, weak+strong models, repeat+one-off — not reactive bug-fixing. Replaces the old "run a tool-loop agent over the folder each turn" with a deterministic inspect -> decide -> build -> validate -> save-recipe flow.
+- **Core (shared ESM):** `core/project-job.js` — Job lifecycle: `schemaSignature` (file names + column names ONLY, not values -> new month / new rows = REPLAY; new/renamed column or file = RE-AUTHOR), `instructionsHash`, `makeJob/findJob/decideRun`, `validateOutputs`, `authoringPrompt` (the ONE build prompt; saves into `Madav Results/` via `OUTPUT_DIR`), `extractScript` (HARDENED 2026-06-22: salvages a TRUNCATED reply — opening fence, no close — so it never runs the model's prose+fence as code). `core/project-runner.js` — `runProjectJob` = the flow (inspect -> decide replay/author -> run -> bounded repair -> validate -> save active job); abort-aware; **FAIL-FAST** via `errorSignature` (stop when no script, or the SAME error twice — was burning all attempts); exports `INSPECT_PY`. `core/model-fit.js` — task-aware fit; **projects judged by `isDeckCapable` alone** (a one-shot script needs no tool-calling); agents/teams also require agentic.
+- **Desktop = wired + validated** (deepseek-v4-pro builds the 6-file DTC report end-to-end): `electron/session-manager.cjs` `_tryProjectJob` holds the platform adapters (inspect via `runScriptInFolder(INSPECT_PY)`; author via `streamChat`+30s heartbeat+abort; run via folder-diff `scanOffice`, which recurses 1 level so `Madav Results/` is caught; jobs via `projects-store.cjs` getJobs/saveJobs). Hard 8-min timeout, maxRepair 3, plain-English narration; pre-creates `Madav Results`. Gate: folder + lane!=A -> `_tryProjectJob`, **fail-open** to `runOpenAIAgentTurn` on any error. `electron/agent-openai.cjs` `runScriptInFolder` = the ONE hardened runner (temp .py file — never multi-line `python -c`; `PYTHONSAFEPATH=1` so a stray .py cannot shadow stdlib; captures the real stderr traceback for the repair).
+- **Web = NOT wired (the main Projects single-source GAP).** `core/project-runner.js` is surface-agnostic; web needs adapters (inspect/author/run/persist) — Pyodide in-browser or server-side Python — so web runs the SAME engine. Until then web Projects use the legacy path.
+- **Shipped 2026-06-22:** Recommended filter chip + per-row fit badges (ModelPicker); deepseek no longer mislabeled "Needs a recipe"; outputs -> `Madav Results/`; accent fit-banner; the endless-loop fix above (truncation salvage + fail-fast) for flaky/`:free` models; reopen-completed-chat restores the card (no stale re-run); per-project model isolation. Tests: `tests/parity/project-job.test.js`, `projects-e2e.test.js`, `model-fit.test.js`. Commits `0a758691` + `3e7f04dc` (verify pushed). Manual E2E: `TEST-PROJECTS-E2E.md`.
+- **OPEN DECISION (owner) — the real robustness fork.** Today the CHAT model authors the report, so success depends on the picked model AND its endpoint (a `:free` endpoint truncates -> the loop above). "Recommended" is a NAME regex, so it stamped `llama-3.3-70b-instruct:free` Recommended and it failed. Options: **(1) dedicated builder model** — Madav always builds with a known-good model (e.g. deepseek-v4-pro) regardless of chat model; cloud-builder ONLY when already on cloud (a LOCAL/private pick must keep the build local); + **honest badges**. **(2) honest badges only** — keep per-project model control; make the badge weigh `:free`/size/task-complexity reliability and steer away from likely-fail picks. **(3) diagnose first** — add an error "Details"/log surface, capture the exact failure, fix the proven cause. Prior recommendation: **Option 1**. Badge-honesty is non-negotiable correctness either way.
+
 ## Tests
 `NODE_ENV=test npx vitest run tests/parity` → **≈290 passing** (sandbox times out on the full run; subsets verified — re-run `npx vitest run tests/parity`). M2 parity files: turn-helpers, chat-loop, chat-loop-{textmode,compaction,replay}, turn-recorder, chat-core-{adapter,runner}. Earlier files: schedule-next,
 scheduler, task-run, tasks-*-routes, provider-call/-key-vault, provider-ping, rag-lite, agent-memory(+A1), web-skills,
@@ -80,16 +88,17 @@ proxy-transcribe, core-agent-rules. Verify discipline: `node --check` (.cjs/.mjs
   `--no-optional-locks` (read-only) and let the USER clear stale locks.
 
 ## OPEN / NEXT (priority order)
-1. **M2 RETIRE phase — NEXT (where single-source is realized).** Build phase DONE (coreChatTurn faithful, flag-
+1. **Projects orchestrator — ACTIVE (see the PROJECTS ORCHESTRATOR section).** (a) Owner picks Option 1/2/3 for the builder/badge fork -> build single-source (core + both surfaces) + tests. (b) **Web parity:** wire `core/project-runner.js` web adapters so web runs the SAME engine (currently desktop-only — the main Projects single-source gap). (c) Push commits; owner runs `TEST-PROJECTS-E2E.md`.
+2. **M2 RETIRE phase (where chat-loop single-source is realized).** Build phase DONE (coreChatTurn faithful, flag-
    validated on desktop). (a) broad desktop shakeout of `MADAV_CORE_CHAT` (gate); (b) **M2d** web adapter → web adopts
    `core/chat-loop.js`, delete web's loop + `src/shared/harness.js`; (c) **M2e** flip default → delete legacy chat path
    in `agent-openai.cjs` + collapse `harness.cjs`/`providers.cjs` copies. Desktop validated before web; flag-guarded.
-2. **Commit/deploy the accumulated web batch** (scheduled runs, Agent Ops, skills, voice) + smoke-test on Render
+3. **Commit/deploy the accumulated web batch** (scheduled runs, Agent Ops, skills, voice) + smoke-test on Render
    (server *and* `npm run build` redeploy). Scenarios in `docs/PARITY-PHASE-TESTS.md`.
-3. **Office rule → ESM core** (banked) — wire alongside the session-manager engine work; re-run the PROTECTED scenario.
-4. **Scorecard §4 remainder:** swarms/missions (parked); browser automation + Telegram (vendor-gated, design ready in
+4. **Office rule → ESM core** (banked) — wire alongside the session-manager engine work; re-run the PROTECTED scenario.
+5. **Scorecard §4 remainder:** swarms/missions (parked); browser automation + Telegram (vendor-gated, design ready in
    `docs/MANAGED-SERVICES-WEB-DESIGN.md`); team-tools + richer chat-loop (unblocked once M2 lands).
-5. **Office-doc UX (deferred, user's call):** unreliable large free models (e.g. `nemotron-550b:free`, classified
+6. **Office-doc UX (deferred, user's call):** unreliable large free models (e.g. `nemotron-550b:free`, classified
    deck-capable by size) hard-fail bespoke with no template fallback — consider a "build a simpler version" fallback
    on the incomplete-document card (shared `markdown.jsx`).
 
