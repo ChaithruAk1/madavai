@@ -126,7 +126,7 @@ input, textarea, select { font-family: inherit; }
   background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent 30%), var(--bg-1);
   border-right: 1px solid var(--line);
   display: flex; flex-direction: column;
-  padding: 14px 12px; gap: 3px; overflow: hidden;
+  padding: 14px 12px; gap: 2px; overflow: hidden;
 }
 .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 16px; }
 .brand .mark {
@@ -144,7 +144,7 @@ input, textarea, select { font-family: inherit; }
 }
 .nav-item {
   position: relative; display: flex; align-items: center; gap: 11px;
-  width: 100%; text-align: left; padding: 6px 11px; border: 1px solid transparent;
+  width: 100%; text-align: left; padding: 5px 11px; border: 1px solid transparent;
   border-radius: var(--radius-sm); background: transparent; color: var(--text-1);
   font-size: 14px; transition: background .14s, color .14s, border-color .14s;
 }
@@ -169,7 +169,7 @@ input, textarea, select { font-family: inherit; }
 .sb-new:hover { border-color: var(--accent-line); background: var(--bg-2); }
 .sb-search { display: flex; align-items: center; gap: 7px; margin: 4px 0 6px; padding: 6px 9px; background: var(--bg-1); border: 1px solid var(--line); border-radius: 8px; color: var(--text-2); }
 .sb-search input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: var(--text-0); font: inherit; font-size: 12.5px; }
-.sb-recents { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; }
+.sb-recents { display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; }
 .sb-empty { color: var(--text-2); font-size: 12px; padding: 6px 10px; }
 .sb-rec { display: flex; align-items: center; gap: 6px; padding: 4px 9px; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-1); }
 .sb-rec:hover { background: var(--bg-2); }
@@ -1495,7 +1495,7 @@ textarea.model-search { line-height: 1.5; }
 .app-body.sb-collapsed .sidebar .sb-new,
 .app-body.sb-collapsed .sidebar .sb-profile { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
 .app-body.sb-collapsed .sb-acct-menu { left: 64px; right: auto; bottom: 8px; width: 232px; }
-.sb-expand { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.sb-expand { display: flex; flex-direction: column; }
 
 .topnav { position: relative; height: 64px; flex: 0 0 64px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid var(--line); background: rgba(7,8,11,0.6); backdrop-filter: blur(14px); }
 .tn-collapse { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg-1); color: var(--text-1); cursor: pointer; flex: 0 0 auto; transition: background .14s, color .14s; }
@@ -3263,3 +3263,6 @@ textarea.model-search { border-radius: 14px; }
 /* Sage face picker — the "+" tile to upload your own avatar (sits after the photo gallery). */
 .sage-look-add { display: inline-flex; align-items: center; justify-content: center; min-width: 42px; min-height: 42px; border: 1.6px dashed var(--line); border-radius: 12px; color: var(--text-2); background: transparent; cursor: pointer; padding: 0; }
 .sage-look-add:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Sidebar: whole nav + recents scroll together; profile/copyright stay pinned (Claude-style). */
+.sb-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }

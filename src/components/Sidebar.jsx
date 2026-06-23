@@ -178,6 +178,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
 
   return (
     <aside className="sidebar glass">
+      <div className="sb-scroll">
       <button className="sb-new" onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
 
       <button className={`nav-item nav-group ${MODELS.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setModelsOpen((o) => !o)}>
@@ -245,7 +246,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
           <Search size={13} />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search chats…" />
         </div>
-        <div className="sb-recents scroll">
+        <div className="sb-recents">
           {recents.length === 0 && <div className="sb-empty">Nothing here yet — your conversations will live here. Start one above ↑</div>}
           {recents.length > 0 && shown.length === 0 && <div className="sb-empty">No matches{q.trim().length >= 3 ? " anywhere in your chats" : ""} — try different words.</div>}
           {shown.slice(0, 100).map((it) => (
@@ -278,6 +279,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
         </div>
       </div>
 
+      </div>{/* /sb-scroll — nav + recents scroll together; profile pinned below */}
       {/* Update-available banner (desktop; appears only when the server announces a newer version) */}
       {update && (
         <div className="sb-upsell sb-t">
