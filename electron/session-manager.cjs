@@ -952,7 +952,7 @@ class SessionManager {
         if (kind !== "status") return;
         const p = data && data.phase; let t = "";
         if (p === "inspect") t = "Taking a look at your files…";
-        else if (p === "inspected") t = "Got your data — " + (data.count || 0) + " file(s)" + (data.files && data.files.length ? " (" + data.files.join(", ") + ")" : "") + ".";
+        else if (p === "inspected") t = "Got your data — " + (data.count || 0) + " file(s)" + (data.files && data.files.length ? " (" + data.files.map((x) => "\u0060" + x + "\u0060").join(", ") + ")" : "") + ".";
         else if (p === "author") t = "Building your report…";
         else if (p === "running") t = "Crunching the numbers…";
         else if (p === "replay") t = "Reusing the steps from last time — this should be quick…";
@@ -973,6 +973,7 @@ class SessionManager {
       },
       run: async (script, folder) => {
         if (controller.signal.aborted) return { ok: false, error: "stopped", produced: [] };
+        try { fs.mkdirSync(path2.join(folder, PJ.OUTPUT_DIR), { recursive: true }); } catch {}
         const before = scanOffice(folder);
         const _res = await withHeartbeat("crunching the numbers", () => runScriptInFolder(script, folder, { bin: pybin }));
         const after = scanOffice(folder);
