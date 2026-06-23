@@ -940,6 +940,8 @@ class SessionManager {
   // -> caller falls open to the caged agent loop. Web uses the SAME core orchestrator with its adapters.
   async _tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }) {
     if (!(project.folder && beforeFiles && beforeFiles.size > 0)) return false;
+    s.history.push({ role: "user", content: userText }); // persist the prompt into THIS chat's history
+    emit({ kind: "init", data: { model: profile.model, mode: "project", provider: profile.name } }); // bind chat<->session so leaving + returning re-attaches the live run (not a new window)
     const PJ = await _pj(), PR = await _pr();
     const path2 = require("path");
     const pybin = (pe && pe.py) || "python";
@@ -1057,7 +1059,7 @@ class SessionManager {
         laneUsed = lane;
         const laneMode = lane === "A" ? "chat" : (useFolder ? "cowork" : "chat");
         let handled = false;
-        if (useFolder && lane !== "A") { try { handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); } catch (oe) { handled = false; } }
+        if (useFolder && lane !== "A") { try { handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); } catch (oe) { handled = false; try { if (s.history.length && s.history[s.history.length - 1].role === "user") s.history.pop(); } catch {} } }
         if (!handled) await runOpenAIAgentTurn({
           prompt: userText + materializeImages(images), mode: laneMode, cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
