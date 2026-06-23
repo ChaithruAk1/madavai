@@ -304,7 +304,7 @@ class SessionManager {
       s.conversationId = req.conversationId;
       s.intent = req.intent; // "chat" => Madav-generated TEXT task (e.g. digest); never run the data engine
       const conv = store.getConversation(req.conversationId);
-      s.history = [{ role: "system", content: "" }, ...((conv && conv.messages) || [])]; // index 0 reserved for project system
+      s.history = [{ role: "system", content: "" }, ...((conv && conv.messages) || []).map((m) => ({ role: m.role, content: m.content }))]; // index 0 reserved; strip extras (at/model) so model context stays clean
     } else {
       // Persisted chat history for Let's Talk / Collaborate / Build.
       let conv = req.conversationId ? sstore.getSession(req.conversationId) : null;
@@ -959,6 +959,7 @@ class SessionManager {
         else if (p === "replay") t = "Reusing the steps from last time — this should be quick…";
         else if (p === "repair") t = "That didn't come out right — adjusting and trying again…";
         else if (p === "stuck") t = "It keeps hitting the same snag — stopping here so you're not left waiting…";
+        else if (p === "replay_failed") t = "The saved steps did not re-run cleanly this time" + (data.detail ? " (" + data.detail + ")" : "") + " - rebuilding it...";
         else t = (data && data.reason) || "";
         if (t) emit({ kind: "assistant_delta", data: { text: "\n• " + t } });
       },
@@ -1134,7 +1135,8 @@ class SessionManager {
       } catch {}
       const msgs = s.history.filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.length);
       const conv = store.getConversation(s.conversationId) || { id: s.conversationId, projectId: s.projectId, title: "New conversation", createdAt: Date.now() };
-      conv.messages = msgs;
+      const _now = Date.now(); const _prevMsgs = conv.messages || [];
+      conv.messages = msgs.map((m, i) => ({ ...m, at: m.at || (_prevMsgs[i] && _prevMsgs[i].at) || _now })); // persist a timestamp so reopened project history shows the time
       // Persist produced output files so their Open/Download cards survive reopen (the card is otherwise
       // a live-only event). Keyed by path so re-runs that overwrite the same file don't duplicate it.
       if (newOuts.length) {

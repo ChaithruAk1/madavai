@@ -61,7 +61,8 @@ export async function runProjectJob({ task, instructions, folder }, adapters, op
     const r = await adapters.run(job.script, folder);
     const v = validateOutputs(job, r.produced);
     if (r.ok && v.ok) { emit("done", { mode: "replay", produced: r.produced }); return { ok: true, mode: "replay", produced: r.produced }; }
-    emit("status", { phase: "author", reason: "saved procedure failed; rebuilding" });
+    const _why = !r.ok ? (errorSignature(r.error) || "the saved script produced no output file") : "the output did not match what was expected";
+  emit("status", { phase: "replay_failed", detail: _why });
   }
 
   // AUTHOR — model writes ONE complete script from the spec + inspected schema; run once; bounded
