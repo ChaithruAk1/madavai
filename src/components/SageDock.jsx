@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Plus, Minus, Smile, ArrowUp, ArrowRight, Loader2, Mic, Volume2, VolumeX, Compass, Sparkles, BookOpen } from "lucide-react";
 import Portrait from "./Portrait.jsx";
+import { SAGE_IMG_LOOKS, loadCustomLooks, saveCustomLooks } from "./sageImageLooks.js";
 import { bridge } from "../bridge/index.js";
 import { recordScreen, recordQuestion, recordEvent, memoryBlock, maybeDistill } from "../sageMemory.js";
 import { retrieveKnowledge } from "../sageKnowledge.js";
@@ -19,7 +20,7 @@ const FEAT_VOICE = import.meta.env.VITE_FEAT_VOICE !== "0";
 // ---- The helper's face: a multicultural gallery the user can choose from.
 // Female looks switch the buddy's name to Sara; male/neutral looks stay Sage.
 // (Append-only: indices 0-7 predate the gallery expansion — saved picks stay valid.)
-const SAGE_LOOKS = [
+const _DRAWN_LOOKS = [
   { label: "Sage — the classic",          skin: "#eab68c", hair: "#2b2018", style: 0, beard: true,  glasses: false },
   { label: "Sage — European · specs",     skin: "#f4cda6", hair: "#6e4a2a", style: 5, beard: false, glasses: true },
   { label: "Sage — Indian · curls",       skin: "#bd8458", hair: "#1a1a1a", style: 2, beard: true,  glasses: false },
@@ -47,9 +48,11 @@ const SAGE_LOOKS = [
   { label: "Sara — Chinese · bob",        skin: "#f0c194", hair: "#101010", style: 10, beard: false, glasses: false, female: true },
   { label: "Sara — Chinese · ponytail",   skin: "#f0c194", hair: "#1f2a3a", style: 9,  beard: false, glasses: false, female: true },
 ];
+const SAGE_LOOKS = SAGE_IMG_LOOKS; void _DRAWN_LOOKS; // photos only — drawn faces retired
 const lookName = (l) => (l && l.female ? "Sara" : "Sage");
 function SageFace({ size, look = SAGE_LOOKS[0] }) {
   const name = lookName(look);
+  if (look && look.img) return <img className="sage-photo" src={look.img} width={size} height={size} alt={name} title={name} draggable={false} style={{ borderRadius: "24%", objectFit: "cover", flex: "none", display: "block" }} />;
   return <Portrait seed={name} color="var(--accent)" size={size} mood="hello" title={name}
     skin={look.skin} hair={look.hair} beard={look.beard} glasses={look.glasses} style={look.style}
     lashes={!!look.female} earring={!!look.female} />;
@@ -181,7 +184,10 @@ export default function SageDock({ mode, onNavigate }) {
   const recRef = useRef(null);
   const micEngineRef = useRef(null); // "win" | "web" — which speech engine is live while listening
   const winListenersRef = useRef([]); // active window pointer listeners (drag/resize) → removed on unmount
-  const lookObj = SAGE_LOOKS[look] || SAGE_LOOKS[0];
+  const fileRef = useRef(null);
+  const [customLooks, setCustomLooks] = useState(() => loadCustomLooks());
+  const gallery = SAGE_LOOKS.concat(customLooks);
+  const lookObj = gallery[look] || gallery[0];
   const name = lookName(lookObj); // female looks answer as Sara, the rest as Sage
 
   useEffect(() => { try { localStorage.setItem("be.sage.thread", JSON.stringify(msgs.slice(-40))); } catch {} }, [msgs]);
@@ -293,6 +299,25 @@ export default function SageDock({ mode, onNavigate }) {
   const hide = () => { setHidden(true); setOpen(false); try { localStorage.setItem("be.sage.hidden", "1"); } catch {} };
   const show = () => { setHidden(false); try { localStorage.removeItem("be.sage.hidden"); } catch {} };
   const chooseLook = (i) => { setLook(i); setLookPick(false); try { localStorage.setItem("be.sage.look", String(i)); } catch {} };
+  const uploadLook = (e) => {
+    const file = e.target && e.target.files && e.target.files[0];
+    if (file) {
+      const r = new FileReader();
+      r.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement("canvas"); c.width = 256; c.height = 256;
+          const x = c.getContext("2d"); const sd = Math.min(img.width, img.height);
+          x.drawImage(img, (img.width - sd) / 2, (img.height - sd) / 2, sd, sd, 0, 0, 256, 256);
+          const nc = customLooks.concat([{ img: c.toDataURL("image/png"), label: "My avatar", custom: true }]);
+          setCustomLooks(nc); saveCustomLooks(nc); chooseLook(SAGE_LOOKS.length + nc.length - 1);
+        };
+        img.src = String(r.result || "");
+      };
+      r.readAsDataURL(file);
+    }
+    if (e.target) e.target.value = "";
+  };
 
   // Read a reply aloud (free OS voices, offline). Cancels anything still talking,
   // skips while the mic listens (no feedback loop), caps length so long walkthroughs
@@ -543,12 +568,14 @@ export default function SageDock({ mode, onNavigate }) {
           </div>
           {lookPick && (
             <div className="sage-looks">
-              <span className="sage-looks-label">Pick a look — female looks answer as Sara</span>
+              <span className="sage-looks-label">Pick a face — or + to upload your own</span>
               <div className="sage-looks-row">
-                {SAGE_LOOKS.map((l, i) => (
+                {gallery.map((l, i) => (
                   <button key={i} className={`sage-look ${i === look ? "on" : ""}`} onClick={() => chooseLook(i)} title={l.label || `Look ${i + 1}`}><SageFace size={42} look={l} /></button>
                 ))}
+                <button className="sage-look sage-look-add" onClick={() => fileRef.current && fileRef.current.click()} title="Upload your own image"><Plus size={20} /></button>
               </div>
+              <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={uploadLook} />
             </div>
           )}
           {walk && walk.steps && (

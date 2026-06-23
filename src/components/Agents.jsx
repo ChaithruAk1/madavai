@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare, Minus, Smile, AppWindow } from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
 import Portrait from "./Portrait.jsx";
+import { SAGE_IMG_LOOKS, loadCustomLooks } from "./sageImageLooks.js";
 import { bridge } from "../bridge/index.js";
 import { madavAlert, madavConfirm } from "../dialogs.jsx";
 import ModelPicker from "./ModelPicker.jsx";
@@ -264,7 +265,7 @@ Rules: 2-5 members. relay = a pipeline where work flows member to member in orde
 // KEEP IDENTICAL to SAGE_LOOKS in SageDock.jsx — both read the same saved index
 // (be.sage.look), so a drifted copy shows a different face on each surface.
 // Append-only: indices stay stable so saved picks remain valid.
-const SAGE_LOOKS = [
+const _DRAWN_LOOKS = [
   { label: "Sage — the classic",          skin: "#eab68c", hair: "#2b2018", style: 0, beard: true,  glasses: false },
   { label: "Sage — European · specs",     skin: "#f4cda6", hair: "#6e4a2a", style: 5, beard: false, glasses: true },
   { label: "Sage — Indian · curls",       skin: "#bd8458", hair: "#1a1a1a", style: 2, beard: true,  glasses: false },
@@ -292,11 +293,13 @@ const SAGE_LOOKS = [
   { label: "Sara — Chinese · bob",        skin: "#f0c194", hair: "#101010", style: 10, beard: false, glasses: false, female: true },
   { label: "Sara — Chinese · ponytail",   skin: "#f0c194", hair: "#1f2a3a", style: 9,  beard: false, glasses: false, female: true },
 ];
+const SAGE_LOOKS = SAGE_IMG_LOOKS.concat(loadCustomLooks()); void _DRAWN_LOOKS; // photos + user uploads only
 // EdgeTrader pack agents (seeded by scripts/install-edgetrader.mjs) — recognized by id.
 const isEtAgent = (a) => String((a && a.id) || "").startsWith("agent_et_");
 
 function SageFace({ size, look = SAGE_LOOKS[0] }) {
   const name = look && look.female ? "Sara" : "Sage";
+  if (look && look.img) return <img className="sage-photo" src={look.img} width={size} height={size} alt={name} title={name} draggable={false} style={{ borderRadius: "24%", objectFit: "cover", flex: "none", display: "block" }} />;
   return <Portrait seed={name} color="var(--accent)" size={size} mood="hello" title={name}
     skin={look.skin} hair={look.hair} beard={look.beard} glasses={look.glasses} style={look.style}
     lashes={!!look.female} earring={!!look.female} />;
