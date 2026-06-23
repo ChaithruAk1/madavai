@@ -957,6 +957,7 @@ class SessionManager {
         else if (p === "running") t = "Crunching the numbers…";
         else if (p === "replay") t = "Reusing the steps from last time — this should be quick…";
         else if (p === "repair") t = "That didn't come out right — adjusting and trying again…";
+        else if (p === "stuck") t = "It keeps hitting the same snag — stopping here so you're not left waiting…";
         else t = (data && data.reason) || "";
         if (t) emit({ kind: "assistant_delta", data: { text: "\n• " + t } });
       },
@@ -997,7 +998,7 @@ class SessionManager {
     }
     const note = result.ok
       ? (result.mode === "replay" ? "All done — I reused the steps from last time on your current data, so this was quick." : "All done — your report is ready below. Take a look; I've saved these steps, so next time runs instantly. If anything looks off, tweak the project instructions and run it again.")
-      : ("I wasn't able to finish this one — it kept running into: " + (result.error ? String(result.error).split("\n").filter(Boolean).pop().slice(0, 200) : "an unexpected problem") + ". Want me to take a look, or try simplifying the report a little?");
+      : ("I wasn't able to finish this one — it kept running into: " + (result.error ? String(result.error).split("\n").filter(Boolean).pop().slice(0, 200) : "an unexpected problem") + ". You could try a stronger model (look for the green Recommended badge in the model picker) or simplify the report a little — want me to take a look?");
     s.history.push({ role: "assistant", content: note });
     emit({ kind: "assistant_delta", data: { text: "\n\n" + note } });
     emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });

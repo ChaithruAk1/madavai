@@ -33,6 +33,15 @@ export const INSPECT_PY = [
 //   emit(kind, data)               // progress to the surface
 //   model, provider                // for stamping the saved job
 // }
+// A normalized "what went wrong" fingerprint, so we can tell when the model is STUCK repeating the
+// SAME failure (e.g. its reply keeps getting cut off, or it can't fix a column it keeps misreading).
+// Strips quotes / paths / line-numbers so two runs that fail the same way compare equal.
+export function errorSignature(e) {
+  const lines = String(e == null ? "" : e).split("\n").map((x) => x.trim()).filter(Boolean);
+  const pick = [...lines].reverse().find((l) => /(error|exception|traceback|eof|invalid|no output)/i.test(l)) || lines[lines.length - 1] || "";
+  return pick.toLowerCase().replace(/['"][^'"]*['"]/g, "").replace(/\d+/g, "").replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+}
+
 export async function runProjectJob({ task, instructions, folder }, adapters, opts = {}) {
   const maxRepair = opts.maxRepair == null ? 2 : opts.maxRepair;
   const emit = adapters.emit || (() => {});
@@ -55,12 +64,18 @@ export async function runProjectJob({ task, instructions, folder }, adapters, op
     emit("status", { phase: "author", reason: "saved procedure failed; rebuilding" });
   }
 
-  // AUTHOR — model writes ONE complete script from the spec + inspected schema; run once; bounded repair.
+  // AUTHOR — model writes ONE complete script from the spec + inspected schema; run once; bounded
+  // repair. FAIL FAST when the model is stuck: an empty/truncated script, or the SAME error twice in a
+  // row, means more repairs won't help — stop and report clearly instead of spinning for minutes.
   if (aborted()) return { ok: false, aborted: true };
   let authored = await adapters.author({ task, instructions, schema });
-  let last = null;
+  let last = null, prevSig = null;
   for (let attempt = 0; attempt <= maxRepair; attempt++) {
     if (aborted()) return { ok: false, aborted: true };
+    if (!authored || !authored.script || !String(authored.script).trim()) {
+      last = { ok: false, error: "The model didn't return a runnable script — its reply may have been cut off. A stronger or paid model is more reliable for a big report." };
+      break;
+    }
     emit("status", { phase: "running" });
     const r = await adapters.run(authored.script, folder);
     last = r;
@@ -72,6 +87,9 @@ export async function runProjectJob({ task, instructions, folder }, adapters, op
       emit("done", { mode: "authored", produced: r.produced });
       return { ok: true, mode: "authored", produced: r.produced };
     }
+    const sig = errorSignature(r.error);
+    if (sig && sig === prevSig) { last = r; emit("status", { phase: "stuck" }); break; } // same failure twice -> repairs aren't working; stop now
+    prevSig = sig;
     if (attempt < maxRepair) {
       if (aborted()) return { ok: false, aborted: true };
       emit("status", { phase: "repair", attempt: attempt + 1, error: r.error });

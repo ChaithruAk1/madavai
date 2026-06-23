@@ -104,9 +104,19 @@ export function authoringPrompt({ task, instructions, schema, fixError, prevScri
   return parts.filter(Boolean).join("\n\n");
 }
 
-// Pull the python script out of the model's reply (fenced block preferred; otherwise the raw text).
+// Pull the python script out of the model's reply. Handles three cases robustly so a flaky model
+// can't trigger an endless repair loop:
+//  1) a normal ```python ... ``` block -> the code between the fences;
+//  2) a TRUNCATED reply (an opening ``` but the closing fence never arrived -- rate-limited / length-
+//     capped free models do this constantly) -> salvage the code AFTER the opening fence, so the
+//     runner gets real Python (which fails with a clear "unexpected EOF") instead of executing the
+//     model's prose + the "```python" marker as if it were code (a useless error that just loops);
+//  3) no fence at all -> the raw text (a model that emitted bare code still runs).
 export function extractScript(text) {
   const s = String(text || "");
-  const m = s.match(/```(?:python|py)?\s*\n?([\s\S]*?)```/);
-  return (m ? m[1] : s).trim();
+  const closed = s.match(/```(?:python|py)?\s*\n?([\s\S]*?)```/);
+  if (closed) return closed[1].trim();
+  const open = s.match(/```(?:python|py)?\s*\n?([\s\S]*)$/);
+  if (open) return open[1].trim();
+  return s.trim();
 }

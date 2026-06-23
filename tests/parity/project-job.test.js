@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { schemaSignature, makeJob, findJob, decideRun, upsertJob, validateOutputs } from "../../core/project-job.js";
-import { runProjectJob } from "../../core/project-runner.js";
+import { schemaSignature, makeJob, findJob, decideRun, upsertJob, validateOutputs, extractScript } from "../../core/project-job.js";
+import { runProjectJob, errorSignature } from "../../core/project-runner.js";
 
 describe("project-job — fingerprints & replay/author decision", () => {
   const A = [{ file: "Submitted.xlsx", columns: ["Number", "Priority"] }, { file: "Resolved.xlsx", columns: ["Number", "Resolved By"] }];
@@ -53,5 +53,45 @@ describe("project-runner — shared flow (fake adapters, single source for web+d
     let n = 0; const e = mk({ jobs: upsertJob([], activeJob()), run: async () => { n++; return n === 1 ? { ok: true, produced: [] } : { ok: true, produced: ["Report.xlsx"] }; } });
     const r = await runProjectJob({ task: "DTC April", instructions: "3 sheets", folder: "/x" }, e);
     expect(r.mode).toBe("authored");
+  });
+});
+
+
+describe("extractScript — robust against truncated model replies", () => {
+  it("extracts a normal fenced block", () => {
+    expect(extractScript("Here:\n```python\nimport pandas as pd\nprint(1)\n```\nDone")).toBe("import pandas as pd\nprint(1)");
+  });
+  it("SALVAGES a truncated reply (opening fence, no close) instead of returning prose+fence", () => {
+    const out = extractScript("Sure! Here:\n```python\nimport pandas as pd\ndf = pd.read_excel(\"Backlog.xlsx\")\n# cut off");
+    expect(out.startsWith("import pandas as pd")).toBe(true);
+    expect(out.includes("```")).toBe(false);
+    expect(out.includes("Here")).toBe(false);
+  });
+  it("returns bare code when there is no fence at all", () => {
+    expect(extractScript("import pandas as pd\nprint(2)")).toBe("import pandas as pd\nprint(2)");
+  });
+});
+
+describe("project-runner — fail-fast when the model is stuck", () => {
+  const schema = [{ file: "a.xlsx", columns: ["x"] }];
+  function stuckAdapter(over = {}) {
+    let saved = []; const calls = { author: 0, run: 0 };
+    return { calls, model: "m", provider: "p",
+      inspect: async () => schema, loadJobs: async () => saved, saveJobs: async (j) => { saved = j; },
+      author: over.author || (async () => { calls.author++; return { script: "raise Exception('boom')", outputs: [] }; }),
+      run: over.run || (async () => { calls.run++; return { ok: false, error: "Traceback...\nException: boom", produced: [] }; }),
+      emit: () => {} };
+  }
+  it("errorSignature treats the same crash as equal despite line numbers", () => {
+    expect(errorSignature('File "x.py", line 12\nKeyError: "Amount"')).toBe(errorSignature('File "y.py", line 47\nKeyError: "Amount"'));
+  });
+  it("stops after the SAME error twice (not the full repair budget)", async () => {
+    const a = stuckAdapter(); const r = await runProjectJob({ task: "t", instructions: "i", folder: "/x" }, a, { maxRepair: 3 });
+    expect(r.ok).toBe(false); expect(a.calls.run).toBe(2); // initial + 1 repair, then stop — was 4 before
+  });
+  it("stops immediately (0 runs) when the reply is empty/cut off, with a clear message", async () => {
+    const a = stuckAdapter({ author: async () => ({ script: "", outputs: [] }) });
+    const r = await runProjectJob({ task: "t", instructions: "i", folder: "/x" }, a, { maxRepair: 3 });
+    expect(r.ok).toBe(false); expect(a.calls.run).toBe(0); expect(String(r.error).toLowerCase()).toContain("cut off");
   });
 });
