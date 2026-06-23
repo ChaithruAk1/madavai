@@ -940,7 +940,7 @@ input, textarea, select { font-family: inherit; }
 @keyframes blink { 50% { opacity: 0; } }
 
 /* ---------- Composer ---------- */
-.composer-wrap { border-top: 1px solid var(--line); background: rgba(7,8,11,0.6); backdrop-filter: blur(12px); padding: 16px 22px 20px; }
+.composer-wrap { border-top: 1px solid transparent; background: rgba(7,8,11,0.6); backdrop-filter: blur(12px); padding: 16px 22px 20px; }
 .composer {
   position: relative;
   max-width: 975px; margin: 0 auto;
@@ -1497,7 +1497,7 @@ textarea.model-search { line-height: 1.5; }
 .app-body.sb-collapsed .sb-acct-menu { left: 64px; right: auto; bottom: 8px; width: 232px; }
 .sb-expand { display: flex; flex-direction: column; }
 
-.topnav { position: relative; height: 64px; flex: 0 0 64px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid var(--line); background: rgba(7,8,11,0.6); backdrop-filter: blur(14px); }
+.topnav { position: relative; height: 64px; flex: 0 0 64px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid transparent; background: rgba(7,8,11,0.6); backdrop-filter: blur(14px); }
 .tn-collapse { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg-1); color: var(--text-1); cursor: pointer; flex: 0 0 auto; transition: background .14s, color .14s; }
 .tn-collapse:hover { background: var(--bg-2); color: var(--text-0); }
 /* Toggle + brand grouped on the far left. Brand hides when the sidebar is collapsed. */
