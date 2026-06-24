@@ -2,7 +2,7 @@
 
 **This folder (`MadavNew`)** is the **rebuild workspace** for Madav Next. It started as a full copy of the current Madav and is being transformed, in place, into the clean target architecture described in `docs/blueprint/`. It will be renamed to **Madav** once mature. The **current Madav** folder is untouched — run it any time to compare.
 
-**Git:** `origin` is set to **https://github.com/ChaithruAk1/madavai.git**. The work below is **saved as files in this folder**; the git *commit* is pending — a stale `.git/index.lock` copied in from the source repo is blocking it, and the host won't let me delete it. The one‑time fix (clear lock → commit → push) is in §6.
+**Git:** `origin` is set to **https://github.com/ChaithruAk1/madavai.git**. The work below is **saved as files in this folder**; the foundation is now **committed locally** on `main`; the only remaining step is the **push** — one PowerShell line in §6.
 
 ---
 
@@ -34,7 +34,7 @@ Expected: `# pass 6  # fail 0`.
 - **Branding rebrand is located, not finished.** The scanner found **31 hard‑forbidden** references (the legacy "BrainEdge" name, competitor mentions in prompts) and **776 provider mentions** to consolidate into a provider layer. These live in legacy code and get fixed **as each file is migrated** — doing a blind find‑replace across 6,000 files unattended would break the app, so I did not. The report is the exact worklist.
 - **Locked junk I couldn't delete:** the Windows host kept `release/` (1.6 GB), `dist/`, `build/` open, so my delete was refused. They're regenerable and git‑ignored. Delete them yourself when nothing is running:
   ```
-  rmdir /s /q release dist build
+  Remove-Item -Recurse -Force release, dist, build
   ```
 
 ## 4. How to run & compare both
@@ -52,17 +52,16 @@ Expected: `# pass 6  # fail 0`.
 
 Full sequence and rationale: `docs/blueprint/` §11 and the architecture docs.
 
-## 6. Saving & pushing to GitHub
+## 6. Publishing to GitHub
 
-Everything tonight is **saved as files** in this folder. The git *commit* didn't run because a stale `.git/index.lock` (copied in from the source repo, dated before the copy) is present and the host blocked me from deleting it. To commit and publish, run this once — it clears the stale lock, commits, and pushes (it will ask for your GitHub login the first time):
-```
+The foundation is **committed locally** on `main`. To publish it to your repo, run this in **PowerShell** (it asks for your GitHub login the first time):
+
+```powershell
 cd C:\Projects\ClaudeCodeUI\MadavNew
-del .git\index.lock
-git add -A
-git commit -m "Rebuild foundation: charter, clean structure, tested Excel engine, branding scanner, blueprint"
 git push -u origin main
 ```
-Prefer me to do it? Just delete `.git\index.lock` yourself (one file) and tell me — I'll stage, commit, and prepare the push. If you'd rather review on a branch/PR before `main`, say so and I'll arrange that instead.
+
+Prefer a review on a branch/PR before it hits `main`? Say so and I'll arrange it.
 
 ---
 
