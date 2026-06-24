@@ -36,7 +36,7 @@ export default defineConfig({
   // runs the SAME @madav/* code the tests verify. Source-only — Vite compiles the TS on the fly.
   resolve: {
     alias: {
-      "@madav/documents": r("./packages/documents/src/excel/index.ts"),
+      "@madav/documents": r("./packages/documents/src/index.ts"),
       "@madav/contracts": r("./packages/contracts/src/office.ts"),
     },
   },

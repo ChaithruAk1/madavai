@@ -233,6 +233,45 @@ function DeckCard({ code, streaming }) {
   );
 }
 
+// Any markdown table — even one a weak model prints as plain text — becomes a REAL spreadsheet on this
+// device. The model only has to produce a table (trivial for any model); the deterministic @madav/documents
+// engine builds the .xlsx. This is what lets Madav work WITHOUT depending on a strong model.
+function hasMdTable(text) {
+  const ls = String(text || "").split(/\r?\n/);
+  for (let i = 0; i < ls.length - 1; i++) {
+    if (ls[i].includes("|") && ls[i + 1].includes("-") && /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/.test(ls[i + 1])) return true;
+  }
+  return false;
+}
+function ExcelizeButton({ text, streaming }) {
+  const [state, setState] = useState("");
+  if (streaming) return null;
+  const dl = async () => {
+    setState("building");
+    try {
+      const mod = await import("@madav/documents");
+      const tables = (mod.extractMarkdownTables ? mod.extractMarkdownTables(text) : []).filter((t) => t && t.rows && t.rows.length);
+      if (!tables.length) { setState(""); return; }
+      const spec = { type: "xlsx", name: "spreadsheet.xlsx", sheets: tables.map((t, i) => ({ name: "Sheet" + (i + 1), rows: [t.header, ...t.rows] })) };
+      const blob = await buildOfficeBlob(spec);
+      if (bridge && bridge.saveAndOpen) {
+        const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(blob); });
+        const out = await bridge.saveAndOpen(spec.name, b64);
+        if (out && out.ok) { setState("done"); setTimeout(() => setState(""), 2500); return; }
+      }
+      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = spec.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setState("done"); setTimeout(() => setState(""), 2500);
+    } catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 80)); }
+  };
+  return (
+    <div className="md-office" style={{ marginTop: 6 }}>
+      <span className="md-office-ico md-office-ico--xlsx" title="Excel"><OfficeIcon type="xlsx" /></span>
+      <span className="md-office-meta"><b>Spreadsheet ready</b><i>built from this table on your device</i></span>
+      <button className="md-office-btn" disabled={state === "building"} onClick={dl}>{state === "building" ? "Building…" : state === "done" ? "Saved \u2713" : "Download as Excel"}</button>
+      {state.startsWith("error:") && <span className="md-office-err">Couldn't build it — try again.</span>}
+    </div>
+  );
+}
 // ---- block parsing ----
 export default function Markdown({ text, streaming }) {
   if (!text) return null;
@@ -268,7 +307,11 @@ export default function Markdown({ text, streaming }) {
         // A weak model dumped a partial/failed office spec as raw JSON - useless to the user. Route it to the
         // office card: a valid spec becomes the file, an invalid one shows a clean placeholder. Never raw JSON.
         blocks.push(<OfficeCard key={key()} code={buf.join("\n")} streaming={streaming} />);
-      } else blocks.push(<CodeBlock key={key()} lang={fence[1]} code={buf.join("\n")} />);
+      } else {
+        const _code = buf.join("\n");
+        blocks.push(<CodeBlock key={key()} lang={fence[1]} code={_code} />);
+        if (FEAT_OFFICE && hasMdTable(_code)) blocks.push(<ExcelizeButton key={key()} text={_code} streaming={streaming} />);
+      }
       continue;
     }
     // heading
@@ -296,15 +339,18 @@ export default function Markdown({ text, streaming }) {
     // table (| a | b | header + |---| separator)
     if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
       const cells = (l) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      const _tStart = i;
       const head = cells(line); i += 2;
       const rows = [];
       while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) rows.push(cells(lines[i++]));
+      const _tableText = lines.slice(_tStart, i).join("\n");
       blocks.push(
         <div key={key()} className="md-table-wrap"><table className="md-table">
           <thead><tr>{head.map((c, ci) => <th key={ci}>{inline(c, key())}</th>)}</tr></thead>
           <tbody>{rows.map((r, ri) => <tr key={ri}>{r.map((c, ci) => <td key={ci}>{inline(c, key())}</td>)}</tr>)}</tbody>
         </table></div>
       );
+      if (FEAT_OFFICE) blocks.push(<ExcelizeButton key={key()} text={_tableText} streaming={streaming} />);
       continue;
     }
     // blank line
