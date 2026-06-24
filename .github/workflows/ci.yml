@@ -1,42 +1,11 @@
-name: CI
-
-on:
-  push:
-  pull_request:
-
+name: verify
+on: [push, pull_request]
 jobs:
-  parity:
-    name: Parity gate (Phase 0)
+  packages:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: npm ci
-      # Phase 0 gate: adapter contract, capability manifest, bridge surface,
-      # CSP desktop-branch snapshot, office-rule parity, and harness drift-detection.
-      - run: npx vitest run tests/parity
-
-  full-suite:
-    name: Full unit suite
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: npm ci
-      - run: npx vitest run
-
-  build-workers:
-    name: Build emits all 4 worker chunks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: npm ci
-      - run: npm run build
-      - run: node scripts/check-worker-chunks.mjs dist
+        with: { node-version: '20' }
+      - name: Verify packages (strict typecheck + build + tests)
+        run: node scripts/verify-packages.mjs
