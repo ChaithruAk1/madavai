@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@madav/contracts": "file:../../packages/contracts",
-    "@madav/core": "file:../../packages/core"
+    "@madav/core": "file:../../packages/core",
+    "@madav/storage": "file:../../packages/storage"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.2.17",
