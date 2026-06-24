@@ -9,6 +9,12 @@
     "test": "tsc -p tsconfig.build.json && node --test dist/test/*.test.js",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": { "@madav/contracts": "file:../../packages/contracts" },
-  "devDependencies": { "typescript": "^5.5.0", "@types/node": "^20.14.0" }
+  "dependencies": {
+    "@madav/contracts": "file:../../packages/contracts"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  }
 }

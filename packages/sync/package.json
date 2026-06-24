@@ -1,0 +1,14 @@
+{
+  "name": "@madav/sync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Madav sync engine — client push/pull/merge over the typed API; converges devices to one state.",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsc -p tsconfig.build.json && node --test dist/test/*.test.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "@madav/contracts": "file:../contracts" },
+  "devDependencies": { "typescript": "^5.5.0", "@types/node": "^20.14.0" }
+}
