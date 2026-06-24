@@ -1,2 +1,3 @@
 export * from './excel/index.js';
-export { extractMarkdownTables, type RawTable } from './ingest/markdown.js';
+export { buildWorkbook, type BuildResult } from './excel/build.js';
+export * from './ingest/index.js';
