@@ -2,3 +2,4 @@
 export * from './office.js';
 export * from './data.js';
 export * from './ops.js';
+export * from './api.js';

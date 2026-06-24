@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Madav shared contracts — Zod schemas used identically by every runtime (the single source of truth for shapes).",
+  "description": "Madav shared contracts \u2014 Zod schemas used identically by every runtime (the single source of truth for shapes).",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/office.test.js",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
