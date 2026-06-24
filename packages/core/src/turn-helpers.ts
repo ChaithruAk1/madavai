@@ -163,3 +163,126 @@ export function stripReasoning(str: unknown): string {
   s = s.replace(/<think>[\s\S]*$/i, '');
   return s.replace(/^\s+/, '');
 }
+
+// ---------- chat message shape + stale-result compression ----------
+export interface ChatMessage {
+  role: string;
+  content?: unknown;
+  tool_calls?: Array<{ function?: { name?: string; arguments?: unknown }; id?: string; type?: string; [k: string]: unknown }>;
+  _squashed?: boolean;
+  [k: string]: unknown;
+}
+
+export function squashStale(
+  history: ChatMessage[],
+  { keepRecent = 14, cap = 180 }: { keepRecent?: number; cap?: number } = {},
+): ChatMessage[] {
+  const cut = history.length - keepRecent;
+  for (let i = 1; i < cut; i++) {
+    const m = history[i];
+    if (!m) continue;
+    const content = m.content;
+    if (typeof content !== 'string') continue;
+    const isTextModeResult = m.role === 'user' && content.startsWith('[result of ');
+    if (m.role !== 'tool' && !isTextModeResult) continue;
+    if (content.length <= cap || m._squashed) continue;
+    const first = content.split('\n', 1)[0].slice(0, cap);
+    m.content = first + ' … (older result compressed)';
+    m._squashed = true;
+  }
+  return history;
+}
+
+// ---------- text-mode tool protocol + parser (assistant text only) ----------
+export const TEXT_PROTOCOL = (toolList: string): string => `
+You do not have native function calling here. To use a tool, output a fenced block EXACTLY like:
+\`\`\`tool
+{"name": "<tool name>", "args": { ... }}
+\`\`\`
+Rules: at most 2 tool blocks per reply; the args object must be valid JSON; after the block(s), STOP and wait for the results — do not invent them. When you are completely done, reply with your final answer and NO tool block.
+Available tools:
+${toolList}`;
+
+export interface TextToolCall {
+  id: string;
+  name: string;
+  arguments: string;
+}
+
+export function parseTextToolCalls(content: unknown): { calls: TextToolCall[]; stripped: string } {
+  const calls: TextToolCall[] = [];
+  const src = String(content || '');
+  let m: RegExpExecArray | null;
+  let i = 0;
+
+  const reFence = /```tool\s*\n([\s\S]*?)```/g;
+  while ((m = reFence.exec(src)) && calls.length < 2) {
+    const p = tolerantParse(m[1]);
+    const v = (p.ok ? p.value : null) as { name?: unknown; args?: unknown; arguments?: unknown } | null;
+    if (v && v.name) {
+      calls.push({ id: 'txt_' + Date.now().toString(36) + '_' + i++, name: String(v.name), arguments: JSON.stringify(v.args || v.arguments || {}) });
+    }
+  }
+
+  if (!calls.length) {
+    const reFn = /<function\s*=\s*([a-zA-Z0-9_.\-]+)\s*>([\s\S]*?)<\/function>/g;
+    while ((m = reFn.exec(src)) && calls.length < 2) {
+      const name = m[1];
+      const body = m[2] || '';
+      const args: Record<string, unknown> = {};
+      const reParam = /<parameter\s*=\s*([a-zA-Z0-9_.\-]+)\s*>([\s\S]*?)<\/parameter>/g;
+      let pm: RegExpExecArray | null;
+      while ((pm = reParam.exec(body))) {
+        let v: string | number | boolean = (pm[2] || '').trim();
+        if (/^-?\d+(\.\d+)?$/.test(String(v))) v = Number(v);
+        else if (v === 'true' || v === 'false') v = v === 'true';
+        args[pm[1]] = v;
+      }
+      calls.push({ id: 'txt_' + Date.now().toString(36) + '_' + i++, name: String(name), arguments: JSON.stringify(args) });
+    }
+  }
+
+  const stripped = src
+    .replace(/```tool\s*\n[\s\S]*?```/g, '')
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
+    .replace(/<function\s*=\s*[a-zA-Z0-9_.\-]+\s*>[\s\S]*?<\/function>/gi, '')
+    .trim();
+  return { calls, stripped };
+}
+
+// ---------- context budget + compaction ----------
+export function buildCompactionMessages(history: ChatMessage[]): { role: string; content: string }[] {
+  const body = history
+    .filter((m) => m.role !== 'system')
+    .map((m) => {
+      const role = m.role === 'tool' ? 'tool-result' : m.role;
+      let c = typeof m.content === 'string' ? m.content : '';
+      if (m.tool_calls) c += '\n[called: ' + m.tool_calls.map((t) => t.function && t.function.name).join(', ') + ']';
+      return role.toUpperCase() + ': ' + c.slice(0, 2000);
+    })
+    .join('\n---\n')
+    .slice(0, 60000);
+  return [
+    { role: 'system', content: "You compress an agent mission's history into working notes. Output ONLY the notes, no preamble." },
+    { role: 'user', content: 'Compress this mission history into concise notes with EXACTLY these sections:\nGOAL: (the objective)\nDECISIONS: (choices made and why)\nFILES: (files read/changed + current state)\nDONE: (finished)\nREMAINS: (left to do)\n\n' + body },
+  ];
+}
+
+export function applyCompaction(history: ChatMessage[], summary: unknown, keepLast = 4): ChatMessage[] {
+  const sys = history[0] && history[0].role === 'system' ? history[0] : null;
+  const tailEnd = history.length;
+  let tailStart = tailEnd;
+  let turns = 0;
+  for (let i = tailEnd - 1; i > 0 && turns < keepLast; i--) {
+    const h = history[i];
+    if (h.role === 'user' || (h.role === 'assistant' && !h.tool_calls)) turns++;
+    tailStart = i;
+  }
+  while (tailStart < tailEnd && history[tailStart].role === 'tool') tailStart++;
+  const tail = history.slice(tailStart);
+  const note: ChatMessage = { role: 'user', content: "[context notes — earlier history was compacted to stay within the model's memory]\n" + String(summary || '').slice(0, 12000) };
+  history.length = 0;
+  if (sys) history.push(sys);
+  history.push(note, ...tail);
+  return history;
+}
