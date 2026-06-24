@@ -60,3 +60,21 @@ test('treats prior-period [id@-1] as a recurrence, not a cycle', () => {
   ] }] }));
   assert.equal(has(r.issues, 'FORMULA_CYCLE'), false);
 });
+
+test('accepts a freeform table sheet and defaults kind/name (the live-app shape)', () => {
+  const r = planWorkbook({ sheets: [{ name: 'Data', columns: ['A', 'B'], rows: [[1, 2], [3, 4]] }] });
+  assert.equal(r.ok, true);
+  assert.equal(r.issues.filter((i) => i.level === 'error').length, 0);
+});
+
+test('clamps an oversize table (rows) with a VISIBLE warning, never silently', () => {
+  const rows = Array.from({ length: 10005 }, (_, i) => [i, i * 2]);
+  const r = planWorkbook({ sheets: [{ name: 'Big', rows }] });
+  assert.ok(r.issues.some((i) => i.code === 'ROWS_CLAMPED' && i.level === 'warning'));
+});
+
+test('clamps an oversize row (columns) with a VISIBLE warning', () => {
+  const wide = Array.from({ length: 300 }, (_, i) => i);
+  const r = planWorkbook({ sheets: [{ name: 'Wide', rows: [wide] }] });
+  assert.ok(r.issues.some((i) => i.code === 'COLUMNS_CLAMPED' && i.level === 'warning'));
+});

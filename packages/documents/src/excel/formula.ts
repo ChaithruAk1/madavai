@@ -1,15 +1,18 @@
-import type { OfficeSpec } from '@madav/contracts';
+import type { OfficeSpec, Sheet, AnySheet } from '@madav/contracts';
 import { type Issue, err } from './issues.js';
 
 /** [id] | [Sheet!id] | [id@-1] (prior-period offset). */
 const REF = /\[([A-Za-z0-9_]+!)?([A-Za-z0-9_]+)(@-?\d+)?\]/g;
 
+const isMetricSheet = (s: AnySheet): s is Sheet => Array.isArray((s as Sheet).metrics);
+
 export function validateFormulas(spec: OfficeSpec): Issue[] {
   const issues: Issue[] = [];
+  const metricSheets = spec.sheets.filter(isMetricSheet);
   const idsBySheet = new Map<string, Set<string>>();
-  for (const s of spec.sheets) idsBySheet.set(s.name, new Set(s.metrics.map((m) => m.id)));
+  for (const s of metricSheets) idsBySheet.set(s.name, new Set(s.metrics.map((m) => m.id)));
 
-  for (const s of spec.sheets) {
+  for (const s of metricSheets) {
     const localIds = idsBySheet.get(s.name) ?? new Set<string>();
     const deps = new Map<string, Set<string>>();
 
