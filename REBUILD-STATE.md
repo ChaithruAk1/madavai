@@ -48,7 +48,7 @@ Expected: **all 3 spine packages green (68 tests)**.
 
 1. Distinct desktop identity — **dev port 5180 done** (both run side by side ✅); remaining: separate **userData** (data folder) + a dev window title.
 2. Continue migrating `core/` into `@madav/core` — **the turn engine is ported**: `turn-helpers`, `run-guard`, `model-router`, `context-window`, `capability`, `recipes`, and **`chat-loop`** (`coreChatTurn`). The **pure `core/` migration is complete** (`model-fit`, `backoff`, `project-lanes`, `agent-rules` now done too). `chat-tools` (shared tool schemas) is done too. `search` (the single search backend) is done too — **the shared brain is essentially complete** (13 modules). `chat-adapter` is done — **the chat brain is complete** (14 modules). Porting the project/data orchestration (`project-runner` + `project-job`) next, then the only remaining step is **wiring `@madav/core` into the live app**.
-3. **Wire the new Excel engine into the live document path — DONE (pending your console check).** The engine now models the live app's freeform‑rows spec (not only structured metric models), and clamps oversize **rows > 10000 / cols > 256 / sheets > 24** with a **VISIBLE warning** — replacing the old silent `_normRows` `slice(0,5000)` / `slice(0,64)` / `sheets.slice(0,12)` truncation. It is wired as a NON‑blocking probe in `src/office.js` (shared source → web **and** desktop inherit it). `@madav/documents` now has **9 tests** (3 new for the table path). To confirm in the running app: make a large spreadsheet, open DevTools console, look for `[madav-next] excel-engine`.
+3. **Wire the new Excel engine into the live document path — DONE (pending your console check).** The engine now models the live app's freeform‑rows spec (not only structured metric models), and clamps oversize **rows > 10000 / cols > 256 / sheets > 24** with a **VISIBLE warning** — and FLAGS (step 2 will make it govern the actual write, replacing) the old silent `_normRows` `slice(0,5000)` / `slice(0,64)` / `sheets.slice(0,12)` truncation. It is wired as a NON‑blocking probe in `src/office.js` (shared source → web **and** desktop inherit it). `@madav/documents` now has **9 tests** (3 new for the table path). To confirm in the running app: make a large spreadsheet, open DevTools console, look for `[madav-next] excel-engine`.
 4. Work down `docs/branding/REFERENCES-REPORT.md` file‑by‑file during migration until the scanner passes (0 forbidden).
 5. Stand up the cloud spine (Redis + Postgres + typed API) — Phase 1.
 
@@ -75,3 +75,13 @@ Prefer a review on a branch/PR before it hits `main`? Say so and I'll arrange it
 - **Foundation uses Node's built‑in test runner** (zero native dependencies) so it verifies on any machine.
 
 *This file is updated every build. It is the single source of truth for "where are we."*
+
+## Step 2 (DONE, verified) — the engine now GOVERNS the spreadsheet file
+The Excel engine no longer just flags oversize sheets — it governs the actual write:
+- Caps **rows -> 10000, columns -> 256, sheets -> 24** (from `@madav/contracts` LIMITS); every clamp emits a **VISIBLE warning**, replacing the old silent `_normRows` slice(5000/64) and `sheets.slice(12)` in the file builders.
+- `src/office.js` `_governXlsx()` calls the engine; `buildXlsx` + `buildXlsxBasic` build from the governed sheets and attach the warnings to the blob (`_normRows` kept only as a no-engine fallback).
+- `src/markdown.jsx` shows the warnings on the file card (amber note; red for errors).
+- `vite.config.js` aliases `@madav/*` to source so web + desktop run the SAME engine; `zod` declared in `package.json`.
+- Tests: `@madav/documents` now **12/12** (3 new assert the returned spec is actually clamped). The office->engine->zod import chain was esbuild-bundle-verified.
+- Known cosmetic gap: the side-panel preview still shows <=12 sheet tabs (the real file honours 24).
+- Incident: the workspace mount corrupted `package.json` and dropped the step-1 probe mid-session; restored from clean HEAD in-place and rebuilt via `/tmp` (mount allows overwrite, not unlink).

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { planWorkbook, type Issue } from '../src/excel/index.js';
+import { planWorkbook, LIMITS, type Issue } from '../src/excel/index.js';
 
 const base = (over: Record<string, unknown> = {}) => ({
   kind: 'workbook',
@@ -77,4 +77,22 @@ test('clamps an oversize row (columns) with a VISIBLE warning', () => {
   const wide = Array.from({ length: 300 }, (_, i) => i);
   const r = planWorkbook({ sheets: [{ name: 'Wide', rows: [wide] }] });
   assert.ok(r.issues.some((i) => i.code === 'COLUMNS_CLAMPED' && i.level === 'warning'));
+});
+
+test('GOVERNS output: oversize table rows are actually truncated in the returned spec', () => {
+  const rows = Array.from({ length: LIMITS.rowsPerSheet + 5 }, (_, i) => [i]);
+  const r = planWorkbook({ sheets: [{ name: 'Big', rows }] });
+  assert.equal((r.spec!.sheets[0] as any).rows.length, LIMITS.rowsPerSheet);
+});
+
+test('GOVERNS output: an over-wide row is actually trimmed in the returned spec', () => {
+  const wide = Array.from({ length: LIMITS.columnsPerRow + 50 }, (_, i) => i);
+  const r = planWorkbook({ sheets: [{ name: 'Wide', rows: [wide] }] });
+  assert.equal((r.spec!.sheets[0] as any).rows[0].length, LIMITS.columnsPerRow);
+});
+
+test('GOVERNS output: sheets beyond the cap are actually dropped from the returned spec', () => {
+  const many = Array.from({ length: LIMITS.sheets + 6 }, (_, i) => ({ name: 'S' + i, rows: [[i]] }));
+  const r = planWorkbook({ sheets: many });
+  assert.equal(r.spec!.sheets.length, LIMITS.sheets);
 });

@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { obfuscator } from "rollup-obfuscator";
+import { fileURLToPath } from "node:url";
 
-// Obfuscate ONLY the production build (npm run build) — never dev. This scrambles the shipped
-// JavaScript so it's very hard to read/copy, while our source in src/ stays untouched. Settings are
-// deliberately conservative (no control-flow flattening / self-defending / debug-protection) so the
-// app keeps running fast and we can still debug a production build if we ever need to.
+// Absolute path to a repo file (ESM config has no __dirname).
+const r = (rel) => fileURLToPath(new URL(rel, import.meta.url));
+
+// Obfuscate ONLY the production build (npm run build) — never dev.
 const obfuscate = {
   ...obfuscator({
     compact: true,
@@ -15,8 +16,7 @@ const obfuscate = {
     stringArrayThreshold: 0.75,
     rotateStringArray: true,
     splitStrings: true,
-    // Never string-array/split these — they are dynamic import() specifiers the bundler must resolve.
-    reservedStrings: ["exceljs", "docx", "jspdf", "pptxgenjs", "mammoth", "xlsx"],
+    reservedStrings: ["exceljs", "docx", "jspdf", "pptxgenjs", "mammoth", "xlsx", "@madav/documents", "@madav/contracts"],
     splitStringsChunkLength: 8,
     transformObjectKeys: false,
     numbersToExpressions: true,
@@ -25,15 +25,21 @@ const obfuscate = {
     selfDefending: false,
     debugProtection: false,
   }),
-  apply: "build", // never run during `npm run dev`
+  apply: "build",
 };
 
 // base "./" so the build works when loaded from Electron's file:// too.
 export default defineConfig({
   base: "./",
   plugins: [react(), obfuscate],
-  // ES-format workers support code-splitting (jsPDF pulls a dynamic import); all our workers
-  // are instantiated with { type: "module" }, so ES is the correct + matching format.
+  // The shared TypeScript engine resolves to its source here, so the live app (web + desktop, ONE source)
+  // runs the SAME @madav/* code the tests verify. Source-only — Vite compiles the TS on the fly.
+  resolve: {
+    alias: {
+      "@madav/documents": r("./packages/documents/src/excel/index.ts"),
+      "@madav/contracts": r("./packages/contracts/src/office.ts"),
+    },
+  },
   worker: { format: "es" },
   server: { port: 5180, strictPort: true },
 });

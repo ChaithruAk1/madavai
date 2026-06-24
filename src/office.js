@@ -66,6 +66,23 @@ export function parseOfficeSpec(jsonText, opts) {
 const _XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const _sheetName = (s) => String(s || "Sheet").slice(0, 28).replace(/[\\/?*[\]:]/g, " ");
 const _normRows = (sh) => (Array.isArray(sh.rows) ? sh.rows : []).slice(0, 5000).map((r) => (Array.isArray(r) ? r.slice(0, 64) : [r]));
+// Engine-governed normalization (SINGLE SOURCE = @madav/documents): the engine decides the row/column/
+// sheet caps and returns a VISIBLE warning for anything it clamps, REPLACING the old silent _normRows
+// slice (5000 rows / 64 cols) and sheets.slice(12). If the engine cannot load we fall back to the legacy
+// local caps, so a spreadsheet is never worse than before. Returns { sheets:[{name,rows}], issues:[] }.
+async function _governXlsx(spec) {
+  const raw = (Array.isArray(spec.sheets) && spec.sheets.length) ? spec.sheets : [{ name: "Sheet1", rows: spec.rows || [] }];
+  const cell = (c) => (c == null ? null : (typeof c === "object" ? String((c.text ?? c.value ?? c.v) ?? JSON.stringify(c)) : c));
+  const tableSpec = { sheets: raw.map((sh) => ({ name: _sheetName(sh && sh.name), rows: Array.isArray(sh && sh.rows) ? sh.rows.map((r) => (Array.isArray(r) ? r.map(cell) : [cell(r)])) : [] })) };
+  try {
+    const { planWorkbook } = await import("@madav/documents");
+    const plan = planWorkbook(tableSpec);
+    if (plan && plan.spec && Array.isArray(plan.spec.sheets) && plan.spec.sheets.length) {
+      return { sheets: plan.spec.sheets.map((sx) => ({ name: sx.name, rows: Array.isArray(sx.rows) ? sx.rows : [] })), issues: plan.issues || [] };
+    }
+  } catch (e) { console.debug("[madav-next] excel-engine governance unavailable, using legacy caps:", (e && e.message) || e); }
+  return { sheets: raw.map((sh) => ({ name: _sheetName(sh && sh.name), rows: _normRows(sh) })), issues: [] };
+}
 // Does the xlsx spec carry ANY real data? Guards against shipping a blank workbook when a model's
 // officedoc spec came back truncated/empty (the old "downloaded an empty file" bug). True if any sheet
 // has rich content (inputs/metrics/columns/kpis/data) or at least one non-empty cell in its rows.
@@ -105,10 +122,10 @@ async function buildXlsx(spec) {
   if (!ExcelJS) return buildXlsxBasic(spec);
   const accent = _hx(spec.accent, _OFFICE_ACCENT);
   const wb = new ExcelJS.Workbook(); wb.creator = "Madav"; wb.created = new Date();
-  const sheets = Array.isArray(spec.sheets) && spec.sheets.length ? spec.sheets : [{ name: "Sheet1", rows: spec.rows || [] }];
-  for (const sh of sheets.slice(0, 12)) {
-    const ws = wb.addWorksheet(_sheetName(sh.name));
-    const rows = _normRows(sh); if (!rows.length) rows.push(["(empty)"]);
+  const { sheets: govSheets, issues: _issues } = await _governXlsx(spec);
+  for (const sh of govSheets) {
+    const ws = wb.addWorksheet(sh.name);
+    const rows = sh.rows.length ? sh.rows.slice() : [["(empty)"]];
     const ncols = rows.reduce((mx, r) => Math.max(mx, r.length), 1);
     rows.forEach((r, i) => {
       const row = ws.addRow(r);
@@ -134,22 +151,26 @@ async function buildXlsx(spec) {
     if (rows.length > 1) ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ncols } };
   }
   const buf = await wb.xlsx.writeBuffer();
-  return new Blob([buf], { type: _XLSX_MIME });
+  const _blob = new Blob([buf], { type: _XLSX_MIME });
+  try { _blob.madavIssues = _issues; } catch {}
+  return _blob;
 }
 async function buildXlsxBasic(spec) {
   const XLSX = await import("xlsx");
   const wb = XLSX.utils.book_new();
-  const sheets = Array.isArray(spec.sheets) && spec.sheets.length ? spec.sheets : [{ name: "Sheet1", rows: spec.rows || [] }];
-  for (const sh of sheets.slice(0, 12)) {
-    const rows = _normRows(sh);
+  const { sheets: govSheets, issues: _issues } = await _governXlsx(spec);
+  for (const sh of govSheets) {
+    const rows = Array.isArray(sh.rows) ? sh.rows : [];
     const ws = XLSX.utils.aoa_to_sheet(rows.length ? rows : [["(empty)"]]);
     const ncols = rows.reduce((mx, r) => Math.max(mx, r.length), 1);
     ws["!cols"] = Array.from({ length: ncols }, (_, c) => { let w = 9; rows.forEach((r) => { const v = r[c]; if (v != null) w = Math.max(w, Math.min(52, String(v).length + 2)); }); return { wch: w }; });
     if (rows.length > 1) ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 0, c: ncols - 1 } }) };
-    XLSX.utils.book_append_sheet(wb, ws, _sheetName(sh.name));
+    XLSX.utils.book_append_sheet(wb, ws, sh.name);
   }
   const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-  return new Blob([out], { type: _XLSX_MIME });
+  const _blob = new Blob([out], { type: _XLSX_MIME });
+  try { _blob.madavIssues = _issues; } catch {}
+  return _blob;
 }
 
 const _DOCX = { NAVY: "1F3864", BODY: "1F2933", MUT: "6B7280", BAND: "F2F6FB", LINE: "D7DEEA", FONT: "Calibri" };
@@ -363,6 +384,7 @@ export async function downloadOffice(spec) {
   a.href = url; a.download = spec.name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return (blob && blob.madavIssues) || [];
 }
 
 // ── In-app preview ─────────────────────────────────────────────────────────

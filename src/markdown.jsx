@@ -86,6 +86,7 @@ function OfficeCard({ code, streaming }) {
   const [state, setState] = useState(""); // "" | building | done | saved | error:<msg>
   const [stuck, setStuck] = useState(false);
   const [savedPath, setSavedPath] = useState("");
+  const [issues, setIssues] = useState([]);
   const parsed = parseOfficeSpec(code, { lenient: !streaming }); // strict while streaming → a partial spec stays a quiet "Preparing…" placeholder instead of flickering a half-built preview
   // Don't hang on "Preparing…" forever: if the content never becomes a valid spec, surface a friendly dead-end.
   useEffect(() => {
@@ -107,6 +108,7 @@ function OfficeCard({ code, streaming }) {
       try {
         setState("building");
         const blob = await buildOfficeBlob(parsed);
+        setIssues((blob && blob.madavIssues) || []);
         const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(blob); });
         const out = (bridge && bridge.saveAndOpen) ? await bridge.saveAndOpen(parsed.name, b64, saveDir) : null;
         if (cancelled) return;
@@ -139,12 +141,13 @@ function OfficeCard({ code, streaming }) {
       // Desktop: build the real file, save it, and OPEN it in its native app (Excel/Word/…).
       if (bridge && bridge.saveAndOpen) {
         const blob = await buildOfficeBlob(parsed);
+        setIssues((blob && blob.madavIssues) || []);
         const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(blob); });
         const out = await bridge.saveAndOpen(parsed.name, b64);
         if (out && out.ok) { setState("done"); setTimeout(() => setState(""), 2500); return; }
       }
       // Web, or if native open is unavailable/failed: download the file.
-      await downloadOffice(parsed); setState("done"); setTimeout(() => setState(""), 2500);
+      const _iss = await downloadOffice(parsed); setIssues(_iss || []); setState("done"); setTimeout(() => setState(""), 2500);
     } catch (e) { setState("error:" + String((e && e.message) || e).slice(0, 120)); }
   };
   const count = parsed.type === "xlsx" ? `${(parsed.sheets || []).length || 1} sheet(s)`
@@ -153,6 +156,12 @@ function OfficeCard({ code, streaming }) {
   // Open a live preview in the side panel ("window next to it"). The same spec
   // renders to HTML there; Download still builds the real file.
   const open = () => { try { window.dispatchEvent(new CustomEvent("madav:openoffice", { detail: { code, name: parsed.name, type: parsed.type } })); } catch {} };
+  // Engine size-cap warnings (rows/cols/sheets) shown on the card instead of dropping data silently.
+  const noteEl = issues.length ? (
+    <span className="md-office-note" title={issues.map((x) => x.message).join("\n")} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: issues.some((x) => x.level === "error") ? "#b42318" : "#9a6700", marginLeft: 6 }}>
+      {"\u26A0 "}{issues.length === 1 ? issues[0].message : issues.length + " size notes \u2014 nothing dropped silently"}
+    </span>
+  ) : null;
   // Saved into a folder-linked room → Open + Show-in-folder instead of a Download button.
   if (savedPath) return (
     <div className="md-office">
@@ -160,6 +169,7 @@ function OfficeCard({ code, streaming }) {
       <span className={"md-office-ico md-office-ico--" + parsed.type} onClick={open} style={{ cursor: "pointer" }} title="Open preview"><OfficeIcon type={parsed.type} /></span>
       <button className="md-office-btn" onClick={() => { try { bridge && bridge.openPath && bridge.openPath(savedPath); } catch {} }}>Open</button>
       <button className="md-office-open" onClick={() => { try { bridge && bridge.showInFolder && bridge.showInFolder(savedPath); } catch {} }}>Show in folder</button>
+      {noteEl}
     </div>
   );
   return (
@@ -171,6 +181,7 @@ function OfficeCard({ code, streaming }) {
       </button>
       {state.startsWith("error:") && <span className="md-office-err">{state.slice(6)}</span>}
       {state.startsWith("error:") && <button className="md-office-open" onClick={() => window.dispatchEvent(new CustomEvent("madav:fixdoc", { detail: { code, error: state.slice(6) } }))}>Rebuild</button>}
+      {noteEl}
     </div>
   );
 }
