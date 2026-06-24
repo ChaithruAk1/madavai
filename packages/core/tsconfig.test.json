@@ -1,0 +1,1 @@
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "module": "NodeNext", "moduleResolution": "NodeNext", "verbatimModuleSyntax": false, "noEmit": false, "outDir": "dist-test", "rootDir": ".", "declaration": false, "types": ["node"], "exactOptionalPropertyTypes": false, "noUncheckedIndexedAccess": false }, "include": ["src", "test"] }

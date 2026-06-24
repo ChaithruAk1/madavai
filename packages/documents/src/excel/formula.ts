@@ -1,4 +1,4 @@
-import type { OfficeSpec } from '../contracts/office.js';
+import type { OfficeSpec } from '@madav/contracts';
 import { type Issue, err } from './issues.js';
 
 /** [id] | [Sheet!id] | [id@-1] (prior-period offset). */

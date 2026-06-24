@@ -1,55 +1,33 @@
-# Madav — renderer layout mock
+# Madav
 
-A runnable React mock of the Madav desktop UI. It renders the full
-layout — tab/mode shell, model picker, streaming message list, tool-call cards, and the permission
-modal — driven entirely by the **`UiEvent`** contract, so wiring it to the real Electron
-`SessionManager` later means swapping one line.
+Madav is one product shipped across three runtimes — **desktop**, **web/PWA**, and a **cloud** tier — from a single shared TypeScript core. It is a privacy‑respecting AI workspace for working with your **local files and many cloud apps**, authoring real documents, and automating work with agents, using a choice of frontier and local models.
 
-## Run
+> **This repository is the rebuild workspace ("Madav Next").** The clean TypeScript spine lives under `packages/`; the legacy app (`core/`, `src/`, `electron/`, `server/`) is being migrated into it module by module. See **`REBUILD-STATE.md`** for status and **`docs/blueprint/`** for the architecture.
 
-Browser-only UI (mock bridge, fake data):
+## The spine (today)
 
-```bash
-cd Madav
-npm install
-npm run dev          # http://localhost:5174
+| Package | What it is | Status |
+|---|---|---|
+| `@madav/contracts` | Zod schemas shared identically by every runtime — the single source of truth for shapes | tested |
+| `@madav/documents` | Deterministic document authoring (schema‑gated, formula‑validated Excel engine) + ingestors | tested |
+| `@madav/core` | Pure, provider‑agnostic turn‑loop helpers and orchestration | tested |
+
+## Verify the spine
+
+```powershell
+node scripts/verify-packages.mjs
 ```
 
-Full desktop app (Phase 1 — real streaming to any provider):
+Type‑checks and runs every package's tests. Each package is self‑contained with its own tests.
 
-```bash
-npm install
-npm run electron:dev # launches Electron + Vite together
-```
+## Rules & docs
 
-Then open **Settings** in the app, fill in a provider profile (base URL, API key, model),
-click **Set active**, and start a Chat session. Works with Anthropic, OpenRouter/DeepSeek/Groq,
-local Ollama/LM Studio, or the free-claude-code proxy — pick the wire format per profile.
+- **`MADAV.md`** — the engineering charter (the non‑negotiables).
+- **`docs/blueprint/`** — the full architecture, in plain English with diagrams (`Madav-Blueprint.html` renders the diagrams).
+- **`REBUILD-STATE.md`** — what's built vs. planned, and how to run & compare both apps.
+- **`scripts/check-branding.mjs`** — enforces the "built by and for Madav" policy.
 
-See `ROADMAP.md` for the 3-phase plan. Phase 1 (chat over any provider) is implemented; the
-agent transport (tools/MCP/skills) is Phase 2.
+## Conventions
 
-## What's mocked vs real
-
-- **Real:** the UI, and the `Bridge` contract (`src/bridge/contract.js`) — identical to what the
-  Electron preload will expose as `window.madav`.
-- **Mocked:** `src/bridge/mockBridge.js` streams canned `UiEvent`s (including a tool call that pauses
-  on a `permission_request`). Replace with `export const bridge = window.madav ?? mockBridge;`.
-
-## Try it
-
-1. Pick **Let's Build** mode → send a message → watch streaming + a `Grep` tool auto-run.
-2. The `Edit` tool triggers the **permission modal** — Decline to see the declined path, Allow to continue.
-3. Switch to **Cowork** mode → the same `Edit` runs without a prompt (`acceptEdits`).
-4. Open the **model picker** (top-right) to search/switch models.
-
-## Map to the spec
-
-| File | Spec section |
-|------|--------------|
-| `src/bridge/contract.js` | §4 UiEvent envelope + command channels |
-| `src/bridge/mockBridge.js` | stand-in for §2 SessionManager |
-| `src/App.jsx` | §4.2 SDK-event → UI reduction |
-| `src/components/PermissionModal.jsx` | `canUseTool` / `PermissionResult` round-trip |
-
-Next step: build the Electron main process + real `SessionManager` (Agent SDK) and expose `window.madav`.
+- One language (TypeScript), one source of truth, deterministic I/O, sandboxed code.
+- Commands in docs are written for **PowerShell**.

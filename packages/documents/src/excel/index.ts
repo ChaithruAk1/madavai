@@ -1,5 +1,5 @@
-import { OfficeSpec as OfficeSpecSchema } from '../contracts/office.js';
-import type { OfficeSpec } from '../contracts/office.js';
+import { OfficeSpec as OfficeSpecSchema } from '@madav/contracts';
+import type { OfficeSpec } from '@madav/contracts';
 import { type Issue, err } from './issues.js';
 import { applyLimits } from './limits.js';
 import { validateFormulas } from './formula.js';
@@ -27,6 +27,6 @@ export function planWorkbook(input: unknown): BuildPlan {
   return { ok: !issues.some((i) => i.level === 'error'), spec: limited.spec, issues };
 }
 
-export { LIMITS } from '../contracts/office.js';
-export type { OfficeSpec, Sheet, Metric } from '../contracts/office.js';
+export { LIMITS } from '@madav/contracts';
+export type { OfficeSpec, Sheet, Metric } from '@madav/contracts';
 export type { Issue } from './issues.js';

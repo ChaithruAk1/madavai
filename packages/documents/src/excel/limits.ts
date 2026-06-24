@@ -1,5 +1,5 @@
-import { LIMITS } from '../contracts/office.js';
-import type { OfficeSpec, Sheet } from '../contracts/office.js';
+import { LIMITS } from '@madav/contracts';
+import type { OfficeSpec, Sheet } from '@madav/contracts';
 import { type Issue, warn } from './issues.js';
 
 export function applyLimits(spec: OfficeSpec): { spec: OfficeSpec; issues: Issue[] } {
