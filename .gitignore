@@ -53,3 +53,5 @@ desktop-chat-*.json
 # package's TS devDeps, so force-include just that one dist/ (the global `dist/` on line 2 would drop it).
 !vendor/websearch/websearch-ts/dist/
 !vendor/websearch/websearch-ts/dist/**
+packages/*/dist/
+packages/*/node_modules/

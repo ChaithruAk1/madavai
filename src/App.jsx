@@ -1074,9 +1074,9 @@ export default function App() {
       <ModelPicker value={dockValue} groups={pickerGroups} onChange={onPickModel} onRefresh={refreshModels} task={{ mode }} />
       {isAgentMode && <PermissionPicker value={permissionMode} onChange={changePermission} />}
     </div>
-    <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-3, var(--text-2))", marginTop: 6, opacity: 0.72 }}>Madav is AI and can make mistakes. Please double-check responses.</div>
     </>
   );
+  const disclaimer = <div className="app-foot">Madav is AI and can make mistakes. Please double-check responses.</div>;
 
   return (
     <div className={`app-v ${sidebarOpen ? "" : "sb-collapsed"}`}>
@@ -1348,6 +1348,7 @@ export default function App() {
                   {modelRow}
                 </>
               )}
+              {disclaimer}
             </div>
             {artifact && <ArtifactPanel artifact={artifact}
               key={artifact.kind + ":" + (artifact.code || "").slice(0, 80)}

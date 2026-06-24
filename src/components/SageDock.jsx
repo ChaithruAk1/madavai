@@ -186,9 +186,11 @@ export default function SageDock({ mode, onNavigate }) {
   const winListenersRef = useRef([]); // active window pointer listeners (drag/resize) → removed on unmount
   const fileRef = useRef(null);
   const [customLooks, setCustomLooks] = useState(() => loadCustomLooks());
+  const [names, setNames] = useState(() => { try { return JSON.parse(localStorage.getItem("be.sage.names") || "{}") || {}; } catch { return {}; } });
   const gallery = SAGE_LOOKS.concat(customLooks);
   const lookObj = gallery[look] || gallery[0];
-  const name = lookName(lookObj); // female looks answer as Sara, the rest as Sage
+  const displayName = (l) => { const fem = !!(l && l.female); return (fem ? names.sara : names.sage) || (fem ? "Sara" : "Sage"); };
+  const name = displayName(lookObj); // female looks answer as Sara, the rest as Sage (or the user's custom names)
 
   useEffect(() => { try { localStorage.setItem("be.sage.thread", JSON.stringify(msgs.slice(-40))); } catch {} }, [msgs]);
   useEffect(() => { if (open) endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy, open]);
@@ -317,6 +319,19 @@ export default function SageDock({ mode, onNavigate }) {
       r.readAsDataURL(file);
     }
     if (e.target) e.target.value = "";
+  };
+
+  const removeLook = (i) => {
+    const ci = i - SAGE_LOOKS.length;
+    if (ci < 0) return; // bundled looks are fixed: only user-added photos can be removed
+    const nc = customLooks.slice(0, ci).concat(customLooks.slice(ci + 1));
+    setCustomLooks(nc); saveCustomLooks(nc);
+    if (look === i) chooseLook(0); else if (look > i) chooseLook(look - 1);
+  };
+  const renameBuddy = (val) => {
+    const key = (lookObj && lookObj.female) ? "sara" : "sage";
+    const nn = { ...names, [key]: val };
+    setNames(nn); try { localStorage.setItem("be.sage.names", JSON.stringify(nn)); } catch {}
   };
 
   // Read a reply aloud (free OS voices, offline). Cancels anything still talking,
@@ -520,6 +535,7 @@ export default function SageDock({ mode, onNavigate }) {
     const dock = e.currentTarget.closest(".sage-dock"); if (!dock) return;
     const r = dock.getBoundingClientRect();
     const fromFab = !!e.currentTarget.closest(".sage-fab");
+    const fromTab = !!e.currentTarget.closest(".sage-tab");
     const d = { ox: e.clientX - r.left, oy: e.clientY - r.top, sx: e.clientX, sy: e.clientY, moved: false };
     const move = (ev) => {
       if (Math.abs(ev.clientX - d.sx) + Math.abs(ev.clientY - d.sy) > 4) d.moved = true;
@@ -531,7 +547,7 @@ export default function SageDock({ mode, onNavigate }) {
       window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up);
       winListenersRef.current = winListenersRef.current.filter(([, f]) => f !== move && f !== up);
       if (posRef.current) { try { localStorage.setItem("be.sage.pos", JSON.stringify(posRef.current)); } catch {} }
-      if (fromFab && !d.moved) openDock();
+      if (fromFab && !d.moved) openDock(); else if (fromTab && !d.moved) show();
     };
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
     winListenersRef.current.push(["pointermove", move], ["pointerup", up]);
@@ -539,8 +555,8 @@ export default function SageDock({ mode, onNavigate }) {
   };
 
   // Default anchor (pos = null) is the HOME BASE: top-right, just below the online chip.
-  const aTop = pos ? pos.top : 74;
-  const aLeft = pos ? pos.left : (typeof window !== "undefined" ? window.innerWidth - 74 : 1200);
+  const aTop = pos ? pos.top : 12;
+  const aLeft = pos ? pos.left : (typeof window !== "undefined" ? window.innerWidth - 210 : 1200);
   const up = aTop > (typeof window !== "undefined" ? window.innerHeight : 800) * 0.45;
   const left = aLeft > (typeof window !== "undefined" ? window.innerWidth : 1400) * 0.5;
   const send = () => { const t = input.trim(); if (!t) return; ask(t); };
@@ -548,7 +564,7 @@ export default function SageDock({ mode, onNavigate }) {
   return (
     <div className={`sage-dock ${up ? "up" : "down"} ${left ? "right" : "left"}`} style={pos ? { left: pos.left, top: pos.top, right: "auto", bottom: "auto" } : undefined}>
       {hidden ? (
-        <button className="sage-tab" title={`Show ${name}`} onClick={show}><SageFace size={30} look={lookObj} /></button>
+        <button className="sage-tab" title={`Drag to move ${name}, or click to open`} onPointerDown={startDrag}><SageFace size={30} look={lookObj} /></button>
       ) : open ? (
         <div className="sage-panel" ref={panelRef} style={size ? { width: size.w, height: size.h } : undefined}>
           <div className="sage-grip" onPointerDown={startResize} title="Drag to resize" />
@@ -569,9 +585,20 @@ export default function SageDock({ mode, onNavigate }) {
           {lookPick && (
             <div className="sage-looks">
               <span className="sage-looks-label">Pick a face — or + to upload your own</span>
+              <div className="sage-rename">
+                <span>Call {lookObj && lookObj.female ? "her" : "him"}:</span>
+                <input value={(lookObj && lookObj.female) ? (names.sara || "") : (names.sage || "")} onChange={(e) => renameBuddy(e.target.value)} maxLength={24} placeholder={lookObj && lookObj.female ? "Sara" : "Sage"} />
+              </div>
               <div className="sage-looks-row">
                 {gallery.map((l, i) => (
-                  <button key={i} className={`sage-look ${i === look ? "on" : ""}`} onClick={() => chooseLook(i)} title={l.label || `Look ${i + 1}`}><SageFace size={42} look={l} /></button>
+                  l.custom ? (
+                    <span key={i} className="sage-look-wrap">
+                      <button className={`sage-look ${i === look ? "on" : ""}`} onClick={() => chooseLook(i)} title={l.label || `Look ${i + 1}`}><SageFace size={42} look={l} /></button>
+                      <button className="sage-look-del" title="Remove this photo" onClick={(e) => { e.stopPropagation(); removeLook(i); }}><X size={11} /></button>
+                    </span>
+                  ) : (
+                    <button key={i} className={`sage-look ${i === look ? "on" : ""}`} onClick={() => chooseLook(i)} title={l.label || `Look ${i + 1}`}><SageFace size={42} look={l} /></button>
+                  )
                 ))}
                 <button className="sage-look sage-look-add" onClick={() => fileRef.current && fileRef.current.click()} title="Upload your own image"><Plus size={20} /></button>
               </div>
@@ -650,7 +677,7 @@ export default function SageDock({ mode, onNavigate }) {
         </div>
       ) : (
         <div className="sage-fab-wrap">
-          <button className="sage-fab" title={`Ask ${name} — drag to move me`} onPointerDown={startDrag}><SageFace size={52} look={lookObj} /></button>
+          <button className="sage-fab" title={`Ask ${name} — drag to move me`} onPointerDown={startDrag}><SageFace size={40} look={lookObj} /></button>
           <button className="sage-fab-hide" title={`Tuck ${name} away`} onClick={hide}><X size={11} /></button>
           {tip
             ? <span className="sage-tip" onClick={() => { const a = tip.ask || ("Help me with " + mode); const isWalk = tip.id === "walk"; setTip(null); openDock(); if (!isWalk) ask(a); }}>

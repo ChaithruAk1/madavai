@@ -121,7 +121,7 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   const navBtn = (t) => {
     const I = t.icon;
     return (
-      <button key={t.id} className={`nav-item ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
+      <button key={t.id} className={`nav-item ${active === t.id ? "active" : ""}`} title={t.label} onClick={() => onSelect(t.id)}>
         <I size={16} /> <span className="sb-t">{t.label}</span>
       </button>
     );
@@ -179,16 +179,16 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   return (
     <aside className="sidebar glass">
       <div className="sb-scroll">
-      <button className="sb-new" onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
+      <button className="sb-new" title={newLabel} onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
 
-      <button className={`nav-item nav-group ${MODELS.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setModelsOpen((o) => !o)}>
+      <button className={`nav-item nav-group ${MODELS.some((t) => t.id === active) ? "active-within" : ""}`} title="Models" onClick={() => setModelsOpen((o) => !o)}>
         <Cpu size={16} /> <span className="sb-t">Models</span>
         <span className="nav-caret sb-t">{modelsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
       </button>
       {modelsOpen && MODELS.map((t) => {
         const I = t.icon;
         return (
-          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
+          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} title={t.label} onClick={() => onSelect(t.id)}>
             <I size={15} /> <span className="sb-t">{t.label}</span>
           </button>
         );
@@ -196,14 +196,14 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
 
       {MAIN.filter((t) => !extraOff(t.id)).map(navBtn)}
 
-      <button className={`nav-item nav-group ${INTERFACE.some((t) => t.id === active) ? "active-within" : ""}`} onClick={() => setIfaceOpen((o) => !o)}>
+      <button className={`nav-item nav-group ${INTERFACE.some((t) => t.id === active) ? "active-within" : ""}`} title="Interface" onClick={() => setIfaceOpen((o) => !o)}>
         <LayoutGrid size={16} /> <span className="sb-t">Interface</span>
         <span className="nav-caret sb-t">{ifaceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
       </button>
       {ifaceOpen && INTERFACE.filter((t) => !extraOff(t.id)).map((t) => {
         const I = t.icon;
         return (
-          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)}>
+          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} title={t.label} onClick={() => onSelect(t.id)}>
             <I size={15} /> <span className="sb-t">{t.label}</span>
           </button>
         );

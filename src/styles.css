@@ -60,7 +60,6 @@
     var(--bg-0);
 }
 /* Surfaces that hardcode dark rgba — re-skin for light so menus/bars adapt. */
-:root[data-theme="light"] .topnav,
 :root[data-theme="light"] .composer-wrap { background: rgba(253,252,250,0.72); }
 :root[data-theme="light"] .plus-menu,
 :root[data-theme="light"] .slash-menu,
@@ -1507,7 +1506,7 @@ textarea.model-search { line-height: 1.5; }
 .app-body.sb-collapsed .sb-acct-menu { left: 64px; right: auto; bottom: 8px; width: 232px; }
 .sb-expand { display: flex; flex-direction: column; }
 
-.topnav { position: relative; height: 64px; flex: 0 0 64px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid transparent; background: rgba(7,8,11,0.6); backdrop-filter: blur(14px); }
+.topnav { position: relative; height: 64px; flex: 0 0 64px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid transparent; background: transparent; backdrop-filter: none; }
 .tn-collapse { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg-1); color: var(--text-1); cursor: pointer; flex: 0 0 auto; transition: background .14s, color .14s; }
 .tn-collapse:hover { background: var(--bg-2); color: var(--text-0); }
 /* Toggle + brand grouped on the far left. Brand hides when the sidebar is collapsed. */
@@ -1518,7 +1517,7 @@ textarea.model-search { line-height: 1.5; }
 .tn-brandtext { align-items: center; } /* tagline centered under the wordmark */
 .tn-brand { display: flex; align-items: center; gap: 10px; }
 .tn-brand .mark.tea { width: 44px; height: 44px; border-radius: 12px; }
-.tn-brandtext { display: flex; flex-direction: column; line-height: 1.12; }
+.tn-brandtext { display: flex; flex-direction: column; line-height: 1.12; position: relative; }
 /* Logo mark follows the chosen accent. */
 .think-logo .tl-line { stroke: var(--accent); }
 .think-logo .tl-main { fill: var(--accent); }
@@ -1536,8 +1535,8 @@ textarea.model-search { line-height: 1.5; }
   line-height: 1.3; padding-bottom: 2px;
   color: var(--accent); -webkit-text-fill-color: var(--accent); background: none;
 }
-.tn-by { font-size: 11px; font-weight: 500; color: var(--text-2); letter-spacing: .2px; margin-top: -1px; }
-.tn-brandtext img + .tn-by, .tn-brandtext svg + .tn-by { margin-top: 4px; font-size: 9px; letter-spacing: .3px; } /* tagline: smaller, tucked just below the wordmark */
+.tn-by { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 500; color: #fff; letter-spacing: .2px; }
+.tn-brandtext img + .tn-by, .tn-brandtext svg + .tn-by { top: calc(100% + 1px); font-size: 9px; letter-spacing: .3px; } /* tagline: smaller, tucked just below the wordmark */
 /* Light mode: wordmark carries the ACCENT (default teal or the user's custom pick), no shimmer. */
 :root[data-theme="light"] .tn-name { background: none; -webkit-text-fill-color: var(--accent); color: var(--accent); animation: none; }
 :root[data-theme="light"] .tn-by { background: none; -webkit-text-fill-color: var(--text-2); color: var(--text-2); animation: none; }
@@ -1567,6 +1566,8 @@ textarea.model-search { line-height: 1.5; }
 .tn-tab.active .tn-tabicon { color: var(--accent); animation: tabpulse 2.6s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(var(--accent-rgb),0.6)); }
 @keyframes tabpulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: 0.75; } }
 .tn-right { position: absolute; right: 16px; top: 0; height: 64px; display: flex; align-items: center; gap: 10px; }
+/* Top-bar controls sit raised like the sidebar panel; the logo + tagline stay flat. */
+.topnav .tn-collapse, .topnav .tn-tab:not(.active), .topnav .chip { box-shadow: 0 1px 2px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.10); }
 .tn-status { gap: 7px; }
 .tn-statusdot { width: 7px; height: 7px; border-radius: 9px; display: inline-block; flex: 0 0 7px; }
 
@@ -2188,7 +2189,7 @@ svg.lucide { color: var(--accent); }
 .aggc-goto { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 13px; font-size: 12.5px; }
 
 /* ===== Floating Sage — the quiet, draggable helper present on every agent screen ===== */
-.sage-dock { position: fixed; right: 22px; top: 74px; bottom: auto; z-index: 50; } /* home base: just below the online chip; a user drag overrides until idle snaps him home */
+.sage-dock { position: fixed; right: 210px; top: 12px; bottom: auto; z-index: 50; } /* home base: top bar, next to the Record button; a user drag overrides until idle snaps him home */
 .sage-fab-wrap { position: relative; display: inline-flex; }
 /* tuck-away X — only on hover of the bubble */
 .sage-fab-hide { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text-2); cursor: pointer; opacity: 0; transition: opacity var(--dur-1,120ms) var(--ease,ease); }
@@ -3273,6 +3274,13 @@ textarea.model-search { border-radius: 14px; }
 /* Sage face picker — the "+" tile to upload your own avatar (sits after the photo gallery). */
 .sage-look-add { display: inline-flex; align-items: center; justify-content: center; min-width: 42px; min-height: 42px; border: 1.6px dashed var(--line); border-radius: 12px; color: var(--text-2); background: transparent; cursor: pointer; padding: 0; }
 .sage-look-add:hover { border-color: var(--accent); color: var(--accent); }
+.sage-rename { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; font-size: 12px; color: var(--text-2); }
+.sage-rename input { flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; color: var(--text-0); font: inherit; font-size: 12.5px; }
+.sage-rename input:focus { outline: none; border-color: var(--accent); }
+.sage-look-wrap { position: relative; display: inline-flex; }
+.sage-look-del { position: absolute; top: -5px; right: -5px; width: 17px; height: 17px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--line-2); background: var(--bg-3); color: var(--text-1); cursor: pointer; padding: 0; opacity: 0; transition: opacity .12s; z-index: 2; }
+.sage-look-wrap:hover .sage-look-del { opacity: 1; }
+.sage-look-del:hover { color: var(--danger); border-color: var(--danger); }
 
 /* Sidebar: whole nav + recents scroll together; profile/copyright stay pinned (Claude-style). */
 .sb-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }

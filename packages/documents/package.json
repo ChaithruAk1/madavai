@@ -1,0 +1,19 @@
+{
+  "name": "@madav/documents",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Madav deterministic document authoring — schema-gated, no silent truncation, formula-validated.",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsc -p tsconfig.build.json && node --test dist/test/excel.test.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^20.14.0"
+  }
+}
