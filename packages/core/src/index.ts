@@ -5,6 +5,7 @@ export * from './backoff.js';
 export * from './project-lanes.js';
 export * from './agent-rules.js';
 export * from './recipes.js';
+export * from './search.js';
 export * from './chat-loop.js';
 export * from './chat-tools.js';
 export * from './models/router.js';
