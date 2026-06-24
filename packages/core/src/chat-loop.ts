@@ -14,7 +14,7 @@ export const CHAT_ADAPTER_METHODS = ['stream', 'runTool', 'emit'] as const;
 export const DEFAULT_STEP_CAP = 14;
 
 export interface UiEvent { type: string; [k: string]: unknown; }
-export interface ToolSchema { function?: { name?: string; parameters?: { properties?: Record<string, unknown> } }; [k: string]: unknown; }
+export interface ToolSchema { type?: string; function?: { name?: string; description?: string; parameters?: { type?: string; properties?: Record<string, unknown>; required?: string[]; [k: string]: unknown } } & Record<string, unknown>; [k: string]: unknown; }
 export interface ToolCall { id?: string; type?: string; function?: { name?: string; arguments?: unknown }; name?: string; arguments?: unknown; [k: string]: unknown; }
 export interface StreamResponse { content?: unknown; tool_calls?: ToolCall[]; textMode?: boolean; _rawText?: string; [k: string]: unknown; }
 
