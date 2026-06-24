@@ -42,11 +42,11 @@ Expected: **all 3 spine packages green (68 tests)**.
 ## 4. How to run & compare both
 
 - **Current Madav** (the control): open the original `Madav` folder and run it as you always do.
-- **This rebuild** (`MadavNew`): still runs the same legacy app today (foundation is additive). To run both *at the same time*, the new build needs a distinct app identity (name, data folder, dev port) — that is the **first task of the next session** so the two never clash.
+- **This rebuild** (`MadavNew`): runs the legacy app, now on **dev port 5180** — so it runs **side by side** with current Madav (5174), confirmed working. Remaining for full isolation: a **separate data folder** so they don't share settings/chats (small dev-only change in `electron/main.cjs`).
 
 ## 5. What's next (Phase 0 continuation, in order)
 
-1. Give this build a distinct desktop identity (name/appId/data dir/dev port) so both apps run side by side.
+1. Distinct desktop identity — **dev port 5180 done** (both run side by side ✅); remaining: separate **userData** (data folder) + a dev window title.
 2. Continue migrating `core/` into `@madav/core` — **the turn engine is ported**: `turn-helpers`, `run-guard`, `model-router`, `context-window`, `capability`, `recipes`, and **`chat-loop`** (`coreChatTurn`). The **pure `core/` migration is complete** (`model-fit`, `backoff`, `project-lanes`, `agent-rules` now done too). `chat-tools` (shared tool schemas) is done too. `search` (the single search backend) is done too — **the shared brain is essentially complete** (13 modules). `chat-adapter` is done — **the chat brain is complete** (14 modules). Porting the project/data orchestration (`project-runner` + `project-job`) next, then the only remaining step is **wiring `@madav/core` into the live app**.
 3. Wire the new Excel engine into the live document path; add golden‑file tests.
 4. Work down `docs/branding/REFERENCES-REPORT.md` file‑by‑file during migration until the scanner passes (0 forbidden).

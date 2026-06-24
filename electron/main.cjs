@@ -11,6 +11,15 @@ const pExecFile = require("util").promisify(execFile);
 const b64url = (buf) => buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Dev-only data sandbox (rebuild coexistence). By DEFAULT the rebuild SHARES the installed Madav's data
+// folder (handy for comparing the two apps on the same chats/projects). Launch with
+//   $env:MADAV_DEV_DATA="isolated"; npm run electron:dev
+// to give the rebuild its OWN settings/chats so it never touches the installed Madav. Only this rebuild
+// copy has this line; production builds are unaffected. MUST run before any store touches userData.
+if (process.env.NODE_ENV === "development" && process.env.MADAV_DEV_DATA === "isolated") {
+  try { app.setPath("userData", path.join(app.getPath("appData"), "Madav (Next dev)")); } catch {}
+}
+
 // ===== ONE-TIME DATA MIGRATION: legacy app name → Madav ============================
 // The app was renamed; the userData folder moves with the package/product name, which
 // would silently orphan every setting, project and conversation. On first launch with
