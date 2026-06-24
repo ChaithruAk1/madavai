@@ -3,6 +3,8 @@ export * from './turn-helpers.js';
 export * from './run-guard.js';
 export * from './backoff.js';
 export * from './project-lanes.js';
+export * from './project-job.js';
+export * from './project-runner.js';
 export * from './agent-rules.js';
 export * from './recipes.js';
 export * from './search.js';
