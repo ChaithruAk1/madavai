@@ -203,7 +203,7 @@ const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "applic
 // No Origin header (desktop app, curl, server-to-server) -> no CORS headers needed; unknown Origin -> none sent.
 const ALLOWED_ORIGINS = new Set([
   new URL(BASE).origin,
-  "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:8787", "http://127.0.0.1:8787",
+  "http://localhost:5180", "http://127.0.0.1:5180", "http://localhost:8787", "http://127.0.0.1:8787",
   ...(process.env.EXTRA_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean),
 ]);
 

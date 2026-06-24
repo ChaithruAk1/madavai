@@ -23,7 +23,7 @@ function buildCSP(opts) {
   }
   const isDev = !!opts.isDev;
   const script = isDev ? "'self' 'unsafe-inline' " + EVAL : "'self' " + EVAL;
-  const connect = isDev ? "'self' https: ws://localhost:5174 http://localhost:5174" : "'self' https:";
+  const connect = isDev ? "'self' https: ws://localhost:5180 http://localhost:5180" : "'self' https:";
   return [
     "default-src 'self'",
     "script-src " + script,

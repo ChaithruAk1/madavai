@@ -123,7 +123,7 @@ function createWindow() {
     return { action: "deny" };
   });
   win.webContents.on("will-navigate", (e, url) => {
-    const ok = url.startsWith("http://localhost:5174") || url.startsWith("http://127.0.0.1:5174") || url.startsWith("file://");
+    const ok = url.startsWith("http://localhost:5180") || url.startsWith("http://127.0.0.1:5180") || url.startsWith("file://");
     if (!ok) e.preventDefault();
   });
 
@@ -149,7 +149,7 @@ function createWindow() {
   applyPermissionPolicy();
   applyCSP();
   if (isDev) {
-    win.loadURL("http://localhost:5174");
+    win.loadURL("http://localhost:5180");
     win.webContents.openDevTools({ mode: "detach" });
   } else {
     win.loadFile(path.join(__dirname, "..", "dist", "index.html"));

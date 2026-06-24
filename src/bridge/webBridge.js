@@ -36,7 +36,7 @@ import { dataToolsRule, SEARCH_ANSWER_RULE } from "../../core/agent-rules.js"; /
 import { matchRecipe, recipePromptBlock, makeRecipe, upsertRecipe } from "../../core/recipes.js"; // Step 4 — recipes (single source, shared with desktop)
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
-// Vite dev port (5174) the API is the separate auth server on 8787. Overridable via a global. ----
+// Vite dev port (5180) the API is the separate auth server on 8787. Overridable via a global. ----
 import { mcpServersFromSettings, mcpToolName, mcpResultText } from "./mcpNames.js"; // Phase 3 MCP (opt-in)
 import { toolsUnsupportedErr } from "./toolSupport.js"; // only cache "no tools" on a definitive signal
 import { runDeepResearch } from "./deepResearch.js"; // Phase 2: client-orchestrated multi-search research
@@ -45,7 +45,7 @@ import { buildKnowledgeContext } from "./ragLite.js"; // Phase 2: RAG-lite proje
 import { agentMemoryBlock, addAgentNote, recordAgentRun, getAgentMem, getAgentHistory, getAgentStats } from "./agentMemory.js"; // Phase 2 + Agent Ops (A1)
 const AUTH_BASE = (() => {
   if (typeof window !== "undefined" && window.__MADAV_AUTH_BASE__) return String(window.__MADAV_AUTH_BASE__).replace(/\/+$/, "");
-  if (typeof location !== "undefined" && location.port === "5174") return "http://127.0.0.1:8787";
+  if (typeof location !== "undefined" && location.port === "5180") return "http://127.0.0.1:8787";
   return ""; // same-origin
 })();
 const api = (path) => (AUTH_BASE ? AUTH_BASE : "") + path;

@@ -15,7 +15,7 @@
     "build": "vite build",
     "build:admin": "cross-env VITE_INCLUDE_QA=1 vite build",
     "preview": "vite preview",
-    "wait-electron": "wait-on http://localhost:5174 && cross-env NODE_ENV=development electron .",
+    "wait-electron": "wait-on http://localhost:5180 && cross-env NODE_ENV=development electron .",
     "electron:dev": "concurrently -k -n VITE,ELECTRON -c cyan,yellow npm:dev npm:wait-electron",
     "electron:build": "npm run electron:build:admin && npm run electron:build:public",
     "electron:build:admin": "node scripts/build-features.mjs --all && vite build && electron-builder --win --config electron-builder.config.cjs",
