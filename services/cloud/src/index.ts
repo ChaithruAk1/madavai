@@ -6,3 +6,4 @@ export * from './runners.js';
 export * from './vault.js';
 export * from './providers/mcp.js';
 export * from './connectors.js';
+export * from './scheduler.js';
