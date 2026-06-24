@@ -37,9 +37,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@madav/documents": r("./packages/documents/src/index.ts"),
-      "@madav/contracts": r("./packages/contracts/src/office.ts"),
+      "@madav/contracts": r("./packages/contracts/src/index.ts"),
     },
   },
   worker: { format: "es" },
-  server: { port: 5180, strictPort: true },
-});
+  ser
