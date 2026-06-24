@@ -18,7 +18,7 @@ import { join, extname, relative } from 'node:path';
 const ROOT = process.cwd();
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'release', '.checkpoints',
-  '.playwright-mcp', '_legacy', 'coverage', '.next', 'vendor',
+  '.playwright-mcp', '_legacy', '_planning', 'coverage', '.next', 'vendor',
 ]);
 const SCAN_EXT = new Set([
   '.js', '.jsx', '.ts', '.tsx', '.cjs', '.mjs', '.json', '.md', '.html', '.css', '.txt', '.yml', '.yaml', '.svelte', '.vue',
@@ -55,6 +55,7 @@ function walk(dir, out = []) {
 
 const SELF_EXEMPT = (rel) =>
   rel === 'MADAV.md' ||
+  rel === 'Chat1.md' ||  // untracked dev conversation log
   rel.startsWith('scripts/check-branding') ||
   rel.startsWith('docs/branding/') ||
   rel.startsWith('docs/blueprint/') ||      // the blueprint legitimately names what Madav integrates
