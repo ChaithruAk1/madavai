@@ -7,7 +7,7 @@ import { readdirSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = 'packages';
-const order = ['contracts', 'insight', 'core', 'documents']; // dependency order (documents consumes contracts)
+const order = ['contracts', 'insight', 'storage', 'core', 'documents']; // dependency order (documents consumes contracts)
 const all = readdirSync(root).filter((p) => existsSync(join(root, p, 'package.json')));
 const pkgs = [...order.filter((p) => all.includes(p)), ...all.filter((p) => !order.includes(p))];
 const isWin = process.platform === 'win32';
