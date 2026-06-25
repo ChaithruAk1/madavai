@@ -17,22 +17,29 @@ export async function ingestDoc(doc: KnowledgeDoc, deps: IngestDeps, opts: Chunk
 export interface RetrieveDeps { embed: Embedder; store: KnowledgeStore }
 export interface RetrieveOptions { k?: number; vectorWeight?: number }
 /**
- * Hybrid retrieval: blend semantic similarity (cosine of embeddings) with lexical overlap (keyword), rank,
- * and return the top-K. vectorWeight (default 0.6) balances the two; lexical catches exact terms embeddings miss.
+ * Hybrid retrieval: blend semantic similarity (cosine) with lexical overlap (keyword), rank, return top-K.
+ * If the store can search() it pushes ANN + ranking to the backend (scales); otherwise we score all() in JS.
  */
 export async function retrieve(query: string, deps: RetrieveDeps, opts: RetrieveOptions = {}): Promise<ScoredChunk[]> {
   const k = Math.max(1, opts.k ?? 5);
   const w = Math.min(1, Math.max(0, opts.vectorWeight ?? 0.6));
-  const all = await deps.store.all();
-  if (!all.length) return [];
-  const [qVec] = await deps.embed([query]);
-  const qTerms = tokenize(query);
-  const scored: ScoredChunk[] = all.map((chunk) => {
-    const v = chunk.vector && qVec ? cosine(qVec, chunk.vector) : 0;
-    const vectorScore = (v + 1) / 2;                       // map [-1,1] -> [0,1]
-    const kw = keywordScore(qTerms, chunk.text);
-    return { chunk, vectorScore, keywordScore: kw, score: w * vectorScore + (1 - w) * kw };
-  });
-  scored.sort((a, b) => b.score - a.score || a.chunk.index - b.chunk.index);
-  return scored.slice(0, k);
+  const terms = tokenize(query);
+  if (deps.store.search) {
+    const [qVec] = await deps.embed([query]);
+    return deps.store.search({ vector: qVec ?? [], text: query, terms }, k, w);
+  }
+  if (deps.store.all) {
+    const all = await deps.store.all();
+    if (!all.length) return [];
+    const [qVec] = await deps.embed([query]);
+    const scored: ScoredChunk[] = all.map((chunk) => {
+      const v = chunk.vector && qVec ? cosine(qVec, chunk.vector) : 0;
+      const vectorScore = (v + 1) / 2;
+      const kw = keywordScore(terms, chunk.text);
+      return { chunk, vectorScore, keywordScore: kw, score: w * vectorScore + (1 - w) * kw };
+    });
+    scored.sort((a, b) => b.score - a.score || a.chunk.index - b.chunk.index);
+    return scored.slice(0, k);
+  }
+  return [];
 }
