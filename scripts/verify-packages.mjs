@@ -6,7 +6,7 @@ import { readdirSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 const roots = ['packages', 'services'];
-const order = ['contracts', 'insight', 'storage', 'core', 'documents', 'knowledge', 'cloud', 'sync', 'models', 'compute']; // dependency order
+const order = ['contracts', 'insight', 'storage', 'core', 'documents', 'knowledge', 'rbac', 'cloud', 'sync', 'models', 'compute']; // dependency order
 const dirs = roots.flatMap((root) =>
   existsSync(root) ? readdirSync(root).filter((p) => existsSync(join(root, p, 'package.json'))).map((p) => ({ name: p, dir: join(root, p) })) : [],
 );
