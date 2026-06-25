@@ -1000,7 +1000,15 @@ class SessionManager {
     let _hardStop, _timedOut = false;
     _hardStop = setTimeout(() => { _timedOut = true; try { controller.abort(); } catch {} }, 8 * 60 * 1000);
     let result;
-    try { result = await PR.runProjectJob({ task: userText, instructions: project.instructions || "", folder: project.folder }, adapters, { signal: controller.signal, maxRepair: 3 }); }
+    try {
+      if (process.env.MADAV_DETERMINISTIC_PROJECT === "1") {
+        const { runDataProjectDesktop } = require("./projectEngineDeterministic.cjs");
+        const _ask = (prompt) => streamChat(profile, [{ role: "system", content: "Output ONLY a JSON plan. No prose, no markdown, no code." }, { role: "user", content: prompt }], { signal: controller.signal }).then((o) => (o && o.text) || "");
+        result = await runDataProjectDesktop({ task: userText, instructions: project.instructions || "", folder: project.folder, askModel: _ask, emit, signal: controller.signal });
+      } else {
+        result = await PR.runProjectJob({ task: userText, instructions: project.instructions || "", folder: project.folder }, adapters, { signal: controller.signal, maxRepair: 3 });
+      }
+    }
     finally { clearTimeout(_hardStop); }
     if (_timedOut || (result && result.aborted)) {
       const tm = "This one took longer than expected, so I stopped it rather than let it hang. Often a second run gets it; if it keeps taking too long, try simplifying the report a little.";
