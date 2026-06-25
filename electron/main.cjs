@@ -11,6 +11,19 @@ const pExecFile = require("util").promisify(execFile);
 const b64url = (buf) => buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ===== Global crash guard (Electron main-process plumbing; web has no main process) =================
+// A consumer desktop app must NEVER hard-crash and lose the user's chats/projects over a stray error in
+// a non-critical subsystem. Example: node-pty's ConPTY console-list helper forks a child that can fail
+// with "AttachConsole failed" on some Windows setups — node-pty self-recovers (5s timeout), but other
+// subsystems may not be so forgiving. We log LOUDLY (real bugs stay visible) and keep the app alive.
+// Deliberate choice: survive over exit; if state ever looks wrong the user can simply restart.
+process.on("uncaughtException", (err) => {
+  try { console.error("[madav] uncaughtException \u2014 kept alive:", (err && err.stack) || err); } catch {}
+});
+process.on("unhandledRejection", (reason) => {
+  try { console.error("[madav] unhandledRejection \u2014 kept alive:", (reason && reason.stack) || reason); } catch {}
+});
+
 // Dev-only data sandbox (rebuild coexistence). By DEFAULT the rebuild SHARES the installed Madav's data
 // folder (handy for comparing the two apps on the same chats/projects). Launch with
 //   $env:MADAV_DEV_DATA="isolated"; npm run electron:dev
