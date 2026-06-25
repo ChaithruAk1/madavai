@@ -11,7 +11,7 @@ export type ApiError = z.infer<typeof ApiError>;
 /** Mirrors @madav/storage's Envelope (kept here so contracts stays dependency-free). */
 export const StoredEnvelope = z.object({ v: z.literal(1), custody: Custody, iv: z.string().optional(), data: z.string() });
 
-export const WorkspaceRef = z.object({ id: z.string().min(1), name: z.string().min(1), custody: Custody });
+export const WorkspaceRef = z.object({ id: z.string().min(1), name: z.string().min(1), custody: Custody, role: z.string().optional() });
 export const WhoAmIResponse = z.object({ userId: z.string().min(1), email: z.string().email().optional(), workspaces: z.array(WorkspaceRef) });
 
 export const SyncItem = z.object({

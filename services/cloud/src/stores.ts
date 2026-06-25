@@ -1,4 +1,5 @@
 import type { SyncItem } from '@madav/contracts';
+import type { Role, Membership } from '@madav/rbac';
 
 export interface Session { userId: string; email?: string }
 
@@ -56,4 +57,27 @@ export class MemorySyncStore implements SyncStore {
     const items = rows.map(({ seq, ...rest }) => { void seq; return rest as SyncItem; });
     return { items, cursor };
   }
+}
+
+/** Who belongs to a workspace and with what role. In-memory now; PgMembershipStore at deploy (same interface). */
+export interface MembershipStore {
+  roleOf(userId: string, workspaceId: string): Promise<Role | null>;
+  setRole(userId: string, workspaceId: string, role: Role): Promise<void>;
+  remove(userId: string, workspaceId: string): Promise<void>;
+  list(workspaceId: string): Promise<Membership[]>;
+  count(workspaceId: string): Promise<number>;
+}
+
+export class MemoryMembershipStore implements MembershipStore {
+  private m = new Map<string, Role>();
+  private key(w: string, u: string) { return w + '\u0000' + u; }
+  async roleOf(userId: string, workspaceId: string) { return this.m.get(this.key(workspaceId, userId)) ?? null; }
+  async setRole(userId: string, workspaceId: string, role: Role) { this.m.set(this.key(workspaceId, userId), role); }
+  async remove(userId: string, workspaceId: string) { this.m.delete(this.key(workspaceId, userId)); }
+  async list(workspaceId: string): Promise<Membership[]> {
+    const out: Membership[] = [];
+    for (const [k, role] of this.m) { const [w, u] = k.split('\u0000'); if (w === workspaceId) out.push({ userId: u!, workspaceId: w!, role }); }
+    return out;
+  }
+  async count(workspaceId: string) { let n = 0; for (const k of this.m.keys()) if (k.split('\u0000')[0] === workspaceId) n++; return n; }
 }
