@@ -151,3 +151,13 @@ Press **Ctrl+R** (or restart) after pulling these changes to see them on desktop
 
 **Test (automated):** `node scripts/verify-packages.mjs` runs the gateway suite (health/ready 200 + request-log assertions). Manual only applies once the gateway is wired to a live HTTP server (staging).
 
+---
+
+## 11. E2EE Private mode (Phase 4) — FOUNDATION ONLY (enablement is gated)
+
+**What exists (built + tested):** the single storage envelope encrypts `e2ee-private` / `device-only` content **client-side** with AES-256-GCM (key derived via PBKDF2-SHA256, 210k iters). `@madav/storage` tests prove: encrypted content is not plaintext, round-trips with the right key, a **wrong key / tampered data is rejected**, and sealing encrypted custody **without a key is refused** (no silent plaintext).
+
+**Test (automated):** `node scripts/verify-packages.mjs` runs the `@madav/storage` suite.
+
+**NOT enabled (intentionally gated):** key management (master key, multi-device exchange, recovery code), the per-workspace "Private" toggle, and wiring `e2ee-private` into the live sync flow. Per the architecture plan these require **your approval + an external crypto review** before any production content is stored encrypted. Nothing in the app stores E2EE content today.
+
