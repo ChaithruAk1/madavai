@@ -10,6 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
 const sh = fs.readFileSync(path.join(root, "shared/office-rules.cjs"), "utf8");
 const of = fs.readFileSync(path.join(root, "src/office.js"), "utf8");
+const co = fs.readFileSync(path.join(root, "core/office-rules.js"), "utf8"); // third copy (ESM, web-bundled via chat-loop/model-fit) — guard it too
 
 const grab = (src, startRe, endMarker) => {
   const i = src.search(startRe);
@@ -21,6 +22,7 @@ const ofBlock = grab(of, /export function isDeckCapable/, "// ---- ")
   .replace(/^export /gm, "")
   .replace(/\bexport (function|const) /g, "$1 ")
   .trim();
+const coBlock = co.slice(co.search(/export function isDeckCapable/)).trim();
 const norm = (s) => s.replace(/\bexport\s+/g, "").replace(/\s+/g, " ").trim();
 
 describe("office-rules single-source parity", () => {
@@ -30,5 +32,9 @@ describe("office-rules single-source parity", () => {
   });
   it("renderer copy matches the authoritative shared module", () => {
     expect(norm(ofBlock)).toBe(norm(shBlock));
+  });
+  it("core ESM copy (core/office-rules.js) matches the authoritative shared module", () => {
+    expect(coBlock.length).toBeGreaterThan(0);
+    expect(norm(coBlock)).toBe(norm(shBlock));
   });
 });

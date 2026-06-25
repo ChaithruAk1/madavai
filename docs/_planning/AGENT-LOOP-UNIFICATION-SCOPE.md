@@ -57,3 +57,33 @@ The native Anthropic tool‑use behavior against the **real** `/v1/messages` API
 - **`electron/session-manager.cjs`** — `const useNativeAgent = () => process.env.MADAV_NATIVE_AGENT === "1";` plus **5 guards** so flag‑ON Claude turns fall through to the own‑loop branches every other model already uses (the 3 SDK `runAgentTurn` dispatches stay byte‑identical when OFF).
 - **Verified without a key:** `node --check` on all three files; 13/13 native‑adapter checks; OFF path proven unchanged by inspection (SDK calls untouched inside the guards).
 - **Remaining (your run):** keyed staging test (Tests A/B/C in E2E §12). **Decommission of `agent-transport.cjs` + the `@anthropic-ai/claude-agent-sdk` dependency stays gated on your sign‑off** — not done here.
+
+---
+
+## FINAL SDK REMOVAL — PREPPED, ready to execute after the native default is verified (E2E Part 5)
+Native is now the DEFAULT (`useNativeAgent = () => process.env.MADAV_NATIVE_AGENT !== "0"`). The Agent SDK
+(`agent-transport.cjs` + the `@anthropic-ai/claude-agent-sdk` package) remains ONLY as the `=0` escape
+hatch. Once Part 5 of the certification checklist passes (Claude agents work natively), the SDK can be
+deleted in one pass. Exact, bounded change set:
+
+1. **`electron/session-manager.cjs`** — drop the SDK fallback so Anthropic ALWAYS uses the own loop:
+   - remove the import: `const { runAgentTurn } = require("./agent-transport.cjs");` (top).
+   - remove the `useNativeAgent` helper + comment, and the **4** `&& !useNativeAgent()` guards, collapsing
+     each Anthropic branch to the own-loop path:
+       • the chat-data branch (`profile.kind === "anthropic" && !useNativeAgent()` → SDK) → delete the SDK
+         arm; Anthropic falls through to `runOpenAIAgentTurn`.
+       • the project-turn branches (`anthropic && useFolder && !useNativeAgent()` and the
+         `else if (anthropic && !useNativeAgent())`) → delete both SDK arms; keep the final `else`
+         (`runOpenAIAgentTurn`) for all models.
+       • the agent-inject guard (`s.agent && anthropic && !s._agentInjected && !useNativeAgent()`) → delete
+         (the own loop injects via `globalInstructions`).
+       • the `_agentTurn` branch (`anthropic && !useNativeAgent()` → SDK) → delete; use the own-loop else.
+   - remove the now-unused `s.sdkSessionId` plumbing (optional; harmless if left).
+2. **Delete `electron/agent-transport.cjs`** (the SDK wrapper — its only caller is gone). `git rm`.
+3. **`package.json`** — remove the `"@anthropic-ai/claude-agent-sdk": "^0.3.150"` line; run `npm install`.
+4. **Verify:** `node --check electron/session-manager.cjs`; grep that `runAgentTurn` / `agent-transport` /
+   `claude-agent-sdk` / `useNativeAgent` are all gone; rebuild; re-run E2E Part 5 (now there is no escape
+   hatch — native is the only path).
+
+**Risk:** low once Part 5 passes — it only deletes the (now-unused) SDK arms. Fully reversible via git.
+**Owner action required first:** confirm E2E Part 5 (native Claude agents) is green on your machine + key.

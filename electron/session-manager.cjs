@@ -6,10 +6,11 @@
 const { streamChat } = require("./providers.cjs");
 const { runAgentTurn } = require("./agent-transport.cjs");
 const { runOpenAIAgentTurn, runScriptInFolder } = require("./agent-openai.cjs");
-// MADAV_NATIVE_AGENT=1 -> drop the Claude Agent SDK for Anthropic agent turns: route them through
-// Madav's own loop (runOpenAIAgentTurn -> streamChatTools -> native _streamAnthropicTools), the SAME
-// path every other model already uses. OFF (default) -> unchanged SDK path. Read live (set pre-launch).
-const useNativeAgent = () => process.env.MADAV_NATIVE_AGENT === "1";
+// Anthropic agent turns run on Madav's OWN loop BY DEFAULT (runOpenAIAgentTurn -> streamChatTools ->
+// native _streamAnthropicTools) — the SAME path every other model uses, no third-party Agent SDK.
+// Escape hatch: set MADAV_NATIVE_AGENT=0 to fall back to the Claude Agent SDK (agent-transport.cjs).
+// Read live (set pre-launch).
+const useNativeAgent = () => process.env.MADAV_NATIVE_AGENT !== "0";
 const settings = require("./settings.cjs");
 const store = require("./projects-store.cjs");
 const sstore = require("./sessions-store.cjs");
