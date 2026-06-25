@@ -22,10 +22,7 @@ const fs = require("fs");
 const os = require("os");
 const crypto = require("crypto");
 const newId = (prefix) => prefix + crypto.randomBytes(8).toString("hex"); // crypto-strength, unpredictable
-let _plP = null; const _pl = () => (_plP ||= import("../core/project-lanes.js")); // SINGLE SOURCE lane decision (A=engine / B=recipe / C=caged loop)
-let _recP = null; const _rec = () => (_recP ||= import("../core/recipes.js")); // SINGLE SOURCE recipes — learn once, replay
-let _pjP = null; const _pj = () => (_pjP ||= import("../core/project-job.js")); // SINGLE SOURCE job engine
-let _prP = null; const _pr = () => (_prP ||= import("../core/project-runner.js")); // SINGLE SOURCE orchestrator
+// (old project engine imports removed — one agent loop now serves every model)
 
 // Surface office files the agent produced as Open/Download cards in the chat. Works for ANY model
 // (Claude SDK + the OpenAI loop both covered). Robust by DIFF: snapshot the folder before the run,
@@ -134,11 +131,6 @@ function officeRulePart(model) {
   let _model = model || "";
   if (!_model) { try { const _c = settings.load(); _model = String(((_c.profiles || {})[_c.activeProfileId] || {}).model || ""); } catch {} } // no model passed (e.g. Let's Chat) -> active profile, unchanged
   return officeRule(_model);
-}
-// Rigid one-pass recipe for LIGHTER models doing data work in a folder (the verified weak-model
-// pipeline). ONE definition — the single source for this guidance on the desktop project path.
-function weakDataProc() {
-  return `\n\nIMPORTANT — you are running a lighter model, so when a task needs you to READ and process files that already exist in this folder, follow this EXACT procedure and do NOT improvise or explore: (1) inspect with AT MOST 2 quick commands (list the folder; peek at ONE file); (2) write ONE script that reads the needed files, computes everything, and SAVES the finished .xlsx into this folder (e.g. result.to_excel("Report.xlsx")); (3) run it ONCE — if it errors, FIX that SAME script and re-run, never write a new script; (4) then STOP and reply with ONE short, plain-English sentence naming the file you saved.`;
 }
 function withLang(cfg) {
   const gi = cfg.globalInstructions || "";
@@ -952,102 +944,8 @@ class SessionManager {
   }
 
   // ---- project conversations (persisted, knowledge-grounded chat) ----
-  // Deterministic project engine (single source: core/project-runner.js). For a folder-linked DATA
-  // task: inspect the files ourselves, then either REPLAY the saved job or AUTHOR one script (bounded
-  // repair), validate the output, and save the job. Returns true if it handled the turn; false/throw
-  // -> caller falls open to the caged agent loop. Web uses the SAME core orchestrator with its adapters.
-  async _tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }) {
-    if (!(project.folder && beforeFiles && beforeFiles.size > 0)) return false;
-    s.history.push({ role: "user", content: userText }); // persist the prompt into THIS chat's history
-    emit({ kind: "init", data: { model: profile.model, mode: "project", provider: profile.name } }); // bind chat<->session so leaving + returning re-attaches the live run (not a new window)
-    const PJ = await _pj(), PR = await _pr();
-    const path2 = require("path");
-    const pybin = (pe && pe.py) || "python";
-    const withHeartbeat = async (label, fn) => { const t0 = Date.now(); const hb = setInterval(() => { if (!controller.signal.aborted) emit({ kind: "assistant_delta", data: { text: "\n  …still " + label + " (" + Math.round((Date.now() - t0) / 1000) + "s)" } }); }, 30000); try { return await fn(); } finally { clearInterval(hb); } };
-    const adapters = {
-      model: profile.model, provider: profile.name,
-      emit: (kind, data) => {
-        if (kind !== "status") return;
-        const p = data && data.phase; let t = "";
-        if (p === "inspect") t = "Taking a look at your files…";
-        else if (p === "inspected") t = "Got your data — " + (data.count || 0) + " file(s)" + (data.files && data.files.length ? " (" + data.files.map((x) => "\u0060" + x + "\u0060").join(", ") + ")" : "") + ".";
-        else if (p === "author") t = "Building your report…";
-        else if (p === "running") t = "Crunching the numbers…";
-        else if (p === "replay") t = "Reusing the steps from last time — this should be quick…";
-        else if (p === "repair") t = "That didn't come out right — adjusting and trying again…";
-        else if (p === "stuck") t = "It keeps hitting the same snag — stopping here so you're not left waiting…";
-        else if (p === "replay_failed") t = "The saved steps did not re-run cleanly this time" + (data.detail ? " (" + data.detail + ")" : "") + " - rebuilding it...";
-        else t = (data && data.reason) || "";
-        if (t) emit({ kind: "assistant_delta", data: { text: "\n• " + t } });
-      },
-      inspect: async (folder) => { const r = await runScriptInFolder(PR.INSPECT_PY, folder, { bin: pybin }); try { return JSON.parse(r.output); } catch { return []; } },
-      loadJobs: async () => store.getJobs(s.projectId),
-      saveJobs: async (list) => store.saveJobs(s.projectId, list),
-      author: async ({ task, instructions, schema, fixError, prevScript }) => {
-        if (controller.signal.aborted) return { script: "", outputs: [] };
-        const prompt = PJ.authoringPrompt({ task, instructions, schema, fixError, prevScript });
-        try {
-          const out = await withHeartbeat("building your report", () => streamChat(profile, [{ role: "system", content: "You write ONE complete Python script. Output only a single python code block, no prose." }, { role: "user", content: prompt }], { signal: controller.signal }));
-          return { script: PJ.extractScript(out && out.text), outputs: [] };
-        } catch (e) { return { script: "", outputs: [] }; }
-      },
-      run: async (script, folder) => {
-        if (controller.signal.aborted) return { ok: false, error: "stopped", produced: [] };
-        try { fs.mkdirSync(path2.join(folder, PJ.OUTPUT_DIR), { recursive: true }); } catch {}
-        const before = scanOffice(folder);
-        const _res = await withHeartbeat("crunching the numbers", () => runScriptInFolder(script, folder, { bin: pybin }));
-        const after = scanOffice(folder);
-        const _producedPaths = [...after].filter(([p, m]) => before.get(p) !== m).map(([p]) => p);
-        // Versioning: stamp each produced file as <stem>_DDMMYYYY[_N].<ext> so every run keeps its OWN file.
-        // Old files are NEVER moved or deleted; same-day re-runs get a _2, _3 counter so nothing is overwritten.
-        const produced = [];
-        for (const _p of _producedPaths) {
-          try {
-            const _dir = path2.dirname(_p), _bn = path2.basename(_p);
-            let _seq = 1, _name = PJ.datedName(_bn, new Date(), 1);
-            while (fs.existsSync(path2.join(_dir, _name))) { _seq++; _name = PJ.datedName(_bn, new Date(), _seq); }
-            fs.renameSync(_p, path2.join(_dir, _name));
-            produced.push(_name);
-          } catch { produced.push(path2.basename(_p)); }
-        }
-        const _err = produced.length ? "" : (_res && _res.output ? String(_res.output).slice(-2000) : "the script produced no output file");
-        return { ok: produced.length > 0, error: _err, produced };
-      },
-    };
-    let _hardStop, _timedOut = false;
-    _hardStop = setTimeout(() => { _timedOut = true; try { controller.abort(); } catch {} }, 8 * 60 * 1000);
-    let result;
-    try {
-      if (process.env.MADAV_DETERMINISTIC_PROJECT === "1") {
-        const { runDataProjectDesktop } = require("./projectEngineDeterministic.cjs");
-        const _ask = (prompt) => streamChat(profile, [{ role: "system", content: "Output ONLY a JSON plan. No prose, no markdown, no code." }, { role: "user", content: prompt }], { signal: controller.signal }).then((o) => (o && o.text) || "");
-        result = await runDataProjectDesktop({ task: userText, instructions: project.instructions || "", folder: project.folder, askModel: _ask, emit, signal: controller.signal });
-      } else {
-        result = await PR.runProjectJob({ task: userText, instructions: project.instructions || "", folder: project.folder }, adapters, { signal: controller.signal, maxRepair: 3 });
-      }
-    }
-    finally { clearTimeout(_hardStop); }
-    if (_timedOut || (result && result.aborted)) {
-      const tm = "This one took longer than expected, so I stopped it rather than let it hang. Often a second run gets it; if it keeps taking too long, try simplifying the report a little.";
-      s.history.push({ role: "assistant", content: tm });
-      emit({ kind: "assistant_delta", data: { text: "\n\n" + tm } });
-      emit({ kind: "assistant_message", data: { stop_reason: "guard" } });
-      emit({ kind: "result", data: { subtype: "guard_time" } });
-      return true;
-    }
-    const note = result.ok
-      ? (result.mode === "replay" ? "All done — I reused the steps from last time on your current data, so this was quick." : "All done — your report is ready below. Take a look; I've saved these steps, so next time runs instantly. If anything looks off, tweak the project instructions and run it again.")
-      : ("I wasn't able to finish this one — it kept running into: " + (result.error ? String(result.error).split("\n").filter(Boolean).pop().slice(0, 200) : "an unexpected problem") + ". You could try a stronger model (look for the green Recommended badge in the model picker) or simplify the report a little — want me to take a look?");
-    s.history.push({ role: "assistant", content: note });
-    emit({ kind: "assistant_delta", data: { text: "\n\n" + note } });
-    emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
-    emit({ kind: "result", data: { subtype: result.ok ? "success" : "failed" } });
-    return true;
-  }
-
   async _projectTurn(sessionId, userText, profile, images) {
     const s = this.sessions.get(sessionId);
-    const chatOnly = !!(s && s.intent === "chat"); // digest / Madav text task -> skip the data engine
     const project = store.getProject(s.projectId);
     if (!project) { this._send(sessionId, "error", { code: "no_project", message: "Project not found." }); return; }
     const useFolder = !!project.folder;
@@ -1060,15 +958,11 @@ class SessionManager {
       else { pyNote = "No Python was detected on this machine — install Python 3 with pandas + openpyxl, or compute the result inline without scripts."; }
     }
     if (useFolder && beforeFiles && beforeFiles.size > 0) tidyScratchPy(project.folder); // keep the data folder pristine — stash stray scripts BEFORE the run so the model never trips over old ones
-    const beforeScripts = useFolder ? scanScripts(project.folder) : null;
-    let recipeBlock = "", laneUsed = "C"; // Stage 3 — recipe priming + the lane actually used (captured in finally)
-    try { const R = await _rec(); const recs = store.getRecipes(s.projectId); const clean = recs.filter((r) => R.recipeInScope(r, project.folder)); if (clean.length !== recs.length) store.saveRecipes(s.projectId, clean); const rcp = R.matchRecipe(clean, userText); if (rcp) recipeBlock = R.recipePromptBlock(rcp); } catch {}
     const gi = settings.load().globalInstructions;
-    const weakProc = (useFolder && !isDeckCapable((profile && profile.model) || "")) ? weakDataProc() : ""; // weak model + folder -> restore the rigid one-pass recipe
     const sys = store.projectSystem(project) + ARTIFACT_RULE_BASE + officeRulePart((profile && profile.model) || "") +
       (useFolder ? `\n\nThis room is linked to a folder at: ${project.folder}. DEFAULT \u2014 to GENERATE a report / spreadsheet / deck / document from a description, emit ONE officedoc block (per the office rules above) and nothing else for that deliverable: Madav builds the polished file with its engine and saves it directly INTO this folder, so do NOT write a script for pure generation. Use your file / script tools ONLY when the task needs you to READ and process files that ALREADY EXIST in this folder (e.g. summarise a provided CSV, or fill a template the user placed here) \u2014 then read them, compute, and SAVE the finished file into this folder by name (e.g. result.to_excel("Summary.xlsx")). ${pyNote} Either way the deliverable ends up in this folder; then reply with ONE short, plain-English sentence naming it.` : "") +
       " After you have produced and saved the deliverable, write the user a short, friendly 1-2 sentence summary in plain everyday English of what you made and where it is. (Keep all the real numbers and detail INSIDE the spreadsheet/document/deck — only the chat message itself should be brief. This rule never reduces what goes into the file.)" +
-      (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "") + weakProc;
+      (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     const cfg = settings.load();
     const emit = (e) => this._send(sessionId, e.kind, e.data);
     const controller = new AbortController();
@@ -1078,25 +972,11 @@ class SessionManager {
     if (!s.history.length) s.history.push({ role: "system", content: sys });
     else if (s.history[0].role === "system") s.history[0].content = sys;
     else s.history.unshift({ role: "system", content: sys });
-    if (recipeBlock && s.history[0] && s.history[0].role === "system") s.history[0].content += recipeBlock; // Stage 3 — prime with the proven recipe
 
     try {
       if (profile.kind === "anthropic" && useFolder && !useNativeAgent()) {
-        // Single-source stability fix: route a DATA/report task through the SAME bounded deterministic
-        // engine the other models use (inspect -> author ONE script -> run via the hardened temp-file
-        // runner -> validate -> stop) instead of the open-ended Agent SDK loop that wanders with raw
-        // PowerShell here-strings (the slow multi-minute Sonnet runs). DATA lanes (B/C) only; fall open to
-        // the Agent SDK for generative/doc tasks (lane A) or on ANY error. Escape hatch: MADAV_PROJECT_ENGINE_ALL=0.
-        let _handled = false;
-        if (process.env.MADAV_PROJECT_ENGINE_ALL !== "0") {
-          let _lane = "C";
-          try { const { decideLane } = await _pl(); _lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText, capable: isDeckCapable((profile && profile.model) || "") }); } catch {}
-          if (!chatOnly && (_lane === "B" || _lane === "C")) {
-            try { _handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); }
-            catch (oe) { _handled = false; try { if (s.history.length && s.history[s.history.length - 1].role === "user") s.history.pop(); } catch {} }
-          }
-        }
-        if (!_handled) {
+        // Anthropic + folder: the Agent SDK loop with real file tools over the room's folder.
+        // One brain — it follows the user's prompt; produced files surface via emitNewOutputs (finally).
         // Folder-linked room with Claude: use the Agent SDK so it gets real file tools
         // (read_file/list_dir/run_bash) over the room's folder — not a tool-less Q&A.
         s.history.push({ role: "user", content: userText });
@@ -1108,7 +988,6 @@ class SessionManager {
           resume: s.sdkSessionId, emit: emitAcc, permissions: this.permissions, holds: this.holds,
         });
         if (acc) s.history.push({ role: "assistant", content: acc });
-        }
       } else if (profile.kind === "anthropic" && !useNativeAgent()) {
         s.history.push({ role: "user", content: inlineContent(userText, images, "anthropic") });
         emit({ kind: "init", data: { model: profile.model, mode: "project", provider: profile.name } });
@@ -1121,20 +1000,11 @@ class SessionManager {
         emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
         emit({ kind: "result", data: { subtype: "success", duration_ms: Date.now() - started } });
       } else {
-        // Stage 2 — lane routing (single source: core/project-lanes.js). A "produce a document" task with
-        // NO data files to read is forced down the deterministic engine path: mode "chat" = no script tools,
-        // so the model MUST emit ONE officedoc block, which Madav's engine renders into the folder. Data work
-        // and everything else keep the caged agent loop ("cowork" — the protected weak-model data pipeline,
-        // unchanged). decideLane only picks DOCUMENT when there are no data files, so nothing is fabricated.
-        // Fail-open: any error -> lane "C" -> exactly today's behavior.
-        let lane = "C";
-        try { const { decideLane } = await _pl(); lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText, capable: isDeckCapable((profile && profile.model) || "") }); } catch {}
-        laneUsed = lane;
-        const laneMode = lane === "A" ? "chat" : (useFolder ? "cowork" : "chat");
-        let handled = false;
-        if (!chatOnly && useFolder && (lane === "B" || lane === "C")) { try { handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); } catch (oe) { handled = false; try { if (s.history.length && s.history[s.history.length - 1].role === "user") s.history.pop(); } catch {} } }
-        if (!handled) await runOpenAIAgentTurn({
-          prompt: userText + materializeImages(images), mode: laneMode, cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
+        // One agent loop for every other model (OpenAI-compatible / local / Anthropic under
+        // MADAV_NATIVE_AGENT): the model follows the prompt and uses its real tools. A folder-linked
+        // room gets the full cowork toolset; produced files surface via emitNewOutputs (finally).
+        await runOpenAIAgentTurn({
+          prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
           history: s.history, emit, permissions: this.permissions, signal: controller.signal,
           connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
           systemOverride: sys,
@@ -1174,19 +1044,6 @@ class SessionManager {
       }
       if (profile && profile.model) { conv.model = profile.model; conv.provider = profile.name; } // remember the model this chat ran with so re-opening restores it (parity with Let's Chat)
       store.saveConversation(conv);
-      // Stage 3 — capture: a run that produced a deliverable becomes a reusable recipe for this task
-      // (the NEW .py scripts it wrote + the output names), replayed next time via recipePromptBlock. Fail-open.
-      try {
-        if (useFolder && project.folder && newOuts.length) {
-          const path = require("path");
-          const after = scanScripts(project.folder);
-          const scripts = [...after].filter((p) => !beforeScripts || !beforeScripts.has(p)).slice(0, 4)
-            .map((p) => { let content = ""; try { content = fs.readFileSync(p, "utf8"); } catch {} return { name: path.basename(p), content }; });
-          const R = await _rec();
-          const recipe = R.makeRecipe({ task: userText, scripts, outputs: newOuts.map((o) => o.name), lane: laneUsed, model: (profile && profile.model) || "" });
-          if (R.recipeInScope(recipe, project.folder)) store.saveRecipes(s.projectId, R.upsertRecipe(store.getRecipes(s.projectId), recipe));
-        }
-      } catch {}
       try { if (useFolder && beforeFiles && beforeFiles.size > 0) tidyScratchPy(project.folder); } catch {} // and clean the script(s) THIS run wrote, so the folder stays pristine
     }
   }

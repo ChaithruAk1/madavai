@@ -25,16 +25,12 @@ const bundledIndex = () => {
 };
 import * as webfs from "./webfs.js";
 import { runPython } from "./pyodideRunner.js";
-import { runProjectJobWeb } from "./projectEngineWeb.js";
-import { decideLane } from "../../core/project-lanes.js";
-import { isDeckCapable } from "../../core/office-rules.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
 // head+tail truncation, stale-result squash, identical-call loop breaker.
 import { tolerantParse, headTail, squashStale, CallGuard } from "../../core/turn-helpers.js"; // ADR-0001 / M2d — single source (was ../shared/harness.js, now retired)
 // In-chat office files: the rule that teaches models the ```officedoc spec.
 import { officeRule, ARTIFACT_RULE } from "../office.js";
 import { dataToolsRule, SEARCH_ANSWER_RULE } from "../../core/agent-rules.js"; // ADR-0001 core: ESM single source (web imports natively)
-import { matchRecipe, recipePromptBlock, makeRecipe, upsertRecipe } from "../../core/recipes.js"; // Step 4 — recipes (single source, shared with desktop)
 
 // ---- where the API lives. Same origin in production (the auth server serves this app); on the
 // Vite dev port (5180) the API is the separate auth server on 8787. Overridable via a global. ----
@@ -441,7 +437,6 @@ async function systemPrompt(s, projectId, query = "") {
       if (!kctx) kctx = buildKnowledgeContext(query, kdocs); // RAG-lite: whole docs when small; ranked excerpts when large
       if (kctx) parts.push(kctx);
     }
-    try { const rb = recipePromptBlock(matchRecipe(LS.get("be.recipes", {})[projectId] || [], query)); if (rb) parts.push(rb); } catch {}
   }
   return parts.join("\n\n").trim();
 }
@@ -1031,51 +1026,8 @@ async function maybeAutoTitle(sess, userText, replyText) {
 
 // WEB project report engine (flag-gated; default OFF). Runs the SAME core engine desktop uses, in the
 // browser via Pyodide, when a project task wants a data FILE and a folder is selected. Turn on in the
-// browser console: localStorage.setItem("MADAV_PROJECT_ENGINE","1") then reload. Inert until then.
-function projectEngineOn() { try { return localStorage.getItem("MADAV_PROJECT_ENGINE") === "1"; } catch { return false; } }
 function projInstructions(id) {
   try { const ps = LS.get("be.projects", {}); const p = Array.isArray(ps) ? ps.find((x) => x && x.id === id) : (ps && ps[id]); return (p && p.instructions) || ""; } catch { return ""; }
-}
-async function runProjectEngineTurnWeb(sess, text, prof) {
-  sess.messages.push({ role: "user", content: text });
-  if (!sess.title) sess.title = text.slice(0, 60);
-  sess.ac = new AbortController();
-  emit(sess.id, "init", { model: prof.model, provider: prof.name, kind: prof.kind, mode: "project" });
-  const started = Date.now();
-  const files = [];
-  try {
-    for (const e of await webfs.listDir("")) {
-      if (e && e.dir) continue;
-      const name = (e && e.name) || e;
-      if (/\.(xlsx|xlsm|xls|csv)$/i.test(String(name))) { try { files.push({ name, base64: await webfs.readBinaryB64(name) }); } catch {} }
-    }
-  } catch {}
-  const jobsKey = "be.projjobs." + sess.projectId;
-  try {
-    // Deterministic Projects engine (model emits a PLAN, not code) when the flag is on — legacy fallback otherwise.
-    let _engine = runProjectJobWeb;
-    try { if (localStorage.getItem("MADAV_DETERMINISTIC_PROJECT") === "1") _engine = (await import("./projectEngineDeterministic.js")).runDataProjectWeb; } catch {}
-    const result = await _engine({
-      task: text, instructions: projInstructions(sess.projectId), files,
-      callModel: (msgs, sig) => callModel(prof, msgs, sig),
-      loadJobs: async () => { try { return LS.get(jobsKey, []); } catch { return []; } },
-      saveJobs: async (list) => { try { LS.set(jobsKey, list); } catch {} },
-      emit: (k, d) => emit(sess.id, k, d),
-      signal: sess.ac.signal, model: prof.model, provider: prof.name,
-      onStatus: (t) => emit(sess.id, "assistant_delta", { text: "\n• " + t }),
-    });
-    const note = result && result.ok
-      ? (result.mode === "replay" ? "All done — I reused the saved steps on your current data, so this was quick." : "All done — your report is ready below. I've saved these steps, so next time runs instantly.")
-      : ("I wasn't able to finish this one" + (result && result.error ? " (" + String(result.error).split("\n").filter(Boolean).pop().slice(0, 160) + ")" : "") + ". Try a stronger model, or simplify the report.");
-    emit(sess.id, "assistant_delta", { text: "\n\n" + note });
-    sess.messages.push({ role: "assistant", content: note, model: prof.model, provider: prof.name });
-    emit(sess.id, "assistant_message", { stop_reason: "end_turn" });
-    emit(sess.id, "result", { subtype: result && result.ok ? "success" : "failed", duration_ms: Date.now() - started });
-  } catch (e) {
-    if (e && e.name === "AbortError") { emit(sess.id, "result", { subtype: "interrupted" }); return; }
-    emit(sess.id, "error", { message: String((e && e.message) || e) }); emit(sess.id, "result", { subtype: "error" });
-  }
-  persistSession(sess);
 }
 async function runTurn(sess, text, images) {
   const s = loadSettings();
@@ -1087,12 +1039,6 @@ async function runTurn(sess, text, images) {
   if (sess.team) return runTeamTurn(sess, text);
   // Folder selected → run the file-tool agent (collaborate). Tool calling needs an OpenAI-style provider.
   if (sess.agentic && webfs.hasRoot() && prof.kind !== "anthropic") return runAgentTurn(sess, text, images, prof);
-  // WEB project report engine (flag-gated; default OFF): a data/report task in a project with a folder
-  // selected runs the bounded engine in-browser. Digest/chat (intent "chat" or a non-data lane) -> chat.
-  if (projectEngineOn() && sess.projectId && webfs.hasRoot() && sess.intent !== "chat") {
-    let lane = "D"; try { lane = decideLane({ recipe: null, hasDataFiles: true, task: text, capable: isDeckCapable((prof && prof.model) || "") }); } catch {}
-    if (lane === "B" || lane === "C") return runProjectEngineTurnWeb(sess, text, prof);
-  }
   // Plain "Let's Chat" on web gets a lightweight tool loop (web_search/web_fetch/create_image) for
   // OpenAI-style models, when no images, not a Project, and a tool is actually useful (signed in or
   // image-gen on). Anthropic + tool-incapable models fall through to the normal reply below.
@@ -1119,7 +1065,6 @@ async function runTurn(sess, text, images) {
     emit(sess.id, "result", { subtype: "success", num_turns: 1, duration_ms: Date.now() - started, total_cost_usd: 0 });
     persistSession(sess);
     // Step 4/5 — capture: a project reply that produced an officedoc deliverable becomes a reusable recipe.
-    try { if (sess.projectId && reply) { const block = (String(reply).match(/```officedoc[\s\S]*?```/) || [])[0]; if (block) { const recs = LS.get("be.recipes", {}); recs[sess.projectId] = upsertRecipe(recs[sess.projectId] || [], makeRecipe({ task: text, scripts: [{ name: "officedoc", content: block }], lane: "A", model: prof.model })); LS.set("be.recipes", recs); } } } catch {}
     maybeAutoTitle(sess, text, reply); // Claude-style smart title from the first exchange (async, fail-open)
     if (!sess.projectId) umLearn(prof, loadSettings(), text, reply); // cross-chat memory — NOT from project runs, so a project's facts never leak into other chats
   } catch (e) {
