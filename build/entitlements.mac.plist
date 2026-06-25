@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- JIT + unsigned exec memory: REQUIRED — Madav's bespoke doc engine (deckjs) runs model-written
+       JS via new AsyncFunction/eval. Hardened Runtime blocks eval without these. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <!-- Native modules (node-pty) load unsigned dylibs; allow them under Hardened Runtime. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+  <!-- The agent runs spawned node/python data scripts that read env (e.g. PYTHONSAFEPATH). -->
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+  <!-- Local auth/proxy server + outbound model/API calls. -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
+  <!-- Voice input (mic), if/when Mac voice is wired. -->
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <!-- Desktop automation via AppleScript/Apple Events, if/when Mac desktop-driver is built. -->
+  <key>com.apple.security.automation.apple-events</key>
+  <true/>
+</dict>
+</plist>
