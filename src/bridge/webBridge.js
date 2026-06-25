@@ -27,6 +27,7 @@ import * as webfs from "./webfs.js";
 import { runPython } from "./pyodideRunner.js";
 import { runProjectJobWeb } from "./projectEngineWeb.js";
 import { decideLane } from "../../core/project-lanes.js";
+import { isDeckCapable } from "../../core/office-rules.js";
 // The agent discipline layer (mirror of the desktop harness): JSON repair,
 // head+tail truncation, stale-result squash, identical-call loop breaker.
 import { tolerantParse, headTail, squashStale, CallGuard } from "../../core/turn-helpers.js"; // ADR-0001 / M2d — single source (was ../shared/harness.js, now retired)
@@ -1089,7 +1090,7 @@ async function runTurn(sess, text, images) {
   // WEB project report engine (flag-gated; default OFF): a data/report task in a project with a folder
   // selected runs the bounded engine in-browser. Digest/chat (intent "chat" or a non-data lane) -> chat.
   if (projectEngineOn() && sess.projectId && webfs.hasRoot() && sess.intent !== "chat") {
-    let lane = "D"; try { lane = decideLane({ recipe: null, hasDataFiles: true, task: text }); } catch {}
+    let lane = "D"; try { lane = decideLane({ recipe: null, hasDataFiles: true, task: text, capable: isDeckCapable((prof && prof.model) || "") }); } catch {}
     if (lane === "B" || lane === "C") return runProjectEngineTurnWeb(sess, text, prof);
   }
   // Plain "Let's Chat" on web gets a lightweight tool loop (web_search/web_fetch/create_image) for

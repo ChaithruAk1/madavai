@@ -24,6 +24,22 @@ describe("project lanes — route by what the task needs, safely", () => {
     expect(decideLane({ task: "build a report", hasDataFiles: true })).toBe(LANE.IMPROVISE);
     expect(decideLane({ task: "create a spreadsheet", hasDataFiles: true })).toBe(LANE.IMPROVISE);
   });
+  it("FILE-SYSTEM: a question about the files (list / which is biggest) is NOT a report — any model", () => {
+    expect(decideLane({ task: "List the files in this folder and tell me which is biggest.", hasDataFiles: true })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "List the files in this folder and tell me which is biggest.", hasDataFiles: true, capable: true })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "how many files are in here?", hasDataFiles: true })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "what's in this folder", hasDataFiles: true })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "which file is the largest", hasDataFiles: true })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "show me the file names", hasDataFiles: true })).toBe(LANE.CHAT);
+  });
+  it("CAPABLE models follow the prompt (agent loop), not the weak-model engine", () => {
+    // capable + data task -> CHAT (plain agent loop); weak + same task -> IMPROVISE (engine).
+    expect(decideLane({ task: "execute the DTC report for March", hasDataFiles: true, capable: true })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "execute the DTC report for March", hasDataFiles: true, capable: false })).toBe(LANE.IMPROVISE);
+    expect(decideLane({ task: "reconcile these files", hasDataFiles: true, capable: true })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "build a report", hasDataFiles: true, capable: true })).toBe(LANE.CHAT);
+    expect(decideLane({ task: "build a report", hasDataFiles: true, capable: false })).toBe(LANE.IMPROVISE);
+  });
   it("defaults to the caged loop when unsure", () => {
     expect(decideLane({ task: "do the thing", hasDataFiles: false })).toBe(LANE.CHAT);
     expect(decideLane({ task: "", hasDataFiles: false })).toBe(LANE.CHAT);

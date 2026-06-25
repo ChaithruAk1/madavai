@@ -1090,7 +1090,7 @@ class SessionManager {
         let _handled = false;
         if (process.env.MADAV_PROJECT_ENGINE_ALL !== "0") {
           let _lane = "C";
-          try { const { decideLane } = await _pl(); _lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText }); } catch {}
+          try { const { decideLane } = await _pl(); _lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText, capable: isDeckCapable((profile && profile.model) || "") }); } catch {}
           if (!chatOnly && (_lane === "B" || _lane === "C")) {
             try { _handled = await this._tryProjectJob({ s, project, profile, userText, beforeFiles, pe, emit, controller }); }
             catch (oe) { _handled = false; try { if (s.history.length && s.history[s.history.length - 1].role === "user") s.history.pop(); } catch {} }
@@ -1128,7 +1128,7 @@ class SessionManager {
         // unchanged). decideLane only picks DOCUMENT when there are no data files, so nothing is fabricated.
         // Fail-open: any error -> lane "C" -> exactly today's behavior.
         let lane = "C";
-        try { const { decideLane } = await _pl(); lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText }); } catch {}
+        try { const { decideLane } = await _pl(); lane = decideLane({ recipe: recipeBlock ? {} : null, hasDataFiles: !!(beforeFiles && beforeFiles.size), task: userText, capable: isDeckCapable((profile && profile.model) || "") }); } catch {}
         laneUsed = lane;
         const laneMode = lane === "A" ? "chat" : (useFolder ? "cowork" : "chat");
         let handled = false;
