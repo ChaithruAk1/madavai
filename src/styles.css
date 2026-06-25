@@ -415,6 +415,13 @@ input, textarea, select { font-family: inherit; }
 .auth-brand .mm img { margin: 0 auto; } /* wordmark dead-center */
 .auth-word { font-size: 20px; font-weight: 700; letter-spacing: .3px; color: var(--text-0); margin: 0 auto; }
 .auth-sub { color: var(--text-1); font-size: 13.5px; line-height: 1.6; margin: 4px 0 16px; }
+
+/* Theme-aware Madav tagline under the wordmark — white on dark, brand blue #0849F8 on light. */
+.madav-logo-stack { display: inline-flex; flex-direction: column; align-items: center; gap: 5px; }
+.madav-tagline { color: #fff; font-weight: 500; text-transform: lowercase; letter-spacing: 0.18em; white-space: nowrap; line-height: 1; font-size: 11px; }
+:root[data-theme="light"] .madav-tagline { color: #0849F8; }
+.auth-brand .madav-tagline { font-size: 14px; letter-spacing: 0.2em; }
+.tn-brand .madav-tagline { font-size: 8.5px; letter-spacing: 0.13em; opacity: 0.95; }
 .auth-msg { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-0); margin: 6px 0 8px; justify-content: center; }
 .auth-msg.danger { color: var(--danger); }
 .auth-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 14px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); color: var(--text-0); font: inherit; font-size: 13.5px; cursor: pointer; }

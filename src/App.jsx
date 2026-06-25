@@ -357,8 +357,8 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement;
     const MADAV_ACCENT = "grad:#0ad0f5:#2196f8:#8b50f5";
-    let raw = ((settings && settings.accent) || MADAV_ACCENT).trim();
-    if (raw === "default") raw = MADAV_ACCENT; // previous default retired — Madav is the default now
+    const theme = (settings && settings.theme) || "dark";
+    const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: light)") : null;
     const clearVars = () => { ["--accent", "--accent-rgb", "--accent-2", "--accent2-rgb", "--accent-ink", "--accent-grad"].forEach((v) => root.style.removeProperty(v)); };
     const hexRgb = (hex) => { const n = parseInt(hex, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
     const apply = (solidHex, secondHex, gradStops) => {
@@ -374,14 +374,30 @@ export default function App() {
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
       root.style.setProperty("--accent-ink", brightness < 145 ? "#ffffff" : "#04121a");
     };
-    if (raw.startsWith("grad:")) {
-      const stops = raw.slice(5).split(":").map((x) => (/^#?([0-9a-f]{6})$/i.exec(x.trim()) || [])[1]).filter(Boolean);
-      if (stops.length >= 2) { apply(stops[Math.floor((stops.length - 1) / 2)], stops[stops.length - 1], stops); return; }
+    const applyAccent = () => {
+      const acc = ((settings && settings.accent) || "").trim();
+      const onDefault = !acc || acc === "default" || acc === MADAV_ACCENT; // user hasn't chosen a custom accent
+      const light = theme === "system" ? !!(mq && mq.matches) : theme === "light";
+      let raw = acc || MADAV_ACCENT;
+      if (raw === "default") raw = MADAV_ACCENT; // previous default retired — Madav is the default now
+      // Light theme: the single default app colour is Madav brand blue #0849F8. Dark keeps the gradient.
+      // An explicit custom accent is always honoured on both themes.
+      if (onDefault && light) raw = "#0849F8";
+      if (raw.startsWith("grad:")) {
+        const stops = raw.slice(5).split(":").map((x) => (/^#?([0-9a-f]{6})$/i.exec(x.trim()) || [])[1]).filter(Boolean);
+        if (stops.length >= 2) { apply(stops[Math.floor((stops.length - 1) / 2)], stops[stops.length - 1], stops); return; }
+      }
+      const m = /^#?([0-9a-f]{6})$/i.exec(raw);
+      if (!m) { root.dataset.accent = "default"; clearVars(); return; }
+      apply(m[1], m[1], null);
+    };
+    applyAccent();
+    if (theme === "system" && mq) {
+      const onCh = () => applyAccent();
+      mq.addEventListener ? mq.addEventListener("change", onCh) : mq.addListener(onCh);
+      return () => { mq.removeEventListener ? mq.removeEventListener("change", onCh) : mq.removeListener(onCh); };
     }
-    const m = /^#?([0-9a-f]{6})$/i.exec(raw);
-    if (raw === "default" || !m) { root.dataset.accent = "default"; clearVars(); return; }
-    apply(m[1], m[1], null);
-  }, [settings && settings.accent]);
+  }, [settings && settings.accent, settings && settings.theme]);
   // Office Suite theme colour -> the deterministic Word/Excel renderers (headers/titles).
   useEffect(() => { let on = true; import("./office.js").then((m) => { if (on) { try { m.setOfficeAccent((settings && settings.officeAccent) || "1F3864"); } catch {} } }); return () => { on = false; }; }, [settings && settings.officeAccent]);
   useEffect(() => {
