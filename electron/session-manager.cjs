@@ -6,6 +6,10 @@
 const { streamChat } = require("./providers.cjs");
 const { runAgentTurn } = require("./agent-transport.cjs");
 const { runOpenAIAgentTurn, runScriptInFolder } = require("./agent-openai.cjs");
+// MADAV_NATIVE_AGENT=1 -> drop the Claude Agent SDK for Anthropic agent turns: route them through
+// Madav's own loop (runOpenAIAgentTurn -> streamChatTools -> native _streamAnthropicTools), the SAME
+// path every other model already uses. OFF (default) -> unchanged SDK path. Read live (set pre-launch).
+const useNativeAgent = () => process.env.MADAV_NATIVE_AGENT === "1";
 const settings = require("./settings.cjs");
 const store = require("./projects-store.cjs");
 const sstore = require("./sessions-store.cjs");
@@ -525,7 +529,7 @@ class SessionManager {
     const controller = new AbortController(); s.controller = controller;
     let err = null;
     try {
-      if (profile.kind === "anthropic") {
+      if (profile.kind === "anthropic" && !useNativeAgent()) {
         s.sdkSessionId = await runAgentTurn({ sessionId, prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds });
       } else {
         await runOpenAIAgentTurn({ prompt: text, mode: "chat", dataTools: true, cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
@@ -1077,7 +1081,7 @@ class SessionManager {
     if (recipeBlock && s.history[0] && s.history[0].role === "system") s.history[0].content += recipeBlock; // Stage 3 — prime with the proven recipe
 
     try {
-      if (profile.kind === "anthropic" && useFolder) {
+      if (profile.kind === "anthropic" && useFolder && !useNativeAgent()) {
         // Single-source stability fix: route a DATA/report task through the SAME bounded deterministic
         // engine the other models use (inspect -> author ONE script -> run via the hardened temp-file
         // runner -> validate -> stop) instead of the open-ended Agent SDK loop that wanders with raw
@@ -1105,7 +1109,7 @@ class SessionManager {
         });
         if (acc) s.history.push({ role: "assistant", content: acc });
         }
-      } else if (profile.kind === "anthropic") {
+      } else if (profile.kind === "anthropic" && !useNativeAgent()) {
         s.history.push({ role: "user", content: inlineContent(userText, images, "anthropic") });
         emit({ kind: "init", data: { model: profile.model, mode: "project", provider: profile.name } });
         const started = Date.now();
@@ -1205,12 +1209,12 @@ class SessionManager {
 
     // Custom agent in a folder session: inject its instructions once, up front (SDK path),
     // and as systemOverride on the self-built loop below.
-    if (s.agent && profile.kind === "anthropic" && !s._agentInjected) {
+    if (s.agent && profile.kind === "anthropic" && !s._agentInjected && !useNativeAgent()) {
       userText = `${this._agentSys(s, userText)}\n\n----- TASK -----\n${userText}`;
       s._agentInjected = true;
     }
 
-    if (profile.kind === "anthropic") {
+    if (profile.kind === "anthropic" && !useNativeAgent()) {
       // Anthropic (or a proxy): full Agent SDK.
       s.sdkSessionId = await runAgentTurn({
         sessionId, prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: s.permMode,

@@ -98,6 +98,8 @@ let _backoffP = null;
 const loadBackoff = () => (_backoffP ||= import("../core/backoff.js"));
 let _routerP = null; // SINGLE SOURCE model routing (selected-first chain + cooldowns); shared with web's providers.js.
 const loadRouter = () => (_routerP ||= import("../core/model-router.js"));
+let _atP = null; // native Anthropic tool-use mappers (own engine; no agent SDK)
+const loadAnthropicTools = () => (_atP ||= import("../core/anthropic-tools.js"));
 async function streamOpenAI(profile, messages, { onDelta, signal, maxTokens }) {
   const url = chatUrl(profile.baseUrl);
   const { fetchWithBackoff } = await loadBackoff();
@@ -240,6 +242,37 @@ async function _streamChatTools(profile, messages, tools, { onDelta, signal, max
   return { content, toolCalls };
 }
 
+// Native Anthropic tool-use streaming — POST {base}/v1/messages with tools, accumulate `tool_use` blocks,
+// return the SAME { content, toolCalls } shape as the OpenAI path. This is what lets Madav's own agent loop
+// drive Claude models directly (no third-party agent SDK). Pure mapping/reduce lives in core/anthropic-tools.js.
+async function _streamAnthropicTools(profile, messages, tools, { onDelta, signal, maxTokens }) {
+  const url = profile.baseUrl.replace(/\/$/, "") + "/v1/messages";
+  const { toAnthropicTools, toAnthropicMessages, createToolStreamReducer } = await loadAnthropicTools();
+  const { fetchWithBackoff } = await loadBackoff();
+  const { system, turns } = toAnthropicMessages(messages);
+  const body = { model: profile.model, max_tokens: maxTokens || 16384, messages: turns, stream: true };
+  if (system) body.system = system;
+  const atools = toAnthropicTools(tools);
+  if (atools.length) { body.tools = atools; body.tool_choice = { type: "auto" }; }
+  const res = await fetchWithBackoff(fetch, url, {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", ...(profile.apiKey ? { "x-api-key": (profile.apiKey || "").trim() } : {}) },
+    body: JSON.stringify(body),
+  }, { tries: 3 });
+  await ensureOk(res, profile);
+  const reducer = createToolStreamReducer();
+  let emittedClean = "";
+  for await (const data of sseLines(res)) {
+    let json; try { json = JSON.parse(data); } catch { continue; }
+    if (json.type === "message_stop") break;
+    reducer.push(json);
+    const clean = stripReasoning(reducer.text());
+    if (clean.length > emittedClean.length && clean.startsWith(emittedClean)) { onDelta(clean.slice(emittedClean.length)); emittedClean = clean; }
+  }
+  return reducer.result();
+}
+
 // Reachability check — any HTTP response means online; a network error means offline.
 async function ping(profile) {
   if (!profile || !profile.baseUrl) return false;
@@ -291,7 +324,10 @@ async function streamChat(profile, messages, opts = {}) {
 async function streamChatTools(profile, messages, tools, opts = {}) {
   const router = await loadRouter();
   const cands = router.resolveCandidates(_routingInputs(profile, opts));
-  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: _track(opts, (c, o) => _streamChatTools(c, messages, tools, o)), onReroute: _onReroute(opts) });
+  // Native Anthropic models use the own /v1/messages tool-use streamer; OpenAI-compatible (incl. Claude via
+  // OpenRouter, kind "openai") use the OpenAI tool path. Same { content, toolCalls } either way.
+  const attempt = (c, o) => (c.kind === "anthropic" ? _streamAnthropicTools(c, messages, tools, o) : _streamChatTools(c, messages, tools, o));
+  return router.runChain({ candidates: cands.length ? cands : [profile], attempt: _track(opts, attempt), onReroute: _onReroute(opts) });
 }
 
 module.exports = { streamChat, streamChatTools, listModels, ping, stripReasoning };

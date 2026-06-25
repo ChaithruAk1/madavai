@@ -161,3 +161,44 @@ Press **Ctrl+R** (or restart) after pulling these changes to see them on desktop
 
 **NOT enabled (intentionally gated):** key management (master key, multi-device exchange, recovery code), the per-workspace "Private" toggle, and wiring `e2ee-private` into the live sync flow. Per the architecture plan these require **your approval + an external crypto review** before any production content is stored encrypted. Nothing in the app stores E2EE content today.
 
+
+
+---
+
+## 12. Native Anthropic agent (own loop, no Agent SDK) — `MADAV_NATIVE_AGENT`  (Claude models only)
+
+**What it is (plain English):** Today, when you chat with a *Claude* model in an agent/folder room, Madav drives it through a third‑party engine (the Claude Agent SDK). This change lets Madav drive Claude with **its own** engine — the exact same loop every other model (NVIDIA / OpenRouter / local) already uses — by speaking Anthropic's tool format directly. One engine for every model = less code, fewer "works on model A but not B" bugs, and no dependency on someone else's agent SDK.
+
+**Default is OFF** — with the flag off, Claude rooms behave **exactly** as before (the SDK path is untouched, byte‑for‑byte). Nothing changes for you until you opt in.
+
+### How the switch works
+- **Desktop:** set the environment variable `MADAV_NATIVE_AGENT=1` before launching, then start the app. (PowerShell: `$env:MADAV_NATIVE_AGENT="1"; npm run electron:dev`)
+- **OFF again:** close the app, open a fresh PowerShell (or run `Remove-Item Env:\MADAV_NATIVE_AGENT`), relaunch.
+
+### What flag‑ON changes for a Claude model
+| Path | OFF (default, today) | ON (native) |
+|---|---|---|
+| Folder/agent room with a Claude model | Claude Agent SDK (`runAgentTurn`) | Madav's own loop (`runOpenAIAgentTurn` → `streamChatTools` → `_streamAnthropicTools`) |
+| Data/report task in a folder (lanes B/C) | already the deterministic engine | unchanged (deterministic engine) |
+| Non‑Claude models (NVIDIA/OpenRouter/local) | own loop | own loop (no change either way) |
+
+### Test A — parity smoke (the important one)
+1. Pick a **Claude** model (e.g. an Anthropic key profile).
+2. Open a folder‑linked room. Ask: *"List the files in this folder and tell me what the biggest one is."*
+3. **OFF:** confirm it reads the folder and answers (today's behavior).
+4. Quit, set `MADAV_NATIVE_AGENT=1`, relaunch, repeat the same ask.
+5. **Expected:** same kind of answer — it still uses real file tools (read_file / list_dir / run_bash), streams text, and finishes. The *engine* changed; the *behavior* should not.
+
+### Test B — a tool chain (proves multi‑step tool use over the native format)
+1. Flag ON, Claude model, folder room with a small `.xlsx` or `.csv`.
+2. Ask: *"Open the spreadsheet, total the amount column, and tell me the figure."*
+3. **Expected:** it calls a tool, gets the result, then answers with the number — i.e. a multi‑turn tool round‑trip works through `_streamAnthropicTools` (tool_use → tool_result → final text).
+
+### Test C — nothing regressed with the flag OFF
+1. Flag OFF (default). Repeat Tests A/B.
+2. **Expected:** identical to before this change — this is the safety net. If OFF behaves any differently, stop and report.
+
+**Automated test (no key needed, run by Claude):**
+`core/anthropic-tools.js` has a 13‑check suite (pure mappers + a full‑stream integration test that replays the exact reduce loop `_streamAnthropicTools` runs — interleaved text + chunked tool‑use JSON, `message_stop`; asserts incremental deltas, final text, tool‑call name/arguments/id). All 13 pass. The live `/v1/messages` behavior against Claude's real API is what **only your keyed staging run** confirms (Tests A/B above).
+
+**Files in this change:** `core/anthropic-tools.js` (new, pure mappers + stream reducer), `electron/providers.cjs` (`_streamAnthropicTools` + route `streamChatTools` by kind), `electron/session-manager.cjs` (one `useNativeAgent()` helper + 5 flag guards so Claude falls through to the own‑loop branches every other model already uses).
