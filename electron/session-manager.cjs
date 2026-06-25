@@ -912,7 +912,20 @@ class SessionManager {
     const sysChat = (this._agentSys(s, userText) || ("You are Madav, a helpful AI assistant built by the Madav team. You are NOT Claude, ChatGPT, Gemini, or any other assistant; if anyone asks who you are or who made you, you are Madav. " + dateLine +
       " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence.")) + ARTIFACT_RULE_BASE + officeRulePart() +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
-    const messages = [{ role: "system", content: sysChat }, ...s.history];
+    // RAG (flag-guarded): ground a PROJECT chat in the project's own documents. Local embedder, no API.
+    // MADAV_KNOWLEDGE!=="1" -> sysChatFinal===sysChat -> byte-identical behavior. Any failure falls through.
+    let sysChatFinal = sysChat;
+    if (process.env.MADAV_KNOWLEDGE === "1" && s.projectId) {
+      try {
+        const _proj = store.getProject(s.projectId);
+        if (_proj && _proj.folder) {
+          const { buildProjectContext } = require("./knowledgeContext.cjs");
+          const _ctx = await buildProjectContext({ folder: _proj.folder, query: userText });
+          if (_ctx && _ctx.text) sysChatFinal = sysChat + "\n\n" + _ctx.text;
+        }
+      } catch {}
+    }
+    const messages = [{ role: "system", content: sysChatFinal }, ...s.history];
     const started = Date.now();
     let category = "general";
     try { const { categoryFor } = await routerMod(); category = categoryFor({ mode: s.mode, hasImage: (turnImages || []).length > 0, needsData: false }); } catch {}
