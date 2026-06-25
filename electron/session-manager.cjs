@@ -4,13 +4,9 @@
 //  - cowork/code → agent transport (agent-transport.cjs)
 // Both emit normalized UiEvents via emit().
 const { streamChat } = require("./providers.cjs");
-const { runAgentTurn } = require("./agent-transport.cjs");
 const { runOpenAIAgentTurn, runScriptInFolder } = require("./agent-openai.cjs");
-// Anthropic agent turns run on Madav's OWN loop BY DEFAULT (runOpenAIAgentTurn -> streamChatTools ->
-// native _streamAnthropicTools) — the SAME path every other model uses, no third-party Agent SDK.
-// Escape hatch: set MADAV_NATIVE_AGENT=0 to fall back to the Claude Agent SDK (agent-transport.cjs).
-// Read live (set pre-launch).
-const useNativeAgent = () => process.env.MADAV_NATIVE_AGENT !== "0";
+// Anthropic agent turns run on Madav's OWN native loop (runOpenAIAgentTurn -> streamChatTools ->
+// _streamAnthropicTools) — the SAME path every model uses. The Claude Agent SDK has been removed.
 const settings = require("./settings.cjs");
 const store = require("./projects-store.cjs");
 const sstore = require("./sessions-store.cjs");
@@ -522,11 +518,7 @@ class SessionManager {
     const controller = new AbortController(); s.controller = controller;
     let err = null;
     try {
-      if (profile.kind === "anthropic" && !useNativeAgent()) {
-        s.sdkSessionId = await runAgentTurn({ sessionId, prompt: text, mode: "cowork", cwd: s.cwd, profile, permMode: "bypassPermissions", resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds });
-      } else {
-        await runOpenAIAgentTurn({ prompt: text, mode: "chat", dataTools: true, cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
-      }
+      await runOpenAIAgentTurn({ prompt: text, mode: "chat", dataTools: true, cwd: s.cwd, profile, permMode: "bypassPermissions", history: s.history, emit, permissions: this.permissions, signal: controller.signal, connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg), allowAskUser: true });
     } catch (e) { err = e; }
     s.controller = null;
     if (err && err.name === "AbortError") { emit({ kind: "result", data: { subtype: "interrupted" } }); if (s.cwd) emitNewOutputs(emit, s.cwd, beforeFiles); return; }
@@ -975,42 +967,15 @@ class SessionManager {
     else s.history.unshift({ role: "system", content: sys });
 
     try {
-      if (profile.kind === "anthropic" && useFolder && !useNativeAgent()) {
-        // Anthropic + folder: the Agent SDK loop with real file tools over the room's folder.
-        // One brain — it follows the user's prompt; produced files surface via emitNewOutputs (finally).
-        // Folder-linked room with Claude: use the Agent SDK so it gets real file tools
-        // (read_file/list_dir/run_bash) over the room's folder — not a tool-less Q&A.
-        s.history.push({ role: "user", content: userText });
-        let acc = "";
-        const emitAcc = (ev) => { if (ev.kind === "assistant_delta") acc += (ev.data && ev.data.text) || ""; emit(ev); };
-        s.sdkSessionId = await runAgentTurn({
-          sessionId, prompt: `${sys}\n\n----- TASK -----\n${userText}`, mode: "cowork", cwd: project.folder, profile,
-          permMode: project.autoApprove ? "bypassPermissions" : (s.permMode || "default"),
-          resume: s.sdkSessionId, emit: emitAcc, permissions: this.permissions, holds: this.holds,
-        });
-        if (acc) s.history.push({ role: "assistant", content: acc });
-      } else if (profile.kind === "anthropic" && !useNativeAgent()) {
-        s.history.push({ role: "user", content: inlineContent(userText, images, "anthropic") });
-        emit({ kind: "init", data: { model: profile.model, mode: "project", provider: profile.name } });
-        const started = Date.now();
-        const { text } = await streamChat(profile, s.history, {
-          signal: controller.signal,
-          onDelta: (d) => emit({ kind: "assistant_delta", data: { text: d } }),
-        });
-        s.history.push({ role: "assistant", content: text });
-        emit({ kind: "assistant_message", data: { stop_reason: "end_turn" } });
-        emit({ kind: "result", data: { subtype: "success", duration_ms: Date.now() - started } });
-      } else {
-        // One agent loop for every other model (OpenAI-compatible / local / Anthropic under
-        // MADAV_NATIVE_AGENT): the model follows the prompt and uses its real tools. A folder-linked
-        // room gets the full cowork toolset; produced files surface via emitNewOutputs (finally).
-        await runOpenAIAgentTurn({
-          prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
-          history: s.history, emit, permissions: this.permissions, signal: controller.signal,
-          connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
-          systemOverride: sys,
-        });
-      }
+      // One agent loop for EVERY model (Anthropic included — native, no SDK): the model follows the
+      // prompt and uses its real tools. A folder-linked room gets the full cowork toolset; produced
+      // files surface via emitNewOutputs (finally).
+      await runOpenAIAgentTurn({
+        prompt: userText + materializeImages(images), mode: useFolder ? "cowork" : "chat", cwd: project.folder || null, profile, permMode: project.autoApprove ? "bypassPermissions" : "default",
+        history: s.history, emit, permissions: this.permissions, signal: controller.signal,
+        connectors: this._connectorsFor(s, cfg), skillsDir: cfg.skillsDirs || [], disabledSkills: cfg.disabledSkills || [], globalInstructions: withLang(cfg),
+        systemOverride: sys,
+      });
     } catch (e) {
       if (e.name === "AbortError") emit({ kind: "result", data: { subtype: "interrupted" } });
       else emit({ kind: "error", data: await this._friendlyError(e) });
@@ -1065,21 +1030,8 @@ class SessionManager {
     userText = (userText || "") + materializeImages(images);
     const emit = (e) => this._send(sessionId, e.kind, e.data);
 
-    // Custom agent in a folder session: inject its instructions once, up front (SDK path),
-    // and as systemOverride on the self-built loop below.
-    if (s.agent && profile.kind === "anthropic" && !s._agentInjected && !useNativeAgent()) {
-      userText = `${this._agentSys(s, userText)}\n\n----- TASK -----\n${userText}`;
-      s._agentInjected = true;
-    }
-
-    if (profile.kind === "anthropic" && !useNativeAgent()) {
-      // Anthropic (or a proxy): full Agent SDK.
-      s.sdkSessionId = await runAgentTurn({
-        sessionId, prompt: userText, mode: s.mode, cwd: s.cwd, profile, permMode: s.permMode,
-        resume: s.sdkSessionId, emit, permissions: this.permissions, holds: this.holds,
-      });
-    } else {
-      // External OpenAI-compatible model (NIM/OpenRouter/local): Madav's own loop.
+    {
+      // Every model runs Madav's own loop — Anthropic via the native _streamAnthropicTools path, no SDK.
       const controller = new AbortController();
       s.controller = controller;
       try {
