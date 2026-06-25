@@ -14,6 +14,13 @@ export async function ingestDoc(doc: KnowledgeDoc, deps: IngestDeps, opts: Chunk
   return chunks;
 }
 
+/** Ingest many documents at once (chunk + embed + store each). Returns all chunks and the doc count. */
+export async function ingestDocs(docs: KnowledgeDoc[], deps: IngestDeps, opts: ChunkOptions = {}): Promise<{ chunks: Chunk[]; docs: number }> {
+  const all: Chunk[] = [];
+  for (const d of docs) all.push(...(await ingestDoc(d, deps, opts)));
+  return { chunks: all, docs: docs.length };
+}
+
 export interface RetrieveDeps { embed: Embedder; store: KnowledgeStore }
 export interface RetrieveOptions { k?: number; vectorWeight?: number }
 /**
