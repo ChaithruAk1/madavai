@@ -418,7 +418,7 @@ async function umLearn(prof, s, userText, replyText) {
   } catch {}
 }
 
-function systemPrompt(s, projectId, query = "") {
+async function systemPrompt(s, projectId, query = "") {
   // dataToolsRule is added UNCONDITIONALLY here — the SAME single-source recipe the folder/Project path
   // uses (compute the values in a script, build the real .xlsx). Same logic, every chat surface.
   const parts = [BASE_BEHAVIOR + ARTIFACT_RULE + ANSWER_DIRECT_RULE + officeRulePart(s) + dataToolsRule({ shell: false })];
@@ -433,7 +433,11 @@ function systemPrompt(s, projectId, query = "") {
     if (p) {
       if (p.instructions) parts.push(p.instructions);
       const kdocs = (p.knowledge || []).filter((k) => k.type === "text" && k.content).map((k) => ({ name: k.name, content: k.content }));
-      const kctx = buildKnowledgeContext(query, kdocs); // RAG-lite: whole docs when small; ranked excerpts when large
+      // RAG: flag-guarded single-source upgrade to the shared @madav/knowledge engine (hybrid + local embedder),
+      // matching desktop. MADAV_KNOWLEDGE!=="1" -> the legacy keyword RAG-lite, unchanged. Any failure falls back.
+      let kctx = "";
+      try { if (localStorage.getItem("MADAV_KNOWLEDGE") === "1") { const { buildProjectContextWeb } = await import("./knowledgeContextWeb.js"); kctx = await buildProjectContextWeb(query, kdocs); } } catch {}
+      if (!kctx) kctx = buildKnowledgeContext(query, kdocs); // RAG-lite: whole docs when small; ranked excerpts when large
       if (kctx) parts.push(kctx);
     }
     try { const rb = recipePromptBlock(matchRecipe(LS.get("be.recipes", {})[projectId] || [], query)); if (rb) parts.push(rb); } catch {}
@@ -1047,7 +1051,10 @@ async function runProjectEngineTurnWeb(sess, text, prof) {
   } catch {}
   const jobsKey = "be.projjobs." + sess.projectId;
   try {
-    const result = await runProjectJobWeb({
+    // Deterministic Projects engine (model emits a PLAN, not code) when the flag is on — legacy fallback otherwise.
+    let _engine = runProjectJobWeb;
+    try { if (localStorage.getItem("MADAV_DETERMINISTIC_PROJECT") === "1") _engine = (await import("./projectEngineDeterministic.js")).runDataProjectWeb; } catch {}
+    const result = await _engine({
       task: text, instructions: projInstructions(sess.projectId), files,
       callModel: (msgs, sig) => callModel(prof, msgs, sig),
       loadJobs: async () => { try { return LS.get(jobsKey, []); } catch { return []; } },
@@ -1206,7 +1213,7 @@ export const webBridge = {
       id = req.conversationId; messages = (prior.messages || []).slice(); title = prior.title || "";
     } else {
       id = rid("sess_"); messages = [];
-      let sys = agentic ? coworkSystem(s) : systemPrompt(s, req.projectId, req.prompt || "");
+      let sys = agentic ? coworkSystem(s) : await systemPrompt(s, req.projectId, req.prompt || "");
       // WEB Projects have no linked local folder / no file tools (desktop-only). Be honest rather than
       // silently giving a tool-less reply (WEB-VS-DESKTOP P0-1). Discussion + text knowledge still work.
       if (!agentic && req.projectId) sys = sys ? `${sys}\n\n${WEB_PROJECT_NOTE}` : WEB_PROJECT_NOTE;

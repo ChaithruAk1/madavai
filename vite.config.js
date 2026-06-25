@@ -16,7 +16,7 @@ const obfuscate = {
     stringArrayThreshold: 0.75,
     rotateStringArray: true,
     splitStrings: true,
-    reservedStrings: ["exceljs", "docx", "jspdf", "pptxgenjs", "mammoth", "xlsx", "@madav/documents", "@madav/contracts"],
+    reservedStrings: ["exceljs", "docx", "jspdf", "pptxgenjs", "mammoth", "xlsx", "@madav/documents", "@madav/contracts", "@madav/knowledge", "@madav/rbac"],
     splitStringsChunkLength: 8,
     transformObjectKeys: false,
     numbersToExpressions: true,
@@ -32,13 +32,16 @@ const obfuscate = {
 export default defineConfig({
   base: "./",
   plugins: [react(), obfuscate],
-  // The shared TypeScript engine resolves to its source here, so the live app (web + desktop, ONE source)
-  // runs the SAME @madav/* code the tests verify. Source-only — Vite compiles the TS on the fly.
+  // The shared TypeScript engine resolves to its source here (one source: web + desktop run the SAME
+  // @madav/* code the tests verify). Vite compiles the TS on the fly.
   resolve: {
     alias: {
       "@madav/documents": r("./packages/documents/src/index.ts"),
       "@madav/contracts": r("./packages/contracts/src/index.ts"),
+      "@madav/knowledge": r("./packages/knowledge/src/index.ts"),
+      "@madav/rbac": r("./packages/rbac/src/index.ts"),
     },
   },
   worker: { format: "es" },
-  ser
+  server: { port: 5180, strictPort: true },
+});
