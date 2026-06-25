@@ -36,7 +36,7 @@ When a user requests web assets:
 ✅ **Faster**: Click to select instead of typing out answers
 ✅ **Clearer**: Descriptions explain what each option means
 ✅ **Fewer errors**: No typos or misunderstandings from free-form text
-✅ **Professional**: Consistent with modern Claude Code experience
+✅ **Professional**: Consistent with modern the coding assistant experience
 
 ### Example Flow
 

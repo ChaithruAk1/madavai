@@ -95,7 +95,7 @@ function emitNewOutputs(emit, folder, before) {
 }
 
 // Detect a usable Python (+ pandas/openpyxl) ONCE so room runs can lean on code execution for
-// spreadsheet/data work (the reliable, weak-model-friendly path, like free-claude-code) and the
+// spreadsheet/data work (the reliable, weak-model-friendly path) and the
 // prompt can tell the model exactly what is available. Cached; failures resolve to "not available".
 let _pyEnvCache = null;
 async function pyEnv() {
@@ -909,7 +909,7 @@ class SessionManager {
     const gi = settings.load().globalInstructions;
     const now = new Date();
     const dateLine = `The current date is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. Use this whenever a date is needed; never say you don't know it.`;
-    const sysChat = (this._agentSys(s, userText) || ("You are Madav, a helpful AI assistant built by the Madav team. You are NOT Claude, ChatGPT, Gemini, or any other assistant; if anyone asks who you are or who made you, you are Madav. " + dateLine +
+    const sysChat = (this._agentSys(s, userText) || ("You are Madav, a helpful AI assistant built by the Madav team. You are NOT any other AI assistant or model; if anyone asks who you are or who made you, you are Madav. " + dateLine +
       " Reply directly with the final answer only. Do NOT show your reasoning, inner monologue, or <think> notes. Keep greetings to one short sentence.")) + ARTIFACT_RULE_BASE + officeRulePart() +
       (gi ? `\n\nUser's custom instructions (always follow):\n${gi}` : "");
     // RAG (flag-guarded): ground a PROJECT chat in the project's own documents. Local embedder, no API.

@@ -48,7 +48,7 @@ export function loadConfig() {
     try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(p, "utf8")) }; break; } catch {}
   }
   const e = process.env;
-  // New MADAV_* env vars win; legacy BRAINEDGE_* (concat) still honored as a fallback.
+  // New MADAV_* env vars win; legacy env vars still honored as a fallback.
   const LEG = LEGACY.toUpperCase();
   if (e.MADAV_BASE_URL || e[LEG + "_BASE_URL"]) cfg.baseUrl = e.MADAV_BASE_URL || e[LEG + "_BASE_URL"];
   if (e.MADAV_API_KEY || e[LEG + "_API_KEY"]) cfg.apiKey = e.MADAV_API_KEY || e[LEG + "_API_KEY"];

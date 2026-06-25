@@ -79,7 +79,7 @@ new folders (`core/`, `tests/parity/`, `.github/`, `docs/`, `scripts/check-worke
 ## Phase 1 — increment 1: web team identity ("not Claude")
 
 **What changed in plain words:** On web, agent **team members** and the **coordinator** now state they
-are Madav (not Claude/ChatGPT/Gemini). Desktop already did this; web now matches. Only **one web file**
+are Madav (not any other assistant). Desktop already did this; web now matches. Only **one web file**
 changed (`src/bridge/webBridge.js`). **No desktop code changed.** This is web-only, so desktop cannot
 be affected.
 

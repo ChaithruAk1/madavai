@@ -220,7 +220,7 @@ Account/auth/billing/admin, sessions history + search, saved library, usage stat
 
 **Silent-degrade UX trap (highest test-day risk).** Web Projects (P0-1) and file cards (P0-2) fail *without telling the user*. Everything else fails loudly ("…available in the desktop app"). Prioritize making these two honest.
 
-**Cheap, high-value identity fix (P2-11).** Add the existing "You are NOT Claude, ChatGPT, Gemini…" line to `webBridge.js` `memberSys` (L397), the coordinator prompt (L427), and the synthesis prompt (L478). One surface (web), aligns with the identity work already shipped — but per **RULE 0**, confirm the desktop team-member/coordinator prompts in `electron/agent-prompt.cjs` carry it too.
+**Cheap, high-value identity fix (P2-11).** Add the existing "You are NOT any other AI assistant…" line to `webBridge.js` `memberSys` (L397), the coordinator prompt (L427), and the synthesis prompt (L478). One surface (web), aligns with the identity work already shipped — but per **RULE 0**, confirm the desktop team-member/coordinator prompts in `electron/agent-prompt.cjs` carry it too.
 
 **Robustness (latent).** In `LibrarianPanel.jsx`, `Skills.jsx` (forge), and `TestCenter.jsx` (qa), inner handlers call `bridge.librarianScan`/`forgeApprove`/`qaStart` **without** optional chaining. Safe today because each parent panel early-returns on a missing `*Status`/`forgeList`. Fragile if any panel is ever rendered unconditionally — would throw on web. Cheap hardening: add `?.` at the call sites.
 

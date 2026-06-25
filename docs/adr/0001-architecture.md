@@ -33,7 +33,7 @@ The tension between (2) and (4) — "never corrupt desktop" vs "migrate the vali
 5. **Desktop is the reference and is validated first.** For every module — new or migrated — desktop runs the core version and is validated **before** web lights it up. The web adapter is what web work touches; desktop does not import it.
 6. **Web infra posture:** browser + **managed 3rd-party** services brokered server-side (`WEB-PARITY-PLAN.md` §4).
 7. **Anti-drift is process + tests, not hope:** capability manifest, parity tests, porting checklist, CI, **a turn-replay harness**, and this ADR.
-8. **North-star (with caveat):** model the core on **Claude Code's proven agent patterns** — capability surface, tool design, permission model, subagents, skills — because they are battle-tested and favor longevity. **Honest caveat:** Claude's actual backend and models are proprietary and are **not** replicable (per `MEMORY.md`); we replicate *observable patterns and capability surface*, never undisclosed internals or IP.
+8. **North-star (with caveat):** model the core on **the coding agent's proven agent patterns** — capability surface, tool design, permission model, subagents, skills — because they are battle-tested and favor longevity. **Honest caveat:** Claude's actual backend and models are proprietary and are **not** replicable (per `MEMORY.md`); we replicate *observable patterns and capability surface*, never undisclosed internals or IP.
 
 ---
 

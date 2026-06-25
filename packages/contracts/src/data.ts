@@ -11,7 +11,7 @@ export type Column = z.infer<typeof Column>;
 /**
  * A normalized, app-owned table — the deterministic Ingestor's output and the ONLY shape the
  * compute + authoring stages operate on. The model never produces or parses this; a fixed loader does.
- * This is the Open-WebUI principle in Madav's terms: deterministic I/O, the model kept out of the parser.
+ * This is the deterministic-I/O principle in Madav's terms: deterministic I/O, the model kept out of the parser.
  */
 export const Table = z.object({
   name: z.string(),

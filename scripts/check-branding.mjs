@@ -17,7 +17,7 @@ import { join, extname, relative } from 'node:path';
 
 const ROOT = process.cwd();
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', 'release', '.checkpoints',
+  'node_modules', '.git', 'dist', 'dist-test', 'build', 'release', '.checkpoints',
   '.playwright-mcp', '_legacy', '_planning', 'coverage', '.next', 'vendor',
 ]);
 const SCAN_EXT = new Set([
@@ -72,8 +72,9 @@ for (const f of files) {
   let text; try { text = readFileSync(f, 'utf8'); } catch { continue; }
   const inLayer = PROVIDER_LAYER.test(rel);
   text.split(/\r?\n/).forEach((line, i) => {
+    const scanLine = line.replace(/ClaudeCodeUI/gi, 'RepoDir'); // the install folder name is a filesystem path, not branding
     for (const { re, label } of FORBIDDEN) {
-      if (re.test(line)) forbidden.push({ rel, ln: i + 1, label, text: line.trim().slice(0, 160) });
+      if (re.test(scanLine)) forbidden.push({ rel, ln: i + 1, label, text: line.trim().slice(0, 160) });
     }
     for (const re of PROVIDERS) {
       if (re.test(line)) {

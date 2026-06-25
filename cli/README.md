@@ -33,7 +33,7 @@ auth API and add a retry"*, *"run the tests and fix the failure"*.
 
 Without installing, you can also run it directly:
 ```
-node C:\Projects\ClaudeCodeUI\Madav\cli\brainedge.mjs
+node cli/madav.mjs
 ```
 
 ## Commands
