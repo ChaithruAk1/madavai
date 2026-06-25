@@ -4,3 +4,4 @@ export * from './ingest/index.js';
 export { runPlan } from './transform/index.js';
 export { buildStyledWorkbook, type StyledResult } from './excel/styled.js';
 export { runDataProject, planPrompt, type ProjectAdapters, type DataFile } from './project/run.js';
+export { webProjectAdapters } from './project/web.js';
