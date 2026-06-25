@@ -1,5 +1,5 @@
 import { API, type ApiError } from '@madav/contracts';
-import { can, type Action, type Role } from '@madav/rbac';
+import { can, personalWorkspaceId, type Action, type Role } from '@madav/rbac';
 import type { SessionStore, RateLimiter, SyncStore, MembershipStore, Session } from './stores.js';
 
 export interface Gateway { sessions: SessionStore; limiter: RateLimiter; sync: SyncStore; members?: MembershipStore }
@@ -43,11 +43,14 @@ export async function handle(gw: Gateway, req: Incoming): Promise<Outgoing> {
   if (!session) return fail(401, 'UNAUTHENTICATED', 'Sign in required');
 
   if (req.method === API.whoami.method && req.path === API.whoami.path) {
-    let workspaces: Array<{ id: string; name: string; custody: 'server-readable'; role?: string }> = [{ id: 'default', name: 'My Workspace', custody: 'server-readable' }];
+    // Flag OFF -> the legacy single 'default' workspace (UNCHANGED). Flag ON -> each account gets its OWN
+    // owner-seeded workspace id, so the new spine never shares a 'default' bucket (no cross-user lockout at cutover).
     if (RBAC_ON() && gw.members) {
-      workspaces = await Promise.all(workspaces.map(async (w) => { const role = await resolveRole(gw, session.userId, w.id); return role ? { ...w, role } : w; }));
+      const id = personalWorkspaceId(session.userId);
+      const role = await resolveRole(gw, session.userId, id); // bootstraps the user as owner of their own workspace
+      return ok(API.whoami.response, { userId: session.userId, email: session.email, workspaces: [{ id, name: 'My Workspace', custody: 'server-readable', ...(role ? { role } : {}) }] });
     }
-    return ok(API.whoami.response, { userId: session.userId, email: session.email, workspaces });
+    return ok(API.whoami.response, { userId: session.userId, email: session.email, workspaces: [{ id: 'default', name: 'My Workspace', custody: 'server-readable' }] });
   }
   if (req.method === API.syncPush.method && req.path === API.syncPush.path) {
     const p = API.syncPush.request.safeParse(req.body);

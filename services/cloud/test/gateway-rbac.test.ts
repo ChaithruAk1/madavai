@@ -47,3 +47,20 @@ test('flag ON: a MEMBER can push', async () => {
   assert.equal((await handle(g, push('tm', 'team'))).status, 200);
   delete process.env.MADAV_RBAC;
 });
+
+test('flag ON: WhoAmI returns the users OWN workspace, owner-seeded', async () => {
+  process.env.MADAV_RBAC = '1';
+  const g = makeGw(); await signIn(g, 'tw', 'alice');
+  const r = await handle(g, { method: 'GET', path: '/api/whoami', token: 'tw' });
+  const w = (r.body as any).workspaces[0];
+  assert.equal(w.id, 'ws_alice');
+  assert.equal(w.role, 'owner');
+  delete process.env.MADAV_RBAC;
+});
+
+test('flag OFF: WhoAmI still returns the legacy single default workspace (unchanged)', async () => {
+  delete process.env.MADAV_RBAC;
+  const g = makeGw(); await signIn(g, 'tw', 'alice');
+  const r = await handle(g, { method: 'GET', path: '/api/whoami', token: 'tw' });
+  assert.equal((r.body as any).workspaces[0].id, 'default');
+});
