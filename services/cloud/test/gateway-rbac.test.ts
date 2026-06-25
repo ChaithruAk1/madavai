@@ -64,3 +64,17 @@ test('flag OFF: WhoAmI still returns the legacy single default workspace (unchan
   const r = await handle(g, { method: 'GET', path: '/api/whoami', token: 'tw' });
   assert.equal((r.body as any).workspaces[0].id, 'default');
 });
+
+test('health and ready are unauthenticated 200 probes (no token, no rate budget)', async () => {
+  const g = makeGw();
+  assert.equal((await handle(g, { method: 'GET', path: '/api/health' })).status, 200);
+  assert.equal((await handle(g, { method: 'GET', path: '/api/ready' })).status, 200);
+});
+
+test('gateway emits one structured request log per call (event/path/status/ms)', async () => {
+  const events: Array<{ e: string; f: any }> = [];
+  const g = { ...makeGw(), log: { info: (e: string, f: any) => events.push({ e, f }) } };
+  await handle(g, { method: 'GET', path: '/api/health' });
+  const r = events.find((x) => x.e === 'gateway.request');
+  assert.ok(r && r.f.status === 200 && r.f.path === '/api/health' && typeof r.f.ms === 'number');
+});

@@ -2,7 +2,10 @@ import { API, type ApiError } from '@madav/contracts';
 import { can, personalWorkspaceId, type Action, type Role } from '@madav/rbac';
 import type { SessionStore, RateLimiter, SyncStore, MembershipStore, Session } from './stores.js';
 
-export interface Gateway { sessions: SessionStore; limiter: RateLimiter; sync: SyncStore; members?: MembershipStore }
+/** Structural logger seam — satisfied by @madav/insight's Logger; injected, no-op when absent (zero behavior change). */
+export interface RequestLog { info(event: string, fields?: Record<string, unknown>): void }
+
+export interface Gateway { sessions: SessionStore; limiter: RateLimiter; sync: SyncStore; members?: MembershipStore; log?: RequestLog }
 export interface Incoming { path: string; method: string; token?: string; ip?: string; body?: unknown }
 export interface Outgoing { status: number; body: unknown }
 
@@ -34,8 +37,10 @@ async function authorizeWorkspace(gw: Gateway, userId: string, workspaceId: stri
   return null;
 }
 
-/** The single entry point: rate-limit -> authenticate -> [authorize] -> validate -> handle -> validate response. */
-export async function handle(gw: Gateway, req: Incoming): Promise<Outgoing> {
+async function route(gw: Gateway, req: Incoming): Promise<Outgoing> {
+  // Liveness/readiness probes: unauthenticated, no rate-limit (load balancers + rolling deploys + DR poll these).
+  if (req.path === '/api/health') return { status: 200, body: { ok: true } };
+  if (req.path === '/api/ready') return { status: 200, body: { ok: true } };
   const rl = await gw.limiter.take(req.token ?? req.ip ?? 'anon');
   if (!rl.ok) return fail(429, 'RATE_LIMITED', 'Too many requests');
 
@@ -67,4 +72,12 @@ export async function handle(gw: Gateway, req: Incoming): Promise<Outgoing> {
     return ok(API.syncPull.response, await gw.sync.pull(p.data.workspaceId, p.data.since, p.data.limit));
   }
   return fail(404, 'NOT_FOUND', `no route ${req.method} ${req.path}`);
+}
+
+/** The single entry point: times the request, delegates to the router, and emits one structured log event. */
+export async function handle(gw: Gateway, req: Incoming): Promise<Outgoing> {
+  const t0 = Date.now();
+  const out = await route(gw, req);
+  try { gw.log?.info('gateway.request', { method: req.method, path: req.path, status: out.status, ms: Date.now() - t0 }); } catch {}
+  return out;
 }
