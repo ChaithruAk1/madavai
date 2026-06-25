@@ -131,7 +131,6 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
         <div className="tn-brand">
           <div className="tn-brandtext">
             <MadavLogo height={34} />
-            <span className="tn-by">Built to think with you</span>
           </div>
         </div>
       </div>

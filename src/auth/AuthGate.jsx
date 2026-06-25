@@ -83,7 +83,6 @@ export default function AuthGate({ children }) {
         <div className="auth-brand">
           <div className="mm" style={{ textAlign: "center" }}>
             <MadavLogo height={80} />
-            <span className="auth-tagline">Built to think with you</span>
           </div>
         </div>
 
