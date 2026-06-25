@@ -1,7 +1,7 @@
 // © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 // SessionManager (main process).
 //  - chat mode  → direct streaming transport (providers.cjs)
-//  - cowork/code → agent transport (agent-transport.cjs)
+//  - cowork/code → Madav's own agent loop (agent-openai.cjs)
 // Both emit normalized UiEvents via emit().
 const { streamChat } = require("./providers.cjs");
 const { runOpenAIAgentTurn, runScriptInFolder } = require("./agent-openai.cjs");
@@ -183,7 +183,7 @@ function materializeImages(images) {
 class SessionManager {
   constructor(emit) {
     this.rawEmit = emit;                 // (uiEvent) => void
-    this.sessions = new Map();           // sessionId -> { mode, cwd, history, controller, sdkSessionId }
+    this.sessions = new Map();           // sessionId -> { mode, cwd, history, controller }
     this.permissions = new Map();        // requestId -> resolve(PermissionResult)
     this.holds = new Map();              // sessionId -> SDK Query (for interrupt)
     this._turns = new Map();             // sessionId -> live turn stats (per-session: overlapping turns can't corrupt each other)
@@ -288,7 +288,7 @@ class SessionManager {
 
   async start(req) {
     const sessionId = newId("sess_");
-    const s = { mode: req.mode, cwd: req.cwd, history: [], controller: null, sdkSessionId: null, permMode: req.permissionMode || "default" };
+    const s = { mode: req.mode, cwd: req.cwd, history: [], controller: null, permMode: req.permissionMode || "default" };
     if (req.agent && req.agent.instructions) s.agent = req.agent; // custom agent: { name, description, instructions, tools }
     if (req.team && Array.isArray(req.team.members) && req.team.members.length) s.team = req.team; // agent team: { name, mode: "relay"|"manager", members: [agent objects] }
     if (req.resumeMission) s.resumeMission = true; // durable missions: reuse checkpointed member outputs
