@@ -63,7 +63,7 @@ const BRAND_SLUG = {
   "Fireworks AI": "fireworksai", "Perplexity": "perplexity", "Cerebras": "cerebras",
   "Ollama (local)": "ollama", "LM Studio (local)": "lmstudio", "llama.cpp (local)": "llamacpp",
 };
-import mUrl from "../../madav-m.png";
+import mUrl from "../../madav-m2.png";
 function PChip({ name }) {
   const [broken, setBroken] = useState(false);
   let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
