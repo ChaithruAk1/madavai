@@ -380,9 +380,9 @@ export default function App() {
       const light = theme === "system" ? !!(mq && mq.matches) : theme === "light";
       let raw = acc || MADAV_ACCENT;
       if (raw === "default") raw = MADAV_ACCENT; // previous default retired — Madav is the default now
-      // Light theme: the single default app colour is Madav brand blue #0849F8. Dark keeps the gradient.
+      // Default app colour for BOTH themes: teal #00aabd (rgb 0,170,189).
       // An explicit custom accent is always honoured on both themes.
-      if (onDefault && light) raw = "#0849F8";
+      if (onDefault) raw = "#00aabd";
       if (raw.startsWith("grad:")) {
         const stops = raw.slice(5).split(":").map((x) => (/^#?([0-9a-f]{6})$/i.exec(x.trim()) || [])[1]).filter(Boolean);
         if (stops.length >= 2) { apply(stops[Math.floor((stops.length - 1) / 2)], stops[stops.length - 1], stops); return; }

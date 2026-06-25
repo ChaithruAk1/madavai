@@ -156,7 +156,7 @@ export default function SageDock({ mode, onNavigate }) {
   const [look, setLook] = useState(() => { try { return Number(localStorage.getItem("be.sage.look")) || 0; } catch { return 0; } });
   const [lookPick, setLookPick] = useState(false);
   const [tours, setTours] = useState(false); // Tours / What's-new launcher overlay
-  const [peek, setPeek] = useState(() => { try { return localStorage.getItem("be.sage.greeted") !== "1"; } catch { return false; } });
+  const [peek, setPeek] = useState(false); // minimized + quiet by default — the "need help?" nudge shows on hover only
   const [tip, setTip] = useState(null);
   const [listening, setListening] = useState(false);
   const [voiceOn, setVoiceOn] = useState(FEAT_VOICE); // Extras switchboard: hide the mic when voice input is off
@@ -195,11 +195,7 @@ export default function SageDock({ mode, onNavigate }) {
   useEffect(() => { try { localStorage.setItem("be.sage.thread", JSON.stringify(msgs.slice(-40))); } catch {} }, [msgs]);
   useEffect(() => { if (open) endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy, open]);
   useEffect(() => { if (peek) { try { localStorage.setItem("be.sage.greeted", "1"); } catch {} const t = setTimeout(() => setPeek(false), 5000); return () => clearTimeout(t); } }, []); // eslint-disable-line
-  useEffect(() => {
-    let peekT = null;
-    const id = setInterval(() => { setPeek(true); peekT = setTimeout(() => setPeek(false), 4000); }, 300000);
-    return () => { clearInterval(id); if (peekT) clearTimeout(peekT); };
-  }, []);
+  // (periodic auto-nudge removed — Sage stays minimized/quiet; "need help?" shows on hover only)
   // Unmount safety net: drop any window pointer listeners a drag/resize left behind.
   useEffect(() => () => { winListenersRef.current.forEach(([t, fn]) => window.removeEventListener(t, fn)); winListenersRef.current = []; }, []);
   // BOUNDARY GUARD for the OPEN PANEL: the FAB position is clamped, but the panel is
@@ -554,9 +550,9 @@ export default function SageDock({ mode, onNavigate }) {
     e.preventDefault();
   };
 
-  // Default anchor (pos = null) is the HOME BASE: top-right, just below the online chip.
-  const aTop = pos ? pos.top : 12;
-  const aLeft = pos ? pos.left : (typeof window !== "undefined" ? window.innerWidth - 210 : 1200);
+  // Default anchor (pos = null) is the HOME BASE: bottom-right corner (panel opens upward).
+  const aTop = pos ? pos.top : (typeof window !== "undefined" ? window.innerHeight - 84 : 720);
+  const aLeft = pos ? pos.left : (typeof window !== "undefined" ? window.innerWidth - 84 : 1200);
   const up = aTop > (typeof window !== "undefined" ? window.innerHeight : 800) * 0.45;
   const left = aLeft > (typeof window !== "undefined" ? window.innerWidth : 1400) * 0.5;
   const send = () => { const t = input.trim(); if (!t) return; ask(t); };

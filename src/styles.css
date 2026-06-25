@@ -418,10 +418,11 @@ input, textarea, select { font-family: inherit; }
 
 /* Theme-aware Madav tagline under the wordmark — white on dark, brand blue #0849F8 on light. */
 .madav-logo-stack { display: inline-flex; flex-direction: column; align-items: center; gap: 5px; }
+.tn-brand .madav-logo-stack { position: relative; } /* anchor for the floated topnav tagline */
 .madav-tagline { color: #fff; font-weight: 500; text-transform: lowercase; letter-spacing: 0.18em; white-space: nowrap; line-height: 1; font-size: 11px; }
 :root[data-theme="light"] .madav-tagline { color: #0849F8; }
 .auth-brand .madav-tagline { font-size: 14px; letter-spacing: 0.2em; }
-.tn-brand .madav-tagline { font-size: 8.5px; letter-spacing: 0.13em; opacity: 0.95; }
+.tn-brand .madav-tagline { font-size: 8.5px; letter-spacing: 0.13em; opacity: 0.95; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 2px; } /* float beneath the wordmark so the toggle aligns to the wordmark center */
 .auth-msg { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-0); margin: 6px 0 8px; justify-content: center; }
 .auth-msg.danger { color: var(--danger); }
 .auth-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 14px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); color: var(--text-0); font: inherit; font-size: 13.5px; cursor: pointer; }
@@ -1518,7 +1519,7 @@ textarea.model-search { line-height: 1.5; }
 .tn-left { display: flex; align-items: center; gap: 10px; padding-left: 14px; flex: 0 0 auto; }
 /* When the sidebar is open, center the toggle + logo + wordmark as one unit within the 252px sidebar column. */
 .app-v:not(.sb-collapsed) .tn-left { position: relative; width: 252px; justify-content: flex-start; padding-left: 10px; } /* collapse button hugs the left edge */
-.app-v:not(.sb-collapsed) .tn-brand { position: absolute; left: 50%; transform: translateX(-50%); } /* logo + tagline dead-center over the sidebar */
+.app-v:not(.sb-collapsed) .tn-brand { margin-left: 12px; } /* clean left lockup beside the toggle, vertically centered with it (was absolute-centered: overlapped the toggle and sat too high) */
 .tn-brandtext { align-items: center; } /* tagline centered under the wordmark */
 .tn-brand { display: flex; align-items: center; gap: 10px; }
 .tn-brand .mark.tea { width: 44px; height: 44px; border-radius: 12px; }
@@ -2191,7 +2192,7 @@ svg.lucide { color: var(--accent); }
 .aggc-goto { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 13px; font-size: 12.5px; }
 
 /* ===== Floating Sage — the quiet, draggable helper present on every agent screen ===== */
-.sage-dock { position: fixed; right: 210px; top: 12px; bottom: auto; z-index: 50; } /* home base: top bar, next to the Record button; a user drag overrides until idle snaps him home */
+.sage-dock { position: fixed; right: 24px; bottom: 24px; top: auto; z-index: 50; } /* home base: bottom-right corner; a user drag overrides until idle snaps him home */
 .sage-fab-wrap { position: relative; display: inline-flex; }
 /* tuck-away X — only on hover of the bubble */
 .sage-fab-hide { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text-2); cursor: pointer; opacity: 0; transition: opacity var(--dur-1,120ms) var(--ease,ease); }
