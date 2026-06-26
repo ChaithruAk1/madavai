@@ -17,6 +17,7 @@ import { pickModel, routeReason } from "./modelRouter.js";
 import { startOverlayGuard } from "./overlayGuard.js";
 import Consumption from "./components/Consumption.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
+import LetsCreate from "./components/LetsCreate.jsx";
 import ArtifactPanel from "./components/ArtifactPanel.jsx";
 import Agents from "./components/Agents.jsx";
 import TeamOps from "./components/TeamOps.jsx";
@@ -996,6 +997,7 @@ export default function App() {
   const isConsumption = mode === "consumption";
   const isGuide = mode === "guide";
   const isStudio = mode === "studio";
+  const isCreate = mode === "create";
   const isTerminal = mode === "terminal";
   const isAgents = mode === "agents";
   const startStudio = (prompt) => {
@@ -1162,6 +1164,8 @@ export default function App() {
         ) : isModels ? (
           <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings} onRefresh={refreshModels} onActivate={onPickModel} activeValue={activeValue}
             tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : t === "routing" ? "models-routing" : t === "local" ? "models-local" : "models")} />
+        ) : isCreate ? (
+          <LetsCreate onNavigate={switchMode} />
         ) : (mode === "project" && !projectCtx) ? (
           <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} onPutTeamToWork={startRoomTeam} openId={projOpenId} groups={pickerGroups} activeValue={activeValue} onSelectModel={onSelectProjectModel} onRefresh={refreshModels} />
         ) : (

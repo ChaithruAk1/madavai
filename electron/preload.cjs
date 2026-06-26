@@ -217,8 +217,14 @@ contextBridge.exposeInMainWorld("madav", {
     stop: (id, name) => ipcRenderer.invoke("localModels:stop", id, name),
     browse: (id) => ipcRenderer.invoke("localModels:browse", id),
     system: () => ipcRenderer.invoke("localModels:system"),
+    dockerStatus: () => ipcRenderer.invoke("localModels:dockerStatus"),
+    localaiStatus: () => ipcRenderer.invoke("localModels:localaiStatus"),
+    localaiStop: () => ipcRenderer.invoke("localModels:localaiStop"),
     install: (id) => ipcRenderer.invoke("localModels:install", id),
     onPullProgress: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("localModels:pullProgress", h); return () => ipcRenderer.removeListener("localModels:pullProgress", h); },
     onInstallProgress: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("localModels:installProgress", h); return () => ipcRenderer.removeListener("localModels:installProgress", h); },
+  },
+  media: {
+    image: (req) => ipcRenderer.invoke("localMedia:image", req),
   },
 });

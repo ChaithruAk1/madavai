@@ -9,7 +9,8 @@ const os = require("node:os");
 const https = require("node:https");
 const { spawn } = require("node:child_process");
 const { pathToFileURL } = require("node:url");
-const { shell } = require("electron");
+const { shell, app } = require("electron");
+const localaiDocker = require("./localai-docker.cjs");
 
 const DIST = path.join(__dirname, "..", "packages", "models", "dist", "src");
 const imp = (rel) => import(pathToFileURL(path.join(DIST, rel)).href);
@@ -102,12 +103,36 @@ function register(ipcMain, getWin) {
     try { await r.pull(name, (p) => send("localModels:pullProgress", Object.assign({ id, name }, p))); send("localModels:pullProgress", { id, name, status: "success", done: true }); return { ok: true }; }
     catch (e) { send("localModels:pullProgress", { id, name, status: "error", error: String((e && e.message) || e), done: true }); return { ok: false, error: String((e && e.message) || e) }; }
   });
+  ipcMain.handle("localModels:dockerStatus", async () => { try { return await localaiDocker.dockerStatus(); } catch (e) { return { installed: false, running: false, error: String((e && e.message) || e) }; } });
+  ipcMain.handle("localModels:localaiStatus", async () => { try { return await localaiDocker.localaiStatus(); } catch { return { api: false, container: "absent" }; } });
+  ipcMain.handle("localModels:localaiStop", async () => { try { return await localaiDocker.stopLocalAi(); } catch (e) { return { ok: false, error: String((e && e.message) || e) }; } });
   ipcMain.handle("localModels:install", async (_e, id) => {
     try {
       if (id === "ollama" || id === "huggingface") return await installOllama((p) => send("localModels:installProgress", Object.assign({ id }, p)));
       if (id === "lmstudio") return await installLmStudio();
+      if (id === "localai") return await localaiDocker.startLocalAi((p) => send("localModels:installProgress", Object.assign({ id }, p)));
       return { ok: false, error: "Unknown provider" };
     } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+  });
+
+  // Let's Create — image generation via the LocalAI engine. Saves a copy to the user's Pictures/Madav Media.
+  ipcMain.handle("localMedia:image", async (_e, req) => {
+    const { model, prompt, size } = req || {};
+    try {
+      const r = await rt("localai");
+      if (!r || !r.generateImage) return { error: "LocalAI engine isn't available — set it up in Local Models." };
+      if (!model) return { error: "Pick an image model first." };
+      const img = await r.generateImage(String(model), String(prompt || ""), { size });
+      let file = "";
+      try {
+        const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();
+        const dir = path.join(base, "Madav Media"); fs.mkdirSync(dir, { recursive: true });
+        const ext = ((img.mime || "image/png").split("/")[1] || "png").replace("jpeg", "jpg").replace("+xml", "");
+        file = path.join(dir, "image_" + Date.now().toString(36) + "." + ext);
+        fs.writeFileSync(file, Buffer.from(img.b64, "base64"));
+      } catch { file = ""; }
+      return { b64: img.b64, mime: img.mime, file };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
   });
 }
 

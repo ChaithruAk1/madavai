@@ -1,0 +1,92 @@
+import type { LocalModelRuntime, LocalModel, PullProgress, HttpClient, ModelSearchResult, RunningModel, DetectResult } from '../runtime.js';
+import { fetchHttp } from '../runtime.js';
+
+// Map a LocalAI gallery entry to one of our browse "useCases" so media models slot into the goal tiles.
+function galleryUseCases(m: any): string[] {
+  const hay = ((m.name || '') + ' ' + (m.description || '') + ' ' + (Array.isArray(m.tags) ? m.tags.join(' ') : '')).toLowerCase();
+  const out: string[] = [];
+  if (/(text-?to-?image|stable-?diffusion|sdxl|\bflux\b|diffus|\bimage\b)/.test(hay)) out.push('image');
+  if (/(\btts\b|text-?to-?speech|\bvoice\b|\bspeech\b|bark|piper|xtts|whisper|transcrib|\bstt\b|\basr\b)/.test(hay)) out.push('voice');
+  if (/(text-?to-?video|\bvideo\b|\bwan\b|hunyuan|\bltx\b|cogvideo|mochi)/.test(hay)) out.push('video');
+  if (!out.length) out.push('general');
+  return out;
+}
+
+// One open-source engine (LocalAI) that serves image, voice and video over the OpenAI-compatible API. Model
+// install is async: POST /models/apply returns a job uuid; we poll /models/jobs/{uuid} for progress.
+export class LocalAiRuntime implements LocalModelRuntime {
+  readonly id = 'localai' as const;
+  readonly label = 'LocalAI';
+  constructor(private http: HttpClient, private base = 'http://localhost:8080') {}
+
+  async detect(): Promise<DetectResult> {
+    const NOTE = 'Image, voice and video from one local engine (OpenAI-compatible).';
+    try { await this.http.json('GET', '/readyz'); return { available: true, note: NOTE }; }
+    catch {
+      try { await this.http.json('GET', '/v1/models'); return { available: true, note: NOTE }; }
+      catch { return { available: false, note: 'LocalAI not reachable — start its container to generate images, voice and video.' }; }
+    }
+  }
+
+  async browse(): Promise<ModelSearchResult[]> {
+    let arr: any[] = [];
+    try { const r = await this.http.json('GET', '/models/available'); arr = Array.isArray(r) ? r : []; } catch { arr = []; }
+    return arr.slice(0, 200).map((m) => ({
+      pullName: m.name, name: m.name, description: m.description,
+      useCases: galleryUseCases(m), family: (m.gallery && m.gallery.name) || undefined,
+      source: 'localai' as const,
+    }));
+  }
+
+  async search(query: string): Promise<ModelSearchResult[]> {
+    const all = await this.browse();
+    const q = query.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter((m) => (m.name + ' ' + (m.description || '')).toLowerCase().includes(q));
+  }
+
+  async list(): Promise<LocalModel[]> {
+    try { const r = await this.http.json('GET', '/v1/models'); return ((r && r.data) || []).map((m: any) => ({ name: m.id })); }
+    catch { return []; }
+  }
+  async running(): Promise<RunningModel[]> { return []; } // LocalAI loads/unloads backends on demand
+
+  async pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void> {
+    const j = await this.http.json('POST', '/models/apply', { id: name });
+    const uuid = j && (j.uuid || j.id);
+    if (!uuid) throw new Error('LocalAI did not return a job id for the install');
+    for (let i = 0; i < 3000; i++) {            // ~60 min ceiling at 1.2s/poll for large media models
+      let s: any; try { s = await this.http.json('GET', '/models/jobs/' + uuid); } catch { await sleep(1200); continue; }
+      if (s && s.error) throw new Error(String(s.error));
+      const pct = typeof s.progress === 'number' ? Math.round(s.progress) : 0;
+      const done = !!(s && s.processed) || /done|complete|success/i.test((s && (s.message || s.status)) || '');
+      onProgress?.({ status: (s && (s.message || (s.file_name ? 'downloading ' + s.file_name : 'installing'))) || 'installing', completed: pct, total: 100, done });
+      if (done) return;
+      await sleep(1200);
+    }
+  }
+
+  async remove(name: string): Promise<void> { try { await this.http.json('POST', '/models/delete/' + encodeURIComponent(name), {}); } catch { /* best-effort */ } }
+
+  // Media generation (OpenAI-compatible). Returns base64 so the desktop can show + save it.
+  async generateImage(model: string, prompt: string, opts?: { size?: string }): Promise<{ b64: string; mime: string }> {
+    const body = { model, prompt: String(prompt).slice(0, 4000), size: (opts && opts.size) || '512x512', n: 1, response_format: 'b64_json' };
+    const r = await this.http.json('POST', '/v1/images/generations', body);
+    const d = (r && r.data && r.data[0]) || {};
+    if (d.b64_json) return { b64: d.b64_json, mime: 'image/png' };
+    if (d.url) {
+      const f: any = (globalThis as any).fetch;
+      const u = /^https?:/i.test(d.url) ? d.url : (this.base.replace(/\/+$/, '') + (d.url.startsWith('/') ? '' : '/') + d.url);
+      const resp = await f(u); const buf = Buffer.from(await resp.arrayBuffer());
+      return { b64: buf.toString('base64'), mime: resp.headers.get('content-type') || 'image/png' };
+    }
+    throw new Error('LocalAI returned no image');
+  }
+  async stop(_name: string): Promise<void> { /* no per-model unload endpoint; LocalAI idles backends itself */ }
+}
+
+function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+
+export function createLocalAiRuntime(baseUrl = 'http://localhost:8080'): LocalAiRuntime {
+  return new LocalAiRuntime(fetchHttp(baseUrl), baseUrl);
+}

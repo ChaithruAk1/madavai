@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import MadavLogo from "./MadavLogo.jsx";
-import { MessageCircle, Users, Hammer, PanelLeft, CircleDot, Globe, AppWindow, Square } from "lucide-react";
+import { MessageCircle, Users, Hammer, Sparkles, PanelLeft, CircleDot, Globe, AppWindow, Square } from "lucide-react";
 import { MODES } from "../bridge/contract.js";
 import { bridge, isWeb } from "../bridge/index.js";
 import { madavAlert } from "../dialogs.jsx";
 
-const ORDER = ["chat", "cowork", "code"];
-const ICONS = { chat: MessageCircle, cowork: Users, code: Hammer };
+const ORDER = ["chat", "cowork", "code", "create"];
+const ICONS = { chat: MessageCircle, cowork: Users, code: Hammer, create: Sparkles };
 
 // Global workflow recorder — start/stop from anywhere (user request 2026-06-12).
 // Reuses the exact same bridge APIs as the Skills screen: recordFlowStart (web —

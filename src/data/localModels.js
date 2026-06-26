@@ -129,3 +129,24 @@ export function goalMatches(entry, goal) {
   if (goal === "tiny") return ((entry && entry.sizeGB) || 99) <= 3;
   return true; // "general"
 }
+
+// ── Chat-model gate ──────────────────────────────────────────────────────────
+// The GGUF hub lists EVERY kind of model — video (Wan, Hunyuan, LTX), image (Stable Diffusion, FLUX, Kolors),
+// audio (Whisper, Bark, TTS), and embeddings/rerankers. None of those belong in the CHAT model selector. This
+// is a conservative DENY list of well-known non-text families; anything else is treated as a chat/text model so
+// recall for real LLMs stays high. Used by the browse gallery, search results, and the model-selector sync.
+const NON_CHAT_RE = /(^|[/\-_.])(wan2|wan-?2|hunyuan-?video|ltx-?video|ltxv|mochi|cogvideo|animatediff|svd\b|stable-?video|opensora|easyanimate|videocrafter|veo\b|stable-?diffusion|sd-?xl|sd-?turbo|sd3|sd-?3|sd35|flux\.?[0-9]|flux\b|kolors|pixart|playground-v|hidream|lumina|sana\b|auraflow|wuerstchen|kandinsky|qwen-?image|deepfloyd|controlnet|\bvae\b|clip-vit|siglip|whisper|parler-?tts|\bbark\b|\btts\b|xtts|musicgen|stable-?audio|encodec|outetts|nomic-?embed|bge-|gte-|e5-|jina-?embed|\bembed(ding)?\b|reranker|rerank|all-?minilm)/i;
+
+export function isChatModel(name) {
+  return !NON_CHAT_RE.test(String(name || "").toLowerCase());
+}
+
+// ── Modality of a local model (for Let's Create) ─────────────────────────────
+// Which capability a model serves, by family/name. Drives the Image/Voice/Video model pickers in Let's Create.
+export function localModality(name) {
+  const n = String(name || "").toLowerCase();
+  if (/(text-?to-?video|\bvideo\b|\bwan\b|hunyuan|\bltx\b|cogvideo|mochi|\bsvd\b|stable-?video|opensora|easyanimate)/.test(n)) return "video";
+  if (/(\btts\b|text-?to-?speech|\bvoice\b|\bspeech\b|bark|piper|xtts|whisper|transcrib|\bstt\b|\basr\b|musicgen|stable-?audio|parler|outetts)/.test(n)) return "voice";
+  if (/(text-?to-?image|stable-?diffusion|sd-?xl|\bsd[0-9]|\bflux\b|diffus|kandinsky|pixart|lumina|playground|dreamshaper|realvis|\bimage\b)/.test(n)) return "image";
+  return "text";
+}

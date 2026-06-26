@@ -1218,10 +1218,14 @@ export const webBridge = {
     stop: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
     browse: async () => [],
     system: async () => ({ totalRamGB: 0, unknown: true }),
+    dockerStatus: async () => ({ installed: false, running: false, note: "Local media generation is a desktop feature." }),
+    localaiStatus: async () => ({ api: false, container: "absent" }),
+    localaiStop: async () => ({ ok: false, error: "Desktop only." }),
     install: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
     onPullProgress: () => () => {},
     onInstallProgress: () => () => {},
   },
+  media: { image: async () => ({ error: "Image generation runs in the Madav desktop app." }) },
   async mcpTestServer(url, headers) {
     try {
       const r = await fetch(api("/mcp/tools"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url, headers: headers || {} }) });
