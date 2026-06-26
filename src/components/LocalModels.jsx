@@ -15,7 +15,7 @@ const PROVIDERS = [
   { id: "ollama", label: "Ollama", blurb: "The simplest way to run models locally. Search the built-in catalog or type any model name to pull." },
   { id: "huggingface", label: "HuggingFace", blurb: "Pull any GGUF model from the HuggingFace Hub. Runs through the Ollama engine under the hood." },
   { id: "lmstudio", label: "LM Studio", blurb: "Use models from LM Studio. Needs the LM Studio app with its command-line tool (lms) enabled." },
-  { id: "localai", label: "Let's Create Models", blurb: "One engine for image, voice and video generation. Runs in Docker — Madav sets it up for you." },
+  { id: "localai", label: "Local AI", blurb: "One engine for image, voice and video generation. Runs in Docker — Madav sets it up for you." },
 ];
 
 // Goal-first browse tiles — people know what they want to DO, not which model does it. Keys match the catalog's
@@ -263,7 +263,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
       <Fragment key={r.pullName}>
         <tr className={(r.installed ? "lmt-on " : "") + "lmt-row"} onClick={() => setExpandedRow(open ? null : r.pullName)}>
           <td className="lmt-ck" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="mo-cmpck" title="Compare (up to 4)" checked={cmp.has(r.pullName)} disabled={!cmp.has(r.pullName) && cmp.size >= 4} onChange={() => toggleCmp(r)} /></td>
-          <td><div className="lmt-name">{r.installed ? <CheckCircle2 size={13} style={{ color: "#3fb950", flex: "none" }} /> : null}<ChevronRight size={12} className={"lmt-caret" + (open ? " open" : "")} /> {prettyLocalName(r.name || r.pullName)}</div><div className="lmt-maker"><MakerLogo maker={mk.key} /> {mk.label}</div><div className="lmt-sub">{r.pullName}</div></td>
+          <td><div className="lmt-name">{r.installed ? <CheckCircle2 size={13} style={{ color: "#3fb950", flex: "none" }} /> : null}<ChevronRight size={12} className={"lmt-caret" + (open ? " open" : "")} /> {prettyLocalName(r.name || r.pullName)}</div><div className="lmt-maker"><MakerLogo maker={mk.key} /> {mk.label}</div></td>
           <td><div className="lmt-caps">{ucs.map((u) => { const M = UC_META[u] || { tone: "#9aa4b2" }; const I = M.icon; return <span key={u} className="lmt-cap" style={{ color: M.tone, borderColor: "color-mix(in srgb, " + M.tone + " 38%, transparent)" }}>{I ? <I size={11} /> : null} {u}</span>; })}</div></td>
           <td className="lmt-nowrap">{size}</td>
           <td className="lmt-nowrap lmt-dim">{ctxOf(r.name || r.pullName)}</td>
@@ -274,7 +274,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           <td className="lmt-act" onClick={(e) => e.stopPropagation()}>
             {r.installed ? (
               <span className="lmt-actrow">
-                {isMedia ? <span className="lm-chip ok sm" title="Use in the Let's Create tab">Let's Create</span> : isActive ? <span className="lm-chip ok sm" title="This is your active model"><CheckCircle2 size={12} /> Active</span> : <button className="btn primary sm" onClick={useIt} disabled={!_val} title={_val ? "Activate this model" : "Preparing this model… one moment"}><Zap size={12} /> Activate</button>}
+                {isMedia ? <span className="lm-chip ok sm" title="Use in the Let's Create tab">Let's Create</span> : isActive ? <button className="btn danger sm" onClick={() => doStop(id, r.name)} title="Stop Server"><Square size={12} /> Stop</button> : <button className="btn primary sm" onClick={useIt} disabled={!_val} title={_val ? "Activate this model" : "Preparing this model… one moment"}><Zap size={12} /> Activate</button>}
                 <button className="btn ghost sm" onClick={() => askRemove(id, r.name)} title="Delete from disk"><Trash2 size={12} /></button>
               </span>
             ) : incompatible ? (
@@ -335,7 +335,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             <button className="btn ghost sm" onClick={() => refresh(id)} title="Re-check status"><RefreshCw size={14} /></button>
             {!det.available && (inst
               ? <span className="lm-installing"><Loader2 size={13} className="spin" /> {inst.line ? inst.line : (inst.phase === "downloading" ? "Downloading… " + (inst.pct || 0) + "%" : inst.phase === "docker" ? "Starting Docker…" : inst.phase === "pulling" ? "Downloading engine…" : inst.phase === "booting" || inst.phase === "starting" ? "Starting engine…" : inst.phase === "installing" ? "Installing…" : inst.phase === "ready" ? "Ready" : inst.phase === "opened" ? "Opened download page" : "Working…")}</span>
-              : <button className="btn primary" onClick={() => doInstall(id)}><Download size={14} /> {id === "localai" ? "Set up Let's Create" : id === "lmstudio" ? "Get LM Studio" : id === "huggingface" ? "Install Ollama engine" : "Install Ollama"}</button>)}
+              : <button className="btn primary" onClick={() => doInstall(id)}><Download size={14} /> {id === "localai" ? "Set up Local AI" : id === "lmstudio" ? "Get LM Studio" : id === "huggingface" ? "Install Ollama engine" : "Install Ollama"}</button>)}
           </div>
         </div>
         {inst && (inst.phase === "downloading" || inst.phase === "docker" || inst.phase === "pulling" || inst.phase === "booting") ? <div className="lm-bar"><div className="lm-bar-fill" style={{ width: (inst.pct || 0) + "%" }} /></div> : null}
@@ -344,7 +344,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           <div className="lm-lai-strip">
             <span className={"lm-chip " + (dockerInfo && dockerInfo.running ? "ok" : "off")}>{dockerInfo ? (dockerInfo.running ? "Docker running" : dockerInfo.installed ? "Docker installed - not started" : "Docker not installed") : "Checking Docker…"}</span>
             <span className={"lm-chip " + (laiInfo && laiInfo.api ? "ok" : "off")}>{laiInfo ? (laiInfo.api ? "Engine running" : laiInfo.container === "stopped" ? "Engine stopped" : "Engine not started") : "Checking engine…"}</span>
-            {laiInfo && laiInfo.api ? <button className="btn ghost sm" onClick={() => { bridge.localModels.localaiStop(); setLaiInfo({ ...laiInfo, api: false }); }} title="Stop the Let's Create engine"><Square size={12} /> Stop engine</button> : null}
+            {laiInfo && laiInfo.api ? <button className="btn ghost sm" onClick={() => { bridge.localModels.localaiStop(); setLaiInfo({ ...laiInfo, api: false }); }} title="Stop the Local AI engine"><Square size={12} /> Stop engine</button> : null}
           </div>
         ) : null}
 
@@ -400,7 +400,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             rows = [...rows].sort((a, b) => { const va = val(a), vb = val(b); const c = typeof va === "string" ? va.localeCompare(vb) : (va - vb); return sortDir === "asc" ? c : -c; });
           }
           if (!rows.length) {
-            return <div className="lm-empty">{searching[id] ? "Searching…" : (isMedia && !det.available) ? "Start the Let's Create engine above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
+            return <div className="lm-empty">{searching[id] ? "Searching…" : (isMedia && !det.available) ? "Start the Local AI engine above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
           }
           return (
             <div className="mo-tablewrap lmt-wrap">
