@@ -206,4 +206,16 @@ contextBridge.exposeInMainWorld("madav", {
   setMobileLink: (link) => ipcRenderer.invoke("madav:setMobileLink", link),
   clearMobileLink: () => ipcRenderer.invoke("madav:clearMobileLink"),
   setKeepAwake: (on) => ipcRenderer.invoke("madav:setKeepAwake", on),
+  localModels: {
+    providers: () => ipcRenderer.invoke("localModels:providers"),
+    detect: (id) => ipcRenderer.invoke("localModels:detect", id),
+    search: (id, q) => ipcRenderer.invoke("localModels:search", id, q),
+    list: (id) => ipcRenderer.invoke("localModels:list", id),
+    running: (id) => ipcRenderer.invoke("localModels:running", id),
+    pull: (id, name) => ipcRenderer.invoke("localModels:pull", id, name),
+    remove: (id, name) => ipcRenderer.invoke("localModels:remove", id, name),
+    install: (id) => ipcRenderer.invoke("localModels:install", id),
+    onPullProgress: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("localModels:pullProgress", h); return () => ipcRenderer.removeListener("localModels:pullProgress", h); },
+    onInstallProgress: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("localModels:installProgress", h); return () => ipcRenderer.removeListener("localModels:installProgress", h); },
+  },
 });

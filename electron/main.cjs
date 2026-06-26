@@ -17,10 +17,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // with "AttachConsole failed" on some Windows setups — node-pty self-recovers (5s timeout), but other
 // subsystems may not be so forgiving. We log LOUDLY (real bugs stay visible) and keep the app alive.
 // Deliberate choice: survive over exit; if state ever looks wrong the user can simply restart.
+const _crash = (() => { try { return require("./crashReport.cjs"); } catch { return null; } })();
 process.on("uncaughtException", (err) => {
+  try { if (_crash && process.env.MADAV_CRASH_REPORTS === "1") _crash.record("uncaughtException", err); } catch {}
   try { console.error("[madav] uncaughtException \u2014 kept alive:", (err && err.stack) || err); } catch {}
 });
 process.on("unhandledRejection", (reason) => {
+  try { if (_crash && process.env.MADAV_CRASH_REPORTS === "1") _crash.record("unhandledRejection", reason); } catch {}
   try { console.error("[madav] unhandledRejection \u2014 kept alive:", (reason && reason.stack) || reason); } catch {}
 });
 
@@ -891,6 +894,9 @@ ipcMain.handle("madav:winSpeech", (_e, args) => {
   catch (e) { return { error: String((e && e.message) || e) }; }
 });
 
+// Local Models — Ollama / HuggingFace / LM Studio: search, pull (streamed), health, one-click install.
+try { require("./local-models.cjs").register(ipcMain, () => win); } catch (e) { try { console.log("[madav] local-models bridge:", (e && e.message) || e); } catch {} }
+
 // Swarms — run one agent over a list with a bounded parallel pool.
 const swarmAborts = new Map(); // swarmId -> AbortController
 ipcMain.handle("madav:runSwarm", async (_e, { agentId, items, template, concurrency }) => {
@@ -1197,6 +1203,7 @@ async function autoEnableCli() {
   } catch {}
 }
 app.whenReady().then(() => {
+  try { if (_crash) _crash.setLogPath(path.join(app.getPath("userData"), "crash-reports.json")); } catch {}
   createWindow();
   reconcileMessaging();
   if (features.builtIn("scheduler")) reconcileWebhooks();
