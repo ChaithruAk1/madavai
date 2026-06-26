@@ -460,6 +460,21 @@ The mac build is **wired but unbuilt** (needs macOS). When ready: on a Mac, `npm
 **Expected:** each tab's model picker lists **only** that capability's models (image models under Image, etc.); and these media models do **not** appear in the Let's Chat model picker.
 **Pass:** ☐
 
+### T21.7 — Edit an image (img2img)
+**Steps:** On an image result in Let's Create, click **Edit** → type a change (e.g. "make it sunset colours, add snow") → **Create**.
+**Expected:** a new image keeps the original scene but applies your change. (Needs an image model whose LocalAI backend supports editing, e.g. Stable Diffusion; otherwise the card shows an error with Try again.)
+**Pass:** ☐
+
+### T21.8 — Edit your own image
+**Steps:** Image tab → click the small **image button** in the composer → pick an image from your computer → the placeholder switches to "describe the change…" → type a change → **Create**.
+**Expected:** your image comes back edited.
+**Pass:** ☐
+
+### T21.9 — Recommended models (one-click pull)
+**Steps:** Local Models → **LocalAI** (engine running) → click a capability tile (Image/Voice/Video).
+**Expected:** a **"Recommended — proven picks"** row at the very top with a Pull button on each; pulling one makes it appear in the matching Let's Create tab.
+**Pass:** ☐
+
 ---
 
 ## Sign‑off
