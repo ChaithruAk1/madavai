@@ -400,6 +400,29 @@ The mac build is **wired but unbuilt** (needs macOS). When ready: on a Mac, `npm
 **Expected:** the page loads but explains local models are a **desktop** feature — no errors, no broken buttons.
 **Pass:** ☐
 
+### T20.11 — Browse by goal (no typing)
+**Steps:** On **Local Models** (don't search), look at the **goal tiles**: *Private ChatGPT · Coding assistant · Deep reasoning · Sees images · Tiny & fast*. Click **Coding assistant**.
+**Expected:** a gallery of model cards appears and filters to coding models. Each card shows a friendly name, a one-line description, size, capability chips, and a **Pull** button. Switching tiles re-filters instantly.
+**Pass:** ☐
+
+### T20.12 — "Fits your machine" badge
+**Expected:** a line states your machine's RAM, and each card carries a colored badge — green **Runs great**, amber **Will be slow**, or red **Too big** — based on the model's size vs. your memory. On the **HuggingFace** tab, the gallery is a live "most-downloaded" feed with the same badges.
+**Pass:** ☐
+
+### T20.13 — Use (activate) a model
+**Steps:** In "Installed on this machine", click **Use** on a model.
+**Expected:** that row shows an **Active** badge and highlights. Open a new chat — the model picker shows it as the selected model, and a message runs on it locally.
+**Pass:** ☐
+
+### T20.14 — Stop (unload) a running model
+**Steps:** Chat with a local model so it loads (green dot + **running**), return to Local Models, click **Stop** on that row.
+**Expected:** after a moment the green dot/running chip clears (the model is unloaded from memory, freeing RAM/VRAM). No crash.
+**Pass:** ☐
+
+### T20.15 — Friendly names
+**Expected:** models read as real names (e.g. **DeepSeek R1 32B**, **GPT OSS 120B**) with the exact technical id shown small beneath — nothing lost for copy/run.
+**Pass:** ☐
+
 ---
 
 ## Sign‑off

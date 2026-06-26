@@ -10,6 +10,8 @@ export interface ModelSearchResult {
   sizeLabel?: string;
   downloads?: number;
   family?: string;
+  sizeGB?: number;          // approx download / memory footprint, for the 'fits your machine' estimate
+  useCases?: string[];      // 'general' | 'coding' | 'reasoning' | 'vision' | 'tiny' | 'embed'
   source: RuntimeId;
 }
 export interface RunningModel { name: string; sizeBytes?: number }
@@ -24,6 +26,8 @@ export interface LocalModelRuntime {
   running(): Promise<RunningModel[]>;
   pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void>;
   remove(name: string): Promise<void>;
+  stop(name: string): Promise<void>;  // unload a running model from memory
+  browse(): Promise<ModelSearchResult[]>;  // a default gallery to show before the user searches
 }
 
 export interface HttpClient {
@@ -57,4 +61,14 @@ export function fetchHttp(baseUrl: string): HttpClient {
       if (buf.trim()) yield buf.trim();
     },
   };
+}
+
+/** Rough GGUF size (GB) from a param count in a model id ("...-7B-..." -> ~4.2). Q4-ish: ~0.6 GB per B params.
+ *  Used only for the "fits your machine" hint when a real size isn't known (e.g. HuggingFace listings). */
+export function estimateSizeGB(id: string): number | undefined {
+  const m = /(\d+(?:\.\d+)?)\s*b\b/i.exec(String(id).toLowerCase());
+  if (!m) return undefined;
+  const b = parseFloat(m[1]);
+  if (!isFinite(b) || b <= 0) return undefined;
+  return Math.round(b * 0.6 * 10) / 10;
 }

@@ -1,5 +1,5 @@
 import type { LocalModelRuntime, LocalModel, PullProgress, CliRunner, HttpClient, ModelSearchResult, RunningModel, DetectResult } from '../runtime.js';
-import { fetchHttp } from '../runtime.js';
+import { fetchHttp, estimateSizeGB } from '../runtime.js';
 
 export class LmStudioRuntime implements LocalModelRuntime {
   readonly id = 'lmstudio' as const;
@@ -49,6 +49,13 @@ export class LmStudioRuntime implements LocalModelRuntime {
   }
 
   async remove(name: string): Promise<void> { await this.cli.run(['rm', name, '--yes']); }
+  async stop(name: string): Promise<void> { await this.cli.run(['unload', name]); }
+
+  async browse(): Promise<ModelSearchResult[]> {
+    const r = await this.hub.json('GET', '/api/models?filter=gguf&sort=downloads&direction=-1&limit=24');
+    const arr: any[] = Array.isArray(r) ? r : [];
+    return arr.map((m) => { const id = m.id ?? m.modelId ?? ''; return { pullName: id, name: id, downloads: m.downloads, sizeGB: estimateSizeGB(id), family: id.split('/')[0], source: 'lmstudio' as const }; });
+  }
 }
 
 export function createLmStudioRuntime(cli: CliRunner, hubBase = 'https://huggingface.co'): LmStudioRuntime {

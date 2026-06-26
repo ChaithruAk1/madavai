@@ -1,6 +1,6 @@
 import type { LocalModelRuntime, LocalModel, PullProgress, HttpClient, ModelSearchResult, RunningModel, DetectResult } from '../runtime.js';
 import { fetchHttp } from '../runtime.js';
-import { searchCatalog } from './ollama-catalog.js';
+import { searchCatalog, OLLAMA_CATALOG } from './ollama-catalog.js';
 
 export class OllamaRuntime implements LocalModelRuntime {
   readonly id = 'ollama' as const;
@@ -42,6 +42,12 @@ export class OllamaRuntime implements LocalModelRuntime {
   }
 
   async remove(name: string): Promise<void> { await this.http.json('DELETE', '/api/delete', { name }); }
+
+  async stop(name: string): Promise<void> { await this.http.json('POST', '/api/generate', { model: name, keep_alive: 0, stream: false }); }
+
+  async browse(): Promise<ModelSearchResult[]> {
+    return OLLAMA_CATALOG.map((m) => ({ pullName: m.name, name: m.name, description: m.description, sizeLabel: m.sizeLabel, sizeGB: m.sizeGB, useCases: m.useCases, family: m.family, source: 'ollama' as const }));
+  }
 }
 
 export function createOllamaRuntime(baseUrl = 'http://localhost:11434'): OllamaRuntime {

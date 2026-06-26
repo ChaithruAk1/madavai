@@ -74,3 +74,58 @@ export function localCaps(modelId) {
   }
   return null;
 }
+
+// ── Friendly display name ────────────────────────────────────────────────────
+// Turn a runtime model id ("qwen2.5-coder:32b", "x/flux2-klein:9b", "hf.co/org/Repo-GGUF") into a human label
+// ("Qwen2.5 Coder 32B"). This is pure FORMATTING of the real id — it invents nothing, so the raw id can (and
+// should) still be shown beside it. A small token map only fixes the casing of well-known names.
+const NAME_TOKENS = {
+  qwen: "Qwen", qwq: "QwQ", deepseek: "DeepSeek", llama: "Llama", gemma: "Gemma", phi: "Phi", yi: "Yi",
+  mistral: "Mistral", mixtral: "Mixtral", codestral: "Codestral", devstral: "Devstral", nemo: "Nemo",
+  gpt: "GPT", oss: "OSS", vl: "VL", vision: "Vision", coder: "Coder", instruct: "Instruct", base: "Base",
+  chat: "Chat", mini: "Mini", small: "Small", medium: "Medium", large: "Large", moe: "MoE", granite: "Granite",
+  flux: "Flux", klein: "Klein", command: "Command", starcoder: "StarCoder", falcon: "Falcon", olmo: "OLMo",
+  r1: "R1", k2: "K2", v2: "V2", v3: "V3", uncensored: "Uncensored", distill: "Distill", tools: "Tools",
+};
+function titleToken(t) {
+  if (!t) return t;
+  const low = t.toLowerCase();
+  if (NAME_TOKENS[low]) return NAME_TOKENS[low];
+  if (/^\d+(?:\.\d+)?b$/i.test(t)) return t.toUpperCase();   // 32b -> 32B, 1.5b -> 1.5B
+  if (/^[a-z]\d+$/i.test(t)) return t.toUpperCase();          // q4 -> Q4, a3b handled above
+  return t.charAt(0).toUpperCase() + t.slice(1);              // qwen2.5 -> Qwen2.5
+}
+
+export function prettyLocalName(id) {
+  if (!id) return id || "";
+  let s = String(id).replace(/^hf\.co\//i, "").replace(/^https?:\/\/huggingface\.co\//i, "");
+  if (s.includes("/")) s = s.split("/").pop();                // drop an org/user prefix
+  const [base, tag] = s.split(":");
+  const name = (base || "").split(/[-_]/).filter(Boolean).map(titleToken).join(" ");
+  const ver = tag && tag.toLowerCase() !== "latest" ? " " + tag.split(/[-_]/).filter(Boolean).map(titleToken).join(" ") : "";
+  return (name + ver).trim() || s;
+}
+
+// ── "Fits your machine" + goal matching ──────────────────────────────────────
+// Conservative verdict from a model's footprint vs. total system RAM (a model needs roughly its own size
+// plus headroom for the OS and context). 'good' = comfortable, 'tight' = will be slow/swappy, 'over' = too big.
+export function fitForRam(sizeGB, totalRamGB) {
+  if (!sizeGB || !totalRamGB) return "unknown";
+  const ratio = sizeGB / totalRamGB;
+  if (ratio <= 0.55) return "good";
+  if (ratio <= 0.85) return "tight";
+  return "over";
+}
+
+// Does a catalog/feed entry fit a browse goal? Curated entries carry explicit useCases; live feeds (HuggingFace
+// /LM Studio) don't, so we infer from the model id via localCaps, and treat "tiny" as a size threshold.
+export function goalMatches(entry, goal) {
+  if (!goal || goal === "all") return true;
+  if (entry && Array.isArray(entry.useCases) && entry.useCases.length) return entry.useCases.includes(goal);
+  const caps = localCaps((entry && (entry.name || entry.pullName)) || "") || {};
+  if (goal === "coding") return !!caps.coding;
+  if (goal === "reasoning") return !!caps.reasoning;
+  if (goal === "vision") return !!caps.vision;
+  if (goal === "tiny") return ((entry && entry.sizeGB) || 99) <= 3;
+  return true; // "general"
+}

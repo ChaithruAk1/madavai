@@ -1,5 +1,5 @@
 import type { LocalModelRuntime, LocalModel, PullProgress, HttpClient, ModelSearchResult, RunningModel, DetectResult } from '../runtime.js';
-import { fetchHttp } from '../runtime.js';
+import { fetchHttp, estimateSizeGB } from '../runtime.js';
 import { OllamaRuntime } from './ollama.js';
 
 export class HuggingFaceRuntime implements LocalModelRuntime {
@@ -44,6 +44,13 @@ export class HuggingFaceRuntime implements LocalModelRuntime {
     return this.ollama.pull('hf.co/' + repo, onProgress);
   }
   async remove(name: string): Promise<void> { return this.ollama.remove(name); }
+  async stop(name: string): Promise<void> { return this.ollama.stop(name); }
+
+  async browse(): Promise<ModelSearchResult[]> {
+    const r = await this.hub.json('GET', '/api/models?filter=gguf&sort=downloads&direction=-1&limit=24');
+    const arr: any[] = Array.isArray(r) ? r : [];
+    return arr.map((m) => { const id = m.id ?? m.modelId ?? ''; return { pullName: 'hf.co/' + id, name: id, downloads: m.downloads, sizeGB: estimateSizeGB(id), family: id.split('/')[0], source: 'huggingface' as const }; });
+  }
 }
 
 export function createHuggingFaceRuntime(ollama: OllamaRuntime, hubBase = 'https://huggingface.co'): HuggingFaceRuntime {

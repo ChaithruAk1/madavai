@@ -5,7 +5,7 @@ import ModelSpeedCheck from "./ModelSpeedCheck.jsx";
 import ModelRouting from "./ModelRouting.jsx";
 import LocalModels from "./LocalModels.jsx";
 
-export default function ModelsSection({ activeModel, onChanged, onRefresh, tab, onTab }) {
+export default function ModelsSection({ activeModel, onChanged, onRefresh, onActivate, activeValue, tab, onTab }) {
   const [localSub, setLocalSub] = useState("config");
   const sub = tab || localSub;
   const go = (t) => { if (onTab) onTab(t); else setLocalSub(t); };
@@ -15,7 +15,7 @@ export default function ModelsSection({ activeModel, onChanged, onRefresh, tab, 
         {sub === "config" ? <ModelConfig onChanged={onChanged} />
           : sub === "overview" ? <ModelsOverview activeModel={activeModel} />
           : sub === "routing" ? <ModelRouting onChanged={onChanged} />
-          : sub === "local" ? <LocalModels onChanged={onChanged} onRefresh={onRefresh} />
+          : sub === "local" ? <LocalModels onChanged={onChanged} onRefresh={onRefresh} onActivate={onActivate} activeValue={activeValue} />
           : <ModelSpeedCheck />}
       </div>
     </div>

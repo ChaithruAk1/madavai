@@ -4,15 +4,27 @@
 // install the runtime if it's missing. SINGLE SOURCE: every model action goes through bridge.localModels.*
 // (desktop preload on the app; a "desktop only" stub on web), which calls the shared @madav/models registry.
 import { useState, useEffect, useCallback } from "react";
-import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity } from "lucide-react";
+import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { providerForRuntime } from "../data/localProviders.js";
+import { prettyLocalName, localCaps, fitForRam, goalMatches } from "../data/localModels.js";
 
 const PROVIDERS = [
   { id: "ollama", label: "Ollama", blurb: "The simplest way to run models locally. Search the built-in catalog or type any model name to pull." },
   { id: "huggingface", label: "HuggingFace", blurb: "Pull any GGUF model from the HuggingFace Hub. Runs through the Ollama engine under the hood." },
   { id: "lmstudio", label: "LM Studio", blurb: "Use models from LM Studio. Needs the LM Studio app with its command-line tool (lms) enabled." },
 ];
+
+// Goal-first browse tiles — people know what they want to DO, not which model does it. Keys match the catalog's
+// useCases (and are inferred from the model id for live HuggingFace / LM Studio feeds).
+const GOALS = [
+  { id: "general", label: "Private ChatGPT", desc: "A capable all-round assistant", icon: MessageSquare },
+  { id: "coding", label: "Coding assistant", desc: "Writes and explains code", icon: Code2 },
+  { id: "reasoning", label: "Deep reasoning", desc: "Thinks step by step", icon: Brain },
+  { id: "vision", label: "Sees images", desc: "Understands pictures + screenshots", icon: Eye },
+  { id: "tiny", label: "Tiny & fast", desc: "Runs on modest hardware", icon: Zap },
+];
+const FIT_LABEL = { good: "Runs great", tight: "Will be slow", over: "Too big" };
 
 function fmtBytes(n) {
   if (!n || n <= 0) return "";
@@ -27,7 +39,7 @@ function fmtCount(n) {
   return String(n);
 }
 
-export default function LocalModels({ onChanged, onRefresh }) {
+export default function LocalModels({ onChanged, onRefresh, onActivate, activeValue }) {
   const [active, setActive] = useState("ollama");
   const [status, setStatus] = useState({});       // id -> detect result
   const [installed, setInstalled] = useState({});  // id -> LocalModel[]
@@ -38,6 +50,10 @@ export default function LocalModels({ onChanged, onRefresh }) {
   const [searchErr, setSearchErr] = useState({});  // id -> string
   const [pulls, setPulls] = useState({});          // "id::name" -> { pct, status, done, error }
   const [installing, setInstalling] = useState({}); // id -> { phase, pct }
+  const [profIds, setProfIds] = useState({});       // provider key -> local profile id (powers the Use button)
+  const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
+  const [goal, setGoal] = useState("general");       // active browse goal tile
+  const [sys, setSys] = useState({ totalRamGB: 0 }); // machine RAM, for the fits-your-machine badge
 
   const refresh = useCallback(async (id) => {
     try {
@@ -98,13 +114,31 @@ export default function LocalModels({ onChanged, onRefresh }) {
     onRefresh && onRefresh();
   };
 
-  // Re-sync whenever the installed set changes (page load, a pull finishing, a remove).
+  // Re-sync when the installed set changes (page load, a pull finishing, a remove): mirror installs into the
+  // local provider profile, then capture each provider's profile id so the Use button can activate a model.
   useEffect(() => {
-    for (const id of ["ollama", "lmstudio"]) {
-      const det = status[id];
-      if (det && det.available) syncLocalProfile(id, installed[id] || []);
-    }
+    (async () => {
+      for (const id of ["ollama", "lmstudio"]) {
+        const det = status[id];
+        if (det && det.available) await syncLocalProfile(id, installed[id] || []);
+      }
+      try {
+        const cfg = await bridge.getSettings();
+        const host = (u) => String(u || "").replace(/\/+$/, "").replace(/\/v1$/, "");
+        const find = (rk) => { const pr = providerForRuntime(rk); const hit = pr && Object.values(cfg.profiles || {}).find((x) => host(x.baseUrl) === host(pr.baseUrl)); return hit ? hit.id : null; };
+        setProfIds({ ollama: find("ollama"), lmstudio: find("lmstudio") });
+      } catch { /* web / offline */ }
+    })();
   }, [installed, status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Machine RAM once (powers the fit badges) + the browse gallery for the active provider (Ollama = instant
+  // curated catalog; HuggingFace / LM Studio = a live "most-downloaded GGUF" feed fetched on tab open).
+  useEffect(() => { Promise.resolve(bridge.localModels.system()).then((x) => setSys(x || { totalRamGB: 0 })).catch(() => {}); }, []);
+  useEffect(() => {
+    let alive = true;
+    Promise.resolve(bridge.localModels.browse(active)).then((r) => { if (alive && Array.isArray(r)) setBrowseList((m) => ({ ...m, [active]: r })); }).catch(() => {});
+    return () => { alive = false; };
+  }, [active]);
 
   const doSearch = async (id) => {
     setSearching((s) => ({ ...s, [id]: true })); setSearchErr((s) => ({ ...s, [id]: "" }));
@@ -123,6 +157,10 @@ export default function LocalModels({ onChanged, onRefresh }) {
     try { await bridge.localModels.remove(id, name); } catch {}
     refresh(id); onChanged && onChanged();
   };
+  const doStop = async (id, name) => {                 // unload a running model from memory (frees RAM/VRAM)
+    try { await bridge.localModels.stop(id, name); } catch {}
+    setTimeout(() => refresh(id), 400);
+  };
   const doInstall = (id) => {
     setInstalling((m) => ({ ...m, [id]: { phase: "starting", pct: 0 } }));
     Promise.resolve(bridge.localModels.install(id)).then((r) => {
@@ -138,6 +176,40 @@ export default function LocalModels({ onChanged, onRefresh }) {
     return names.some((n) => n === pn || n.split(":")[0] === pn);
   };
 
+  // One card for a model — used by both the browse gallery and search results. Friendly name + raw id, size,
+  // a fits-your-machine badge from the machine RAM, inferred capability chips, and the existing pull flow.
+  const renderCard = (entry, id) => {
+    const det = status[id] || {};
+    const fit = fitForRam(entry.sizeGB, sys.totalRamGB);
+    const caps = localCaps(entry.name || entry.pullName) || {};
+    const done = isInstalled(id, entry);
+    const pr = pulls[id + "::" + entry.pullName];
+    return (
+      <div className="lm-card" key={entry.pullName}>
+        <div className="lm-card-top">
+          <div className="lm-card-name">{prettyLocalName(entry.name || entry.pullName)}</div>
+          {fit !== "unknown" ? <span className={"lm-fit " + fit} title={fit === "good" ? "Should run smoothly on your RAM" : fit === "tight" ? "Will run but may be slow / swap to disk" : "Larger than your RAM — likely won't run well"}>{FIT_LABEL[fit]}</span> : null}
+        </div>
+        <div className="lm-card-sub">{entry.pullName}</div>
+        {entry.description ? <div className="lm-card-desc">{entry.description}</div> : null}
+        <div className="lm-card-meta">
+          {entry.sizeLabel ? <span className="lm-meta-tag">{entry.sizeLabel}</span> : (entry.sizeGB ? <span className="lm-meta-tag">~{entry.sizeGB} GB</span> : null)}
+          {entry.downloads ? <span className="lm-meta-tag"><Download size={11} /> {fmtCount(entry.downloads)}</span> : null}
+          {caps.coding ? <span className="lm-cap">Code</span> : null}
+          {caps.reasoning ? <span className="lm-cap">Reasoning</span> : null}
+          {caps.vision ? <span className="lm-cap">Vision</span> : null}
+          {caps.tools && !caps.coding ? <span className="lm-cap">Tools</span> : null}
+        </div>
+        <div className="lm-card-foot">
+          {done ? <span className="lm-chip ok"><CheckCircle2 size={12} /> Installed</span>
+            : pr && !pr.done && !pr.error ? <div className="lm-pulling"><div className="lm-bar small"><div className="lm-bar-fill" style={{ width: (pr.pct || 0) + "%" }} /></div><span className="lm-pct">{pr.pct || 0}%</span></div>
+            : pr && pr.error ? <button className="btn ghost sm" onClick={() => doPull(id, entry.pullName)} title={pr.error}><AlertCircle size={13} /> Retry</button>
+            : <button className="btn primary sm" onClick={() => doPull(id, entry.pullName)} disabled={!det.available} title={det.available ? "Download this model" : "Install the engine first"}><Download size={13} /> Pull</button>}
+        </div>
+      </div>
+    );
+  };
+
   const renderPanel = (p) => {
     const id = p.id;
     const det = status[id] || {};
@@ -145,6 +217,7 @@ export default function LocalModels({ onChanged, onRefresh }) {
     const res = results[id] || [];
     const insd = installed[id] || [];
     const run = running[id] || new Set();
+    const showSearch = !!(searching[id] || searchErr[id] || (res && res.length));
     return (
       <div className="lm-panel" key={id}>
         <div className="lm-status prof-card">
@@ -172,40 +245,29 @@ export default function LocalModels({ onChanged, onRefresh }) {
             value={query[id] || ""} onChange={(e) => setQuery((q) => ({ ...q, [id]: e.target.value }))}
             onKeyDown={(e) => { if (e.key === "Enter") doSearch(id); }} />
           <button className="btn primary" onClick={() => doSearch(id)} disabled={!!searching[id]}>{searching[id] ? <Loader2 size={14} className="spin" /> : "Search"}</button>
+          {showSearch ? <button className="btn ghost" onClick={() => { setResults((s) => ({ ...s, [id]: [] })); setSearchErr((s) => ({ ...s, [id]: "" })); setQuery((q) => ({ ...q, [id]: "" })); }} title="Back to browse">Clear</button> : null}
         </div>
         {searchErr[id] ? <div className="lm-err"><AlertCircle size={13} /> {searchErr[id]}</div> : null}
-        {!det.available && res.length > 0 ? <div className="lm-hint">Install {id === "lmstudio" ? "LM Studio" : "the Ollama engine"} above to pull these.</div> : null}
 
-        {res.length > 0 ? (
-          <div className="lm-results">
-            {res.map((r) => {
-              const pr = pulls[id + "::" + r.pullName];
-              const done = isInstalled(id, r);
-              return (
-                <div className="lm-result" key={r.pullName}>
-                  <div className="lm-result-main">
-                    <div className="lm-result-name">{r.name || r.pullName}</div>
-                    <div className="lm-result-meta">
-                      {r.sizeLabel ? <span className="lm-meta-tag">{r.sizeLabel}</span> : null}
-                      {r.downloads ? <span className="lm-meta-tag"><Download size={11} /> {fmtCount(r.downloads)}</span> : null}
-                      {r.family ? <span className="lm-meta-tag">{r.family}</span> : null}
-                    </div>
-                    {r.description ? <div className="lm-result-desc">{r.description}</div> : null}
-                  </div>
-                  <div className="lm-result-action">
-                    {done
-                      ? <span className="lm-chip ok"><CheckCircle2 size={12} /> Installed</span>
-                      : pr && !pr.done && !pr.error
-                        ? <div className="lm-pulling"><div className="lm-bar small"><div className="lm-bar-fill" style={{ width: (pr.pct || 0) + "%" }} /></div><span className="lm-pct">{pr.pct || 0}%</span></div>
-                        : pr && pr.error
-                          ? <button className="btn ghost sm" onClick={() => doPull(id, r.pullName)} title={pr.error}><AlertCircle size={13} /> Retry</button>
-                          : <button className="btn primary sm" onClick={() => doPull(id, r.pullName)} disabled={!det.available} title={det.available ? "" : "Install the engine first"}><Download size={13} /> Pull</button>}
-                  </div>
-                </div>
-              );
-            })}
+        {showSearch ? (
+          <div className="lm-gallery">{res.map((r) => renderCard(r, id))}</div>
+        ) : (
+          <div className="lm-browse">
+            <div className="lm-goals">
+              {GOALS.map((g) => (
+                <button key={g.id} className={"lm-goal " + (goal === g.id ? "on" : "")} onClick={() => setGoal(g.id)} title={g.desc}>
+                  <g.icon size={15} /> <span>{g.label}</span>
+                </button>
+              ))}
+            </div>
+            {sys.totalRamGB ? <div className="lm-ram">Your machine has <b>{sys.totalRamGB} GB</b> RAM — the badge on each model estimates whether it will run smoothly.</div> : null}
+            <div className="lm-gallery">{(browseList[id] || []).filter((e) => goalMatches(e, goal)).map((e) => renderCard(e, id))}</div>
+            {!(browseList[id] && browseList[id].length)
+              ? <div className="lm-empty">Loading suggestions…</div>
+              : ((browseList[id].filter((e) => goalMatches(e, goal)).length === 0)
+                  ? <div className="lm-empty">Nothing tagged "{(GOALS.find((g) => g.id === goal) || {}).label}" in this list — try another goal, or search above.</div> : null)}
           </div>
-        ) : null}
+        )}
 
         <div className="lm-installed">
           <div className="lm-section-label"><HardDrive size={13} /> Installed on this machine{insd.length ? " (" + insd.length + ")" : ""}</div>
@@ -213,16 +275,28 @@ export default function LocalModels({ onChanged, onRefresh }) {
             ? <div className="lm-empty">No {p.label} models yet. Search above and click Pull.</div>
             : insd.map((m) => {
                 const isRun = run.has(m.name);
+                const pkey = (providerForRuntime(id) || {}).runtime;
+                const value = profIds[pkey] ? profIds[pkey] + "::" + m.name : null;
+                const isActive = !!value && value === activeValue;
                 return (
-                  <div className="lm-installed-row" key={m.name}>
+                  <div className={"lm-installed-row" + (isActive ? " on" : "")} key={m.name}>
                     <div className="lm-installed-info">
                       <span className={"lm-dot " + (isRun ? "live" : "idle")} title={isRun ? "Loaded in memory" : "On disk"} />
-                      <span className="lm-installed-name">{m.name}</span>
+                      <div className="lm-name-wrap">
+                        <span className="lm-name-main">{prettyLocalName(m.name)}</span>
+                        <span className="lm-name-sub">{m.name}</span>
+                      </div>
                       {m.family ? <span className="lm-meta-tag">{m.family}</span> : null}
                       {m.sizeBytes ? <span className="lm-meta-tag">{fmtBytes(m.sizeBytes)}</span> : null}
                       {isRun ? <span className="lm-chip ok sm"><Activity size={11} /> running</span> : null}
                     </div>
-                    <button className="btn ghost sm" onClick={() => doRemove(id, m.name)} title="Remove from disk"><Trash2 size={13} /></button>
+                    <div className="lm-installed-actions">
+                      {isRun ? <button className="btn ghost sm" onClick={() => doStop(id, m.name)} title="Unload from memory (free RAM/VRAM)"><Square size={12} /> Stop</button> : null}
+                      {isActive
+                        ? <span className="lm-chip ok"><CheckCircle2 size={12} /> Active</span>
+                        : <button className="btn primary sm" onClick={() => value && onActivate && onActivate(value)} disabled={!value} title={value ? "Use this model now" : "Syncing…"}><Zap size={13} /> Use</button>}
+                      <button className="btn ghost sm" onClick={() => doRemove(id, m.name)} title="Remove from disk"><Trash2 size={13} /></button>
+                    </div>
                   </div>
                 );
               })}

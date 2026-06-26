@@ -1160,7 +1160,7 @@ export default function App() {
         ) : isTerminal ? (
           TerminalPanel ? <Suspense fallback={null}><TerminalPanel cwd={cwd} /></Suspense> : <NotInBuild />
         ) : isModels ? (
-          <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings} onRefresh={refreshModels}
+          <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings} onRefresh={refreshModels} onActivate={onPickModel} activeValue={activeValue}
             tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : t === "routing" ? "models-routing" : t === "local" ? "models-local" : "models")} />
         ) : (mode === "project" && !projectCtx) ? (
           <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} onPutTeamToWork={startRoomTeam} openId={projOpenId} groups={pickerGroups} activeValue={activeValue} onSelectModel={onSelectProjectModel} onRefresh={refreshModels} />
