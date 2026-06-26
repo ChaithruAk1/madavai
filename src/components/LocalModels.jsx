@@ -4,7 +4,7 @@
 // install the runtime if it's missing. SINGLE SOURCE: every model action goes through bridge.localModels.*
 // (desktop preload on the app; a "desktop only" stub on web), which calls the shared @madav/models registry.
 import { useState, useEffect, useCallback } from "react";
-import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film } from "lucide-react";
+import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { providerForRuntime } from "../data/localProviders.js";
 import { prettyLocalName, localCaps, fitForRam, goalMatches, isChatModel } from "../data/localModels.js";
@@ -32,6 +32,13 @@ const MEDIA_GOALS = [
   { id: "voice", label: "Voice", icon: Mic },
   { id: "video", label: "Video", icon: Film },
 ];
+// Proven families per capability. We MATCH these against the live LocalAI gallery, so the model we surface
+// (and its pull name) is always a real entry — never a hard-coded name that could 404.
+const RECOMMENDED_MEDIA = {
+  image: [/stable-?diffusion|sd-?1\.5|sd-?xl|sdxl/i, /\bflux/i, /dreamshaper/i],
+  voice: [/piper|voice-en|en-us-/i, /\bbark\b/i, /whisper/i],
+  video: [/\bltx/i, /\bwan/i, /hunyuan/i],
+};
 
 function fmtBytes(n) {
   if (!n || n <= 0) return "";
@@ -249,6 +256,15 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const showSearch = !!(searching[id] || searchErr[id] || (res && res.length));
     const isMedia = id === "localai";
     const galleryFilter = (e) => isMedia ? (mediaGoal === "all" || (e.useCases || []).includes(mediaGoal)) : (isChatModel(e.name || e.pullName) && goalMatches(e, goal));
+    const recList = (() => {
+      if (!isMedia) return [];
+      const all = (browseList[id] || []).filter(galleryFilter);
+      const fams = mediaGoal === "all" ? [].concat(RECOMMENDED_MEDIA.image, RECOMMENDED_MEDIA.voice, RECOMMENDED_MEDIA.video) : (RECOMMENDED_MEDIA[mediaGoal] || []);
+      const out = [];
+      for (const re of fams) { const hit = all.find((e) => re.test(e.name || e.pullName)); if (hit && !out.includes(hit)) out.push(hit); }
+      return out;
+    })();
+    const recSet = new Set(recList.map((e) => e.pullName));
     return (
       <div className="lm-panel" key={id}>
         <div className="lm-status prof-card">
@@ -305,7 +321,13 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             </div>
             {isMedia ? <div className="lm-hint">These power <b>Let's Create</b> — pull a model here, then generate in the Let's Create tab.</div> : null}
             {sys.totalRamGB ? <div className="lm-ram">Your machine has <b>{sys.totalRamGB} GB</b> RAM — the badge on each model estimates whether it will run smoothly.</div> : null}
-            <div className="lm-gallery">{(browseList[id] || []).filter(galleryFilter).map((e) => renderCard(e, id))}</div>
+            {recList.length ? (
+              <div style={{ marginBottom: 16 }}>
+                <div className="lm-section-label"><Star size={13} /> Recommended — proven picks for {mediaGoal === "all" ? "media" : mediaGoal}</div>
+                <div className="lm-gallery">{recList.map((e) => renderCard(e, id))}</div>
+              </div>
+            ) : null}
+            <div className="lm-gallery">{(browseList[id] || []).filter(galleryFilter).filter((e) => !recSet.has(e.pullName)).map((e) => renderCard(e, id))}</div>
             {!(browseList[id] && browseList[id].length)
               ? <div className="lm-empty">{isMedia && !det.available ? "Start LocalAI above to see image, voice and video models." : "Loading suggestions…"}</div>
               : ((browseList[id].filter(galleryFilter).length === 0)
