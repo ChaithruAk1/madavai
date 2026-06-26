@@ -7,12 +7,13 @@ import { useState, useEffect, useCallback } from "react";
 import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { providerForRuntime } from "../data/localProviders.js";
-import { prettyLocalName, localCaps, fitForRam, goalMatches } from "../data/localModels.js";
+import { prettyLocalName, localCaps, fitForRam, goalMatches, isChatModel } from "../data/localModels.js";
 
 const PROVIDERS = [
   { id: "ollama", label: "Ollama", blurb: "The simplest way to run models locally. Search the built-in catalog or type any model name to pull." },
   { id: "huggingface", label: "HuggingFace", blurb: "Pull any GGUF model from the HuggingFace Hub. Runs through the Ollama engine under the hood." },
   { id: "lmstudio", label: "LM Studio", blurb: "Use models from LM Studio. Needs the LM Studio app with its command-line tool (lms) enabled." },
+  { id: "localai", label: "LocalAI", blurb: "One engine for image, voice and video generation. Runs in Docker — Madav sets it up for you." },
 ];
 
 // Goal-first browse tiles — people know what they want to DO, not which model does it. Keys match the catalog's
@@ -54,6 +55,8 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
   const [goal, setGoal] = useState("general");       // active browse goal tile
   const [sys, setSys] = useState({ totalRamGB: 0 }); // machine RAM, for the fits-your-machine badge
+  const [dockerInfo, setDockerInfo] = useState(null);  // LocalAI: Docker presence/running
+  const [laiInfo, setLaiInfo] = useState(null);        // LocalAI: container + API status
 
   const refresh = useCallback(async (id) => {
     try {
@@ -92,7 +95,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const syncLocalProfile = async (runtimeId, models) => {
     const preset = providerForRuntime(runtimeId);
     if (!preset) return;
-    const names = (models || []).map((m) => m && m.name).filter(Boolean);
+    const names = (models || []).map((m) => m && m.name).filter(Boolean).filter(isChatModel);
     let cfg; try { cfg = await bridge.getSettings(); } catch { return; }
     if (!cfg || !cfg.profiles) return;
     const host = (u) => String(u || "").replace(/\/+$/, "").replace(/\/v1$/, "");
@@ -139,6 +142,18 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     Promise.resolve(bridge.localModels.browse(active)).then((r) => { if (alive && Array.isArray(r)) setBrowseList((m) => ({ ...m, [active]: r })); }).catch(() => {});
     return () => { alive = false; };
   }, [active]);
+
+  // LocalAI is a Docker-hosted engine — poll Docker + container status while its tab is open.
+  useEffect(() => {
+    if (active !== "localai") return;
+    let alive = true;
+    const load = () => {
+      Promise.resolve(bridge.localModels.dockerStatus()).then((d) => alive && setDockerInfo(d)).catch(() => {});
+      Promise.resolve(bridge.localModels.localaiStatus()).then((x) => { if (alive) { setLaiInfo(x); if (x && x.api) bridge.localModels.browse("localai").then((r) => Array.isArray(r) && setBrowseList((m) => ({ ...m, localai: r }))).catch(() => {}); } }).catch(() => {});
+    };
+    load(); const t = setInterval(load, 4000);
+    return () => { alive = false; clearInterval(t); };
+  }, [active]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const doSearch = async (id) => {
     setSearching((s) => ({ ...s, [id]: true })); setSearchErr((s) => ({ ...s, [id]: "" }));
@@ -218,6 +233,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const insd = installed[id] || [];
     const run = running[id] || new Set();
     const showSearch = !!(searching[id] || searchErr[id] || (res && res.length));
+    const isMedia = id === "localai";
     return (
       <div className="lm-panel" key={id}>
         <div className="lm-status prof-card">
@@ -233,11 +249,18 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           <div className="lm-status-actions">
             <button className="btn ghost sm" onClick={() => refresh(id)} title="Re-check status"><RefreshCw size={14} /></button>
             {!det.available && (inst
-              ? <span className="lm-installing"><Loader2 size={13} className="spin" /> {inst.phase === "downloading" ? "Downloading… " + (inst.pct || 0) + "%" : inst.phase === "installing" ? "Installing…" : inst.phase === "opened" ? "Opened download page" : "Working…"}</span>
-              : <button className="btn primary" onClick={() => doInstall(id)}><Download size={14} /> {id === "lmstudio" ? "Get LM Studio" : id === "huggingface" ? "Install Ollama engine" : "Install Ollama"}</button>)}
+              ? <span className="lm-installing"><Loader2 size={13} className="spin" /> {inst.phase === "downloading" ? "Downloading… " + (inst.pct || 0) + "%" : inst.phase === "pulling" ? "Downloading engine…" : inst.phase === "booting" || inst.phase === "starting" ? "Starting engine…" : inst.phase === "installing" ? "Installing…" : inst.phase === "ready" ? "Ready" : inst.phase === "opened" ? "Opened download page" : "Working…"}</span>
+              : <button className="btn primary" onClick={() => doInstall(id)}><Download size={14} /> {id === "localai" ? "Set up LocalAI" : id === "lmstudio" ? "Get LM Studio" : id === "huggingface" ? "Install Ollama engine" : "Install Ollama"}</button>)}
           </div>
         </div>
-        {inst && inst.phase === "downloading" ? <div className="lm-bar"><div className="lm-bar-fill" style={{ width: (inst.pct || 0) + "%" }} /></div> : null}
+        {inst && (inst.phase === "downloading" || inst.phase === "pulling" || inst.phase === "booting") ? <div className="lm-bar"><div className="lm-bar-fill" style={{ width: (inst.pct || 0) + "%" }} /></div> : null}
+        {isMedia ? (
+          <div className="lm-lai-strip">
+            <span className={"lm-chip " + (dockerInfo && dockerInfo.running ? "ok" : "off")}>{dockerInfo ? (dockerInfo.running ? "Docker running" : dockerInfo.installed ? "Docker installed - not started" : "Docker not installed") : "Checking Docker…"}</span>
+            <span className={"lm-chip " + (laiInfo && laiInfo.api ? "ok" : "off")}>{laiInfo ? (laiInfo.api ? "Engine running" : laiInfo.container === "stopped" ? "Engine stopped" : "Engine not started") : "Checking engine…"}</span>
+            {laiInfo && laiInfo.api ? <button className="btn ghost sm" onClick={() => { bridge.localModels.localaiStop(); setLaiInfo({ ...laiInfo, api: false }); }} title="Stop the LocalAI container"><Square size={12} /> Stop engine</button> : null}
+          </div>
+        ) : null}
 
         <div className="lm-search">
           <Search size={15} className="lm-search-ico" />
@@ -250,21 +273,22 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         {searchErr[id] ? <div className="lm-err"><AlertCircle size={13} /> {searchErr[id]}</div> : null}
 
         {showSearch ? (
-          <div className="lm-gallery">{res.map((r) => renderCard(r, id))}</div>
+          <div className="lm-gallery">{res.filter((r) => isMedia || isChatModel(r.name || r.pullName)).map((r) => renderCard(r, id))}</div>
         ) : (
           <div className="lm-browse">
+            {!isMedia ? (
             <div className="lm-goals">
               {GOALS.map((g) => (
                 <button key={g.id} className={"lm-goal " + (goal === g.id ? "on" : "")} onClick={() => setGoal(g.id)} title={g.desc}>
                   <g.icon size={15} /> <span>{g.label}</span>
                 </button>
               ))}
-            </div>
+            </div>) : null}
             {sys.totalRamGB ? <div className="lm-ram">Your machine has <b>{sys.totalRamGB} GB</b> RAM — the badge on each model estimates whether it will run smoothly.</div> : null}
-            <div className="lm-gallery">{(browseList[id] || []).filter((e) => goalMatches(e, goal)).map((e) => renderCard(e, id))}</div>
+            <div className="lm-gallery">{(browseList[id] || []).filter((e) => isMedia || isChatModel(e.name || e.pullName)).filter((e) => isMedia || goalMatches(e, goal)).map((e) => renderCard(e, id))}</div>
             {!(browseList[id] && browseList[id].length)
               ? <div className="lm-empty">Loading suggestions…</div>
-              : ((browseList[id].filter((e) => goalMatches(e, goal)).length === 0)
+              : ((browseList[id].filter((e) => isMedia || isChatModel(e.name || e.pullName)).filter((e) => isMedia || goalMatches(e, goal)).length === 0)
                   ? <div className="lm-empty">Nothing tagged "{(GOALS.find((g) => g.id === goal) || {}).label}" in this list — try another goal, or search above.</div> : null)}
           </div>
         )}

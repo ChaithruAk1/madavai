@@ -1,7 +1,7 @@
 /** A local model runtime running on the user's hardware. First-class so Madav never depends on cloud models. */
 export interface LocalModel { name: string; sizeBytes?: number; family?: string; running?: boolean }
 export interface PullProgress { status: string; completed?: number; total?: number; done: boolean }
-export type RuntimeId = 'ollama' | 'huggingface' | 'lmstudio';
+export type RuntimeId = 'ollama' | 'huggingface' | 'lmstudio' | 'localai';
 
 export interface ModelSearchResult {
   pullName: string;

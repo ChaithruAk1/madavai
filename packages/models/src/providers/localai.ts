@@ -82,6 +82,32 @@ export class LocalAiRuntime implements LocalModelRuntime {
     }
     throw new Error('LocalAI returned no image');
   }
+
+  // Text-to-speech (OpenAI-compatible /v1/audio/speech). Returns base64 audio.
+  async generateSpeech(model: string, input: string, opts?: { voice?: string; format?: string }): Promise<{ b64: string; mime: string }> {
+    const f: any = (globalThis as any).fetch;
+    const body: any = { model, input: String(input).slice(0, 4000) };
+    if (opts && opts.voice) body.voice = opts.voice;
+    if (opts && opts.format) body.response_format = opts.format;
+    const r = await f(this.base.replace(/\/+$/, '') + '/v1/audio/speech', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('Speech failed (HTTP ' + r.status + ')');
+    const buf = Buffer.from(await r.arrayBuffer());
+    return { b64: buf.toString('base64'), mime: r.headers.get('content-type') || 'audio/wav' };
+  }
+
+  // Speech-to-text (OpenAI-compatible /v1/audio/transcriptions, multipart). Returns the transcript text.
+  async transcribe(model: string, audioB64: string, mime: string, filename: string): Promise<{ text: string }> {
+    const f: any = (globalThis as any).fetch;
+    const FD: any = (globalThis as any).FormData;
+    const B: any = (globalThis as any).Blob;
+    const fd = new FD();
+    fd.append('model', model);
+    fd.append('file', new B([Buffer.from(audioB64, 'base64')], { type: mime || 'audio/wav' }), filename || 'audio.wav');
+    const r = await f(this.base.replace(/\/+$/, '') + '/v1/audio/transcriptions', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('Transcription failed (HTTP ' + r.status + ')');
+    const j = await r.json().catch(() => ({}));
+    return { text: (j && j.text) || '' };
+  }
   async stop(_name: string): Promise<void> { /* no per-model unload endpoint; LocalAI idles backends itself */ }
 }
 
