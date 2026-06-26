@@ -3,11 +3,12 @@
 // pull a model with a live progress bar, see what's installed + which are loaded (health), remove, and one-click
 // install the runtime if it's missing. SINGLE SOURCE: every model action goes through bridge.localModels.*
 // (desktop preload on the app; a "desktop only" stub on web), which calls the shared @madav/models registry.
-import { useState, useEffect, useCallback } from "react";
-import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star } from "lucide-react";
+import { useState, useEffect, useCallback, Fragment } from "react";
+import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star, ExternalLink, ChevronRight } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { providerForRuntime } from "../data/localProviders.js";
 import { prettyLocalName, localCaps, fitForRam, goalMatches, isChatModel } from "../data/localModels.js";
+import { madavConfirm } from "../dialogs.jsx";
 
 const PROVIDERS = [
   { id: "ollama", label: "Ollama", blurb: "The simplest way to run models locally. Search the built-in catalog or type any model name to pull." },
@@ -26,6 +27,15 @@ const GOALS = [
   { id: "tiny", label: "Tiny & fast", desc: "Runs on modest hardware", icon: Zap },
 ];
 const FIT_LABEL = { good: "Runs great", tight: "Will be slow", over: "Too big" };
+const SITE = { ollama: "https://ollama.com/library", huggingface: "https://huggingface.co/models?library=gguf&sort=downloads", lmstudio: "https://lmstudio.ai/models", localai: "https://localai.io/models/" };
+const SITE_LABEL = { ollama: "ollama.com", huggingface: "huggingface.co", lmstudio: "lmstudio.ai", localai: "localai.io" };
+const UC_TONE = { Chat: "#5aa0ff", Coding: "#3ecf8e", Reasoning: "#b794f6", Vision: "#f5a623", Tools: "#4fd1c5", Image: "#ed64a6", Voice: "#fc8181", Video: "#7f9cf5", Media: "#9aa4b2" };
+const paramsOf = (n) => { const m = /(\d+(?:\.\d+)?)\s*x?\s*b\b/i.exec(String(n || "").toLowerCase()); return m ? m[1] + "B" : "—"; };
+const ctxOf = (n) => { const t = String(n || "").toLowerCase(); if (/llama-?3|llama3/.test(t)) return "128K"; if (/qwen-?2\.5|qwen2\.5|qwen-?3|qwen3/.test(t)) return "128K"; if (/gemma-?2|gemma2/.test(t)) return "8K"; if (/phi-?3\.5|phi3\.5|phi-?4|phi4/.test(t)) return "128K"; if (/mistral-?nemo/.test(t)) return "128K"; if (/codellama|code-?llama/.test(t)) return "16K"; if (/mistral/.test(t)) return "32K"; return "—"; };
+const modelPageUrl = (id, pullName) => { const pn = String(pullName || ""); if (id === "ollama") return "https://ollama.com/library/" + pn.split(":")[0]; if (id === "huggingface") return "https://huggingface.co/" + pn.replace(/^hf\.co\//i, "").split(":")[0]; if (id === "lmstudio") return "https://huggingface.co/" + pn.split(":")[0]; return SITE[id]; };
+const BROWSE_TTL = 12 * 60 * 60 * 1000; // refresh the curated list at most twice a day (when online)
+function readBrowseCache(id) { try { const j = JSON.parse(localStorage.getItem("madav.lmbrowse." + id) || "null"); return j && Array.isArray(j.data) ? j : null; } catch { return null; } }
+function writeBrowseCache(id, data) { try { localStorage.setItem("madav.lmbrowse." + id, JSON.stringify({ at: Date.now(), data })); } catch {} }
 const MEDIA_GOALS = [
   { id: "all", label: "All", icon: null },
   { id: "image", label: "Image", icon: ImageIcon },
@@ -66,6 +76,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const [installing, setInstalling] = useState({}); // id -> { phase, pct }
   const [profIds, setProfIds] = useState({});       // provider key -> local profile id (powers the Use button)
   const [installNote, setInstallNote] = useState({}); // a short result note after an install/setup attempt
+  const [expandedRow, setExpandedRow] = useState(null);
   const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
   const [goal, setGoal] = useState("general");       // active chat browse goal tile
   const [mediaGoal, setMediaGoal] = useState("all"); // active LocalAI capability tile (image/voice/video)
@@ -154,7 +165,12 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   useEffect(() => { Promise.resolve(bridge.localModels.system()).then((x) => setSys(x || { totalRamGB: 0 })).catch(() => {}); }, []);
   useEffect(() => {
     let alive = true;
-    Promise.resolve(bridge.localModels.browse(active)).then((r) => { if (alive && Array.isArray(r)) setBrowseList((m) => ({ ...m, [active]: r })); }).catch(() => {});
+    const cache = readBrowseCache(active);
+    if (cache) setBrowseList((m) => ({ ...m, [active]: cache.data }));                  // show the cached curated list instantly
+    const fresh = cache && (Date.now() - cache.at) < BROWSE_TTL;                         // refreshed within the last 12h?
+    const online = typeof navigator === "undefined" || navigator.onLine !== false;
+    if (fresh || !online) return () => { alive = false; };                              // fresh enough, or offline -> keep the cache
+    Promise.resolve(bridge.localModels.browse(active)).then((r) => { if (alive && Array.isArray(r) && r.length) { setBrowseList((m) => ({ ...m, [active]: r })); writeBrowseCache(active, r); } }).catch(() => {});
     return () => { alive = false; };
   }, [active]);
 
@@ -164,7 +180,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     let alive = true;
     const load = () => {
       Promise.resolve(bridge.localModels.dockerStatus()).then((d) => alive && setDockerInfo(d)).catch(() => {});
-      Promise.resolve(bridge.localModels.localaiStatus()).then((x) => { if (alive) { setLaiInfo(x); if (x && x.api) bridge.localModels.browse("localai").then((r) => Array.isArray(r) && setBrowseList((m) => ({ ...m, localai: r }))).catch(() => {}); } }).catch(() => {});
+      Promise.resolve(bridge.localModels.localaiStatus()).then((x) => { if (alive) { setLaiInfo(x); if (x && x.api) bridge.localModels.browse("localai").then((r) => { if (Array.isArray(r) && r.length) { setBrowseList((m) => ({ ...m, localai: r })); writeBrowseCache("localai", r); } }).catch(() => {}); } }).catch(() => {});
     };
     load(); const t = setInterval(load, 4000);
     return () => { alive = false; clearInterval(t); };
@@ -187,6 +203,8 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     try { await bridge.localModels.remove(id, name); } catch {}
     refresh(id); onChanged && onChanged();
   };
+  const askRemove = async (id, name) => { const ok = await madavConfirm("Delete " + prettyLocalName(name) + "?\n\nThis frees the disk space. You can pull it again any time."); if (ok) doRemove(id, name); };
+  const openExt = (url) => url && bridge.openExternal && bridge.openExternal(url);
   const doStop = async (id, name) => {                 // unload a running model from memory (frees RAM/VRAM)
     try { await bridge.localModels.stop(id, name); } catch {}
     setTimeout(() => refresh(id), 400);
@@ -209,40 +227,68 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     return names.some((n) => n === pn || n.split(":")[0] === pn);
   };
 
-  // One card for a model — used by both the browse gallery and search results. Friendly name + raw id, size,
-  // a fits-your-machine badge from the machine RAM, inferred capability chips, and the existing pull flow.
-  const renderCard = (entry, id) => {
+
+  const renderRow = (r, id) => {
     const det = status[id] || {};
-    const fit = fitForRam(entry.sizeGB, sys.totalRamGB);
-    const caps = localCaps(entry.name || entry.pullName) || {};
-    const done = isInstalled(id, entry);
-    const pr = pulls[id + "::" + entry.pullName];
+    const isMedia = id === "localai";
+    const fit = fitForRam(r.sizeGB, sys.totalRamGB);
+    const incompatible = fit === "over";
+    const caps = localCaps(r.name || r.pullName) || {};
+    const pr = pulls[id + "::" + r.pullName];
+    const size = r.sizeLabel || (r.sizeGB ? "~" + r.sizeGB + " GB" : (r.sizeBytes ? fmtBytes(r.sizeBytes) : "—"));
+    const ucs = [];
+    if (r.useCases && r.useCases.length) { ["image", "voice", "video"].forEach((u) => { if (r.useCases.includes(u)) ucs.push(u.charAt(0).toUpperCase() + u.slice(1)); }); }
+    if (!ucs.length) { if (caps.coding) ucs.push("Coding"); if (caps.reasoning) ucs.push("Reasoning"); if (caps.vision) ucs.push("Vision"); if (caps.tools && !caps.coding) ucs.push("Tools"); }
+    if (!ucs.length) ucs.push(isMedia ? "Media" : "Chat");
+    const useIt = () => { const pkey = (providerForRuntime(id) || {}).runtime; const v = profIds[pkey] ? profIds[pkey] + "::" + r.name : null; if (v && onActivate) onActivate(v); };
+    const open = expandedRow === r.pullName;
+    const dot = fit === "good" ? "#3fb950" : fit === "tight" ? "#f5a623" : fit === "over" ? "#ff6b6b" : "var(--text-2)";
+    const fitLabel = fit === "good" ? "Compatible" : fit === "tight" ? "Runs but slow" : fit === "over" ? "Too big" : "—";
     return (
-      <div className="lm-card" key={entry.pullName}>
-        <div className="lm-card-top">
-          <div className="lm-card-name">{prettyLocalName(entry.name || entry.pullName)}</div>
-          {fit !== "unknown" ? <span className={"lm-fit " + fit} title={fit === "good" ? "Should run smoothly on your RAM" : fit === "tight" ? "Will run but may be slow / swap to disk" : "Larger than your RAM — likely won't run well"}>{FIT_LABEL[fit]}</span> : null}
-        </div>
-        <div className="lm-card-sub">{entry.pullName}</div>
-        {entry.description ? <div className="lm-card-desc">{entry.description}</div> : null}
-        <div className="lm-card-meta">
-          {entry.sizeLabel ? <span className="lm-meta-tag">{entry.sizeLabel}</span> : (entry.sizeGB ? <span className="lm-meta-tag">~{entry.sizeGB} GB</span> : null)}
-          {entry.downloads ? <span className="lm-meta-tag"><Download size={11} /> {fmtCount(entry.downloads)}</span> : null}
-          {caps.coding ? <span className="lm-cap">Code</span> : null}
-          {caps.reasoning ? <span className="lm-cap">Reasoning</span> : null}
-          {caps.vision ? <span className="lm-cap">Vision</span> : null}
-          {caps.tools && !caps.coding ? <span className="lm-cap">Tools</span> : null}
-          {(entry.useCases || []).includes("image") ? <span className="lm-cap">Image</span> : null}
-          {(entry.useCases || []).includes("voice") ? <span className="lm-cap">Voice</span> : null}
-          {(entry.useCases || []).includes("video") ? <span className="lm-cap">Video</span> : null}
-        </div>
-        <div className="lm-card-foot">
-          {done ? <span className="lm-chip ok"><CheckCircle2 size={12} /> Installed</span>
-            : pr && !pr.done && !pr.error ? <div className="lm-pulling"><div className="lm-bar small"><div className="lm-bar-fill" style={{ width: (pr.pct || 0) + "%" }} /></div><span className="lm-pct">{pr.pct || 0}%</span></div>
-            : pr && pr.error ? <button className="btn ghost sm" onClick={() => doPull(id, entry.pullName)} title={pr.error}><AlertCircle size={13} /> Retry</button>
-            : <button className="btn primary sm" onClick={() => doPull(id, entry.pullName)} disabled={!det.available} title={det.available ? "Download this model" : "Install the engine first"}><Download size={13} /> Pull</button>}
-        </div>
-      </div>
+      <Fragment key={r.pullName}>
+        <tr className={(r.installed ? "lmt-on " : "") + "lmt-row"} onClick={() => setExpandedRow(open ? null : r.pullName)}>
+          <td><div className="lmt-name">{r.installed ? <CheckCircle2 size={13} style={{ color: "#3fb950", flex: "none" }} /> : null}<ChevronRight size={12} className={"lmt-caret" + (open ? " open" : "")} /> {prettyLocalName(r.name || r.pullName)}</div><div className="lmt-sub">{r.pullName}</div></td>
+          <td><div className="lmt-caps">{ucs.map((u) => <span key={u} className="lmt-cap" style={{ color: UC_TONE[u] || "#9aa4b2", borderColor: "color-mix(in srgb, " + (UC_TONE[u] || "#9aa4b2") + " 38%, transparent)" }}>{u}</span>)}</div></td>
+          <td className="lmt-nowrap">{size}</td>
+          <td className="lmt-nowrap lmt-dim">{ctxOf(r.name || r.pullName)}</td>
+          <td className="lmt-nowrap lmt-dim">{paramsOf(r.name || r.pullName)}</td>
+          <td><span className="lmt-fit"><span className="lmt-dot" style={{ background: dot }} />{fitLabel}</span></td>
+          <td className="lmt-nowrap lmt-dim">{r.downloads ? fmtCount(r.downloads) : "—"}</td>
+          <td className="lmt-free">Free</td>
+          <td className="lmt-act" onClick={(e) => e.stopPropagation()}>
+            {r.installed ? (
+              <span className="lmt-actrow">
+                {isMedia ? <span className="lm-chip ok sm" title="Use in the Let's Create tab">Let's Create</span> : <button className="btn primary sm" onClick={useIt} title="Activate this model"><Zap size={12} /> Activate</button>}
+                <button className="btn ghost sm" onClick={() => askRemove(id, r.name)} title="Delete from disk"><Trash2 size={12} /></button>
+              </span>
+            ) : incompatible ? (
+              <span className="lmt-incompat" title="Too large for your system's memory">Not compatible</span>
+            ) : pr && !pr.done && !pr.error ? (
+              <span className="lmt-actrow"><span className="lm-bar small" style={{ width: 64 }}><span className="lm-bar-fill" style={{ width: (pr.pct || 0) + "%" }} /></span><span className="lm-pct">{pr.pct || 0}%</span></span>
+            ) : pr && pr.error ? (
+              <button className="btn ghost sm" onClick={() => doPull(id, r.pullName)} title={pr.error}><AlertCircle size={12} /> Retry</button>
+            ) : (
+              <button className="btn primary sm" onClick={() => doPull(id, r.pullName)} disabled={!det.available} title={det.available ? "Download" : "Install the engine first"}><Download size={12} /> Pull</button>
+            )}
+          </td>
+        </tr>
+        {open ? (
+          <tr className="lmt-detail"><td colSpan={9}>
+            <div className="lmt-detailbody">
+              <div className="lmt-detaildesc">{r.description || "No description available for this model. Open its page below for full details."}</div>
+              <div className="lmt-detailmeta">
+                <span>Pull: <code>{r.pullName}</code></span>
+                <span>Size: {size}</span>
+                <span>Params: {paramsOf(r.name || r.pullName)}</span>
+                <span>Context: {ctxOf(r.name || r.pullName)}</span>
+                <span>Runs here: {fitLabel}</span>
+                <span>Use: {ucs.join(", ")}</span>
+              </div>
+              {SITE[id] ? <button className="lm-sitelink" onClick={() => openExt(modelPageUrl(id, r.pullName))}>View on {SITE_LABEL[id]} <ExternalLink size={11} /></button> : null}
+            </div>
+          </td></tr>
+        ) : null}
+      </Fragment>
     );
   };
 
@@ -256,15 +302,6 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const showSearch = !!(searching[id] || searchErr[id] || (res && res.length));
     const isMedia = id === "localai";
     const galleryFilter = (e) => isMedia ? (mediaGoal === "all" || (e.useCases || []).includes(mediaGoal)) : (isChatModel(e.name || e.pullName) && goalMatches(e, goal));
-    const recList = (() => {
-      if (!isMedia) return [];
-      const all = (browseList[id] || []).filter(galleryFilter);
-      const fams = mediaGoal === "all" ? [].concat(RECOMMENDED_MEDIA.image, RECOMMENDED_MEDIA.voice, RECOMMENDED_MEDIA.video) : (RECOMMENDED_MEDIA[mediaGoal] || []);
-      const out = [];
-      for (const re of fams) { const hit = all.find((e) => re.test(e.name || e.pullName)); if (hit && !out.includes(hit)) out.push(hit); }
-      return out;
-    })();
-    const recSet = new Set(recList.map((e) => e.pullName));
     return (
       <div className="lm-panel" key={id}>
         <div className="lm-status prof-card">
@@ -276,6 +313,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
                 : <span className="lm-chip off"><AlertCircle size={12} /> Not detected</span>}
             </div>
             <div className="lm-status-note">{det.note || p.blurb}</div>
+            {SITE[id] ? <button className="lm-sitelink" onClick={() => openExt(SITE[id])} title={"Open " + SITE_LABEL[id]}>Browse all models on {SITE_LABEL[id]} <ExternalLink size={11} /></button> : null}
           </div>
           <div className="lm-status-actions">
             <button className="btn ghost sm" onClick={() => refresh(id)} title="Re-check status"><RefreshCw size={14} /></button>
@@ -304,9 +342,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         </div>
         {searchErr[id] ? <div className="lm-err"><AlertCircle size={13} /> {searchErr[id]}</div> : null}
 
-        {showSearch ? (
-          <div className="lm-gallery">{res.filter((r) => isMedia || isChatModel(r.name || r.pullName)).map((r) => renderCard(r, id))}</div>
-        ) : (
+        {!showSearch ? (
           <div className="lm-browse">
             <div className="lm-goals">
               {!isMedia ? GOALS.map((g) => (
@@ -319,56 +355,33 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
                 </button>
               ))}
             </div>
-            {isMedia ? <div className="lm-hint">These power <b>Let's Create</b> — pull a model here, then generate in the Let's Create tab.</div> : null}
-            {sys.totalRamGB ? <div className="lm-ram">Your machine has <b>{sys.totalRamGB} GB</b> RAM — the badge on each model estimates whether it will run smoothly.</div> : null}
-            {recList.length ? (
-              <div style={{ marginBottom: 16 }}>
-                <div className="lm-section-label"><Star size={13} /> Recommended — proven picks for {mediaGoal === "all" ? "media" : mediaGoal}</div>
-                <div className="lm-gallery">{recList.map((e) => renderCard(e, id))}</div>
-              </div>
-            ) : null}
-            <div className="lm-gallery">{(browseList[id] || []).filter(galleryFilter).filter((e) => !recSet.has(e.pullName)).map((e) => renderCard(e, id))}</div>
-            {!(browseList[id] && browseList[id].length)
-              ? <div className="lm-empty">{isMedia && !det.available ? "Start LocalAI above to see image, voice and video models." : "Loading suggestions…"}</div>
-              : ((browseList[id].filter(galleryFilter).length === 0)
-                  ? <div className="lm-empty">{isMedia ? "No models for this capability in the gallery yet — try another tab or the search." : ("Nothing tagged \"" + ((GOALS.find((g) => g.id === goal) || {}).label) + "\" here — try another goal, or search above.")}</div> : null)}
+            {isMedia ? <div className="lm-hint">These power <b>Let's Create</b> — pull a model here, then create in the Let's Create tab.</div> : null}
+            {sys.totalRamGB ? <div className="lm-ram">Your machine has <b>{sys.totalRamGB} GB</b> RAM — showing popular models that run great on it, most-downloaded first.</div> : null}
           </div>
-        )}
-
-        <div className="lm-installed">
-          <div className="lm-section-label"><HardDrive size={13} /> Installed on this machine{insd.length ? " (" + insd.length + ")" : ""}</div>
-          {insd.length === 0
-            ? <div className="lm-empty">No {p.label} models yet. Search above and click Pull.</div>
-            : insd.map((m) => {
-                const isRun = run.has(m.name);
-                const pkey = (providerForRuntime(id) || {}).runtime;
-                const value = profIds[pkey] ? profIds[pkey] + "::" + m.name : null;
-                const isActive = !!value && value === activeValue;
-                return (
-                  <div className={"lm-installed-row" + (isActive ? " on" : "")} key={m.name}>
-                    <div className="lm-installed-info">
-                      <span className={"lm-dot " + (isRun ? "live" : "idle")} title={isRun ? "Loaded in memory" : "On disk"} />
-                      <div className="lm-name-wrap">
-                        <span className="lm-name-main">{prettyLocalName(m.name)}</span>
-                        <span className="lm-name-sub">{m.name}</span>
-                      </div>
-                      {m.family ? <span className="lm-meta-tag">{m.family}</span> : null}
-                      {m.sizeBytes ? <span className="lm-meta-tag">{fmtBytes(m.sizeBytes)}</span> : null}
-                      {isRun ? <span className="lm-chip ok sm"><Activity size={11} /> running</span> : null}
-                    </div>
-                    <div className="lm-installed-actions">
-                      {isRun ? <button className="btn ghost sm" onClick={() => doStop(id, m.name)} title="Unload from memory (free RAM/VRAM)"><Square size={12} /> Stop</button> : null}
-                      {isMedia
-                        ? <span className="lm-chip ok sm" title="Use this model in the Let's Create tab"><CheckCircle2 size={12} /> Ready · Let's Create</span>
-                        : isActive
-                          ? <span className="lm-chip ok"><CheckCircle2 size={12} /> Active</span>
-                          : <button className="btn primary sm" onClick={() => value && onActivate && onActivate(value)} disabled={!value} title={value ? "Use this model now" : "Syncing…"}><Zap size={13} /> Use</button>}
-                      <button className="btn ghost sm" onClick={() => doRemove(id, m.name)} title="Remove from disk"><Trash2 size={13} /></button>
-                    </div>
-                  </div>
-                );
-              })}
-        </div>
+        ) : null}
+        {(() => {
+          const baseOf = (n) => String(n || "").split("/").pop().split(":")[0].toLowerCase();
+          let rows;
+          if (showSearch) {
+            rows = (res || []).filter((rr) => isMedia || isChatModel(rr.name || rr.pullName)).map((e) => ({ name: e.name, pullName: e.pullName, installed: isInstalled(id, e), sizeGB: e.sizeGB, sizeLabel: e.sizeLabel, downloads: e.downloads, description: e.description, useCases: e.useCases }));
+          } else {
+            const curated = (browseList[id] || []).filter(galleryFilter).filter((e) => { const f = fitForRam(e.sizeGB, sys.totalRamGB); return f === "good" || f === "unknown"; }).slice(0, 50).map((e) => ({ name: e.name, pullName: e.pullName, installed: isInstalled(id, e), sizeGB: e.sizeGB, sizeLabel: e.sizeLabel, downloads: e.downloads, description: e.description, useCases: e.useCases }));
+            const curBases = new Set(curated.filter((e) => e.installed).map((e) => baseOf(e.pullName)));
+            const extra = (installed[id] || []).filter((m) => !curBases.has(baseOf(m.name))).map((m) => ({ name: m.name, pullName: m.name, installed: true, sizeBytes: m.sizeBytes, sizeGB: m.sizeBytes ? Math.round(m.sizeBytes / 1e9 * 10) / 10 : undefined, downloads: 0, description: "", useCases: undefined }));
+            rows = [...extra, ...curated];
+          }
+          if (!rows.length) {
+            return <div className="lm-empty">{searching[id] ? "Searching…" : (isMedia && !det.available) ? "Start LocalAI above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
+          }
+          return (
+            <div className="mo-tablewrap lmt-wrap">
+              <table className="mo-table lmt-table">
+                <thead><tr><th>Model</th><th>Use case</th><th>Size</th><th>Context</th><th>Params</th><th>RAM compatibility</th><th>Downloads</th><th>Cost</th><th></th></tr></thead>
+                <tbody>{rows.map((r) => renderRow(r, id))}</tbody>
+              </table>
+            </div>
+          );
+        })()}
       </div>
     );
   };
