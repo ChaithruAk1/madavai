@@ -4,7 +4,7 @@
 // install the runtime if it's missing. SINGLE SOURCE: every model action goes through bridge.localModels.*
 // (desktop preload on the app; a "desktop only" stub on web), which calls the shared @madav/models registry.
 import { useState, useEffect, useCallback, Fragment } from "react";
-import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star, ExternalLink, ChevronRight, LayoutGrid, Wrench, Scale, X } from "lucide-react";
+import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star, ExternalLink, ChevronRight, LayoutGrid, Wrench, Scale, X, Music } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { providerForRuntime } from "../data/localProviders.js";
 import { prettyLocalName, localCaps, fitForRam, goalMatches, isChatModel } from "../data/localModels.js";
@@ -59,9 +59,20 @@ const MEDIA_GOALS = [
 // (and its pull name) is always a real entry — never a hard-coded name that could 404.
 const RECOMMENDED_MEDIA = {
   image: [/stable-?diffusion|sd-?1\.5|sd-?xl|sdxl/i, /\bflux/i, /dreamshaper/i],
-  voice: [/piper|voice-en|en-us-/i, /\bbark\b/i, /whisper/i],
-  video: [/\bltx/i, /\bwan/i, /hunyuan/i],
+  voice: [/piper|\bxtts\b|voice-en|en-us-|kokoro|parler/i, /\bbark\b/i],
+  video: [/\bltx/i, /\bwan/i, /hunyuan|cogvideo/i],
+  music: [/musicgen|audiocraft|stable-?audio|audioldm/i],
+  transcribe: [/whisper/i],
+  describe: [/llava|bakllava|qwen.*vl|minicpm-v|moondream/i],
 };
+const LC_CAPS = [
+  { id: "image", label: "Image", icon: ImageIcon },
+  { id: "voice", label: "Voice", icon: Mic },
+  { id: "video", label: "Video", icon: Film },
+  { id: "music", label: "Music", icon: Music },
+  { id: "transcribe", label: "Transcribe", icon: Mic },
+  { id: "describe", label: "Describe", icon: Eye },
+];
 
 function fmtBytes(n) {
   if (!n || n <= 0) return "";
@@ -89,7 +100,7 @@ function ServerRow({ m, gpu, maxCtx, onStop, onApply }) {
     <tr>
       <td><div className="lmt-name">{prettyLocalName(m.name)}</div><div className="lmt-sub">{m.provider}{m.params ? " · " + m.params : ""}</div></td>
       <td className="lmt-nowrap">{m.sizeBytes ? fmtBytes(m.sizeBytes) : "—"}{m.sizeVram ? <span className="lmt-dim"> · {fmtBytes(m.sizeVram)} VRAM{vramPct != null ? " (" + vramPct + "%)" : ""}</span> : null}</td>
-      <td><span className="lm-chip sm">{m.processor || "—"}</span></td>
+      <td className="lmt-nowrap">{m.processor || "—"}</td>
       <td className="lmt-nowrap lmt-dim">{m.quant || "—"}</td>
       <td className="lm-ctxcell"><input className="lm-ctxin" type="number" min="256" max={maxCtx || undefined} step="1024" value={ctx} onChange={(e) => setCtx(e.target.value)} onBlur={(e) => setCtx(clamp(e.target.value))} />{maxCtx ? <span className="lmt-dim">/ {lbl(maxCtx)}</span> : null}</td>
       <td><select className="lm-kasel" value={ka} onChange={(e) => setKa(e.target.value)}><option value="5m">5 min</option><option value="30m">30 min</option><option value="1h">1 hour</option><option value="-1">Forever</option></select></td>
@@ -429,6 +440,31 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             {isMedia ? <div className="lm-hint">These power <b>Let's Create</b> — pull a model here, then create in the Let's Create tab.</div> : null}
           </div>
         ) : null}
+        {isMedia && !showSearch && det.available ? (() => {
+          const gal = browseList[id] || [];
+          return (
+            <div className="lm-rec-create">
+              <div className="lm-section-label"><Star size={13} /> Recommended for Let's Create — a proven pick per capability</div>
+              <div className="lm-rec-grid">
+                {LC_CAPS.map((lc) => {
+                  const m = gal.find((e) => (RECOMMENDED_MEDIA[lc.id] || []).some((re) => re.test(e.name || e.pullName)));
+                  const pr = m && pulls[id + "::" + m.pullName];
+                  return (
+                    <div className="lm-rec-card" key={lc.id}>
+                      <div className="lm-rec-cap"><lc.icon size={14} /> {lc.label}</div>
+                      {m ? (<>
+                        <div className="lm-rec-model" title={m.pullName}>{prettyLocalName(m.name)}</div>
+                        {isInstalled(id, m) ? <span className="lm-chip ok sm"><CheckCircle2 size={11} /> Installed</span>
+                          : pr && !pr.done && !pr.error ? <span className="lm-pct">{pr.pct || 0}%</span>
+                          : <button className="btn primary sm" onClick={() => doPull(id, m.pullName, m.sizeGB)}><Download size={12} /> Pull</button>}
+                      </>) : <div className="lmt-dim" style={{ fontSize: 12 }}>browse below to find one</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })() : null}
         {(() => {
           const baseOf = (n) => String(n || "").split("/").pop().split(":")[0].toLowerCase();
           const onlyInstalled = goals.has("downloaded");

@@ -3573,3 +3573,8 @@ textarea.model-search { border-radius: 14px; }
 .lc2-plan-step { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--text-1); padding: 3px 0; line-height: 1.5; }
 .lc2-plan-n { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 700; flex: none; }
 .lc2-plan-step b { color: var(--accent); text-transform: capitalize; }
+.lm-rec-create { margin: 4px 0 10px; }
+.lm-rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 10px; margin-top: 8px; }
+.lm-rec-card { border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; background: var(--bg-1); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.lm-rec-cap { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.lm-rec-model { font-size: 12.5px; color: var(--text-0); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
