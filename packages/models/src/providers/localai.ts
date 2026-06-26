@@ -95,6 +95,15 @@ export class LocalAiRuntime implements LocalModelRuntime {
     return { b64: buf.toString('base64'), mime: r.headers.get('content-type') || 'audio/wav' };
   }
 
+  // Text-to-music (LocalAI /tts with a MusicGen-style model). Returns base64 audio.
+  async generateMusic(model: string, input: string): Promise<{ b64: string; mime: string }> {
+    const f: any = (globalThis as any).fetch;
+    const r = await f(this.base.replace(/\/+$/, '') + '/tts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model, input: String(input).slice(0, 2000) }) });
+    if (!r.ok) throw new Error('Music failed (HTTP ' + r.status + ')');
+    const buf = Buffer.from(await r.arrayBuffer());
+    return { b64: buf.toString('base64'), mime: r.headers.get('content-type') || 'audio/wav' };
+  }
+
   // Speech-to-text (OpenAI-compatible /v1/audio/transcriptions, multipart). Returns the transcript text.
   async transcribe(model: string, audioB64: string, mime: string, filename: string): Promise<{ text: string }> {
     const f: any = (globalThis as any).fetch;

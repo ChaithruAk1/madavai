@@ -176,6 +176,18 @@ function register(ipcMain, getWin) {
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
 
+  // Let's Create — text-to-music via LocalAI; saves a copy to Pictures/Madav Media.
+  ipcMain.handle("localMedia:music", async (_e, req) => {
+    const { model, prompt } = req || {};
+    try {
+      const r = await rt("localai");
+      if (!r || !r.generateMusic) return { error: "LocalAI engine isn't available — set it up in Local Models." };
+      if (!model) return { error: "Pick a music model first." };
+      const a = await r.generateMusic(String(model), String(prompt || ""));
+      return { b64: a.b64, mime: a.mime, file: saveMedia("music", a.b64, a.mime) };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  });
+
   // Let's Create — speech-to-text via LocalAI (audio bytes come from the renderer as base64).
   ipcMain.handle("localMedia:transcribe", async (_e, req) => {
     const { model, audioB64, mime, filename } = req || {};

@@ -1225,7 +1225,7 @@ export const webBridge = {
     onPullProgress: () => () => {},
     onInstallProgress: () => () => {},
   },
-  media: { image: async () => ({ error: "Image generation runs in the Madav desktop app." }), imageEdit: async () => ({ error: "Image editing runs in the Madav desktop app." }), describe: async () => ({ error: "Image understanding runs in the Madav desktop app." }), speech: async () => ({ error: "Voice runs in the Madav desktop app." }), transcribe: async () => ({ error: "Voice runs in the Madav desktop app." }), video: async () => ({ error: "Video runs in the Madav desktop app." }) },
+  media: { image: async () => ({ error: "Image generation runs in the Madav desktop app." }), imageEdit: async () => ({ error: "Image editing runs in the Madav desktop app." }), describe: async () => ({ error: "Image understanding runs in the Madav desktop app." }), speech: async () => ({ error: "Voice runs in the Madav desktop app." }), music: async () => ({ error: "Music runs in the Madav desktop app." }), transcribe: async () => ({ error: "Voice runs in the Madav desktop app." }), video: async () => ({ error: "Video runs in the Madav desktop app." }) },
   async mcpTestServer(url, headers) {
     try {
       const r = await fetch(api("/mcp/tools"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url, headers: headers || {} }) });

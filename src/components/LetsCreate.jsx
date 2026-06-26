@@ -3,7 +3,7 @@
 // every result sparks the next (an image can Animate into a video). Powered by the LocalAI engine. This is its
 // own playful surface (not the chat shell) — friendly copy, a warm empty state, rich inline result cards.
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Sparkles, Image as ImageIcon, Mic, Film, Volume2, Loader2, Download, FolderOpen, AlertCircle, Wand2, Copy, Check, Upload, X, RotateCcw, Eye } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Mic, Film, Volume2, Loader2, Download, FolderOpen, AlertCircle, Wand2, Copy, Check, Upload, X, RotateCcw, Eye, Music } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { localModality, prettyLocalName } from "../data/localModels.js";
 import { isVisionModel } from "../modelCost.js";
@@ -14,6 +14,7 @@ const CAPS = [
   { id: "video", label: "Video", icon: Film, placeholder: "a paper boat drifting down a rainy neon street" },
   { id: "transcribe", label: "Transcribe", icon: Mic, placeholder: "" },
   { id: "describe", label: "Describe", icon: Eye, placeholder: "ask about the image, or leave blank for a description" },
+  { id: "music", label: "Music", icon: Music, placeholder: "describe the music — a calm lo-fi beat with soft piano" },
 ];
 const STARTERS = [
   { cap: "image", text: "a neon koi gliding through glowing clouds" },
@@ -22,6 +23,7 @@ const STARTERS = [
   { cap: "voice", text: "Read aloud: the quiet hum of a city at midnight." },
 ];
 const isSTT = (n) => /(whisper|\bstt\b|\basr\b|transcrib)/i.test(String(n || ""));
+const isMusic = (n) => /(musicgen|audiocraft|\bmusic\b|stable-?audio)/i.test(String(n || ""));
 const capLabel = (c) => (c === "voice" ? "voice" : c === "video" ? "video" : c === "transcribe" ? "transcription" : "image");
 
 export default function LetsCreate({ onNavigate }) {
@@ -46,8 +48,9 @@ export default function LetsCreate({ onNavigate }) {
     if (c === "image") return models.filter((m) => localModality(m.name) === "image");
     if (c === "video") return models.filter((m) => localModality(m.name) === "video");
     if (c === "describe") return models.filter((m) => isVisionModel(m.name));
+    if (c === "music") return models.filter((m) => localModality(m.name) === "voice" && isMusic(m.name));
     if (c === "transcribe") return models.filter((m) => localModality(m.name) === "voice" && isSTT(m.name));
-    return models.filter((m) => localModality(m.name) === "voice" && !isSTT(m.name)); // voice = TTS
+    return models.filter((m) => localModality(m.name) === "voice" && !isSTT(m.name) && !isMusic(m.name)); // voice = TTS
   };
 
   const runTurn = async ({ cap, prompt, attach }) => {
@@ -64,6 +67,7 @@ export default function LetsCreate({ onNavigate }) {
       else if (cap === "video") r = await bridge.media.video({ model, prompt, seconds: 4, startImageB64: attach && attach.kind === "image" ? attach.b64 : undefined, startImageMime: attach && attach.mime });
       else if (cap === "transcribe") r = await bridge.media.transcribe({ model, audioB64: attach && attach.b64, mime: attach && attach.mime, filename: attach && attach.name });
       else if (cap === "describe") r = await bridge.media.describe({ model, prompt, imageB64: attach && attach.b64, imageMime: attach && attach.mime });
+      else if (cap === "music") r = await bridge.media.music({ model, prompt });
       const ok = r && !r.error;
       setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: ok ? "done" : "error", result: ok ? r : null, error: ok ? "" : ((r && r.error) || "Something went wrong.") } : x));
     } catch (e) {
