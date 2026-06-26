@@ -215,6 +215,7 @@ contextBridge.exposeInMainWorld("madav", {
     pull: (id, name) => ipcRenderer.invoke("localModels:pull", id, name),
     remove: (id, name) => ipcRenderer.invoke("localModels:remove", id, name),
     stop: (id, name) => ipcRenderer.invoke("localModels:stop", id, name),
+    load: (id, name) => ipcRenderer.invoke("localModels:load", id, name),
     browse: (id) => ipcRenderer.invoke("localModels:browse", id),
     system: () => ipcRenderer.invoke("localModels:system"),
     dockerStatus: () => ipcRenderer.invoke("localModels:dockerStatus"),

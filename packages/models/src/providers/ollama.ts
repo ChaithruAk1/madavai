@@ -44,6 +44,7 @@ export class OllamaRuntime implements LocalModelRuntime {
   async remove(name: string): Promise<void> { await this.http.json('DELETE', '/api/delete', { name }); }
 
   async stop(name: string): Promise<void> { await this.http.json('POST', '/api/generate', { model: name, keep_alive: 0, stream: false }); }
+  async load(name: string): Promise<void> { await this.http.json('POST', '/api/generate', { model: name, stream: false }); }
 
   async browse(): Promise<ModelSearchResult[]> {
     return OLLAMA_CATALOG.map((m) => ({ pullName: m.name, name: m.name, description: m.description, sizeLabel: m.sizeLabel, sizeGB: m.sizeGB, useCases: m.useCases, family: m.family, source: 'ollama' as const }));

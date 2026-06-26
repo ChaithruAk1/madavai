@@ -26,6 +26,9 @@ const GOALS = [
   { id: "reasoning", label: "Deep reasoning", desc: "Thinks step by step", icon: Brain },
   { id: "vision", label: "Sees images", desc: "Understands pictures + screenshots", icon: Eye },
   { id: "tiny", label: "Tiny & fast", desc: "Runs on modest hardware", icon: Zap },
+  { id: "image", label: "Image", desc: "Generates images", icon: ImageIcon },
+  { id: "voice", label: "Voice", desc: "Speech + transcription", icon: Mic },
+  { id: "video", label: "Video", desc: "Generates video", icon: Film },
   { id: "downloaded", label: "Downloaded", desc: "Models you've already installed", icon: HardDrive },
 ];
 const FIT_LABEL = { good: "Runs great", tight: "Will be slow", over: "Too big" };
@@ -90,9 +93,11 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const toggleSort = (k) => { if (!k) return; if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc")); else { setSortKey(k); setSortDir(k === "model" ? "asc" : "desc"); } };
   const [cmp, setCmp] = useState(() => new Map());   // pullName -> row data, for side-by-side compare (max 4)
   const [cmpOpen, setCmpOpen] = useState(false);
+  const [starting, setStarting] = useState({});   // id::name -> true while a model is loading into memory
   const toggleCmp = (row) => setCmp((m) => { const n = new Map(m); if (n.has(row.pullName)) n.delete(row.pullName); else if (n.size < 4) n.set(row.pullName, row); return n; });
   const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
-  const [goal, setGoal] = useState("all");            // active chat browse goal tile
+  const [goals, setGoals] = useState(() => new Set(["all"]));  // selected filter tiles (multi-select)
+  const toggleGoal = (id) => setGoals((prev) => { const n = new Set(prev); if (id === "all") return new Set(["all"]); n.delete("all"); if (n.has(id)) n.delete(id); else n.add(id); return n.size ? n : new Set(["all"]); });
   const [mediaGoal, setMediaGoal] = useState("all"); // active LocalAI capability tile (image/voice/video)
   const [sys, setSys] = useState({ totalRamGB: 0 }); // machine RAM, for the fits-your-machine badge
   const [dockerInfo, setDockerInfo] = useState(null);  // LocalAI: Docker presence/running
@@ -223,6 +228,15 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     try { await bridge.localModels.stop(id, name); } catch {}
     setTimeout(() => refresh(id), 400);
   };
+  const doActivate = async (id, name) => {             // select it as the chat model AND load it into the runtime so it actually runs
+    const pkey = (providerForRuntime(id) || {}).runtime;
+    const v = profIds[pkey] ? profIds[pkey] + "::" + name : null;
+    if (v && onActivate) onActivate(v);
+    setStarting((s) => ({ ...s, [id + "::" + name]: true }));
+    try { await bridge.localModels.load(id, name); } catch {}
+    setStarting((s) => { const n = { ...s }; delete n[id + "::" + name]; return n; });
+    refresh(id);                                        // re-poll running() so the button reflects reality
+  };
   const doInstall = (id) => {
     setInstalling((m) => ({ ...m, [id]: { phase: "starting", pct: 0 } }));
     setInstallNote((m) => ({ ...m, [id]: "" }));
@@ -255,7 +269,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const useIt = () => { const pkey = (providerForRuntime(id) || {}).runtime; const v = profIds[pkey] ? profIds[pkey] + "::" + r.name : null; if (v && onActivate) onActivate(v); };
     const _pk = (providerForRuntime(id) || {}).runtime;
     const _val = r.installed && profIds[_pk] ? profIds[_pk] + "::" + r.name : null;
-    const isActive = !!_val && _val === activeValue;
+    const isRunning = (running[id] || new Set()).has(r.name); const isStarting = !!starting[id + "::" + r.name];
     const open = expandedRow === r.pullName;
     const dot = fit === "good" ? "#3fb950" : fit === "tight" ? "#f5a623" : fit === "over" ? "#ff6b6b" : "var(--text-2)";
     const fitLabel = fit === "good" ? "Compatible" : fit === "tight" ? "Runs but slow" : fit === "over" ? "Too big" : "—";
@@ -264,7 +278,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         <tr className={(r.installed ? "lmt-on " : "") + "lmt-row"} onClick={() => setExpandedRow(open ? null : r.pullName)}>
           <td className="lmt-ck" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="mo-cmpck" title="Compare (up to 4)" checked={cmp.has(r.pullName)} disabled={!cmp.has(r.pullName) && cmp.size >= 4} onChange={() => toggleCmp(r)} /></td>
           <td><div className="lmt-name">{r.installed ? <CheckCircle2 size={13} style={{ color: "#3fb950", flex: "none" }} /> : null}<ChevronRight size={12} className={"lmt-caret" + (open ? " open" : "")} /> {prettyLocalName(r.name || r.pullName)}</div><div className="lmt-maker"><MakerLogo maker={mk.key} /> {mk.label}</div></td>
-          <td><div className="lmt-caps">{ucs.map((u) => { const M = UC_META[u] || { tone: "#9aa4b2" }; const I = M.icon; return <span key={u} className="lmt-cap" style={{ color: M.tone, borderColor: "color-mix(in srgb, " + M.tone + " 38%, transparent)" }}>{I ? <I size={11} /> : null} {u}</span>; })}</div></td>
+          <td><div className="lmt-caps">{ucs.map((u) => { const M = UC_META[u] || { tone: "#9aa4b2" }; const I = M.icon; return <span key={u} className="lmt-cap" style={{ color: M.tone }}>{I ? <I size={11} /> : null} {u}</span>; })}</div></td>
           <td className="lmt-nowrap">{size}</td>
           <td className="lmt-nowrap lmt-dim">{ctxOf(r.name || r.pullName)}</td>
           <td className="lmt-nowrap lmt-dim">{paramsOf(r.name || r.pullName)}</td>
@@ -274,7 +288,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           <td className="lmt-act" onClick={(e) => e.stopPropagation()}>
             {r.installed ? (
               <span className="lmt-actrow">
-                {isMedia ? <span className="lm-chip ok sm" title="Use in the Let's Create tab">Let's Create</span> : isActive ? <button className="btn danger sm" onClick={() => doStop(id, r.name)} title="Stop Server"><Square size={12} /> Stop</button> : <button className="btn primary sm" onClick={useIt} disabled={!_val} title={_val ? "Activate this model" : "Preparing this model… one moment"}><Zap size={12} /> Activate</button>}
+                {isMedia ? <span className="lm-chip ok sm" title="Use in the Let's Create tab">Let's Create</span> : isRunning ? <button className="btn danger sm" onClick={() => doStop(id, r.name)} title="Stop the running model (unload from memory)"><Square size={12} /> Stop</button> : isStarting ? <button className="btn primary sm" disabled><Loader2 size={12} className="spin" /> Starting…</button> : <button className="btn primary sm" onClick={() => doActivate(id, r.name)} disabled={!_val} title={_val ? "Activate — load this model into memory" : "Preparing this model… one moment"}><Zap size={12} /> Activate</button>}
                 <button className="btn ghost sm" onClick={() => askRemove(id, r.name)} title="Delete from disk"><Trash2 size={12} /></button>
               </span>
             ) : incompatible ? (
@@ -317,7 +331,8 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const run = running[id] || new Set();
     const showSearch = !!(searching[id] || searchErr[id] || (res && res.length));
     const isMedia = id === "localai";
-    const galleryFilter = (e) => isMedia ? (mediaGoal === "all" || (e.useCases || []).includes(mediaGoal)) : (isChatModel(e.name || e.pullName) && goalMatches(e, goal));
+    const selCaps = [...goals].filter((g) => g !== "all" && g !== "downloaded");
+    const galleryFilter = (e) => { if (!selCaps.length) return isMedia ? true : isChatModel(e.name || e.pullName); return selCaps.some((g) => { if (g === "image" || g === "voice" || g === "video") return (e.useCases || []).includes(g); if (isMedia) return false; return isChatModel(e.name || e.pullName) && goalMatches(e, g); }); };
     return (
       <div className="lm-panel" key={id}>
         <div className="lm-status prof-card">
@@ -361,12 +376,8 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         {!showSearch ? (
           <div className="lm-browse">
             <div className="lm-goals">
-              {!isMedia ? GOALS.map((g) => (
-                <button key={g.id} className={"lm-goal " + (goal === g.id ? "on" : "")} onClick={() => setGoal(g.id)} title={g.desc}>
-                  <g.icon size={15} /> <span>{g.label}</span>
-                </button>
-              )) : MEDIA_GOALS.map((g) => (
-                <button key={g.id} className={"lm-goal " + (mediaGoal === g.id ? "on" : "")} onClick={() => setMediaGoal(g.id)}>
+              {GOALS.map((g) => (
+                <button key={g.id} className={"lm-goal " + (goals.has(g.id) ? "on" : "")} onClick={() => toggleGoal(g.id)} title={g.desc}>
                   {g.icon ? <g.icon size={15} /> : null} <span>{g.label}</span>
                 </button>
               ))}
@@ -377,7 +388,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         ) : null}
         {(() => {
           const baseOf = (n) => String(n || "").split("/").pop().split(":")[0].toLowerCase();
-          const activeGoal = isMedia ? mediaGoal : goal;
+          const onlyInstalled = goals.has("downloaded");
           let rows;
           if (showSearch) {
             rows = (res || []).filter((rr) => isMedia || isChatModel(rr.name || rr.pullName)).map((e) => ({ name: e.name, pullName: e.pullName, installed: isInstalled(id, e), sizeGB: e.sizeGB, sizeLabel: e.sizeLabel, downloads: e.downloads, description: e.description, useCases: e.useCases }));
@@ -387,8 +398,8 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             const enrich = (m) => { const g = galByBase.get(baseOf(m.name)) || {}; return { name: m.name, pullName: m.name, installed: true, sizeBytes: m.sizeBytes, sizeGB: m.sizeBytes ? Math.round(m.sizeBytes / 1e9 * 10) / 10 : g.sizeGB, sizeLabel: g.sizeLabel, downloads: g.downloads || 0, description: g.description || "", useCases: g.useCases }; };
             const installedRows = (installed[id] || []).map(enrich);                      // REAL installed names -> activate + delete work
             const installedBases = new Set((installed[id] || []).map((m) => baseOf(m.name)));
-            if (activeGoal === "downloaded") {
-              rows = installedRows;                                                        // "Downloaded" filter = only what you have
+            if (onlyInstalled) {
+              rows = installedRows.filter((r) => galleryFilter(r));                        // "Downloaded" = installed only (+ any selected capabilities)
             } else {
               const curated = galAll.filter(galleryFilter).filter((e) => { const f = fitForRam(e.sizeGB, sys.totalRamGB); return f === "good" || f === "unknown"; }).filter((e) => !installedBases.has(baseOf(e.pullName))).slice(0, 50).map((e) => ({ name: e.name, pullName: e.pullName, installed: false, sizeGB: e.sizeGB, sizeLabel: e.sizeLabel, downloads: e.downloads, description: e.description, useCases: e.useCases }));
               rows = [...installedRows.filter((r) => galleryFilter(r)), ...curated];

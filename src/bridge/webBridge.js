@@ -1216,6 +1216,7 @@ export const webBridge = {
     pull: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
     remove: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
     stop: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
+    load: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
     browse: async () => [],
     system: async () => ({ totalRamGB: 0, unknown: true }),
     dockerStatus: async () => ({ installed: false, running: false, note: "Local media generation is a desktop feature." }),

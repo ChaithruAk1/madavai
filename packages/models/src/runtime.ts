@@ -27,6 +27,7 @@ export interface LocalModelRuntime {
   pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void>;
   remove(name: string): Promise<void>;
   stop(name: string): Promise<void>;  // unload a running model from memory
+  load?(name: string): Promise<void>;  // load a model into memory (so it actually runs)
   browse(): Promise<ModelSearchResult[]>;  // a default gallery to show before the user searches
 }
 
