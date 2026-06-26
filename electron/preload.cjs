@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld("madav", {
   // --- agent ---
   chooseFolder: () => ipcRenderer.invoke("madav:chooseFolder"),
   listDir: (dir) => ipcRenderer.invoke("madav:listDir", dir),
+  readFileB64: (fp) => ipcRenderer.invoke("madav:readFileB64", fp),
   openExternal: (url) => ipcRenderer.invoke("madav:openExternal", url),
   openPath: (p) => ipcRenderer.invoke("madav:openPath", p),
   saveAndOpen: (name, b64, dir) => ipcRenderer.invoke("madav:saveAndOpen", { name, b64, dir }),

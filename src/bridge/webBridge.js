@@ -1632,6 +1632,7 @@ export const webBridge = {
     return null;                              // cancelled
   },
   async listDir() { return []; },
+  async readFileB64() { return null; },
   async openExternal(url) { try { window.open(url, "_blank", "noopener"); } catch {} return true; },
   async testConnector(server) { return testConnectorWeb(server); },
   async connectorSignIn(server) { return connectorSignInWeb(server); },

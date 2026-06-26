@@ -55,6 +55,8 @@ export default function LetsCreate({ onNavigate }) {
   const [agentsOn, setAgentsOn] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
   const [mpOpen, setMpOpen] = useState(false);
+  const [folderFiles, setFolderFiles] = useState([]);
+  const [ffOpen, setFfOpen] = useState(false);
   const threadRef = useRef(null);
 
   const refresh = useCallback(async () => {
@@ -155,6 +157,14 @@ export default function LetsCreate({ onNavigate }) {
   const _h = new Date().getHours(); const _part = _h < 12 ? "morning" : _h < 18 ? "afternoon" : "evening";
   const greeting = who ? "Good " + _part + ", " + who : "Good " + _part;
   const pickFolder = async () => { try { const d = await bridge.chooseFolder(); const f = typeof d === "string" ? d : (d && (d.folder || d.path)); if (f) setFolder(f); } catch {} };
+  const openFolderFiles = async () => {
+    if (!folder) return;
+    try { const entries = await bridge.listDir(folder); const re = cap === "transcribe" ? /\.(mp3|wav|m4a|ogg|flac|aac|opus)$/i : /\.(png|jpe?g|webp|gif|bmp)$/i; setFolderFiles((entries || []).filter((e) => !e.isDir && re.test(e.name))); setFfOpen(true); } catch {}
+  };
+  const pickFromFolder = async (name) => {
+    setFfOpen(false);
+    try { const r = await bridge.readFileB64(folder + "/" + name); if (r && r.b64) setAttach({ kind: cap === "transcribe" ? "audio" : "image", b64: r.b64, mime: r.mime, name: r.name || name }); } catch {}
+  };
   const chosenModel = (mods) => (pickedModel && mods.some((m) => m.name === pickedModel)) ? pickedModel : (mods[0] && mods[0].name);
 
   const dataUrl = (r) => "data:" + (r.mime || "application/octet-stream") + ";base64," + r.b64;
@@ -270,7 +280,13 @@ export default function LetsCreate({ onNavigate }) {
             {plusOpen ? (
               <div className="lc2-plus-menu" onMouseLeave={() => setPlusOpen(false)}>
                 <label className="lc2-plus-item"><ImageIcon size={15} /> Add files or photos<input type="file" accept="image/*" hidden onChange={(e) => { onPickImage(e); setPlusOpen(false); }} /></label>
+                {folder && (cap === "transcribe" || cap === "describe" || cap === "image") ? <button className="lc2-plus-item" onClick={() => { setPlusOpen(false); openFolderFiles(); }}><FolderGit2 size={15} /> From your folder…</button> : null}
                 <button className="lc2-plus-item" onClick={() => { setAgentsOn((a) => !a); setPlusOpen(false); }}><Bot size={15} /> {agentsOn ? "Agents · on" : "Use Agents"}</button>
+              </div>
+            ) : null}
+            {ffOpen ? (
+              <div className="lc2-plus-menu" style={{ maxHeight: 300, overflowY: "auto" }} onMouseLeave={() => setFfOpen(false)}>
+                {folderFiles.length ? folderFiles.map((f) => <button key={f.name} className="lc2-plus-item" onClick={() => pickFromFolder(f.name)}>{f.name}</button>) : <div style={{ padding: "8px 10px", fontSize: 12, color: "var(--text-2)" }}>No {cap === "transcribe" ? "audio" : "image"} files in this folder.</div>}
               </div>
             ) : null}
           </div>

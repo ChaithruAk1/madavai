@@ -473,6 +473,14 @@ ipcMain.handle("madav:saveAndOpen", (_e, payload) => {
 
 // ---- IPC: shallow directory listing (for @-mention file picker) ----
 const DIR_SKIP = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", "dist", "build", ".next", ".cache"]);
+ipcMain.handle("madav:readFileB64", (_e, fp) => {
+  try {
+    const buf = fs.readFileSync(fp);
+    const ext = String(fp).split(".").pop().toLowerCase();
+    const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", bmp: "image/bmp", mp3: "audio/mpeg", wav: "audio/wav", m4a: "audio/mp4", ogg: "audio/ogg", flac: "audio/flac", aac: "audio/aac", opus: "audio/opus" };
+    return { b64: buf.toString("base64"), mime: MIME[ext] || "application/octet-stream", name: require("node:path").basename(fp) };
+  } catch { return null; }
+});
 ipcMain.handle("madav:listDir", (_e, dir) => {
   if (!dir) return [];
   try {
