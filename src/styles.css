@@ -3399,3 +3399,16 @@ textarea.model-search { border-radius: 14px; }
 .lc-result img { width: 100%; display: block; aspect-ratio: 1; object-fit: cover; background: var(--bg-0); }
 .lc-result-foot { display: flex; align-items: center; gap: 6px; padding: 8px 10px; }
 .lc-result-prompt { flex: 1; min-width: 0; font-size: 11.5px; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lc-subtabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.lc-subtab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg-2); color: var(--text-1); font-size: 12.5px; cursor: pointer; }
+.lc-subtab.on { border-color: var(--accent); color: var(--text-0); background: rgba(var(--accent-rgb),0.12); }
+.lc-input { padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg-2); color: var(--text-0); font-size: 13px; min-width: 200px; }
+.lc-filebtn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg-2); color: var(--text-1); font-size: 12.5px; cursor: pointer; min-width: 200px; }
+.lc-filebtn:hover { border-color: var(--accent); }
+.lc-audio { margin-top: 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); }
+.lc-audio-text { font-size: 12.5px; color: var(--text-1); margin-bottom: 8px; }
+.lc-audio audio { width: 100%; }
+.lc-audio-acts { display: flex; gap: 8px; margin-top: 8px; }
+.lc-transcript { margin-top: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); overflow: hidden; }
+.lc-transcript-h { display: flex; align-items: center; justify-content: space-between; padding: 9px 13px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-2); border-bottom: 1px solid var(--line); }
+.lc-transcript-body { padding: 13px; font-size: 13.5px; color: var(--text-0); line-height: 1.55; white-space: pre-wrap; }

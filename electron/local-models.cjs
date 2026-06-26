@@ -134,6 +134,38 @@ function register(ipcMain, getWin) {
       return { b64: img.b64, mime: img.mime, file };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
+
+  // Let's Create — text-to-speech via LocalAI; saves a copy to Pictures/Madav Media.
+  ipcMain.handle("localMedia:speech", async (_e, req) => {
+    const { model, input, voice } = req || {};
+    try {
+      const r = await rt("localai");
+      if (!r || !r.generateSpeech) return { error: "LocalAI engine isn't available — set it up in Local Models." };
+      if (!model) return { error: "Pick a voice model first." };
+      const a = await r.generateSpeech(String(model), String(input || ""), { voice: voice || undefined });
+      let file = "";
+      try {
+        const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();
+        const dir = path.join(base, "Madav Media"); fs.mkdirSync(dir, { recursive: true });
+        const ext = /mpeg|mp3/.test(a.mime || "") ? "mp3" : /ogg/.test(a.mime || "") ? "ogg" : "wav";
+        file = path.join(dir, "voice_" + Date.now().toString(36) + "." + ext);
+        fs.writeFileSync(file, Buffer.from(a.b64, "base64"));
+      } catch { file = ""; }
+      return { b64: a.b64, mime: a.mime, file };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  });
+
+  // Let's Create — speech-to-text via LocalAI (audio bytes come from the renderer as base64).
+  ipcMain.handle("localMedia:transcribe", async (_e, req) => {
+    const { model, audioB64, mime, filename } = req || {};
+    try {
+      const r = await rt("localai");
+      if (!r || !r.transcribe) return { error: "LocalAI engine isn't available — set it up in Local Models." };
+      if (!model) return { error: "Pick a transcription model first." };
+      if (!audioB64) return { error: "Choose an audio file first." };
+      return await r.transcribe(String(model), String(audioB64), String(mime || "audio/wav"), String(filename || "audio.wav"));
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  });
 }
 
 module.exports = { register };
