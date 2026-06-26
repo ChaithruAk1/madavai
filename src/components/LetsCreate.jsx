@@ -83,6 +83,7 @@ export default function LetsCreate({ onNavigate }) {
 
   const baseOf = (n) => String(n || "").split("/").pop().split(":")[0].toLowerCase();
   const ucFor = (name) => { const g = gallery.find((e) => baseOf(e.pullName) === baseOf(name) || baseOf(e.name || "") === baseOf(name)); return (g && g.useCases) || []; };
+  const capHint = (name) => { const uc = ucFor(name).filter((u) => u !== "general"); if (uc.length) return uc.join(" · "); const mod = localModality(name); return mod === "text" ? "media" : mod; };
   const modelsFor = (c) => models.filter((m) => {
     const uc = ucFor(m.name); const mod = localModality(m.name);
     const generic = uc.includes("general") || (!uc.length && mod === "text"); // an installed LocalAI model we can't classify -> let the user pick it for any capability
@@ -93,6 +94,16 @@ export default function LetsCreate({ onNavigate }) {
     if (c === "transcribe") return generic || ((uc.includes("voice") || mod === "voice") && isSTT(m.name));
     return generic || ((uc.includes("voice") || mod === "voice") && !isSTT(m.name) && !isMusic(m.name)); // voice (TTS)
   });
+
+  const friendlyErr = (c, modelName, err) => {
+    const e = String(err || "");
+    if (/No .* model/i.test(e)) return e;
+    if (/\b500\b|failed|unsupported|not.*support|no handler|could not|loading|error/i.test(e)) {
+      const want = c === "image" ? "an image generator (Stable Diffusion or FLUX)" : c === "video" ? "a video model (e.g. LTX / Wan)" : c === "voice" ? "a text-to-speech voice" : c === "transcribe" ? "a speech-to-text model (Whisper)" : c === "music" ? "a music model (MusicGen)" : c === "describe" ? "a vision model that can read images" : "the right kind of model";
+      return "“" + prettyLocalName(modelName || "this model") + "” couldn’t do that — it may not be " + want + ". Pick a different model below, or pull one in Local Models.";
+    }
+    return e;
+  };
 
   const runTurn = async ({ cap, prompt, attach }) => {
     const avail = modelsFor(cap);
@@ -110,10 +121,10 @@ export default function LetsCreate({ onNavigate }) {
       else if (cap === "describe") r = await bridge.media.describe({ model, prompt, imageB64: attach && attach.b64, imageMime: attach && attach.mime });
       else if (cap === "music") r = await bridge.media.music({ model, prompt, outDir: folder });
       const ok = r && !r.error;
-      setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: ok ? "done" : "error", result: ok ? r : null, error: ok ? "" : ((r && r.error) || "Something went wrong.") } : x));
+      setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: ok ? "done" : "error", result: ok ? r : null, error: ok ? "" : friendlyErr(cap, model, (r && r.error) || "Something went wrong.") } : x));
       return ok ? r : null;
     } catch (e) {
-      setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: "error", error: String((e && e.message) || e) } : x));
+      setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: "error", error: friendlyErr(cap, model, String((e && e.message) || e)) } : x));
       return null;
     } finally { setBusy(false); }
   };
@@ -302,7 +313,10 @@ export default function LetsCreate({ onNavigate }) {
                     <div className={"lc2-gen lc2-gen-" + turn.cap}><div className="lc2-shim" /><div style={{ position: "relative", textAlign: "center" }}><div className="lc2-genlabel"><Loader2 size={14} className="spin" /> {turn.cap === "plan" ? "Madav is planning the steps…" : "Madav is imagining…"}</div><div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 5 }}>{turn.cap === "video" ? "video can take a few minutes" : "first run loads the model — give it a moment"}</div></div></div>
                   ) : turn.status === "error" ? (
                     <div className="lc2-errcard"><div><AlertCircle size={15} /> {turn.error}</div>
-                      {/No .* model/.test(turn.error) ? <button className="lc2-mini" onClick={goModels}>Pull a model</button> : <button className="lc2-mini" onClick={() => vary(turn)}><RotateCcw size={12} /> Try again</button>}
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {turn.cap !== "plan" ? <button className="lc2-mini" onClick={() => vary(turn)}><RotateCcw size={12} /> Try again</button> : null}
+                        {/Local Models|No .* model/.test(turn.error) ? <button className="lc2-mini" onClick={goModels}>Open Local Models</button> : null}
+                      </div>
                     </div>
                   ) : ResultCard(turn)}
                 </div>
@@ -350,7 +364,7 @@ export default function LetsCreate({ onNavigate }) {
           <button className="lc2-dockchip" onClick={pickFolder} title="Pick a folder to manage and process files"><FolderGit2 size={13} /> {folder ? folder.split(/[\\/]/).pop() : "Select Folder"} <ChevronDown size={12} /></button>
           <div className="lc2-mp">
             <button className="lc2-dockchip" onClick={() => setMpOpen((o) => !o)} disabled={!relModels.length} title="Model used for this creation">{relModels.length ? prettyLocalName(chosenModel(relModels)) : "No model"} <ChevronDown size={12} /></button>
-            {mpOpen ? <div className="lc2-mp-menu" onMouseLeave={() => setMpOpen(false)}>{relModels.map((m) => { const sel = chosenModel(relModels) === m.name; return <div key={m.name} className={"lc2-mp-row" + (sel ? " sel" : "")} onClick={() => { setPickedModel(m.name); setMpOpen(false); }}>{prettyLocalName(m.name)}{sel ? <Check size={14} /> : null}</div>; })}</div> : null}
+            {mpOpen ? <div className="lc2-mp-menu" onMouseLeave={() => setMpOpen(false)}>{relModels.map((m) => { const sel = chosenModel(relModels) === m.name; return <div key={m.name} className={"lc2-mp-row" + (sel ? " sel" : "")} onClick={() => { setPickedModel(m.name); setMpOpen(false); }}><span>{prettyLocalName(m.name)} <span className="lc2-mp-hint">{capHint(m.name)}</span></span>{sel ? <Check size={14} /> : null}</div>; })}</div> : null}
           </div>
           <PermissionPicker value={perm} onChange={setPerm} />
           <button className={"lc2-dockchip" + (agentsOn ? " on" : "")} onClick={() => setAgentsOn((a) => !a)} title="Let agents help (configured later)"><Bot size={13} /> Agents</button>
