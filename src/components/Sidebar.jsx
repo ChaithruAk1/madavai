@@ -21,6 +21,7 @@ const MODELS = [
   { id: "models", label: "Model configuration", icon: SlidersHorizontal },
   { id: "models-routing", label: "Model Routing", icon: Share2 },
   { id: "models-overview", label: "Models overview", icon: List },
+  { id: "models-local", label: "Local Models", icon: Cpu },
   { id: "models-speed", label: "Models speed check", icon: Gauge },
 ];
 const TAIL = [

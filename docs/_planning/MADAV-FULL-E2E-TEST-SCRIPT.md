@@ -345,11 +345,66 @@ These are env vars set **before** launch. Turn on → test → turn off. Quit th
 The mac build is **wired but unbuilt** (needs macOS). When ready: on a Mac, `npm run electron:build:mac` → a `.dmg`. Follow `MAC-DESKTOP-BUILD-SCOPE.md` for Apple signing + notarization. On Mac, the 3 Windows‑only features (desktop control, voice, CLI install) degrade gracefully; everything else (chat, documents, projects, terminal) works.
 **Pass:** ☐ / Pending Mac ☐
 
+## PART 20 — Local Models (Ollama / HuggingFace / LM Studio) 🟦
+
+> Desktop only. Lets you run models on your own machine — private, offline, no API key.
+
+### T20.1 — Open the page
+**Steps:** Sidebar → **Models** group → **Local Models**.
+**Expected:** a page with three pills at the top — **Ollama · HuggingFace · LM Studio**. Each pill has a small dot: green = that engine is running on your machine, grey = not detected. Below is a status card, a search box, and an "Installed on this machine" list.
+**Pass:** ☐
+
+### T20.2 — Install the engine in the background (only if Ollama shows "Not detected")
+**Steps:** With **Ollama** selected and showing "Not detected", click **Install Ollama**.
+**Expected:** a "Downloading… %" indicator, then "Installing…", with no setup windows to click through. After a few minutes click the **↻ re-check** button — the status flips to **Ready · v…** and the dot goes green. (On a Mac it instead opens the Ollama download page — that's expected.)
+**Pass:** ☐
+
+### T20.3 — Search and pull a model
+**Steps:** On **Ollama**, type the example and press **Search**, then click **Pull** on a small model.
+**Example input:** `llama3.2`
+**Expected:** a list of matches (the first row lets you pull exactly what you typed). Clicking **Pull** shows a live progress bar that climbs to 100%, then the row flips to **✓ Installed** and the model appears under "Installed on this machine".
+**Pass:** ☐
+
+### T20.4 — Model health
+**Expected:** in the installed list each model shows its size on disk; a model that's currently loaded in memory shows a green dot and a **running** chip. (A model loads when you actually chat with it.)
+**Pass:** ☐
+
+### T20.5 — Pulled model is selectable for execution
+**Steps:** Open the model picker (top of any chat). Look under the **Ollama (local)** group.
+**Expected:** the model you just pulled is listed and **selectable**. Pick it and send a message — it answers, running locally.
+**Pass:** ☐
+
+### T20.6 — Pulled model shows in Models overview
+**Steps:** Sidebar → **Models** → **Models overview**.
+**Expected:** your local model is listed with its details (maker, size, and any capability tags like tools/vision/reasoning that Madav knows for that family).
+**Pass:** ☐
+
+### T20.7 — HuggingFace (GGUF via Ollama)
+**Steps:** Click the **HuggingFace** pill. Type the example, **Search**, then **Pull** a small GGUF model. (Needs Ollama installed — HuggingFace models run through it.)
+**Example input:** `qwen2.5`
+**Expected:** results from the HuggingFace hub with download counts; **Pull** streams progress the same way; when done the model appears in the installed list **and** in the model picker under Ollama (local).
+**Pass:** ☐
+
+### T20.8 — LM Studio (only if you use LM Studio)
+**Steps:** Click the **LM Studio** pill.
+**Expected:** if LM Studio's command‑line tool is installed, status shows **Ready** and your LM Studio models appear; if not, it says how to enable it and **Get LM Studio** opens the download page. Search/pull/remove behave like the other tabs.
+**Pass:** ☐
+
+### T20.9 — Remove a model
+**Steps:** In "Installed on this machine", click the **🗑 trash** on a model.
+**Expected:** it disappears from the list and (after the selector refreshes) from the model picker. No crash.
+**Pass:** ☐
+
+### T20.10 — Web app shows the right notice
+**Steps:** Open the **web** version (madav.ai) → Models → Local Models.
+**Expected:** the page loads but explains local models are a **desktop** feature — no errors, no broken buttons.
+**Pass:** ☐
+
 ---
 
 ## Sign‑off
 
-- [ ] Parts 0–18 all ✅ (Part 19 pending a Mac).
+- [ ] Parts 0–18 + Part 20 all ✅ (Part 19 pending a Mac).
 - [ ] Note any failures with the test ID.
 - [ ] Commit anything still uncommitted; `git status` shows a clean tree.
 

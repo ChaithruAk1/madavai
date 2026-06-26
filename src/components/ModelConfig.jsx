@@ -5,6 +5,7 @@ import HelpDot from "./HelpDot.jsx";
 import ModelPicker from "./ModelPicker.jsx";
 import { bridge, isWeb } from "../bridge/index.js";
 import { madavAlert, madavConfirm } from "../dialogs.jsx";
+import { LOCAL_PRESETS } from "../data/localProviders.js";
 
 const BLANK = (id) => ({ id, name: "New provider", kind: "openai", baseUrl: "http://localhost:1234", apiKey: "", model: "" });
 
@@ -26,9 +27,7 @@ const PROVIDER_PRESETS = [
   { name: "Cerebras", kind: "openai", baseUrl: "https://api.cerebras.ai/v1" },
   { name: "DeepInfra", kind: "openai", baseUrl: "https://api.deepinfra.com/v1/openai" },
   { name: "Hyperbolic", kind: "openai", baseUrl: "https://api.hyperbolic.xyz/v1" },
-  { name: "Ollama (local)", kind: "openai", baseUrl: "http://localhost:11434/v1" },
-  { name: "LM Studio (local)", kind: "openai", baseUrl: "http://localhost:1234/v1" },
-  { name: "llama.cpp (local)", kind: "openai", baseUrl: "http://localhost:8080/v1" },
+  ...LOCAL_PRESETS,
 ];
 
 // Where to get an API key for each default provider (matched by base-URL host or name).

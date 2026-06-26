@@ -1204,6 +1204,21 @@ export const webBridge = {
 
   // ---- settings / models ----
   async getSettings() { return loadSettings(); },
+  // Local models run on the user's own machine via the desktop app (process spawn + localhost runtimes);
+  // the browser can't reach them, so the web build returns a friendly "desktop only" shape that matches
+  // the desktop API exactly, letting the Local Models page render identically and just show the notice.
+  localModels: {
+    providers: async () => [],
+    detect: async () => ({ available: false, note: "Local models run in the Madav desktop app. Open the desktop app to install and run Ollama, HuggingFace, or LM Studio models on your own machine." }),
+    search: async () => ({ error: "Local models are available in the Madav desktop app." }),
+    list: async () => [],
+    running: async () => [],
+    pull: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
+    remove: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
+    install: async () => ({ ok: false, error: "Local models are available in the Madav desktop app." }),
+    onPullProgress: () => () => {},
+    onInstallProgress: () => () => {},
+  },
   async mcpTestServer(url, headers) {
     try {
       const r = await fetch(api("/mcp/tools"), { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ url, headers: headers || {} }) });

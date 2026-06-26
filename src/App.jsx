@@ -989,8 +989,8 @@ export default function App() {
   const isConnectors = mode === "connectors";
   const isSkills = mode === "skills";
   const isPlugins = mode === "plugins";
-  const isModels = mode === "models" || mode === "models-overview" || mode === "models-speed" || mode === "models-routing";
-  const modelsTab = mode === "models-overview" ? "overview" : mode === "models-speed" ? "speed" : mode === "models-routing" ? "routing" : "config";
+  const isModels = mode === "models" || mode === "models-overview" || mode === "models-speed" || mode === "models-routing" || mode === "models-local";
+  const modelsTab = mode === "models-overview" ? "overview" : mode === "models-speed" ? "speed" : mode === "models-routing" ? "routing" : mode === "models-local" ? "local" : "config";
   const isViaMobile = mode === "viamobile";
   const isScheduler = mode === "scheduler";
   const isConsumption = mode === "consumption";
@@ -1160,8 +1160,8 @@ export default function App() {
         ) : isTerminal ? (
           TerminalPanel ? <Suspense fallback={null}><TerminalPanel cwd={cwd} /></Suspense> : <NotInBuild />
         ) : isModels ? (
-          <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings}
-            tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : t === "routing" ? "models-routing" : "models")} />
+          <ModelsSection activeModel={activeProfile && activeProfile.model} onChanged={setSettings} onRefresh={refreshModels}
+            tab={modelsTab} onTab={(t) => switchMode(t === "overview" ? "models-overview" : t === "speed" ? "models-speed" : t === "routing" ? "models-routing" : t === "local" ? "models-local" : "models")} />
         ) : (mode === "project" && !projectCtx) ? (
           <Workrooms onOpen={openConversation} onStartChat={startProjectChat} onStartCowork={startProjectCowork} onOpenTask={openSession} onPutToWork={startRoomAgent} onPutTeamToWork={startRoomTeam} openId={projOpenId} groups={pickerGroups} activeValue={activeValue} onSelectModel={onSelectProjectModel} onRefresh={refreshModels} />
         ) : (
