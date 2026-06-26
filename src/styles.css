@@ -3533,3 +3533,8 @@ textarea.model-search { border-radius: 14px; }
 .lm-ctxin:focus { border-color: var(--accent); outline: none; }
 .lm-server-engines { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .lm-server-hint { font-size: 11.5px; color: var(--text-2); margin-top: 10px; line-height: 1.5; }
+.lm-serverpill { min-width: auto; gap: 6px; margin-left: 10px; }
+.lm-server-panel { gap: 12px; }
+.lm-server-summary { font-size: 12.5px; color: var(--text-1); margin: 2px 0 6px; }
+.lm-kasel { padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg-1); color: var(--text-0); font-size: 12px; cursor: pointer; }
+.lm-kasel:focus { border-color: var(--accent); outline: none; }

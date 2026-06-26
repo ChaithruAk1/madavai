@@ -46,7 +46,7 @@ export class HuggingFaceRuntime implements LocalModelRuntime {
   }
   async remove(name: string): Promise<void> { return this.ollama.remove(name); }
   async stop(name: string): Promise<void> { return this.ollama.stop(name); }
-  async load(name: string, opts?: { numCtx?: number }): Promise<void> { return this.ollama.load(name, opts); }
+  async load(name: string, opts?: { numCtx?: number; keepAlive?: string }): Promise<void> { return this.ollama.load(name, opts); }
 
   async browse(): Promise<ModelSearchResult[]> {
     const r = await this.hub.json('GET', '/api/models?filter=gguf&sort=downloads&direction=-1&limit=80');

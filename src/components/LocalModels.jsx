@@ -74,6 +74,27 @@ function fmtCount(n) {
   return String(n);
 }
 
+function ServerRow({ m, gpu, maxCtx, onStop, onApply }) {
+  const [ctx, setCtx] = useState(m.context ? String(m.context) : "");
+  const [ka, setKa] = useState("30m");
+  const lbl = (n) => (n ? (n >= 1024 ? Math.round(n / 1024) + "K" : String(n)) : "—");
+  const expIn = (iso) => { if (!iso) return "stays"; const d = new Date(iso).getTime() - Date.now(); if (isNaN(d)) return "—"; if (d <= 0) return "now"; const mn = Math.round(d / 60000); return mn >= 60 ? Math.round(mn / 60) + "h" : mn + "m"; };
+  const clamp = (v) => { let n = parseInt(v, 10); if (!n) return ""; if (n < 256) n = 256; if (maxCtx && n > maxCtx) n = maxCtx; return String(n); };
+  const vramPct = gpu && m.sizeVram && gpu.vramTotalGB ? Math.round((m.sizeVram / 1e9) / gpu.vramTotalGB * 100) : null;
+  return (
+    <tr>
+      <td><div className="lmt-name">{prettyLocalName(m.name)}</div><div className="lmt-sub">{m.provider}{m.params ? " · " + m.params : ""}</div></td>
+      <td className="lmt-nowrap">{m.sizeBytes ? fmtBytes(m.sizeBytes) : "—"}{m.sizeVram ? <span className="lmt-dim"> · {fmtBytes(m.sizeVram)} VRAM{vramPct != null ? " (" + vramPct + "%)" : ""}</span> : null}</td>
+      <td><span className="lm-chip sm">{m.processor || "—"}</span></td>
+      <td className="lmt-nowrap lmt-dim">{m.quant || "—"}</td>
+      <td className="lm-ctxcell"><input className="lm-ctxin" type="number" min="256" max={maxCtx || undefined} step="1024" value={ctx} onChange={(e) => setCtx(e.target.value)} onBlur={(e) => setCtx(clamp(e.target.value))} />{maxCtx ? <span className="lmt-dim">/ {lbl(maxCtx)}</span> : null}</td>
+      <td><select className="lm-kasel" value={ka} onChange={(e) => setKa(e.target.value)}><option value="5m">5 min</option><option value="30m">30 min</option><option value="1h">1 hour</option><option value="-1">Forever</option></select></td>
+      <td className="lmt-nowrap lmt-dim">{expIn(m.expiresAt)}</td>
+      <td className="lmt-act"><button className="btn primary sm" onClick={() => onApply(clamp(ctx), ka)} title="Reload with this context + keep-alive"><RefreshCw size={11} /> Apply</button> <button className="btn danger sm" onClick={onStop} title="Stop — unload from memory"><Square size={12} /> Stop</button></td>
+    </tr>
+  );
+}
+
 export default function LocalModels({ onChanged, onRefresh, onActivate, activeValue }) {
   const [active, setActive] = useState("ollama");
   const [status, setStatus] = useState({});       // id -> detect result
@@ -94,7 +115,6 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const [cmp, setCmp] = useState(() => new Map());   // pullName -> row data, for side-by-side compare (max 4)
   const [cmpOpen, setCmpOpen] = useState(false);
   const [starting, setStarting] = useState({});   // id::name -> true while a model is loading into memory
-  const [serverOpen, setServerOpen] = useState(false);
   const [serverData, setServerData] = useState({ system: {}, providers: [] });
   const toggleCmp = (row) => setCmp((m) => { const n = new Map(m); if (n.has(row.pullName)) n.delete(row.pullName); else if (n.size < 4) n.set(row.pullName, row); return n; });
   const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
@@ -186,6 +206,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   useEffect(() => { Promise.resolve(bridge.localModels.system()).then((x) => setSys(x || { totalRamGB: 0 })).catch(() => {}); }, []);
   useEffect(() => {
     let alive = true;
+    if (active === "server") return () => { alive = false; };
     const cache = readBrowseCache(active);
     if (cache) setBrowseList((m) => ({ ...m, [active]: cache.data }));                  // show the cached curated list instantly
     const fresh = cache && (Date.now() - cache.at) < BROWSE_TTL;                         // refreshed within the last 12h?
@@ -242,8 +263,8 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   };
   const loadServer = useCallback(() => { Promise.resolve(bridge.localModels.serverStatus()).then((d) => d && setServerData(d)).catch(() => {}); }, []);
   const stopServerModel = async (pid, name) => { try { await bridge.localModels.stop(pid, name); } catch {} setTimeout(loadServer, 500); refresh(pid); };
-  const setCtxModel = async (pid, name, val) => { const num = parseInt(val, 10); if (!num || num < 256) return; try { await bridge.localModels.load(pid, name, { numCtx: num }); } catch {} setTimeout(loadServer, 900); };
-  useEffect(() => { if (!serverOpen) return; loadServer(); const t = setInterval(loadServer, 4000); return () => clearInterval(t); }, [serverOpen, loadServer]);
+  const applyModelOpts = async (pid, name, numCtx, keepAlive) => { const n = parseInt(numCtx, 10); try { await bridge.localModels.load(pid, name, { numCtx: n && n >= 256 ? n : undefined, keepAlive }); } catch {} setTimeout(loadServer, 1000); };
+  useEffect(() => { if (active !== "server") return; loadServer(); const t = setInterval(loadServer, 4000); return () => clearInterval(t); }, [active, loadServer]);
   const doInstall = (id) => {
     setInstalling((m) => ({ ...m, [id]: { phase: "starting", pct: 0 } }));
     setInstallNote((m) => ({ ...m, [id]: "" }));
@@ -418,7 +439,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             rows = [...rows].sort((a, b) => { const va = val(a), vb = val(b); const c = typeof va === "string" ? va.localeCompare(vb) : (va - vb); return sortDir === "asc" ? c : -c; });
           }
           if (!rows.length) {
-            return <div className="lm-empty">{searching[id] ? "Searching…" : (isMedia && !det.available) ? "Start the Local AI engine above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
+            return <div className="lm-empty">{searching[id] ? "Searching…" : showSearch ? ("No model available for local download matches “" + (query[id] || "") + "”. It may be cloud-only or not exist for local use — check the provider’s site.") : (isMedia && !det.available) ? "Start the Local AI engine above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
           }
           return (
             <div className="mo-tablewrap lmt-wrap">
@@ -467,14 +488,40 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     );
   };
 
+  const renderServerPanel = () => {
+    const sysv = serverData.system || {};
+    const gpu = sysv.gpu;
+    const rows = (serverData.providers || []).flatMap((p) => (p.running || []).map((m) => ({ ...m, provider: p.label, providerId: p.id })));
+    const freeRam = sysv.totalRamGB != null && sysv.usedRamGB != null ? Math.round((sysv.totalRamGB - sysv.usedRamGB) * 10) / 10 : null;
+    const freeVram = gpu ? Math.round((gpu.vramTotalGB - gpu.vramUsedGB) * 10) / 10 : null;
+    return (
+      <div className="lm-panel lm-server-panel">
+        <div className="lm-gauges">
+          <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><HardDrive size={13} /> Memory (RAM)</span><span className="lm-gauge-v">{sysv.usedRamGB ?? "—"} / {sysv.totalRamGB ?? "—"} GB</span></div><div className="lm-gbar"><span style={{ width: (sysv.ramPct || 0) + "%", background: "#5aa0ff" }} /></div></div>
+          <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Cpu size={13} /> CPU</span><span className="lm-gauge-v">{sysv.cpuPct ?? "—"}%</span></div><div className="lm-gbar"><span style={{ width: (sysv.cpuPct || 0) + "%", background: "#3ecf8e" }} /></div></div>
+          {gpu ? (
+            <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Zap size={13} /> GPU</span><span className="lm-gauge-v">{gpu.utilPct}% · {gpu.vramUsedGB}/{gpu.vramTotalGB} GB · {gpu.tempC}°C</span></div><div className="lm-gbar"><span style={{ width: (gpu.utilPct || 0) + "%", background: "#b692f6" }} /></div><div className="lm-gauge-sub">{gpu.name}</div></div>
+          ) : <div className="lm-gauge nodata"><Zap size={13} /> No NVIDIA GPU detected — models run on CPU / RAM</div>}
+        </div>
+        <div className="lm-server-summary">Loaded now: <b>{rows.length}</b> · RAM free: <b>{freeRam ?? "—"} GB</b>{gpu ? <> · VRAM free: <b>{freeVram} GB</b></> : null} · refreshing every 4s</div>
+        <div className="lm-section-label"><Activity size={13} /> Running models{rows.length ? " (" + rows.length + ")" : ""}</div>
+        {rows.length ? (
+          <div className="mo-tablewrap"><table className="mo-table lm-server-table">
+            <thead><tr><th>Model</th><th>In memory</th><th>Processor</th><th>Quant</th><th>Context</th><th>Keep alive</th><th>Expires</th><th></th></tr></thead>
+            <tbody>{rows.map((m) => <ServerRow key={m.providerId + "::" + m.name} m={m} gpu={gpu} maxCtx={ctxNum(m.name)} onStop={() => stopServerModel(m.providerId, m.name)} onApply={(c, k) => applyModelOpts(m.providerId, m.name, c, k)} />)}</tbody>
+          </table></div>
+        ) : <div className="lm-empty">No models loaded right now. Activate a model to load it into memory.</div>}
+        <div className="lm-server-engines">{(serverData.providers || []).map((p) => <span key={p.id} className={"lm-chip sm " + (p.available ? "ok" : "off")}>{p.label}: {p.available ? "ready" + (p.version ? " · v" + p.version : "") : "not running"}</span>)}</div>
+        <div className="lm-server-hint">Changing context or keep-alive reloads the model. Context is capped at each model’s trained maximum; a bigger context uses more memory.</div>
+      </div>
+    );
+  };
+
   return (
     <div className="local-models scroll">
       <div className="lm-head">
-        <div className="lm-head-text">
-          <h2><Cpu size={18} /> Local Models</h2>
-          <p className="lm-sub">Run models on your own machine — private, offline, no API key. Pick a provider, search, and pull. Anything you install becomes selectable everywhere in Madav.</p>
-        </div>
-        <button className="btn ghost lm-serverbtn" onClick={() => setServerOpen(true)} title="Live server status — running models, CPU / GPU usage"><Activity size={15} /> Server Status</button>
+        <h2><Cpu size={18} /> Local Models</h2>
+        <p className="lm-sub">Run models on your own machine — private, offline, no API key. Pick a provider, search, and pull. Anything you install becomes selectable everywhere in Madav.</p>
       </div>
       <div className="lm-pills">
         {PROVIDERS.map((p) => {
@@ -486,56 +533,9 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             </button>
           );
         })}
+        <button className={"lm-pill lm-serverpill " + (active === "server" ? "on" : "")} onClick={() => setActive("server")} title="Live server status — running models, CPU / GPU usage"><Activity size={14} /> <span className="lm-pill-label">Server Status</span></button>
       </div>
-      {PROVIDERS.filter((p) => p.id === active).map((p) => renderPanel(p))}
-      {serverOpen ? (() => {
-        const sysv = serverData.system || {};
-        const gpu = sysv.gpu;
-        const rows = (serverData.providers || []).flatMap((p) => (p.running || []).map((m) => ({ ...m, provider: p.label, providerId: p.id })));
-        const ctxLabel = (n) => (n ? (n >= 1024 ? Math.round(n / 1024) + "K" : String(n)) : "—");
-        const expIn = (iso) => { if (!iso) return "Stays loaded"; const d = new Date(iso).getTime() - Date.now(); if (isNaN(d)) return "—"; if (d <= 0) return "now"; const mn = Math.round(d / 60000); return mn >= 60 ? Math.round(mn / 60) + "h" : mn + "m"; };
-        return (
-          <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setServerOpen(false); }}>
-            <div className="lm-server-card">
-              <div className="mo-card-head">
-                <div className="mo-card-title"><Activity size={16} /> Server Status</div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn ghost sm" onClick={loadServer} title="Refresh now"><RefreshCw size={13} /></button>
-                  <button className="icon-btn" onClick={() => setServerOpen(false)}><X size={16} /></button>
-                </div>
-              </div>
-              <div className="lm-server-body">
-                <div className="lm-gauges">
-                  <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><HardDrive size={13} /> Memory (RAM)</span><span className="lm-gauge-v">{sysv.usedRamGB ?? "—"} / {sysv.totalRamGB ?? "—"} GB</span></div><div className="lm-gbar"><span style={{ width: (sysv.ramPct || 0) + "%", background: "#5aa0ff" }} /></div></div>
-                  <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Cpu size={13} /> CPU</span><span className="lm-gauge-v">{sysv.cpuPct ?? "—"}%</span></div><div className="lm-gbar"><span style={{ width: (sysv.cpuPct || 0) + "%", background: "#3ecf8e" }} /></div></div>
-                  {gpu ? (
-                    <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Zap size={13} /> GPU</span><span className="lm-gauge-v">{gpu.utilPct}% · {gpu.vramUsedGB}/{gpu.vramTotalGB} GB · {gpu.tempC}°C</span></div><div className="lm-gbar"><span style={{ width: (gpu.utilPct || 0) + "%", background: "#b692f6" }} /></div><div className="lm-gauge-sub">{gpu.name}</div></div>
-                  ) : <div className="lm-gauge nodata"><Zap size={13} /> No NVIDIA GPU detected — models run on CPU/RAM</div>}
-                </div>
-                <div className="lm-section-label" style={{ marginTop: 6 }}><Activity size={13} /> Running models{rows.length ? " (" + rows.length + ")" : ""}</div>
-                {rows.length ? (
-                  <div className="mo-tablewrap"><table className="mo-table lm-server-table">
-                    <thead><tr><th>Model</th><th>Provider</th><th>In memory</th><th>Processor</th><th>Context</th><th>Expires</th><th></th></tr></thead>
-                    <tbody>{rows.map((m) => (
-                      <tr key={m.providerId + "::" + m.name}>
-                        <td><div className="lmt-name">{prettyLocalName(m.name)}</div><div className="lmt-sub">{m.name}</div></td>
-                        <td className="lmt-dim lmt-nowrap">{m.provider}</td>
-                        <td className="lmt-nowrap">{m.sizeBytes ? fmtBytes(m.sizeBytes) : "—"}{m.sizeVram ? <span className="lmt-dim"> · {fmtBytes(m.sizeVram)} VRAM</span> : null}</td>
-                        <td><span className="lm-chip sm">{m.processor || "—"}</span></td>
-                        <td className="lm-ctxcell"><span className="lmt-nowrap">{ctxLabel(m.context)}</span><input className="lm-ctxin" type="number" min="512" step="1024" placeholder="set" defaultValue={m.context || ""} onKeyDown={(e) => { if (e.key === "Enter") setCtxModel(m.providerId, m.name, e.currentTarget.value); }} title="Type a new context length and press Enter — Madav reloads the model with it" /></td>
-                        <td className="lmt-nowrap lmt-dim">{expIn(m.expiresAt)}</td>
-                        <td className="lmt-act"><button className="btn danger sm" onClick={() => stopServerModel(m.providerId, m.name)} title="Stop — unload from memory"><Square size={12} /> Stop</button></td>
-                      </tr>
-                    ))}</tbody>
-                  </table></div>
-                ) : <div className="lm-empty">No models loaded right now. Activate a model to load it into memory.</div>}
-                <div className="lm-server-engines">{(serverData.providers || []).map((p) => <span key={p.id} className={"lm-chip sm " + (p.available ? "ok" : "off")}>{p.label}: {p.available ? "ready" + (p.version ? " · v" + p.version : "") : "not running"}</span>)}</div>
-                <div className="lm-server-hint">Tip: changing context reloads the model. Bigger context uses more memory; if it exceeds your RAM/VRAM it may run slower or fail to load.</div>
-              </div>
-            </div>
-          </div>
-        );
-      })() : null}
+      {active === "server" ? renderServerPanel() : PROVIDERS.filter((p) => p.id === active).map((p) => renderPanel(p))}
     </div>
   );
 }

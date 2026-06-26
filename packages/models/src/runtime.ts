@@ -14,7 +14,7 @@ export interface ModelSearchResult {
   useCases?: string[];      // 'general' | 'coding' | 'reasoning' | 'vision' | 'tiny' | 'embed'
   source: RuntimeId;
 }
-export interface RunningModel { name: string; sizeBytes?: number; sizeVram?: number; processor?: string; context?: number; expiresAt?: string; family?: string; params?: string }
+export interface RunningModel { name: string; sizeBytes?: number; sizeVram?: number; processor?: string; context?: number; expiresAt?: string; family?: string; params?: string; quant?: string }
 export interface DetectResult { available: boolean; version?: string; note?: string }
 
 export interface LocalModelRuntime {
@@ -27,7 +27,7 @@ export interface LocalModelRuntime {
   pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void>;
   remove(name: string): Promise<void>;
   stop(name: string): Promise<void>;  // unload a running model from memory
-  load?(name: string, opts?: { numCtx?: number }): Promise<void>;  // load a model into memory (so it actually runs)
+  load?(name: string, opts?: { numCtx?: number; keepAlive?: string }): Promise<void>;  // load a model into memory (so it actually runs)
   browse(): Promise<ModelSearchResult[]>;  // a default gallery to show before the user searches
 }
 
