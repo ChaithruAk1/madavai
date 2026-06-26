@@ -3412,3 +3412,7 @@ textarea.model-search { border-radius: 14px; }
 .lc-transcript { margin-top: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); overflow: hidden; }
 .lc-transcript-h { display: flex; align-items: center; justify-content: space-between; padding: 9px 13px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-2); border-bottom: 1px solid var(--line); }
 .lc-transcript-body { padding: 13px; font-size: 13.5px; color: var(--text-0); line-height: 1.55; white-space: pre-wrap; }
+.lc-warn { display: flex; align-items: flex-start; gap: 7px; padding: 10px 12px; border: 1px solid rgba(245,196,81,0.40); background: rgba(245,196,81,0.10); border-radius: 10px; color: var(--text-1); font-size: 12.5px; margin-bottom: 14px; line-height: 1.45; }
+.lc-warn svg { color: var(--warn); flex: none; margin-top: 1px; }
+.lc-video { margin-top: 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); }
+.lc-video video { width: 100%; border-radius: 8px; background: #000; max-height: 420px; }

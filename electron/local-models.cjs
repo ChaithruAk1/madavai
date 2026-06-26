@@ -166,6 +166,26 @@ function register(ipcMain, getWin) {
       return await r.transcribe(String(model), String(audioB64), String(mime || "audio/wav"), String(filename || "audio.wav"));
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
+
+  // Let's Create — text-to-video via LocalAI (heavy/slow; saves a copy to Pictures/Madav Media).
+  ipcMain.handle("localMedia:video", async (_e, req) => {
+    const { model, prompt, seconds } = req || {};
+    try {
+      const r = await rt("localai");
+      if (!r || !r.generateVideo) return { error: "LocalAI engine isn't available — set it up in Local Models." };
+      if (!model) return { error: "Pick a video model first." };
+      const v = await r.generateVideo(String(model), String(prompt || ""), { seconds: seconds ? Number(seconds) : undefined });
+      let file = "";
+      try {
+        const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();
+        const dir = path.join(base, "Madav Media"); fs.mkdirSync(dir, { recursive: true });
+        const ext = /webm/.test(v.mime || "") ? "webm" : "mp4";
+        file = path.join(dir, "video_" + Date.now().toString(36) + "." + ext);
+        fs.writeFileSync(file, Buffer.from(v.b64, "base64"));
+      } catch { file = ""; }
+      return { b64: v.b64, mime: v.mime, file };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  });
 }
 
 module.exports = { register };

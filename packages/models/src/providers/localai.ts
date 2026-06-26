@@ -108,6 +108,25 @@ export class LocalAiRuntime implements LocalModelRuntime {
     const j = await r.json().catch(() => ({}));
     return { text: (j && j.text) || '' };
   }
+
+  // Text-to-video (LocalAI /video). Heavy + slow on most hardware; returns base64 video. Returns a URL that
+  // we fetch + base64-encode (or b64_json directly).
+  async generateVideo(model: string, prompt: string, opts?: { width?: number; height?: number; seconds?: number }): Promise<{ b64: string; mime: string }> {
+    const f: any = (globalThis as any).fetch;
+    const body: any = { model, prompt: String(prompt).slice(0, 4000) };
+    if (opts && opts.width) body.width = opts.width;
+    if (opts && opts.height) body.height = opts.height;
+    if (opts && opts.seconds) body.seconds = opts.seconds;
+    const r = await this.http.json('POST', '/video', body);
+    const d = (r && r.data && r.data[0]) || {};
+    if (d.b64_json) return { b64: d.b64_json, mime: 'video/mp4' };
+    if (d.url) {
+      const u = /^https?:/i.test(d.url) ? d.url : (this.base.replace(/\/+$/, '') + (d.url.startsWith('/') ? '' : '/') + d.url);
+      const resp = await f(u); const buf = Buffer.from(await resp.arrayBuffer());
+      return { b64: buf.toString('base64'), mime: resp.headers.get('content-type') || 'video/mp4' };
+    }
+    throw new Error('LocalAI returned no video');
+  }
   async stop(_name: string): Promise<void> { /* no per-model unload endpoint; LocalAI idles backends itself */ }
 }
 

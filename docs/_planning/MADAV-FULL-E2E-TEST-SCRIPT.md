@@ -425,6 +425,43 @@ The mac build is **wired but unbuilt** (needs macOS). When ready: on a Mac, `npm
 
 ---
 
+## PART 21 — Let's Create (Image · Voice · Video) 🟦
+
+> Desktop only. A dedicated media studio, separate from Let's Chat. Needs the **LocalAI engine** running
+> (Local Models → LocalAI → Set up LocalAI) plus a model for each capability you want to use.
+
+### T21.1 — Open the studio
+**Steps:** Top bar → **Let's Create** (4th pill, next to Let's Build).
+**Expected:** a studio page with **Image · Voice · Video** tabs. If LocalAI isn't running, each tab says so and offers an **Open Local Models** button. **Let's Chat is unchanged.**
+**Pass:** ☐
+
+### T21.2 — Generate an image
+**Steps:** Image tab → pick a model (only image models appear) → type a prompt → **Generate**.
+**Example input:** `a confused monkey on a tree, watercolor`
+**Expected:** a spinner, then the image appears inline with **Open** and **Save**. A copy is saved to Pictures → "Madav Media".
+**Pass:** ☐
+
+### T21.3 — Speak (text → voice)
+**Steps:** Voice tab → **Speak** → pick a text-to-speech model → type a sentence → **Speak**.
+**Expected:** an inline **audio player** you can press play on; Open/Save available.
+**Pass:** ☐
+
+### T21.4 — Transcribe (voice → text)
+**Steps:** Voice tab → **Transcribe** → pick a Whisper model → **Choose audio…** (pick an audio file) → **Transcribe**.
+**Expected:** the spoken words come back as **text**, with a **Copy** button.
+**Pass:** ☐
+
+### T21.5 — Generate a video
+**Steps:** Video tab → read the warning → pick a video model → short prompt → **Generate video**.
+**Expected:** a clear "**needs a strong GPU and may take minutes**" notice up top; after it finishes, a clip plays inline with Open/Save. (On a weak machine this may be very slow or error — that's expected and the warning says so.)
+**Pass:** ☐
+
+### T21.6 — Only relevant models, and chat stays clean
+**Expected:** each tab's model picker lists **only** that capability's models (image models under Image, etc.); and these media models do **not** appear in the Let's Chat model picker.
+**Pass:** ☐
+
+---
+
 ## Sign‑off
 
 - [ ] Parts 0–18 + Part 20 all ✅ (Part 19 pending a Mac).

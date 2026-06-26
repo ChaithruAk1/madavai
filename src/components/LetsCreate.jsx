@@ -9,7 +9,7 @@ import { localModality, prettyLocalName } from "../data/localModels.js";
 const CAPS = [
   { id: "image", label: "Image", icon: ImageIcon, ready: true },
   { id: "voice", label: "Voice", icon: Mic, ready: true },
-  { id: "video", label: "Video", icon: Film, ready: false },
+  { id: "video", label: "Video", icon: Film, ready: true },
 ];
 const SIZES = ["512x512", "768x768", "1024x1024"];
 const isSTT = (n) => /(whisper|\bstt\b|\basr\b|transcrib)/i.test(String(n || ""));
@@ -39,6 +39,12 @@ export default function LetsCreate({ onNavigate }) {
   const [sttErr, setSttErr] = useState("");
   const [sttText, setSttText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [vidModel, setVidModel] = useState("");
+  const [vidPrompt, setVidPrompt] = useState("");
+  const [vidSeconds, setVidSeconds] = useState("4");
+  const [vidBusy, setVidBusy] = useState(false);
+  const [vidErr, setVidErr] = useState("");
+  const [vidResults, setVidResults] = useState([]);
 
   const refresh = useCallback(async () => {
     try { setEngine(await bridge.localModels.localaiStatus()); } catch { setEngine({ api: false }); }
@@ -50,12 +56,14 @@ export default function LetsCreate({ onNavigate }) {
   const voiceModels = models.filter((m) => localModality(m.name) === "voice");
   const speakModels = voiceModels.filter((m) => !isSTT(m.name));
   const sttModels = voiceModels.filter((m) => isSTT(m.name));
+  const videoModels = models.filter((m) => localModality(m.name) === "video");
 
   useEffect(() => { if (imageModels.length && !imageModels.some((m) => m.name === imgModel)) setImgModel(imageModels[0].name); }, [models]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (speakModels.length && !speakModels.some((m) => m.name === ttsModel)) setTtsModel(speakModels[0].name);
     if (sttModels.length && !sttModels.some((m) => m.name === sttModel)) setSttModel(sttModels[0].name);
   }, [models]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (videoModels.length && !videoModels.some((m) => m.name === vidModel)) setVidModel(videoModels[0].name); }, [models]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const genImage = async () => {
     if (!imgModel || !prompt.trim()) return;
@@ -94,6 +102,18 @@ export default function LetsCreate({ onNavigate }) {
       else setSttText((r && r.text) || "(no speech detected)");
     } catch (e) { setSttErr(String((e && e.message) || e)); }
     finally { setSttBusy(false); }
+  };
+
+  const genVideo = async () => {
+    if (!vidModel || !vidPrompt.trim()) return;
+    setVidBusy(true); setVidErr("");
+    try {
+      const r = await bridge.media.video({ model: vidModel, prompt: vidPrompt.trim(), seconds: vidSeconds });
+      if (r && r.error) setVidErr(r.error);
+      else if (r && r.b64) setVidResults((xs) => [{ ...r, prompt: vidPrompt.trim() }, ...xs]);
+      else setVidErr("No video came back from the engine.");
+    } catch (e) { setVidErr(String((e && e.message) || e)); }
+    finally { setVidBusy(false); }
   };
 
   const engineUp = !!(engine && engine.api);
@@ -239,6 +259,40 @@ export default function LetsCreate({ onNavigate }) {
               )
             )}
           </div>
+        ) : cap === "video" ? (
+          videoModels.length === 0 ? <NoModel noun="video" /> : (
+            <div>
+              <div className="lc-warn"><AlertCircle size={15} /> Local video generation is heavy — it needs a strong GPU and can take several minutes per clip. On a typical laptop it may be slow or run out of memory. Keep clips short.</div>
+              <div className="lc-controls">
+                <label className="lc-field"><span>Model</span>
+                  <select value={vidModel} onChange={(e) => setVidModel(e.target.value)}>
+                    {videoModels.map((m) => <option key={m.name} value={m.name}>{prettyLocalName(m.name)}</option>)}
+                  </select>
+                </label>
+                <label className="lc-field"><span>Length (seconds)</span>
+                  <select value={vidSeconds} onChange={(e) => setVidSeconds(e.target.value)}>{["2", "4", "6"].map((x) => <option key={x} value={x}>{x}</option>)}</select>
+                </label>
+              </div>
+              <textarea className="lc-prompt" rows={3} placeholder="Describe the video — e.g. a confused monkey swinging between trees" value={vidPrompt} onChange={(e) => setVidPrompt(e.target.value)} />
+              <div className="lc-actions">
+                <button className="btn primary lc-gen" onClick={genVideo} disabled={vidBusy || !vidPrompt.trim()}>{vidBusy ? <span><Loader2 size={15} className="spin" /> Generating… (this can take minutes)</span> : <span><Film size={15} /> Generate video</span>}</button>
+                {vidErr ? <span className="lc-err"><AlertCircle size={13} /> {vidErr}</span> : null}
+              </div>
+              {vidResults.map((r, i) => {
+                const url = "data:" + (r.mime || "video/mp4") + ";base64," + r.b64;
+                return (
+                  <div className="lc-video" key={i}>
+                    <div className="lc-audio-text" title={r.prompt}>{r.prompt}</div>
+                    <video controls src={url} />
+                    <div className="lc-audio-acts">
+                      {r.file ? <button className="btn ghost sm" onClick={() => bridge.openPath && bridge.openPath(r.file)}><FolderOpen size={13} /> Open</button> : null}
+                      <a className="btn ghost sm" href={url} download={"video-" + (i + 1) + ".mp4"}><Download size={13} /> Save</a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
         ) : null}
       </div>
     </div>
