@@ -494,8 +494,17 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const rows = (serverData.providers || []).flatMap((p) => (p.running || []).map((m) => ({ ...m, provider: p.label, providerId: p.id })));
     const freeRam = sysv.totalRamGB != null && sysv.usedRamGB != null ? Math.round((sysv.totalRamGB - sysv.usedRamGB) * 10) / 10 : null;
     const freeVram = gpu ? Math.round((gpu.vramTotalGB - gpu.vramUsedGB) * 10) / 10 : null;
+    const modelRamGB = rows.length ? Math.round(rows.reduce((a, m) => a + (m.sizeBytes || 0), 0) / 1e9 * 10) / 10 : 0;
+    const modelVramGB = gpu && rows.length ? Math.round(rows.reduce((a, m) => a + (m.sizeVram || 0), 0) / 1e9 * 10) / 10 : 0;
     return (
       <div className="lm-panel lm-server-panel">
+        <div className="lm-kpis">
+          <div className="lm-kpi"><div className="lm-kpi-n">{rows.length}</div><div className="lm-kpi-l">Models loaded</div></div>
+          <div className="lm-kpi"><div className="lm-kpi-n">{modelRamGB} <span>GB</span></div><div className="lm-kpi-l">Used by models</div></div>
+          <div className="lm-kpi"><div className="lm-kpi-n">{freeRam ?? "—"} <span>GB</span></div><div className="lm-kpi-l">RAM free</div></div>
+          {gpu ? <div className="lm-kpi"><div className="lm-kpi-n">{freeVram} <span>GB</span></div><div className="lm-kpi-l">VRAM free</div></div> : null}
+          {gpu ? <div className="lm-kpi"><div className="lm-kpi-n">{modelVramGB} <span>GB</span></div><div className="lm-kpi-l">VRAM in use</div></div> : null}
+        </div>
         <div className="lm-gauges">
           <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><HardDrive size={13} /> Memory (RAM)</span><span className="lm-gauge-v">{sysv.usedRamGB ?? "—"} / {sysv.totalRamGB ?? "—"} GB</span></div><div className="lm-gbar"><span style={{ width: (sysv.ramPct || 0) + "%", background: "#5aa0ff" }} /></div></div>
           <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Cpu size={13} /> CPU</span><span className="lm-gauge-v">{sysv.cpuPct ?? "—"}%</span></div><div className="lm-gbar"><span style={{ width: (sysv.cpuPct || 0) + "%", background: "#3ecf8e" }} /></div></div>
@@ -503,8 +512,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Zap size={13} /> GPU</span><span className="lm-gauge-v">{gpu.utilPct}% · {gpu.vramUsedGB}/{gpu.vramTotalGB} GB · {gpu.tempC}°C</span></div><div className="lm-gbar"><span style={{ width: (gpu.utilPct || 0) + "%", background: "#b692f6" }} /></div><div className="lm-gauge-sub">{gpu.name}</div></div>
           ) : <div className="lm-gauge nodata"><Zap size={13} /> No NVIDIA GPU detected — models run on CPU / RAM</div>}
         </div>
-        <div className="lm-server-summary">Loaded now: <b>{rows.length}</b> · RAM free: <b>{freeRam ?? "—"} GB</b>{gpu ? <> · VRAM free: <b>{freeVram} GB</b></> : null} · refreshing every 4s</div>
-        <div className="lm-section-label"><Activity size={13} /> Running models{rows.length ? " (" + rows.length + ")" : ""}</div>
+        <div className="lm-section-label"><Activity size={13} /> Running models{rows.length ? " (" + rows.length + ")" : ""} <span className="lmt-dim" style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>· live, refreshing every 4s</span></div>
         {rows.length ? (
           <div className="mo-tablewrap"><table className="mo-table lm-server-table">
             <thead><tr><th>Model</th><th>In memory</th><th>Processor</th><th>Quant</th><th>Context</th><th>Keep alive</th><th>Expires</th><th></th></tr></thead>

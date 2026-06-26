@@ -3538,3 +3538,8 @@ textarea.model-search { border-radius: 14px; }
 .lm-server-summary { font-size: 12.5px; color: var(--text-1); margin: 2px 0 6px; }
 .lm-kasel { padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg-1); color: var(--text-0); font-size: 12px; cursor: pointer; }
 .lm-kasel:focus { border-color: var(--accent); outline: none; }
+.lm-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.lm-kpi { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--bg-1); text-align: center; }
+.lm-kpi-n { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+.lm-kpi-n span { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.lm-kpi-l { font-size: 10.5px; color: var(--text-2); margin-top: 5px; text-transform: uppercase; letter-spacing: .03em; }
