@@ -111,12 +111,13 @@ export class LocalAiRuntime implements LocalModelRuntime {
 
   // Text-to-video (LocalAI /video). Heavy + slow on most hardware; returns base64 video. Returns a URL that
   // we fetch + base64-encode (or b64_json directly).
-  async generateVideo(model: string, prompt: string, opts?: { width?: number; height?: number; seconds?: number }): Promise<{ b64: string; mime: string }> {
+  async generateVideo(model: string, prompt: string, opts?: { width?: number; height?: number; seconds?: number; startImage?: string }): Promise<{ b64: string; mime: string }> {
     const f: any = (globalThis as any).fetch;
     const body: any = { model, prompt: String(prompt).slice(0, 4000) };
     if (opts && opts.width) body.width = opts.width;
     if (opts && opts.height) body.height = opts.height;
     if (opts && opts.seconds) body.seconds = opts.seconds;
+    if (opts && opts.startImage) body.start_image = opts.startImage;
     const r = await this.http.json('POST', '/video', body);
     const d = (r && r.data && r.data[0]) || {};
     if (d.b64_json) return { b64: d.b64_json, mime: 'video/mp4' };

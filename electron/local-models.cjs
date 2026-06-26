@@ -169,12 +169,13 @@ function register(ipcMain, getWin) {
 
   // Let's Create — text-to-video via LocalAI (heavy/slow; saves a copy to Pictures/Madav Media).
   ipcMain.handle("localMedia:video", async (_e, req) => {
-    const { model, prompt, seconds } = req || {};
+    const { model, prompt, seconds, startImageB64, startImageMime } = req || {};
     try {
       const r = await rt("localai");
       if (!r || !r.generateVideo) return { error: "LocalAI engine isn't available — set it up in Local Models." };
       if (!model) return { error: "Pick a video model first." };
-      const v = await r.generateVideo(String(model), String(prompt || ""), { seconds: seconds ? Number(seconds) : undefined });
+      const startImage = startImageB64 ? ("data:" + (startImageMime || "image/png") + ";base64," + startImageB64) : undefined;
+      const v = await r.generateVideo(String(model), String(prompt || ""), { seconds: seconds ? Number(seconds) : undefined, startImage });
       let file = "";
       try {
         const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();

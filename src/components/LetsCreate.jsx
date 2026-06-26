@@ -1,299 +1,185 @@
 // © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
-// Let's Create — a dedicated media studio (separate from Let's Chat). Pick a capability, see only the relevant
-// LocalAI models, describe what you want, generate, and save. Image + Voice ship here; Video follows.
-import { useState, useEffect, useCallback } from "react";
-import { Sparkles, Image as ImageIcon, Mic, Film, Loader2, Download, FolderOpen, AlertCircle, Volume2, Upload, Copy, Check } from "lucide-react";
+// Let's Create — Madav's creative playground. A conversational canvas: describe anything, Madav makes it, and
+// every result sparks the next (an image can Animate into a video). Powered by the LocalAI engine. This is its
+// own playful surface (not the chat shell) — friendly copy, a warm empty state, rich inline result cards.
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Sparkles, Image as ImageIcon, Mic, Film, Volume2, Loader2, Download, FolderOpen, AlertCircle, Wand2, Copy, Check, Upload, X, RotateCcw } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { localModality, prettyLocalName } from "../data/localModels.js";
 
 const CAPS = [
-  { id: "image", label: "Image", icon: ImageIcon, ready: true },
-  { id: "voice", label: "Voice", icon: Mic, ready: true },
-  { id: "video", label: "Video", icon: Film, ready: true },
+  { id: "image", label: "Image", icon: ImageIcon, placeholder: "a neon koi gliding through glowing clouds, watercolor" },
+  { id: "voice", label: "Voice", icon: Volume2, placeholder: "type the words you'd like spoken aloud…" },
+  { id: "video", label: "Video", icon: Film, placeholder: "a paper boat drifting down a rainy neon street" },
+  { id: "transcribe", label: "Transcribe", icon: Mic, placeholder: "" },
 ];
-const SIZES = ["512x512", "768x768", "1024x1024"];
+const STARTERS = [
+  { cap: "image", text: "a neon koi gliding through glowing clouds" },
+  { cap: "image", text: "a cozy reading nook inside a treehouse, golden hour" },
+  { cap: "video", text: "a paper boat drifting down a rainy street" },
+  { cap: "voice", text: "Read aloud: the quiet hum of a city at midnight." },
+];
 const isSTT = (n) => /(whisper|\bstt\b|\basr\b|transcrib)/i.test(String(n || ""));
+const capLabel = (c) => (c === "voice" ? "voice" : c === "video" ? "video" : c === "transcribe" ? "transcription" : "image");
 
 export default function LetsCreate({ onNavigate }) {
-  const [cap, setCap] = useState("image");
   const [engine, setEngine] = useState(null);
   const [models, setModels] = useState([]);
-
-  const [imgModel, setImgModel] = useState("");
+  const [cap, setCap] = useState("image");
   const [prompt, setPrompt] = useState("");
-  const [size, setSize] = useState("512x512");
-  const [imgBusy, setImgBusy] = useState(false);
-  const [imgErr, setImgErr] = useState("");
-  const [imgResults, setImgResults] = useState([]);
-
-  const [voiceMode, setVoiceMode] = useState("speak");
-  const [ttsModel, setTtsModel] = useState("");
-  const [ttsVoice, setTtsVoice] = useState("");
-  const [ttsText, setTtsText] = useState("");
-  const [ttsBusy, setTtsBusy] = useState(false);
-  const [ttsErr, setTtsErr] = useState("");
-  const [ttsResults, setTtsResults] = useState([]);
-  const [sttModel, setSttModel] = useState("");
-  const [sttFile, setSttFile] = useState(null);
-  const [sttBusy, setSttBusy] = useState(false);
-  const [sttErr, setSttErr] = useState("");
-  const [sttText, setSttText] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [vidModel, setVidModel] = useState("");
-  const [vidPrompt, setVidPrompt] = useState("");
-  const [vidSeconds, setVidSeconds] = useState("4");
-  const [vidBusy, setVidBusy] = useState(false);
-  const [vidErr, setVidErr] = useState("");
-  const [vidResults, setVidResults] = useState([]);
+  const [attach, setAttach] = useState(null);
+  const [turns, setTurns] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState("");
+  const threadRef = useRef(null);
 
   const refresh = useCallback(async () => {
     try { setEngine(await bridge.localModels.localaiStatus()); } catch { setEngine({ api: false }); }
     try { const l = await bridge.localModels.list("localai"); setModels(Array.isArray(l) ? l : []); } catch { setModels([]); }
   }, []);
   useEffect(() => { refresh(); const t = setInterval(refresh, 5000); return () => clearInterval(t); }, [refresh]);
+  useEffect(() => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }, [turns]);
 
-  const imageModels = models.filter((m) => localModality(m.name) === "image");
-  const voiceModels = models.filter((m) => localModality(m.name) === "voice");
-  const speakModels = voiceModels.filter((m) => !isSTT(m.name));
-  const sttModels = voiceModels.filter((m) => isSTT(m.name));
-  const videoModels = models.filter((m) => localModality(m.name) === "video");
-
-  useEffect(() => { if (imageModels.length && !imageModels.some((m) => m.name === imgModel)) setImgModel(imageModels[0].name); }, [models]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (speakModels.length && !speakModels.some((m) => m.name === ttsModel)) setTtsModel(speakModels[0].name);
-    if (sttModels.length && !sttModels.some((m) => m.name === sttModel)) setSttModel(sttModels[0].name);
-  }, [models]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (videoModels.length && !videoModels.some((m) => m.name === vidModel)) setVidModel(videoModels[0].name); }, [models]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const genImage = async () => {
-    if (!imgModel || !prompt.trim()) return;
-    setImgBusy(true); setImgErr("");
-    try {
-      const r = await bridge.media.image({ model: imgModel, prompt: prompt.trim(), size });
-      if (r && r.error) setImgErr(r.error);
-      else if (r && r.b64) setImgResults((xs) => [{ ...r, prompt: prompt.trim() }, ...xs]);
-      else setImgErr("No image came back from the engine.");
-    } catch (e) { setImgErr(String((e && e.message) || e)); }
-    finally { setImgBusy(false); }
+  const modelsFor = (c) => {
+    if (c === "image") return models.filter((m) => localModality(m.name) === "image");
+    if (c === "video") return models.filter((m) => localModality(m.name) === "video");
+    if (c === "transcribe") return models.filter((m) => localModality(m.name) === "voice" && isSTT(m.name));
+    return models.filter((m) => localModality(m.name) === "voice" && !isSTT(m.name)); // voice = TTS
   };
-  const genSpeech = async () => {
-    if (!ttsModel || !ttsText.trim()) return;
-    setTtsBusy(true); setTtsErr("");
+
+  const runTurn = async ({ cap, prompt, attach }) => {
+    const avail = modelsFor(cap);
+    const model = avail[0] && avail[0].name;
+    const id = "t" + Date.now() + Math.random().toString(36).slice(2, 5);
+    setTurns((t) => [...t, { id, cap, prompt, attach: attach || null, status: model ? "running" : "error", result: null, error: model ? "" : ("No " + capLabel(cap) + " model installed yet.") }]);
+    if (!model) return;
+    setBusy(true);
     try {
-      const r = await bridge.media.speech({ model: ttsModel, input: ttsText.trim(), voice: ttsVoice.trim() || undefined });
-      if (r && r.error) setTtsErr(r.error);
-      else if (r && r.b64) setTtsResults((xs) => [{ ...r, text: ttsText.trim() }, ...xs]);
-      else setTtsErr("No audio came back from the engine.");
-    } catch (e) { setTtsErr(String((e && e.message) || e)); }
-    finally { setTtsBusy(false); }
+      let r;
+      if (cap === "image") r = await bridge.media.image({ model, prompt, size: "768x768" });
+      else if (cap === "voice") r = await bridge.media.speech({ model, input: prompt });
+      else if (cap === "video") r = await bridge.media.video({ model, prompt, seconds: 4, startImageB64: attach && attach.kind === "image" ? attach.b64 : undefined, startImageMime: attach && attach.mime });
+      else if (cap === "transcribe") r = await bridge.media.transcribe({ model, audioB64: attach && attach.b64, mime: attach && attach.mime, filename: attach && attach.name });
+      const ok = r && !r.error;
+      setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: ok ? "done" : "error", result: ok ? r : null, error: ok ? "" : ((r && r.error) || "Something went wrong.") } : x));
+    } catch (e) {
+      setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: "error", error: String((e && e.message) || e) } : x));
+    } finally { setBusy(false); }
   };
+
+  const onCreate = () => {
+    if (busy) return;
+    if (cap === "transcribe") { if (attach) { runTurn({ cap, prompt: "", attach }); setAttach(null); } return; }
+    if (!prompt.trim()) return;
+    runTurn({ cap, prompt: prompt.trim(), attach }); setPrompt(""); setAttach(null);
+  };
+  const runStarter = (s) => { setCap(s.cap); runTurn({ cap: s.cap, prompt: s.text }); };
+  const animate = (turn) => runTurn({ cap: "video", prompt: (turn.prompt || "this scene") + ", gentle natural motion", attach: { kind: "image", b64: turn.result.b64, mime: turn.result.mime, name: "frame.png" } });
+  const vary = (turn) => runTurn({ cap: turn.cap, prompt: turn.prompt, attach: turn.attach });
   const onPickAudio = (e) => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => setSttFile({ name: f.name, b64: String(reader.result).split(",")[1] || "", mime: f.type || "audio/wav" });
-    reader.readAsDataURL(f);
+    const rd = new FileReader(); rd.onload = () => setAttach({ kind: "audio", b64: String(rd.result).split(",")[1] || "", mime: f.type || "audio/wav", name: f.name }); rd.readAsDataURL(f);
   };
-  const doTranscribe = async () => {
-    if (!sttModel || !sttFile) return;
-    setSttBusy(true); setSttErr(""); setSttText("");
-    try {
-      const r = await bridge.media.transcribe({ model: sttModel, audioB64: sttFile.b64, mime: sttFile.mime, filename: sttFile.name });
-      if (r && r.error) setSttErr(r.error);
-      else setSttText((r && r.text) || "(no speech detected)");
-    } catch (e) { setSttErr(String((e && e.message) || e)); }
-    finally { setSttBusy(false); }
-  };
-
-  const genVideo = async () => {
-    if (!vidModel || !vidPrompt.trim()) return;
-    setVidBusy(true); setVidErr("");
-    try {
-      const r = await bridge.media.video({ model: vidModel, prompt: vidPrompt.trim(), seconds: vidSeconds });
-      if (r && r.error) setVidErr(r.error);
-      else if (r && r.b64) setVidResults((xs) => [{ ...r, prompt: vidPrompt.trim() }, ...xs]);
-      else setVidErr("No video came back from the engine.");
-    } catch (e) { setVidErr(String((e && e.message) || e)); }
-    finally { setVidBusy(false); }
-  };
+  const copy = (id, text) => { try { navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(""), 1200); } catch {} };
 
   const engineUp = !!(engine && engine.api);
-  const activeCap = CAPS.find((c) => c.id === cap) || CAPS[0];
+  const active = CAPS.find((c) => c.id === cap) || CAPS[0];
   const goModels = () => onNavigate && onNavigate("models-local");
+  const haveModel = modelsFor(cap).length > 0;
 
-  const EngineGate = () => (
-    <div className="lc-empty">
-      <div><AlertCircle size={16} /> The LocalAI engine isn't running.</div>
-      <div className="lc-empty-sub">Set it up in Local Models -> LocalAI, then come back here.</div>
-      <button className="btn primary" onClick={goModels}>Open Local Models</button>
-    </div>
-  );
-  const NoModel = ({ noun }) => (
-    <div className="lc-empty">
-      <div>No {noun} model installed yet.</div>
-      <div className="lc-empty-sub">Open Local Models -> LocalAI and pull one.</div>
-      <button className="btn primary" onClick={goModels}>Open Local Models</button>
-    </div>
-  );
+  const dataUrl = (r) => "data:" + (r.mime || "application/octet-stream") + ";base64," + r.b64;
+
+  const ResultCard = (turn) => {
+    const r = turn.result;
+    if (turn.cap === "transcribe") {
+      return (
+        <div className="lc2-transcript">
+          <div className="lc2-transcript-h"><span>Transcript</span>
+            <button className="lc2-mini" onClick={() => copy(turn.id, r.text)}>{copied === turn.id ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}</button>
+          </div>
+          <div className="lc2-transcript-body">{r.text || "(no speech detected)"}</div>
+        </div>
+      );
+    }
+    const url = dataUrl(r);
+    return (
+      <div className="lc2-card">
+        {turn.cap === "image" ? <img className="lc2-img" src={url} alt={turn.prompt} />
+          : turn.cap === "video" ? <video className="lc2-vid" src={url} controls />
+          : <div className="lc2-audiowrap"><Volume2 size={16} /><audio src={url} controls /></div>}
+        <div className="lc2-actions">
+          {turn.cap === "image" ? <button className="lc2-act" onClick={() => animate(turn)}><Film size={13} /> Animate</button> : null}
+          <button className="lc2-act" onClick={() => vary(turn)}><Wand2 size={13} /> Variations</button>
+          {r.file ? <button className="lc2-act" onClick={() => bridge.openPath && bridge.openPath(r.file)}><FolderOpen size={13} /> Open</button> : null}
+          <a className="lc2-act" href={url} download={(turn.cap === "video" ? "video" : turn.cap === "voice" ? "voice" : "image") + ".bin"}><Download size={13} /> Save</a>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="lets-create scroll">
-      <div className="lc-head">
-        <h1><Sparkles size={20} /> Let's Create</h1>
-        <p>Generate images, voice and video on your own machine — powered by the LocalAI engine.</p>
-      </div>
-      <div className="lc-caps">
-        {CAPS.map((c) => (
-          <button key={c.id} className={"lc-cap " + (cap === c.id ? "on" : "")} onClick={() => setCap(c.id)}>
-            <c.icon size={16} /> {c.label}{!c.ready ? <span className="lc-soon">soon</span> : null}
-          </button>
-        ))}
-      </div>
-
-      <div className="lc-panel">
-        {!activeCap.ready ? (
-          <div className="lc-empty">{activeCap.label} generation is coming in the next update.</div>
-        ) : !engineUp ? (
-          <EngineGate />
-        ) : cap === "image" ? (
-          imageModels.length === 0 ? <NoModel noun="image" /> : (
-            <div>
-              <div className="lc-controls">
-                <label className="lc-field"><span>Model</span>
-                  <select value={imgModel} onChange={(e) => setImgModel(e.target.value)}>
-                    {imageModels.map((m) => <option key={m.name} value={m.name}>{prettyLocalName(m.name)}</option>)}
-                  </select>
-                </label>
-                <label className="lc-field"><span>Size</span>
-                  <select value={size} onChange={(e) => setSize(e.target.value)}>{SIZES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-                </label>
-              </div>
-              <textarea className="lc-prompt" rows={3} placeholder="Describe the image — e.g. a confused monkey on a tree, watercolor style" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-              <div className="lc-actions">
-                <button className="btn primary lc-gen" onClick={genImage} disabled={imgBusy || !prompt.trim()}>{imgBusy ? <span><Loader2 size={15} className="spin" /> Generating…</span> : <span><Sparkles size={15} /> Generate</span>}</button>
-                {imgErr ? <span className="lc-err"><AlertCircle size={13} /> {imgErr}</span> : null}
-              </div>
-              {imgResults.length > 0 ? (
-                <div className="lc-results">
-                  {imgResults.map((r, i) => {
-                    const url = "data:" + (r.mime || "image/png") + ";base64," + r.b64;
-                    return (
-                      <div className="lc-result" key={i}>
-                        <img src={url} alt={r.prompt} />
-                        <div className="lc-result-foot">
-                          <span className="lc-result-prompt" title={r.prompt}>{r.prompt}</span>
-                          {r.file ? <button className="btn ghost sm" onClick={() => bridge.openPath && bridge.openPath(r.file)} title={r.file}><FolderOpen size={13} /> Open</button> : null}
-                          <a className="btn ghost sm" href={url} download={"image-" + (i + 1) + ".png"}><Download size={13} /> Save</a>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          )
-        ) : cap === "voice" ? (
-          <div>
-            <div className="lc-subtabs">
-              <button className={"lc-subtab " + (voiceMode === "speak" ? "on" : "")} onClick={() => setVoiceMode("speak")}><Volume2 size={14} /> Speak</button>
-              <button className={"lc-subtab " + (voiceMode === "transcribe" ? "on" : "")} onClick={() => setVoiceMode("transcribe")}><Mic size={14} /> Transcribe</button>
-            </div>
-            {voiceMode === "speak" ? (
-              speakModels.length === 0 ? <NoModel noun="text-to-speech" /> : (
-                <div>
-                  <div className="lc-controls">
-                    <label className="lc-field"><span>Model</span>
-                      <select value={ttsModel} onChange={(e) => setTtsModel(e.target.value)}>
-                        {speakModels.map((m) => <option key={m.name} value={m.name}>{prettyLocalName(m.name)}</option>)}
-                      </select>
-                    </label>
-                    <label className="lc-field"><span>Voice (optional)</span>
-                      <input className="lc-input" placeholder="e.g. en-US, alloy" value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)} />
-                    </label>
-                  </div>
-                  <textarea className="lc-prompt" rows={3} placeholder="Type what you want spoken aloud…" value={ttsText} onChange={(e) => setTtsText(e.target.value)} />
-                  <div className="lc-actions">
-                    <button className="btn primary lc-gen" onClick={genSpeech} disabled={ttsBusy || !ttsText.trim()}>{ttsBusy ? <span><Loader2 size={15} className="spin" /> Generating…</span> : <span><Volume2 size={15} /> Speak</span>}</button>
-                    {ttsErr ? <span className="lc-err"><AlertCircle size={13} /> {ttsErr}</span> : null}
-                  </div>
-                  {ttsResults.map((r, i) => {
-                    const url = "data:" + (r.mime || "audio/wav") + ";base64," + r.b64;
-                    return (
-                      <div className="lc-audio" key={i}>
-                        <div className="lc-audio-text" title={r.text}>{r.text}</div>
-                        <audio controls src={url} />
-                        <div className="lc-audio-acts">
-                          {r.file ? <button className="btn ghost sm" onClick={() => bridge.openPath && bridge.openPath(r.file)}><FolderOpen size={13} /> Open</button> : null}
-                          <a className="btn ghost sm" href={url} download={"voice-" + (i + 1) + ".wav"}><Download size={13} /> Save</a>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            ) : (
-              sttModels.length === 0 ? <NoModel noun="transcription (Whisper)" /> : (
-                <div>
-                  <div className="lc-controls">
-                    <label className="lc-field"><span>Model</span>
-                      <select value={sttModel} onChange={(e) => setSttModel(e.target.value)}>
-                        {sttModels.map((m) => <option key={m.name} value={m.name}>{prettyLocalName(m.name)}</option>)}
-                      </select>
-                    </label>
-                    <label className="lc-field"><span>Audio file</span>
-                      <label className="lc-filebtn"><Upload size={14} /> {sttFile ? sttFile.name : "Choose audio…"}<input type="file" accept="audio/*" onChange={onPickAudio} hidden /></label>
-                    </label>
-                  </div>
-                  <div className="lc-actions">
-                    <button className="btn primary lc-gen" onClick={doTranscribe} disabled={sttBusy || !sttFile}>{sttBusy ? <span><Loader2 size={15} className="spin" /> Transcribing…</span> : <span><Mic size={15} /> Transcribe</span>}</button>
-                    {sttErr ? <span className="lc-err"><AlertCircle size={13} /> {sttErr}</span> : null}
-                  </div>
-                  {sttText ? (
-                    <div className="lc-transcript">
-                      <div className="lc-transcript-h">Transcript
-                        <button className="btn ghost sm" onClick={() => { try { navigator.clipboard.writeText(sttText); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch {} }}>{copied ? <span><Check size={13} /> Copied</span> : <span><Copy size={13} /> Copy</span>}</button>
-                      </div>
-                      <div className="lc-transcript-body">{sttText}</div>
-                    </div>
-                  ) : null}
-                </div>
-              )
-            )}
+    <div className="lc2">
+      <div className="lc2-thread scroll" ref={threadRef}>
+        {!engineUp ? (
+          <div className="lc2-asleep">
+            <div className="lc2-spark"><Sparkles size={26} /></div>
+            <h1>The studio is asleep</h1>
+            <p>Let's Create runs on the LocalAI engine. Wake it up in Local Models, then come back and make something.</p>
+            <button className="lc2-create" onClick={goModels}><Sparkles size={15} /> Open Local Models</button>
           </div>
-        ) : cap === "video" ? (
-          videoModels.length === 0 ? <NoModel noun="video" /> : (
-            <div>
-              <div className="lc-warn"><AlertCircle size={15} /> Local video generation is heavy — it needs a strong GPU and can take several minutes per clip. On a typical laptop it may be slow or run out of memory. Keep clips short.</div>
-              <div className="lc-controls">
-                <label className="lc-field"><span>Model</span>
-                  <select value={vidModel} onChange={(e) => setVidModel(e.target.value)}>
-                    {videoModels.map((m) => <option key={m.name} value={m.name}>{prettyLocalName(m.name)}</option>)}
-                  </select>
-                </label>
-                <label className="lc-field"><span>Length (seconds)</span>
-                  <select value={vidSeconds} onChange={(e) => setVidSeconds(e.target.value)}>{["2", "4", "6"].map((x) => <option key={x} value={x}>{x}</option>)}</select>
-                </label>
-              </div>
-              <textarea className="lc-prompt" rows={3} placeholder="Describe the video — e.g. a confused monkey swinging between trees" value={vidPrompt} onChange={(e) => setVidPrompt(e.target.value)} />
-              <div className="lc-actions">
-                <button className="btn primary lc-gen" onClick={genVideo} disabled={vidBusy || !vidPrompt.trim()}>{vidBusy ? <span><Loader2 size={15} className="spin" /> Generating… (this can take minutes)</span> : <span><Film size={15} /> Generate video</span>}</button>
-                {vidErr ? <span className="lc-err"><AlertCircle size={13} /> {vidErr}</span> : null}
-              </div>
-              {vidResults.map((r, i) => {
-                const url = "data:" + (r.mime || "video/mp4") + ";base64," + r.b64;
-                return (
-                  <div className="lc-video" key={i}>
-                    <div className="lc-audio-text" title={r.prompt}>{r.prompt}</div>
-                    <video controls src={url} />
-                    <div className="lc-audio-acts">
-                      {r.file ? <button className="btn ghost sm" onClick={() => bridge.openPath && bridge.openPath(r.file)}><FolderOpen size={13} /> Open</button> : null}
-                      <a className="btn ghost sm" href={url} download={"video-" + (i + 1) + ".mp4"}><Download size={13} /> Save</a>
-                    </div>
-                  </div>
-                );
+        ) : turns.length === 0 ? (
+          <div className="lc2-hero">
+            <div className="lc2-spark"><Sparkles size={26} /></div>
+            <h1>What shall we create?</h1>
+            <p>Describe anything — an image, a voice, a short video. Madav imagines it, right here. Each result sparks the next.</p>
+            <div className="lc2-starters">
+              {STARTERS.map((s, i) => {
+                const I = (CAPS.find((c) => c.id === s.cap) || {}).icon || Sparkles;
+                return <button key={i} className="lc2-starter" onClick={() => runStarter(s)}><I size={15} /> <span>{s.text}</span></button>;
               })}
             </div>
-          )
-        ) : null}
+          </div>
+        ) : (
+          turns.map((turn) => (
+            <div className="lc2-turn" key={turn.id}>
+              <div className="lc2-ask">
+                {turn.attach && turn.attach.kind === "image" ? <span className="lc2-from"><ImageIcon size={12} /> from your image</span> : null}
+                <span>{turn.cap === "transcribe" ? ("Transcribe " + ((turn.attach && turn.attach.name) || "audio")) : turn.prompt}</span>
+              </div>
+              <div className="lc2-reply">
+                <div className="lc2-av"><Sparkles size={15} /></div>
+                <div className="lc2-result">
+                  {turn.status === "running" ? (
+                    <div className={"lc2-gen lc2-gen-" + turn.cap}><div className="lc2-shim" /><div className="lc2-genlabel"><Loader2 size={14} className="spin" /> Madav is imagining…</div></div>
+                  ) : turn.status === "error" ? (
+                    <div className="lc2-errcard"><div><AlertCircle size={15} /> {turn.error}</div>
+                      {/No .* model/.test(turn.error) ? <button className="lc2-mini" onClick={goModels}>Pull a model</button> : <button className="lc2-mini" onClick={() => vary(turn)}><RotateCcw size={12} /> Try again</button>}
+                    </div>
+                  ) : ResultCard(turn)}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="lc2-composer">
+        <div className="lc2-caps">
+          {CAPS.map((c) => <button key={c.id} className={"lc2-cap " + (cap === c.id ? "on" : "")} onClick={() => { setCap(c.id); setAttach(null); }}><c.icon size={15} /> {c.label}</button>)}
+        </div>
+        <div className="lc2-inputrow">
+          {attach ? <span className="lc2-attachchip"><ImageIcon size={13} /> {attach.name} <X size={12} onClick={() => setAttach(null)} /></span> : null}
+          {cap === "transcribe" ? (
+            <label className="lc2-filebtn"><Upload size={15} /> {attach ? attach.name : "Choose an audio file…"}<input type="file" accept="audio/*" hidden onChange={onPickAudio} /></label>
+          ) : (
+            <textarea className="lc2-prompt" rows={2} placeholder={active.placeholder} value={prompt}
+              onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onCreate(); } }} />
+          )}
+          <button className="lc2-create" onClick={onCreate} disabled={busy || (cap === "transcribe" ? !attach : !prompt.trim())}>
+            {busy ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />} <span>Create</span>
+          </button>
+        </div>
+        {!haveModel ? <div className="lc2-needmodel">No {capLabel(cap)} model yet — <button className="lc2-link" onClick={goModels}>pull one in Local Models</button> to use {active.label}.</div> : null}
       </div>
     </div>
   );
