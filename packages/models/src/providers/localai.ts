@@ -128,6 +128,27 @@ export class LocalAiRuntime implements LocalModelRuntime {
     }
     throw new Error('LocalAI returned no video');
   }
+
+  // Edit an existing image from an instruction (img2img) via OpenAI-compatible /v1/images/edits (multipart).
+  async editImage(model: string, prompt: string, srcB64: string, srcMime: string, opts?: { size?: string }): Promise<{ b64: string; mime: string }> {
+    const f: any = (globalThis as any).fetch;
+    const FD: any = (globalThis as any).FormData;
+    const B: any = (globalThis as any).Blob;
+    const fd = new FD();
+    fd.append('model', model);
+    fd.append('prompt', String(prompt).slice(0, 4000));
+    fd.append('image', new B([Buffer.from(srcB64, 'base64')], { type: srcMime || 'image/png' }), 'source.png');
+    fd.append('response_format', 'b64_json');
+    fd.append('n', '1');
+    if (opts && opts.size) fd.append('size', opts.size);
+    const r = await f(this.base.replace(/\/+$/, '') + '/v1/images/edits', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('Image edit failed (HTTP ' + r.status + ')');
+    const j = await r.json().catch(() => ({}));
+    const d = (j && j.data && j.data[0]) || {};
+    if (d.b64_json) return { b64: d.b64_json, mime: 'image/png' };
+    if (d.url) { const u = /^https?:/i.test(d.url) ? d.url : (this.base.replace(/\/+$/, '') + (d.url.startsWith('/') ? '' : '/') + d.url); const resp = await f(u); const buf = Buffer.from(await resp.arrayBuffer()); return { b64: buf.toString('base64'), mime: resp.headers.get('content-type') || 'image/png' }; }
+    throw new Error('LocalAI returned no edited image');
+  }
   async stop(_name: string): Promise<void> { /* no per-model unload endpoint; LocalAI idles backends itself */ }
 }
 

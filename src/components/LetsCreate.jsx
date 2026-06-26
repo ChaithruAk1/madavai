@@ -56,7 +56,7 @@ export default function LetsCreate({ onNavigate }) {
     setBusy(true);
     try {
       let r;
-      if (cap === "image") r = await bridge.media.image({ model, prompt, size: "768x768" });
+      if (cap === "image") r = (attach && attach.kind === "image") ? await bridge.media.imageEdit({ model, prompt, srcB64: attach.b64, srcMime: attach.mime, size: "768x768" }) : await bridge.media.image({ model, prompt, size: "768x768" });
       else if (cap === "voice") r = await bridge.media.speech({ model, input: prompt });
       else if (cap === "video") r = await bridge.media.video({ model, prompt, seconds: 4, startImageB64: attach && attach.kind === "image" ? attach.b64 : undefined, startImageMime: attach && attach.mime });
       else if (cap === "transcribe") r = await bridge.media.transcribe({ model, audioB64: attach && attach.b64, mime: attach && attach.mime, filename: attach && attach.name });
@@ -75,10 +75,15 @@ export default function LetsCreate({ onNavigate }) {
   };
   const runStarter = (s) => { setCap(s.cap); runTurn({ cap: s.cap, prompt: s.text }); };
   const animate = (turn) => runTurn({ cap: "video", prompt: (turn.prompt || "this scene") + ", gentle natural motion", attach: { kind: "image", b64: turn.result.b64, mime: turn.result.mime, name: "frame.png" } });
-  const vary = (turn) => runTurn({ cap: turn.cap, prompt: turn.prompt, attach: turn.attach });
+  const vary = (turn) => runTurn({ cap: turn.cap, prompt: turn.prompt });
+  const edit = (turn) => { setCap("image"); setAttach({ kind: "image", b64: turn.result.b64, mime: turn.result.mime, name: "edit-source.png" }); setPrompt(""); };
   const onPickAudio = (e) => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     const rd = new FileReader(); rd.onload = () => setAttach({ kind: "audio", b64: String(rd.result).split(",")[1] || "", mime: f.type || "audio/wav", name: f.name }); rd.readAsDataURL(f);
+  };
+  const onPickImage = (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const rd = new FileReader(); rd.onload = () => setAttach({ kind: "image", b64: String(rd.result).split(",")[1] || "", mime: f.type || "image/png", name: f.name }); rd.readAsDataURL(f);
   };
   const copy = (id, text) => { try { navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(""), 1200); } catch {} };
 
@@ -109,7 +114,8 @@ export default function LetsCreate({ onNavigate }) {
           : <div className="lc2-audiowrap"><Volume2 size={16} /><audio src={url} controls /></div>}
         <div className="lc2-actions">
           {turn.cap === "image" ? <button className="lc2-act" onClick={() => animate(turn)}><Film size={13} /> Animate</button> : null}
-          <button className="lc2-act" onClick={() => vary(turn)}><Wand2 size={13} /> Variations</button>
+          {turn.cap === "image" ? <button className="lc2-act" onClick={() => edit(turn)}><Wand2 size={13} /> Edit</button> : null}
+          <button className="lc2-act" onClick={() => vary(turn)}><Copy size={13} /> Variations</button>
           {r.file ? <button className="lc2-act" onClick={() => bridge.openPath && bridge.openPath(r.file)}><FolderOpen size={13} /> Open</button> : null}
           <a className="lc2-act" href={url} download={(turn.cap === "video" ? "video" : turn.cap === "voice" ? "voice" : "image") + ".bin"}><Download size={13} /> Save</a>
         </div>
@@ -172,8 +178,11 @@ export default function LetsCreate({ onNavigate }) {
           {cap === "transcribe" ? (
             <label className="lc2-filebtn"><Upload size={15} /> {attach ? attach.name : "Choose an audio file…"}<input type="file" accept="audio/*" hidden onChange={onPickAudio} /></label>
           ) : (
-            <textarea className="lc2-prompt" rows={2} placeholder={active.placeholder} value={prompt}
-              onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onCreate(); } }} />
+            <>
+              {cap === "image" ? <label title="Edit an image" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 9, border: "1px solid var(--line)", color: "var(--text-1)", cursor: "pointer", flex: "none", alignSelf: "flex-end" }}><ImageIcon size={16} /><input type="file" accept="image/*" hidden onChange={onPickImage} /></label> : null}
+              <textarea className="lc2-prompt" rows={2} placeholder={cap === "image" && attach && attach.kind === "image" ? "describe the change — e.g. make it sunset colours, add snow" : active.placeholder} value={prompt}
+                onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onCreate(); } }} />
+            </>
           )}
           <button className="lc2-create" onClick={onCreate} disabled={busy || (cap === "transcribe" ? !attach : !prompt.trim())}>
             {busy ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />} <span>Create</span>

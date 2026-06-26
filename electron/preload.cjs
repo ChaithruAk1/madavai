@@ -226,6 +226,7 @@ contextBridge.exposeInMainWorld("madav", {
   },
   media: {
     image: (req) => ipcRenderer.invoke("localMedia:image", req),
+    imageEdit: (req) => ipcRenderer.invoke("localMedia:imageEdit", req),
     speech: (req) => ipcRenderer.invoke("localMedia:speech", req),
     transcribe: (req) => ipcRenderer.invoke("localMedia:transcribe", req),
     video: (req) => ipcRenderer.invoke("localMedia:video", req),

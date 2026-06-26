@@ -87,6 +87,16 @@ async function installOllama(onProgress) {
 }
 async function installLmStudio() { await shell.openExternal("https://lmstudio.ai/download"); return { ok: true, opened: true }; }
 
+function extFor(mime) { const m = String(mime || "").toLowerCase(); if (/png/.test(m)) return "png"; if (/jpe?g/.test(m)) return "jpg"; if (/webp/.test(m)) return "webp"; if (/gif/.test(m)) return "gif"; if (/mpeg|mp3/.test(m)) return "mp3"; if (/wav/.test(m)) return "wav"; if (/ogg/.test(m)) return "ogg"; if (/webm/.test(m)) return "webm"; if (/mp4/.test(m)) return "mp4"; return "bin"; }
+function saveMedia(prefix, b64, mime) {
+  try {
+    const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();
+    const dir = path.join(base, "Madav Media"); fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, prefix + "_" + Date.now().toString(36) + "." + extFor(mime));
+    fs.writeFileSync(file, Buffer.from(b64, "base64")); return file;
+  } catch { return ""; }
+}
+
 function register(ipcMain, getWin) {
   const send = (ch, payload) => { try { const w = getWin && getWin(); if (w && w.webContents) w.webContents.send(ch, payload); } catch {} };
   ipcMain.handle("localModels:providers", async () => { const r = await runtimes(); return Object.values(r).map((x) => ({ id: x.id, label: x.label })); });
@@ -123,15 +133,21 @@ function register(ipcMain, getWin) {
       if (!r || !r.generateImage) return { error: "LocalAI engine isn't available — set it up in Local Models." };
       if (!model) return { error: "Pick an image model first." };
       const img = await r.generateImage(String(model), String(prompt || ""), { size });
-      let file = "";
-      try {
-        const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();
-        const dir = path.join(base, "Madav Media"); fs.mkdirSync(dir, { recursive: true });
-        const ext = ((img.mime || "image/png").split("/")[1] || "png").replace("jpeg", "jpg").replace("+xml", "");
-        file = path.join(dir, "image_" + Date.now().toString(36) + "." + ext);
-        fs.writeFileSync(file, Buffer.from(img.b64, "base64"));
-      } catch { file = ""; }
+      const file = saveMedia("image", img.b64, img.mime);
       return { b64: img.b64, mime: img.mime, file };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  });
+
+  // Let's Create — edit an existing image from an instruction (img2img) via LocalAI.
+  ipcMain.handle("localMedia:imageEdit", async (_e, req) => {
+    const { model, prompt, srcB64, srcMime, size } = req || {};
+    try {
+      const r = await rt("localai");
+      if (!r || !r.editImage) return { error: "LocalAI engine isn't available — set it up in Local Models." };
+      if (!model) return { error: "Pick an image model first." };
+      if (!srcB64) return { error: "No source image to edit." };
+      const img = await r.editImage(String(model), String(prompt || ""), String(srcB64), String(srcMime || "image/png"), { size });
+      return { b64: img.b64, mime: img.mime, file: saveMedia("image", img.b64, img.mime) };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
 
@@ -143,14 +159,7 @@ function register(ipcMain, getWin) {
       if (!r || !r.generateSpeech) return { error: "LocalAI engine isn't available — set it up in Local Models." };
       if (!model) return { error: "Pick a voice model first." };
       const a = await r.generateSpeech(String(model), String(input || ""), { voice: voice || undefined });
-      let file = "";
-      try {
-        const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();
-        const dir = path.join(base, "Madav Media"); fs.mkdirSync(dir, { recursive: true });
-        const ext = /mpeg|mp3/.test(a.mime || "") ? "mp3" : /ogg/.test(a.mime || "") ? "ogg" : "wav";
-        file = path.join(dir, "voice_" + Date.now().toString(36) + "." + ext);
-        fs.writeFileSync(file, Buffer.from(a.b64, "base64"));
-      } catch { file = ""; }
+      const file = saveMedia("voice", a.b64, a.mime);
       return { b64: a.b64, mime: a.mime, file };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
@@ -176,14 +185,7 @@ function register(ipcMain, getWin) {
       if (!model) return { error: "Pick a video model first." };
       const startImage = startImageB64 ? ("data:" + (startImageMime || "image/png") + ";base64," + startImageB64) : undefined;
       const v = await r.generateVideo(String(model), String(prompt || ""), { seconds: seconds ? Number(seconds) : undefined, startImage });
-      let file = "";
-      try {
-        const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();
-        const dir = path.join(base, "Madav Media"); fs.mkdirSync(dir, { recursive: true });
-        const ext = /webm/.test(v.mime || "") ? "webm" : "mp4";
-        file = path.join(dir, "video_" + Date.now().toString(36) + "." + ext);
-        fs.writeFileSync(file, Buffer.from(v.b64, "base64"));
-      } catch { file = ""; }
+      const file = saveMedia("video", v.b64, v.mime);
       return { b64: v.b64, mime: v.mime, file };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
