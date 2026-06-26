@@ -3,15 +3,17 @@
 // every result sparks the next (an image can Animate into a video). Powered by the LocalAI engine. This is its
 // own playful surface (not the chat shell) — friendly copy, a warm empty state, rich inline result cards.
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Sparkles, Image as ImageIcon, Mic, Film, Volume2, Loader2, Download, FolderOpen, AlertCircle, Wand2, Copy, Check, Upload, X, RotateCcw } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Mic, Film, Volume2, Loader2, Download, FolderOpen, AlertCircle, Wand2, Copy, Check, Upload, X, RotateCcw, Eye } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { localModality, prettyLocalName } from "../data/localModels.js";
+import { isVisionModel } from "../modelCost.js";
 
 const CAPS = [
   { id: "image", label: "Image", icon: ImageIcon, placeholder: "a neon koi gliding through glowing clouds, watercolor" },
   { id: "voice", label: "Voice", icon: Volume2, placeholder: "type the words you'd like spoken aloud…" },
   { id: "video", label: "Video", icon: Film, placeholder: "a paper boat drifting down a rainy neon street" },
   { id: "transcribe", label: "Transcribe", icon: Mic, placeholder: "" },
+  { id: "describe", label: "Describe", icon: Eye, placeholder: "ask about the image, or leave blank for a description" },
 ];
 const STARTERS = [
   { cap: "image", text: "a neon koi gliding through glowing clouds" },
@@ -43,6 +45,7 @@ export default function LetsCreate({ onNavigate }) {
   const modelsFor = (c) => {
     if (c === "image") return models.filter((m) => localModality(m.name) === "image");
     if (c === "video") return models.filter((m) => localModality(m.name) === "video");
+    if (c === "describe") return models.filter((m) => isVisionModel(m.name));
     if (c === "transcribe") return models.filter((m) => localModality(m.name) === "voice" && isSTT(m.name));
     return models.filter((m) => localModality(m.name) === "voice" && !isSTT(m.name)); // voice = TTS
   };
@@ -60,6 +63,7 @@ export default function LetsCreate({ onNavigate }) {
       else if (cap === "voice") r = await bridge.media.speech({ model, input: prompt });
       else if (cap === "video") r = await bridge.media.video({ model, prompt, seconds: 4, startImageB64: attach && attach.kind === "image" ? attach.b64 : undefined, startImageMime: attach && attach.mime });
       else if (cap === "transcribe") r = await bridge.media.transcribe({ model, audioB64: attach && attach.b64, mime: attach && attach.mime, filename: attach && attach.name });
+      else if (cap === "describe") r = await bridge.media.describe({ model, prompt, imageB64: attach && attach.b64, imageMime: attach && attach.mime });
       const ok = r && !r.error;
       setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: ok ? "done" : "error", result: ok ? r : null, error: ok ? "" : ((r && r.error) || "Something went wrong.") } : x));
     } catch (e) {
@@ -70,6 +74,7 @@ export default function LetsCreate({ onNavigate }) {
   const onCreate = () => {
     if (busy) return;
     if (cap === "transcribe") { if (attach) { runTurn({ cap, prompt: "", attach }); setAttach(null); } return; }
+    if (cap === "describe") { if (attach && attach.kind === "image") { runTurn({ cap, prompt: prompt.trim(), attach }); setPrompt(""); setAttach(null); } return; }
     if (!prompt.trim()) return;
     runTurn({ cap, prompt: prompt.trim(), attach }); setPrompt(""); setAttach(null);
   };
@@ -77,6 +82,7 @@ export default function LetsCreate({ onNavigate }) {
   const animate = (turn) => runTurn({ cap: "video", prompt: (turn.prompt || "this scene") + ", gentle natural motion", attach: { kind: "image", b64: turn.result.b64, mime: turn.result.mime, name: "frame.png" } });
   const vary = (turn) => runTurn({ cap: turn.cap, prompt: turn.prompt });
   const edit = (turn) => { setCap("image"); setAttach({ kind: "image", b64: turn.result.b64, mime: turn.result.mime, name: "edit-source.png" }); setPrompt(""); };
+  const describe = (turn) => runTurn({ cap: "describe", prompt: "", attach: { kind: "image", b64: turn.result.b64, mime: turn.result.mime, name: "image.png" } });
   const onPickAudio = (e) => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     const rd = new FileReader(); rd.onload = () => setAttach({ kind: "audio", b64: String(rd.result).split(",")[1] || "", mime: f.type || "audio/wav", name: f.name }); rd.readAsDataURL(f);
@@ -96,10 +102,10 @@ export default function LetsCreate({ onNavigate }) {
 
   const ResultCard = (turn) => {
     const r = turn.result;
-    if (turn.cap === "transcribe") {
+    if (turn.cap === "transcribe" || turn.cap === "describe") {
       return (
         <div className="lc2-transcript">
-          <div className="lc2-transcript-h"><span>Transcript</span>
+          <div className="lc2-transcript-h"><span>{turn.cap === "describe" ? "Description" : "Transcript"}</span>
             <button className="lc2-mini" onClick={() => copy(turn.id, r.text)}>{copied === turn.id ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}</button>
           </div>
           <div className="lc2-transcript-body">{r.text || "(no speech detected)"}</div>
@@ -115,6 +121,7 @@ export default function LetsCreate({ onNavigate }) {
         <div className="lc2-actions">
           {turn.cap === "image" ? <button className="lc2-act" onClick={() => animate(turn)}><Film size={13} /> Animate</button> : null}
           {turn.cap === "image" ? <button className="lc2-act" onClick={() => edit(turn)}><Wand2 size={13} /> Edit</button> : null}
+          {turn.cap === "image" ? <button className="lc2-act" onClick={() => describe(turn)}><Eye size={13} /> Describe</button> : null}
           <button className="lc2-act" onClick={() => vary(turn)}><Copy size={13} /> Variations</button>
           {r.file ? <button className="lc2-act" onClick={() => bridge.openPath && bridge.openPath(r.file)}><FolderOpen size={13} /> Open</button> : null}
           <a className="lc2-act" href={url} download={(turn.cap === "video" ? "video" : turn.cap === "voice" ? "voice" : "image") + ".bin"}><Download size={13} /> Save</a>
@@ -150,7 +157,7 @@ export default function LetsCreate({ onNavigate }) {
             <div className="lc2-turn" key={turn.id}>
               <div className="lc2-ask">
                 {turn.attach && turn.attach.kind === "image" ? <span className="lc2-from"><ImageIcon size={12} /> from your image</span> : null}
-                <span>{turn.cap === "transcribe" ? ("Transcribe " + ((turn.attach && turn.attach.name) || "audio")) : turn.prompt}</span>
+                <span>{turn.cap === "transcribe" ? ("Transcribe " + ((turn.attach && turn.attach.name) || "audio")) : turn.cap === "describe" ? (turn.prompt || "Describe this image") : turn.prompt}</span>
               </div>
               <div className="lc2-reply">
                 <div className="lc2-av"><Sparkles size={15} /></div>
@@ -179,12 +186,12 @@ export default function LetsCreate({ onNavigate }) {
             <label className="lc2-filebtn"><Upload size={15} /> {attach ? attach.name : "Choose an audio file…"}<input type="file" accept="audio/*" hidden onChange={onPickAudio} /></label>
           ) : (
             <>
-              {cap === "image" ? <label title="Edit an image" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 9, border: "1px solid var(--line)", color: "var(--text-1)", cursor: "pointer", flex: "none", alignSelf: "flex-end" }}><ImageIcon size={16} /><input type="file" accept="image/*" hidden onChange={onPickImage} /></label> : null}
+              {(cap === "image" || cap === "describe") ? <label title={cap === "describe" ? "Pick an image to describe" : "Edit an image"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 9, border: "1px solid var(--line)", color: "var(--text-1)", cursor: "pointer", flex: "none", alignSelf: "flex-end" }}><ImageIcon size={16} /><input type="file" accept="image/*" hidden onChange={onPickImage} /></label> : null}
               <textarea className="lc2-prompt" rows={2} placeholder={cap === "image" && attach && attach.kind === "image" ? "describe the change — e.g. make it sunset colours, add snow" : active.placeholder} value={prompt}
                 onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onCreate(); } }} />
             </>
           )}
-          <button className="lc2-create" onClick={onCreate} disabled={busy || (cap === "transcribe" ? !attach : !prompt.trim())}>
+          <button className="lc2-create" onClick={onCreate} disabled={busy || (cap === "transcribe" || cap === "describe" ? !attach : !prompt.trim())}>
             {busy ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />} <span>Create</span>
           </button>
         </div>

@@ -151,6 +151,18 @@ function register(ipcMain, getWin) {
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
 
+  // Let's Create — describe / answer a question about an image (vision) via LocalAI.
+  ipcMain.handle("localMedia:describe", async (_e, req) => {
+    const { model, prompt, imageB64, imageMime } = req || {};
+    try {
+      const r = await rt("localai");
+      if (!r || !r.describeImage) return { error: "LocalAI engine isn't available — set it up in Local Models." };
+      if (!model) return { error: "Pick a vision model first." };
+      if (!imageB64) return { error: "No image to describe." };
+      return await r.describeImage(String(model), String(prompt || ""), String(imageB64), String(imageMime || "image/png"));
+    } catch (e) { return { error: String((e && e.message) || e) }; }
+  });
+
   // Let's Create — text-to-speech via LocalAI; saves a copy to Pictures/Madav Media.
   ipcMain.handle("localMedia:speech", async (_e, req) => {
     const { model, input, voice } = req || {};

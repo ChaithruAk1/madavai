@@ -149,6 +149,16 @@ export class LocalAiRuntime implements LocalModelRuntime {
     if (d.url) { const u = /^https?:/i.test(d.url) ? d.url : (this.base.replace(/\/+$/, '') + (d.url.startsWith('/') ? '' : '/') + d.url); const resp = await f(u); const buf = Buffer.from(await resp.arrayBuffer()); return { b64: buf.toString('base64'), mime: resp.headers.get('content-type') || 'image/png' }; }
     throw new Error('LocalAI returned no edited image');
   }
+
+  // Vision — describe / answer a question about an image (image-text-to-text) via /v1/chat/completions.
+  async describeImage(model: string, prompt: string, imageB64: string, imageMime: string): Promise<{ text: string }> {
+    const dataUrl = 'data:' + (imageMime || 'image/png') + ';base64,' + imageB64;
+    const body = { model, max_tokens: 1024, messages: [{ role: 'user', content: [{ type: 'text', text: String(prompt || 'Describe this image in detail.').slice(0, 2000) }, { type: 'image_url', image_url: { url: dataUrl } }] }] };
+    const r = await this.http.json('POST', '/v1/chat/completions', body);
+    const c = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content;
+    const text = typeof c === 'string' ? c : (Array.isArray(c) ? c.map((x: any) => (x && x.text) || '').join('') : '');
+    return { text };
+  }
   async stop(_name: string): Promise<void> { /* no per-model unload endpoint; LocalAI idles backends itself */ }
 }
 
