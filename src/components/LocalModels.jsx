@@ -46,6 +46,8 @@ const modelPageUrl = (id, pullName) => { const pn = String(pullName || ""); if (
 const BROWSE_TTL = 12 * 60 * 60 * 1000; // refresh the curated list at most twice a day (when online)
 function readBrowseCache(id) { try { const j = JSON.parse(localStorage.getItem("madav.lmbrowse." + id) || "null"); return j && Array.isArray(j.data) ? j : null; } catch { return null; } }
 function writeBrowseCache(id, data) { try { localStorage.setItem("madav.lmbrowse." + id, JSON.stringify({ at: Date.now(), data })); } catch {} }
+function readModelOpts(key) { try { return JSON.parse(localStorage.getItem("madav.modelopts." + key) || "null"); } catch { return null; } }
+function writeModelOpts(key, opts) { try { localStorage.setItem("madav.modelopts." + key, JSON.stringify(opts)); } catch {} }
 const MEDIA_GOALS = [
   { id: "all", label: "All", icon: null },
   { id: "image", label: "Image", icon: ImageIcon },
@@ -75,12 +77,14 @@ function fmtCount(n) {
 }
 
 function ServerRow({ m, gpu, maxCtx, onStop, onApply }) {
-  const [ctx, setCtx] = useState(m.context ? String(m.context) : "");
-  const [ka, setKa] = useState("30m");
+  const saved = readModelOpts(m.providerId + "::" + m.name) || {};
+  const [ctx, setCtx] = useState(saved.numCtx ? String(saved.numCtx) : (m.context ? String(m.context) : ""));
+  const [ka, setKa] = useState(saved.keepAlive || "30m");
   const lbl = (n) => (n ? (n >= 1024 ? Math.round(n / 1024) + "K" : String(n)) : "—");
   const expIn = (iso) => { if (!iso) return "stays"; const d = new Date(iso).getTime() - Date.now(); if (isNaN(d)) return "—"; if (d <= 0) return "now"; const mn = Math.round(d / 60000); return mn >= 60 ? Math.round(mn / 60) + "h" : mn + "m"; };
   const clamp = (v) => { let n = parseInt(v, 10); if (!n) return ""; if (n < 256) n = 256; if (maxCtx && n > maxCtx) n = maxCtx; return String(n); };
   const vramPct = gpu && m.sizeVram && gpu.vramTotalGB ? Math.round((m.sizeVram / 1e9) / gpu.vramTotalGB * 100) : null;
+  if (m.reloading) return <tr className="lmt-reloading"><td><div className="lmt-name">{prettyLocalName(m.name)}</div><div className="lmt-sub">{m.provider}</div></td><td colSpan={7} className="lmt-dim"><Loader2 size={12} className="spin" /> Reloading with your new settings…</td></tr>;
   return (
     <tr>
       <td><div className="lmt-name">{prettyLocalName(m.name)}</div><div className="lmt-sub">{m.provider}{m.params ? " · " + m.params : ""}</div></td>
@@ -116,6 +120,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const [cmpOpen, setCmpOpen] = useState(false);
   const [starting, setStarting] = useState({});   // id::name -> true while a model is loading into memory
   const [serverData, setServerData] = useState({ system: {}, providers: [] });
+  const [applying, setApplying] = useState({});   // pid::name -> kept visible while a model reloads after Apply
   const toggleCmp = (row) => setCmp((m) => { const n = new Map(m); if (n.has(row.pullName)) n.delete(row.pullName); else if (n.size < 4) n.set(row.pullName, row); return n; });
   const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
   const [goals, setGoals] = useState(() => new Set(["all"]));  // selected filter tiles (multi-select)
@@ -257,13 +262,24 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const v = profIds[pkey] ? profIds[pkey] + "::" + name : null;
     if (v && onActivate) onActivate(v);
     setStarting((s) => ({ ...s, [id + "::" + name]: true }));
-    try { await bridge.localModels.load(id, name); } catch {}
+    const savedOpts = readModelOpts(id + "::" + name);   // load with the user’s saved context/keep-alive for this model
+    try { await bridge.localModels.load(id, name, savedOpts || undefined); } catch {}
     setStarting((s) => { const n = { ...s }; delete n[id + "::" + name]; return n; });
     refresh(id);                                        // re-poll running() so the button reflects reality
   };
-  const loadServer = useCallback(() => { Promise.resolve(bridge.localModels.serverStatus()).then((d) => d && setServerData(d)).catch(() => {}); }, []);
+  const loadServer = useCallback(async () => { try { const d = await bridge.localModels.serverStatus(); if (d) setServerData(d); return d; } catch { return null; } }, []);
   const stopServerModel = async (pid, name) => { try { await bridge.localModels.stop(pid, name); } catch {} setTimeout(loadServer, 500); refresh(pid); };
-  const applyModelOpts = async (pid, name, numCtx, keepAlive) => { const n = parseInt(numCtx, 10); try { await bridge.localModels.load(pid, name, { numCtx: n && n >= 256 ? n : undefined, keepAlive }); } catch {} setTimeout(loadServer, 1000); };
+  const applyModelOpts = async (pid, name, numCtx, keepAlive) => {
+    const n = parseInt(numCtx, 10);
+    const opts = { numCtx: n && n >= 256 ? n : undefined, keepAlive };
+    writeModelOpts(pid + "::" + name, opts);              // remember as this model's default until changed again
+    const key = pid + "::" + name;
+    const provider = ((serverData.providers || []).find((p) => p.id === pid) || {}).label || pid;
+    setApplying((a) => ({ ...a, [key]: { provider } }));   // keep the row on screen while Ollama reloads it
+    try { await bridge.localModels.load(pid, name, opts); } catch {}
+    for (let i = 0; i < 12; i++) { await new Promise((r) => setTimeout(r, 1200)); const d = await loadServer(); if (d && (d.providers || []).some((p) => p.id === pid && (p.running || []).some((mm) => mm.name === name))) break; }
+    setApplying((a) => { const c = { ...a }; delete c[key]; return c; });
+  };
   useEffect(() => { if (active !== "server") return; loadServer(); const t = setInterval(loadServer, 4000); return () => clearInterval(t); }, [active, loadServer]);
   const doInstall = (id) => {
     setInstalling((m) => ({ ...m, [id]: { phase: "starting", pct: 0 } }));
@@ -411,7 +427,6 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
               ))}
             </div>
             {isMedia ? <div className="lm-hint">These power <b>Let's Create</b> — pull a model here, then create in the Let's Create tab.</div> : null}
-            {sys.totalRamGB ? <div className="lm-ram">Your machine has <b>{sys.totalRamGB} GB</b> RAM — showing popular models that run great on it, most-downloaded first.</div> : null}
           </div>
         ) : null}
         {(() => {
@@ -492,12 +507,18 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const sysv = serverData.system || {};
     const gpu = sysv.gpu;
     const rows = (serverData.providers || []).flatMap((p) => (p.running || []).map((m) => ({ ...m, provider: p.label, providerId: p.id })));
+    const present = new Set(rows.map((r) => r.providerId + "::" + r.name));
+    Object.keys(applying).forEach((key) => { if (!present.has(key)) { const i = key.indexOf("::"); rows.push({ name: key.slice(i + 2), providerId: key.slice(0, i), provider: applying[key].provider, reloading: true }); } });
     const freeRam = sysv.totalRamGB != null && sysv.usedRamGB != null ? Math.round((sysv.totalRamGB - sysv.usedRamGB) * 10) / 10 : null;
     const freeVram = gpu ? Math.round((gpu.vramTotalGB - gpu.vramUsedGB) * 10) / 10 : null;
     const modelRamGB = rows.length ? Math.round(rows.reduce((a, m) => a + (m.sizeBytes || 0), 0) / 1e9 * 10) / 10 : 0;
     const modelVramGB = gpu && rows.length ? Math.round(rows.reduce((a, m) => a + (m.sizeVram || 0), 0) / 1e9 * 10) / 10 : 0;
     return (
       <div className="lm-panel lm-server-panel">
+        <div className="lm-server-head">
+          <span className="lm-server-live"><Activity size={13} /> Live dashboard · auto-refreshing every 4s</span>
+          <button className="btn ghost sm" onClick={loadServer} title="Refresh the dashboard now"><RefreshCw size={13} /> Refresh</button>
+        </div>
         <div className="lm-kpis">
           <div className="lm-kpi"><div className="lm-kpi-n">{rows.length}</div><div className="lm-kpi-l">Models loaded</div></div>
           <div className="lm-kpi"><div className="lm-kpi-n">{modelRamGB} <span>GB</span></div><div className="lm-kpi-l">Used by models</div></div>
@@ -512,7 +533,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Zap size={13} /> GPU</span><span className="lm-gauge-v">{gpu.utilPct}% · {gpu.vramUsedGB}/{gpu.vramTotalGB} GB · {gpu.tempC}°C</span></div><div className="lm-gbar"><span style={{ width: (gpu.utilPct || 0) + "%", background: "#b692f6" }} /></div><div className="lm-gauge-sub">{gpu.name}</div></div>
           ) : <div className="lm-gauge nodata"><Zap size={13} /> No NVIDIA GPU detected — models run on CPU / RAM</div>}
         </div>
-        <div className="lm-section-label"><Activity size={13} /> Running models{rows.length ? " (" + rows.length + ")" : ""} <span className="lmt-dim" style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>· live, refreshing every 4s</span></div>
+        <div className="lm-section-label"><Activity size={13} /> Running models{rows.length ? " (" + rows.length + ")" : ""}</div>
         {rows.length ? (
           <div className="mo-tablewrap"><table className="mo-table lm-server-table">
             <thead><tr><th>Model</th><th>In memory</th><th>Processor</th><th>Quant</th><th>Context</th><th>Keep alive</th><th>Expires</th><th></th></tr></thead>
@@ -529,7 +550,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     <div className="local-models scroll">
       <div className="lm-head">
         <h2><Cpu size={18} /> Local Models</h2>
-        <p className="lm-sub">Run models on your own machine — private, offline, no API key. Pick a provider, search, and pull. Anything you install becomes selectable everywhere in Madav.</p>
+        <p className="lm-sub">Run models on your own machine — private, offline, no API key. Pick a provider, search, and pull. Anything you install becomes selectable everywhere in Madav.{sys.totalRamGB ? <> Your machine has <b>{sys.totalRamGB} GB</b> RAM — models that run great on it are shown first.</> : null}</p>
       </div>
       <div className="lm-pills">
         {PROVIDERS.map((p) => {
