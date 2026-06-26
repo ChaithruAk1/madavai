@@ -4,34 +4,40 @@
 // install the runtime if it's missing. SINGLE SOURCE: every model action goes through bridge.localModels.*
 // (desktop preload on the app; a "desktop only" stub on web), which calls the shared @madav/models registry.
 import { useState, useEffect, useCallback, Fragment } from "react";
-import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star, ExternalLink, ChevronRight } from "lucide-react";
+import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star, ExternalLink, ChevronRight, LayoutGrid, Wrench } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { providerForRuntime } from "../data/localProviders.js";
 import { prettyLocalName, localCaps, fitForRam, goalMatches, isChatModel } from "../data/localModels.js";
 import { madavConfirm } from "../dialogs.jsx";
+import { MakerLogo } from "./ModelsOverview.jsx";
 
 const PROVIDERS = [
   { id: "ollama", label: "Ollama", blurb: "The simplest way to run models locally. Search the built-in catalog or type any model name to pull." },
   { id: "huggingface", label: "HuggingFace", blurb: "Pull any GGUF model from the HuggingFace Hub. Runs through the Ollama engine under the hood." },
   { id: "lmstudio", label: "LM Studio", blurb: "Use models from LM Studio. Needs the LM Studio app with its command-line tool (lms) enabled." },
-  { id: "localai", label: "LocalAI", blurb: "One engine for image, voice and video generation. Runs in Docker — Madav sets it up for you." },
+  { id: "localai", label: "Let's Create Models", blurb: "One engine for image, voice and video generation. Runs in Docker — Madav sets it up for you." },
 ];
 
 // Goal-first browse tiles — people know what they want to DO, not which model does it. Keys match the catalog's
 // useCases (and are inferred from the model id for live HuggingFace / LM Studio feeds).
 const GOALS = [
-  { id: "general", label: "Private ChatGPT", desc: "A capable all-round assistant", icon: MessageSquare },
+  { id: "all", label: "All", desc: "Show every model", icon: LayoutGrid },
   { id: "coding", label: "Coding assistant", desc: "Writes and explains code", icon: Code2 },
   { id: "reasoning", label: "Deep reasoning", desc: "Thinks step by step", icon: Brain },
   { id: "vision", label: "Sees images", desc: "Understands pictures + screenshots", icon: Eye },
   { id: "tiny", label: "Tiny & fast", desc: "Runs on modest hardware", icon: Zap },
+  { id: "downloaded", label: "Downloaded", desc: "Models you've already installed", icon: HardDrive },
 ];
 const FIT_LABEL = { good: "Runs great", tight: "Will be slow", over: "Too big" };
 const SITE = { ollama: "https://ollama.com/library", huggingface: "https://huggingface.co/models?library=gguf&sort=downloads", lmstudio: "https://lmstudio.ai/models", localai: "https://localai.io/models/" };
 const SITE_LABEL = { ollama: "ollama.com", huggingface: "huggingface.co", lmstudio: "lmstudio.ai", localai: "localai.io" };
-const UC_TONE = { Chat: "#5aa0ff", Coding: "#3ecf8e", Reasoning: "#b794f6", Vision: "#f5a623", Tools: "#4fd1c5", Image: "#ed64a6", Voice: "#fc8181", Video: "#7f9cf5", Media: "#9aa4b2" };
+const UC_META = { Chat: { icon: MessageSquare, tone: "#7aa2f7" }, Coding: { icon: Code2, tone: "#3ecf8e" }, Reasoning: { icon: Brain, tone: "#b692f6" }, Vision: { icon: Eye, tone: "#5aa0ff" }, Tools: { icon: Wrench, tone: "#f0883e" }, Image: { icon: ImageIcon, tone: "#ed64a6" }, Voice: { icon: Mic, tone: "#fc8181" }, Video: { icon: Film, tone: "#7f9cf5" }, Media: { icon: Star, tone: "#9aa4b2" } };
+const MAKER_MAP = [[/llama|codellama/, { key: "meta", label: "Meta" }], [/qwen|qwq/, { key: "qwen", label: "Qwen" }], [/gemma/, { key: "google", label: "Google" }], [/devstral|mixtral|mistral/, { key: "mistral", label: "Mistral AI" }], [/deepseek/, { key: "deepseek", label: "DeepSeek" }], [/phi/, { key: "microsoft", label: "Microsoft" }], [/gpt-oss/, { key: "openai", label: "OpenAI" }], [/wan/, { key: "alibaba", label: "Alibaba" }], [/flux/, { key: "flux", label: "Black Forest Labs" }], [/llava|minicpm|nomic/, { key: "community", label: "Community" }]];
+const makerInfo = (name, family) => { const t = String(name || family || "").toLowerCase(); for (const [re, info] of MAKER_MAP) if (re.test(t)) return info; return { key: family || "local", label: family ? family.charAt(0).toUpperCase() + family.slice(1) : "Community" }; };
 const paramsOf = (n) => { const m = /(\d+(?:\.\d+)?)\s*x?\s*b\b/i.exec(String(n || "").toLowerCase()); return m ? m[1] + "B" : "—"; };
 const ctxOf = (n) => { const t = String(n || "").toLowerCase(); if (/llama-?3|llama3/.test(t)) return "128K"; if (/qwen-?2\.5|qwen2\.5|qwen-?3|qwen3/.test(t)) return "128K"; if (/gemma-?2|gemma2/.test(t)) return "8K"; if (/phi-?3\.5|phi3\.5|phi-?4|phi4/.test(t)) return "128K"; if (/mistral-?nemo/.test(t)) return "128K"; if (/codellama|code-?llama/.test(t)) return "16K"; if (/mistral/.test(t)) return "32K"; return "—"; };
+const ctxNum = (n) => { const c = ctxOf(n); const m = /(\d+(?:\.\d+)?)\s*([KM])?/.exec(c); if (!m) return 0; let v = parseFloat(m[1]); if (m[2] === "K") v *= 1e3; if (m[2] === "M") v *= 1e6; return v; };
+const paramNum = (n) => { const m = /(\d+(?:\.\d+)?)/.exec(paramsOf(n)); return m ? parseFloat(m[1]) : 0; };
 const modelPageUrl = (id, pullName) => { const pn = String(pullName || ""); if (id === "ollama") return "https://ollama.com/library/" + pn.split(":")[0]; if (id === "huggingface") return "https://huggingface.co/" + pn.replace(/^hf\.co\//i, "").split(":")[0]; if (id === "lmstudio") return "https://huggingface.co/" + pn.split(":")[0]; return SITE[id]; };
 const BROWSE_TTL = 12 * 60 * 60 * 1000; // refresh the curated list at most twice a day (when online)
 function readBrowseCache(id) { try { const j = JSON.parse(localStorage.getItem("madav.lmbrowse." + id) || "null"); return j && Array.isArray(j.data) ? j : null; } catch { return null; } }
@@ -41,6 +47,7 @@ const MEDIA_GOALS = [
   { id: "image", label: "Image", icon: ImageIcon },
   { id: "voice", label: "Voice", icon: Mic },
   { id: "video", label: "Video", icon: Film },
+  { id: "downloaded", label: "Downloaded", icon: HardDrive },
 ];
 // Proven families per capability. We MATCH these against the live LocalAI gallery, so the model we surface
 // (and its pull name) is always a real entry — never a hard-coded name that could 404.
@@ -77,8 +84,11 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const [profIds, setProfIds] = useState({});       // provider key -> local profile id (powers the Use button)
   const [installNote, setInstallNote] = useState({}); // a short result note after an install/setup attempt
   const [expandedRow, setExpandedRow] = useState(null);
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState("desc");
+  const toggleSort = (k) => { if (!k) return; if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc")); else { setSortKey(k); setSortDir(k === "model" ? "asc" : "desc"); } };
   const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
-  const [goal, setGoal] = useState("general");       // active chat browse goal tile
+  const [goal, setGoal] = useState("all");            // active chat browse goal tile
   const [mediaGoal, setMediaGoal] = useState("all"); // active LocalAI capability tile (image/voice/video)
   const [sys, setSys] = useState({ totalRamGB: 0 }); // machine RAM, for the fits-your-machine badge
   const [dockerInfo, setDockerInfo] = useState(null);  // LocalAI: Docker presence/running
@@ -240,15 +250,19 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     if (r.useCases && r.useCases.length) { ["image", "voice", "video"].forEach((u) => { if (r.useCases.includes(u)) ucs.push(u.charAt(0).toUpperCase() + u.slice(1)); }); }
     if (!ucs.length) { if (caps.coding) ucs.push("Coding"); if (caps.reasoning) ucs.push("Reasoning"); if (caps.vision) ucs.push("Vision"); if (caps.tools && !caps.coding) ucs.push("Tools"); }
     if (!ucs.length) ucs.push(isMedia ? "Media" : "Chat");
+    const mk = makerInfo(r.name || r.pullName, r.family);
     const useIt = () => { const pkey = (providerForRuntime(id) || {}).runtime; const v = profIds[pkey] ? profIds[pkey] + "::" + r.name : null; if (v && onActivate) onActivate(v); };
+    const _pk = (providerForRuntime(id) || {}).runtime;
+    const _val = r.installed && profIds[_pk] ? profIds[_pk] + "::" + r.name : null;
+    const isActive = !!_val && _val === activeValue;
     const open = expandedRow === r.pullName;
     const dot = fit === "good" ? "#3fb950" : fit === "tight" ? "#f5a623" : fit === "over" ? "#ff6b6b" : "var(--text-2)";
     const fitLabel = fit === "good" ? "Compatible" : fit === "tight" ? "Runs but slow" : fit === "over" ? "Too big" : "—";
     return (
       <Fragment key={r.pullName}>
         <tr className={(r.installed ? "lmt-on " : "") + "lmt-row"} onClick={() => setExpandedRow(open ? null : r.pullName)}>
-          <td><div className="lmt-name">{r.installed ? <CheckCircle2 size={13} style={{ color: "#3fb950", flex: "none" }} /> : null}<ChevronRight size={12} className={"lmt-caret" + (open ? " open" : "")} /> {prettyLocalName(r.name || r.pullName)}</div><div className="lmt-sub">{r.pullName}</div></td>
-          <td><div className="lmt-caps">{ucs.map((u) => <span key={u} className="lmt-cap" style={{ color: UC_TONE[u] || "#9aa4b2", borderColor: "color-mix(in srgb, " + (UC_TONE[u] || "#9aa4b2") + " 38%, transparent)" }}>{u}</span>)}</div></td>
+          <td><div className="lmt-name">{r.installed ? <CheckCircle2 size={13} style={{ color: "#3fb950", flex: "none" }} /> : null}<ChevronRight size={12} className={"lmt-caret" + (open ? " open" : "")} /> {prettyLocalName(r.name || r.pullName)}</div><div className="lmt-maker"><MakerLogo maker={mk.key} /> {mk.label}</div><div className="lmt-sub">{r.pullName}</div></td>
+          <td><div className="lmt-caps">{ucs.map((u) => { const M = UC_META[u] || { tone: "#9aa4b2" }; const I = M.icon; return <span key={u} className="lmt-cap" style={{ color: M.tone, borderColor: "color-mix(in srgb, " + M.tone + " 38%, transparent)" }}>{I ? <I size={11} /> : null} {u}</span>; })}</div></td>
           <td className="lmt-nowrap">{size}</td>
           <td className="lmt-nowrap lmt-dim">{ctxOf(r.name || r.pullName)}</td>
           <td className="lmt-nowrap lmt-dim">{paramsOf(r.name || r.pullName)}</td>
@@ -258,7 +272,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           <td className="lmt-act" onClick={(e) => e.stopPropagation()}>
             {r.installed ? (
               <span className="lmt-actrow">
-                {isMedia ? <span className="lm-chip ok sm" title="Use in the Let's Create tab">Let's Create</span> : <button className="btn primary sm" onClick={useIt} title="Activate this model"><Zap size={12} /> Activate</button>}
+                {isMedia ? <span className="lm-chip ok sm" title="Use in the Let's Create tab">Let's Create</span> : isActive ? <span className="lm-chip ok sm" title="This is your active model"><CheckCircle2 size={12} /> Active</span> : <button className="btn primary sm" onClick={useIt} disabled={!_val} title={_val ? "Activate this model" : "Preparing this model… one moment"}><Zap size={12} /> Activate</button>}
                 <button className="btn ghost sm" onClick={() => askRemove(id, r.name)} title="Delete from disk"><Trash2 size={12} /></button>
               </span>
             ) : incompatible ? (
@@ -319,7 +333,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             <button className="btn ghost sm" onClick={() => refresh(id)} title="Re-check status"><RefreshCw size={14} /></button>
             {!det.available && (inst
               ? <span className="lm-installing"><Loader2 size={13} className="spin" /> {inst.line ? inst.line : (inst.phase === "downloading" ? "Downloading… " + (inst.pct || 0) + "%" : inst.phase === "docker" ? "Starting Docker…" : inst.phase === "pulling" ? "Downloading engine…" : inst.phase === "booting" || inst.phase === "starting" ? "Starting engine…" : inst.phase === "installing" ? "Installing…" : inst.phase === "ready" ? "Ready" : inst.phase === "opened" ? "Opened download page" : "Working…")}</span>
-              : <button className="btn primary" onClick={() => doInstall(id)}><Download size={14} /> {id === "localai" ? "Set up LocalAI" : id === "lmstudio" ? "Get LM Studio" : id === "huggingface" ? "Install Ollama engine" : "Install Ollama"}</button>)}
+              : <button className="btn primary" onClick={() => doInstall(id)}><Download size={14} /> {id === "localai" ? "Set up Let's Create" : id === "lmstudio" ? "Get LM Studio" : id === "huggingface" ? "Install Ollama engine" : "Install Ollama"}</button>)}
           </div>
         </div>
         {inst && (inst.phase === "downloading" || inst.phase === "docker" || inst.phase === "pulling" || inst.phase === "booting") ? <div className="lm-bar"><div className="lm-bar-fill" style={{ width: (inst.pct || 0) + "%" }} /></div> : null}
@@ -328,7 +342,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           <div className="lm-lai-strip">
             <span className={"lm-chip " + (dockerInfo && dockerInfo.running ? "ok" : "off")}>{dockerInfo ? (dockerInfo.running ? "Docker running" : dockerInfo.installed ? "Docker installed - not started" : "Docker not installed") : "Checking Docker…"}</span>
             <span className={"lm-chip " + (laiInfo && laiInfo.api ? "ok" : "off")}>{laiInfo ? (laiInfo.api ? "Engine running" : laiInfo.container === "stopped" ? "Engine stopped" : "Engine not started") : "Checking engine…"}</span>
-            {laiInfo && laiInfo.api ? <button className="btn ghost sm" onClick={() => { bridge.localModels.localaiStop(); setLaiInfo({ ...laiInfo, api: false }); }} title="Stop the LocalAI container"><Square size={12} /> Stop engine</button> : null}
+            {laiInfo && laiInfo.api ? <button className="btn ghost sm" onClick={() => { bridge.localModels.localaiStop(); setLaiInfo({ ...laiInfo, api: false }); }} title="Stop the Let's Create engine"><Square size={12} /> Stop engine</button> : null}
           </div>
         ) : null}
 
@@ -361,22 +375,35 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         ) : null}
         {(() => {
           const baseOf = (n) => String(n || "").split("/").pop().split(":")[0].toLowerCase();
+          const activeGoal = isMedia ? mediaGoal : goal;
           let rows;
           if (showSearch) {
             rows = (res || []).filter((rr) => isMedia || isChatModel(rr.name || rr.pullName)).map((e) => ({ name: e.name, pullName: e.pullName, installed: isInstalled(id, e), sizeGB: e.sizeGB, sizeLabel: e.sizeLabel, downloads: e.downloads, description: e.description, useCases: e.useCases }));
           } else {
-            const curated = (browseList[id] || []).filter(galleryFilter).filter((e) => { const f = fitForRam(e.sizeGB, sys.totalRamGB); return f === "good" || f === "unknown"; }).slice(0, 50).map((e) => ({ name: e.name, pullName: e.pullName, installed: isInstalled(id, e), sizeGB: e.sizeGB, sizeLabel: e.sizeLabel, downloads: e.downloads, description: e.description, useCases: e.useCases }));
-            const curBases = new Set(curated.filter((e) => e.installed).map((e) => baseOf(e.pullName)));
-            const extra = (installed[id] || []).filter((m) => !curBases.has(baseOf(m.name))).map((m) => ({ name: m.name, pullName: m.name, installed: true, sizeBytes: m.sizeBytes, sizeGB: m.sizeBytes ? Math.round(m.sizeBytes / 1e9 * 10) / 10 : undefined, downloads: 0, description: "", useCases: undefined }));
-            rows = [...extra, ...curated];
+            const galAll = browseList[id] || [];
+            const galByBase = new Map(); galAll.forEach((e) => { const b = baseOf(e.pullName); if (!galByBase.has(b)) galByBase.set(b, e); });
+            const enrich = (m) => { const g = galByBase.get(baseOf(m.name)) || {}; return { name: m.name, pullName: m.name, installed: true, sizeBytes: m.sizeBytes, sizeGB: m.sizeBytes ? Math.round(m.sizeBytes / 1e9 * 10) / 10 : g.sizeGB, sizeLabel: g.sizeLabel, downloads: g.downloads || 0, description: g.description || "", useCases: g.useCases }; };
+            const installedRows = (installed[id] || []).map(enrich);                      // REAL installed names -> activate + delete work
+            const installedBases = new Set((installed[id] || []).map((m) => baseOf(m.name)));
+            if (activeGoal === "downloaded") {
+              rows = installedRows;                                                        // "Downloaded" filter = only what you have
+            } else {
+              const curated = galAll.filter(galleryFilter).filter((e) => { const f = fitForRam(e.sizeGB, sys.totalRamGB); return f === "good" || f === "unknown"; }).filter((e) => !installedBases.has(baseOf(e.pullName))).slice(0, 50).map((e) => ({ name: e.name, pullName: e.pullName, installed: false, sizeGB: e.sizeGB, sizeLabel: e.sizeLabel, downloads: e.downloads, description: e.description, useCases: e.useCases }));
+              rows = [...installedRows.filter((r) => galleryFilter(r)), ...curated];
+            }
+          }
+          if (sortKey) {
+            const fitRank = (r) => { const f = fitForRam(r.sizeGB, sys.totalRamGB); return f === "good" ? 0 : f === "tight" ? 1 : f === "over" ? 2 : 3; };
+            const val = (r) => sortKey === "model" ? prettyLocalName(r.name || r.pullName).toLowerCase() : sortKey === "size" ? (r.sizeGB || 0) : sortKey === "context" ? ctxNum(r.name || r.pullName) : sortKey === "params" ? paramNum(r.name || r.pullName) : sortKey === "ram" ? fitRank(r) : sortKey === "downloads" ? (r.downloads || 0) : 0;
+            rows = [...rows].sort((a, b) => { const va = val(a), vb = val(b); const c = typeof va === "string" ? va.localeCompare(vb) : (va - vb); return sortDir === "asc" ? c : -c; });
           }
           if (!rows.length) {
-            return <div className="lm-empty">{searching[id] ? "Searching…" : (isMedia && !det.available) ? "Start LocalAI above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
+            return <div className="lm-empty">{searching[id] ? "Searching…" : (isMedia && !det.available) ? "Start the Let's Create engine above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
           }
           return (
             <div className="mo-tablewrap lmt-wrap">
               <table className="mo-table lmt-table">
-                <thead><tr><th>Model</th><th>Use case</th><th>Size</th><th>Context</th><th>Params</th><th>RAM compatibility</th><th>Downloads</th><th>Cost</th><th></th></tr></thead>
+                <thead><tr><th className={sortKey === "model" ? "sorted" : ""} onClick={() => toggleSort("model")}>Model{sortKey === "model" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th>Capabilities</th><th className={sortKey === "size" ? "sorted" : ""} onClick={() => toggleSort("size")}>Size{sortKey === "size" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "context" ? "sorted" : ""} onClick={() => toggleSort("context")}>Context{sortKey === "context" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "params" ? "sorted" : ""} onClick={() => toggleSort("params")}>Params{sortKey === "params" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "ram" ? "sorted" : ""} onClick={() => toggleSort("ram")}>RAM compatibility{sortKey === "ram" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "downloads" ? "sorted" : ""} onClick={() => toggleSort("downloads")}>Downloads{sortKey === "downloads" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th>Cost</th><th></th></tr></thead>
                 <tbody>{rows.map((r) => renderRow(r, id))}</tbody>
               </table>
             </div>

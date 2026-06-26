@@ -17,7 +17,7 @@ const MAKER_DOMAIN = {
   morph: "morphllm.com", kwaipilot: "kuaishou.com", allenai: "allenai.org", nous: "nousresearch.com", "nousresearch": "nousresearch.com",
   liquid: "liquid.ai", inflection: "inflection.ai", reka: "reka.ai", thudm: "z.ai", zhipu: "z.ai", baidu: "baidu.com", minimax: "minimaxi.com",
 };
-function MakerLogo({ maker }) {
+export function MakerLogo({ maker }) {
   const [err, setErr] = useState(false);
   const key = String(maker || "").toLowerCase().trim();
   const domain = MAKER_DOMAIN[key] || MAKER_DOMAIN[key.split("/")[0]] || MAKER_DOMAIN[key.split("-")[0]];
