@@ -3,10 +3,12 @@
 // every result sparks the next (an image can Animate into a video). Powered by the LocalAI engine. This is its
 // own playful surface (not the chat shell) — friendly copy, a warm empty state, rich inline result cards.
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Sparkles, Image as ImageIcon, Mic, Film, Volume2, Loader2, Download, FolderOpen, AlertCircle, Wand2, Copy, Check, Upload, X, RotateCcw, Eye, Music } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Mic, Film, Volume2, Loader2, Download, FolderOpen, AlertCircle, Wand2, Copy, Check, Upload, X, RotateCcw, Eye, Music, Plus, ChevronDown, FolderGit2, Bot } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { localModality, prettyLocalName } from "../data/localModels.js";
 import { isVisionModel } from "../modelCost.js";
+import { PermissionPicker } from "./Topbar.jsx";
+import MadavMark from "./MadavMark.jsx";
 
 const CAPS = [
   { id: "image", label: "Image", icon: ImageIcon, placeholder: "a neon koi gliding through glowing clouds, watercolor" },
@@ -46,6 +48,13 @@ export default function LetsCreate({ onNavigate }) {
   const [setupProg, setSetupProg] = useState(null);
   const [pullProg, setPullProg] = useState(null);
   const [zoom, setZoom] = useState(null);
+  const [who, setWho] = useState("");
+  const [pickedModel, setPickedModel] = useState("");
+  const [folder, setFolder] = useState("");
+  const [perm, setPerm] = useState("default");
+  const [agentsOn, setAgentsOn] = useState(false);
+  const [plusOpen, setPlusOpen] = useState(false);
+  const [mpOpen, setMpOpen] = useState(false);
   const threadRef = useRef(null);
 
   const refresh = useCallback(async () => {
@@ -53,6 +62,7 @@ export default function LetsCreate({ onNavigate }) {
     try { const l = await bridge.localModels.list("localai"); setModels(Array.isArray(l) ? l : []); } catch { setModels([]); }
   }, []);
   useEffect(() => { refresh(); const t = setInterval(refresh, 5000); return () => clearInterval(t); }, [refresh]);
+  useEffect(() => { Promise.resolve(bridge.getSettings && bridge.getSettings()).then((cfg) => { const a = (cfg && cfg.account) || {}; const nm = ((a.name || "").trim().split(" ")[0]) || ((a.email || "").split("@")[0]) || ""; setWho(nm ? nm.charAt(0).toUpperCase() + nm.slice(1) : ""); }).catch(() => {}); }, []);
   useEffect(() => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }, [turns]);
   useEffect(() => {
     const offI = bridge.localModels.onInstallProgress((p) => { if (p && p.id === "localai") setSetupProg({ phase: p.phase, pct: p.pct, line: p.line }); });
@@ -77,7 +87,7 @@ export default function LetsCreate({ onNavigate }) {
 
   const runTurn = async ({ cap, prompt, attach }) => {
     const avail = modelsFor(cap);
-    const model = avail[0] && avail[0].name;
+    const model = chosenModel(avail);
     const id = "t" + Date.now() + Math.random().toString(36).slice(2, 5);
     setTurns((t) => [...t, { id, cap, prompt, attach: attach || null, status: model ? "running" : "error", result: null, error: model ? "" : ("No " + capLabel(cap) + " model installed yet.") }]);
     if (!model) return;
@@ -141,6 +151,11 @@ export default function LetsCreate({ onNavigate }) {
   const active = CAPS.find((c) => c.id === cap) || CAPS[0];
   const goModels = () => onNavigate && onNavigate("models-local");
   const haveModel = modelsFor(cap).length > 0;
+  const relModels = modelsFor(cap);
+  const _h = new Date().getHours(); const _part = _h < 12 ? "morning" : _h < 18 ? "afternoon" : "evening";
+  const greeting = who ? "Good " + _part + ", " + who : "Good " + _part;
+  const pickFolder = async () => { try { const d = await bridge.chooseFolder(); const f = typeof d === "string" ? d : (d && (d.folder || d.path)); if (f) setFolder(f); } catch {} };
+  const chosenModel = (mods) => (pickedModel && mods.some((m) => m.name === pickedModel)) ? pickedModel : (mods[0] && mods[0].name);
 
   const dataUrl = (r) => "data:" + (r.mime || "application/octet-stream") + ";base64," + r.b64;
 
@@ -175,7 +190,7 @@ export default function LetsCreate({ onNavigate }) {
   };
 
   return (
-    <div className="lc2">
+    <div className={"lc2" + (turns.length === 0 ? " lc2-idle" : "")}>
       <div className="lc2-thread scroll" ref={threadRef}>
         {!engineUp ? (
           <div className="lc2-asleep">
@@ -211,9 +226,9 @@ export default function LetsCreate({ onNavigate }) {
           </div>
         ) : turns.length === 0 ? (
           <div className="lc2-hero">
-            <div className="lc2-spark"><Sparkles size={26} /></div>
-            <h1>What shall we create?</h1>
-            <p>Describe anything — an image, a voice, a short video. Madav imagines it, right here. Each result sparks the next.</p>
+            <MadavMark size={46} />
+            <h1>{greeting}</h1>
+            <p>What shall we create? Describe an image, a voice, or a short video — Madav imagines it right here.</p>
             <div className="lc2-starters">
               {STARTERS.map((s, i) => {
                 const I = (CAPS.find((c) => c.id === s.cap) || {}).icon || Sparkles;
@@ -250,6 +265,15 @@ export default function LetsCreate({ onNavigate }) {
           {CAPS.map((c) => <button key={c.id} className={"lc2-cap " + (cap === c.id ? "on" : "")} onClick={() => { setCap(c.id); setAttach(null); }}><c.icon size={15} /> {c.label}</button>)}
         </div>
         <div className="lc2-inputrow">
+          <div className="lc2-plus-wrap">
+            <button className="lc2-plus" onClick={() => setPlusOpen((o) => !o)} title="Add files or photos"><Plus size={18} /></button>
+            {plusOpen ? (
+              <div className="lc2-plus-menu" onMouseLeave={() => setPlusOpen(false)}>
+                <label className="lc2-plus-item"><ImageIcon size={15} /> Add files or photos<input type="file" accept="image/*" hidden onChange={(e) => { onPickImage(e); setPlusOpen(false); }} /></label>
+                <button className="lc2-plus-item" onClick={() => { setAgentsOn((a) => !a); setPlusOpen(false); }}><Bot size={15} /> {agentsOn ? "Agents · on" : "Use Agents"}</button>
+              </div>
+            ) : null}
+          </div>
           {attach ? <span className="lc2-attachchip"><ImageIcon size={13} /> {attach.name} <X size={12} onClick={() => setAttach(null)} /></span> : null}
           {cap === "transcribe" ? (
             <label className="lc2-filebtn"><Upload size={15} /> {attach ? attach.name : "Choose an audio file…"}<input type="file" accept="audio/*" hidden onChange={onPickAudio} /></label>
@@ -263,6 +287,15 @@ export default function LetsCreate({ onNavigate }) {
           <button className="lc2-create" onClick={onCreate} disabled={busy || (cap === "transcribe" || cap === "describe" ? !attach : !prompt.trim())}>
             {busy ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />} <span>Create</span>
           </button>
+        </div>
+        <div className="lc2-dock">
+          <button className="lc2-dockchip" onClick={pickFolder} title="Pick a folder to manage and process files"><FolderGit2 size={13} /> {folder ? folder.split(/[\\/]/).pop() : "Select Folder"} <ChevronDown size={12} /></button>
+          <div className="lc2-mp">
+            <button className="lc2-dockchip" onClick={() => setMpOpen((o) => !o)} disabled={!relModels.length} title="Model used for this creation">{relModels.length ? prettyLocalName(chosenModel(relModels)) : "No model"} <ChevronDown size={12} /></button>
+            {mpOpen ? <div className="lc2-mp-menu" onMouseLeave={() => setMpOpen(false)}>{relModels.map((m) => { const sel = chosenModel(relModels) === m.name; return <div key={m.name} className={"lc2-mp-row" + (sel ? " sel" : "")} onClick={() => { setPickedModel(m.name); setMpOpen(false); }}>{prettyLocalName(m.name)}{sel ? <Check size={14} /> : null}</div>; })}</div> : null}
+          </div>
+          <PermissionPicker value={perm} onChange={setPerm} />
+          <button className={"lc2-dockchip" + (agentsOn ? " on" : "")} onClick={() => setAgentsOn((a) => !a)} title="Let agents help (configured later)"><Bot size={13} /> Agents</button>
         </div>
         {!haveModel ? (<div className="lc2-needmodel">No {capLabel(cap)} model yet — {pullProg ? <span><Loader2 size={12} className="spin" /> {pullProg.error || ("pulling " + (pullProg.name ? prettyLocalName(pullProg.name) : "a model") + "… " + (pullProg.pct || 0) + "%")}</span> : <><button className="lc2-link" onClick={() => pullStarter(cap)}>pull a starter one</button> or <button className="lc2-link" onClick={goModels}>browse in Local Models</button>.</>}</div>) : null}
       </div>
