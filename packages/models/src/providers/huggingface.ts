@@ -27,6 +27,7 @@ export class HuggingFaceRuntime implements LocalModelRuntime {
         downloads: m.downloads,
         description: tags.filter((t) => !/^(gguf|region:|license:|arxiv:|dataset:)/.test(t)).slice(0, 4).join(' · '),
         family: id.split('/')[0],
+        sizeGB: estimateSizeGB(id),
         source: 'huggingface' as const,
       };
     });

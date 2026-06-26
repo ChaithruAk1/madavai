@@ -214,7 +214,8 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     } catch (e) { setSearchErr((s) => ({ ...s, [id]: String((e && e.message) || e) })); }
     finally { setSearching((s) => ({ ...s, [id]: false })); }
   };
-  const doPull = (id, name) => {
+  const doPull = (id, name, sizeGB) => {
+    if (fitForRam(sizeGB, sys.totalRamGB) === "over") { setInstallNote((s) => ({ ...s, [id]: "“" + prettyLocalName(name) + "” needs more memory than your system has (" + sys.totalRamGB + " GB) — it can't run here, so it won't be pulled." })); return; }
     setPulls((m) => ({ ...m, [id + "::" + name]: { pct: 0, status: "starting", done: false, error: "" } }));
     bridge.localModels.pull(id, name);
   };
@@ -296,9 +297,9 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             ) : pr && !pr.done && !pr.error ? (
               <span className="lmt-actrow"><span className="lm-bar small" style={{ width: 64 }}><span className="lm-bar-fill" style={{ width: (pr.pct || 0) + "%" }} /></span><span className="lm-pct">{pr.pct || 0}%</span></span>
             ) : pr && pr.error ? (
-              <button className="btn ghost sm" onClick={() => doPull(id, r.pullName)} title={pr.error}><AlertCircle size={12} /> Retry</button>
+              <button className="btn ghost sm" onClick={() => doPull(id, r.pullName, r.sizeGB)} title={pr.error}><AlertCircle size={12} /> Retry</button>
             ) : (
-              <button className="btn primary sm" onClick={() => doPull(id, r.pullName)} disabled={!det.available} title={det.available ? "Download" : "Install the engine first"}><Download size={12} /> Pull</button>
+              <button className="btn primary sm" onClick={() => doPull(id, r.pullName, r.sizeGB)} disabled={!det.available} title={det.available ? "Download" : "Install the engine first"}><Download size={12} /> Pull</button>
             )}
           </td>
         </tr>

@@ -18,7 +18,7 @@ export class LmStudioRuntime implements LocalModelRuntime {
     const arr: any[] = Array.isArray(r) ? r : [];
     return arr.map((m) => {
       const id = m.id ?? m.modelId ?? '';
-      return { pullName: id, name: id, downloads: m.downloads, family: id.split('/')[0], source: 'lmstudio' as const };
+      return { pullName: id, name: id, downloads: m.downloads, sizeGB: estimateSizeGB(id), family: id.split('/')[0], source: 'lmstudio' as const };
     });
   }
 
