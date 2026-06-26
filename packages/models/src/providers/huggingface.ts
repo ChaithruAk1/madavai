@@ -49,7 +49,7 @@ export class HuggingFaceRuntime implements LocalModelRuntime {
   async load(name: string, opts?: { numCtx?: number; keepAlive?: string }): Promise<void> { return this.ollama.load(name, opts); }
 
   async browse(): Promise<ModelSearchResult[]> {
-    const r = await this.hub.json('GET', '/api/models?filter=gguf&sort=downloads&direction=-1&limit=80');
+    const r = await this.hub.json('GET', '/api/models?filter=gguf&sort=downloads&direction=-1&limit=100');
     const arr: any[] = Array.isArray(r) ? r : [];
     return arr.map((m) => { const id = m.id ?? m.modelId ?? ''; return { pullName: 'hf.co/' + id, name: id, downloads: m.downloads, sizeGB: estimateSizeGB(id), family: id.split('/')[0], source: 'huggingface' as const }; });
   }
