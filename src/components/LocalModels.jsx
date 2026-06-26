@@ -4,7 +4,7 @@
 // install the runtime if it's missing. SINGLE SOURCE: every model action goes through bridge.localModels.*
 // (desktop preload on the app; a "desktop only" stub on web), which calls the shared @madav/models registry.
 import { useState, useEffect, useCallback, Fragment } from "react";
-import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star, ExternalLink, ChevronRight, LayoutGrid, Wrench } from "lucide-react";
+import { Cpu, Search, Download, Trash2, CheckCircle2, Loader2, AlertCircle, RefreshCw, HardDrive, Activity, Zap, Square, MessageSquare, Code2, Brain, Eye, Image as ImageIcon, Mic, Film, Star, ExternalLink, ChevronRight, LayoutGrid, Wrench, Scale, X } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 import { providerForRuntime } from "../data/localProviders.js";
 import { prettyLocalName, localCaps, fitForRam, goalMatches, isChatModel } from "../data/localModels.js";
@@ -34,6 +34,7 @@ const SITE_LABEL = { ollama: "ollama.com", huggingface: "huggingface.co", lmstud
 const UC_META = { Chat: { icon: MessageSquare, tone: "#7aa2f7" }, Coding: { icon: Code2, tone: "#3ecf8e" }, Reasoning: { icon: Brain, tone: "#b692f6" }, Vision: { icon: Eye, tone: "#5aa0ff" }, Tools: { icon: Wrench, tone: "#f0883e" }, Image: { icon: ImageIcon, tone: "#ed64a6" }, Voice: { icon: Mic, tone: "#fc8181" }, Video: { icon: Film, tone: "#7f9cf5" }, Media: { icon: Star, tone: "#9aa4b2" } };
 const MAKER_MAP = [[/llama|codellama/, { key: "meta", label: "Meta" }], [/qwen|qwq/, { key: "qwen", label: "Qwen" }], [/gemma/, { key: "google", label: "Google" }], [/devstral|mixtral|mistral/, { key: "mistral", label: "Mistral AI" }], [/deepseek/, { key: "deepseek", label: "DeepSeek" }], [/phi/, { key: "microsoft", label: "Microsoft" }], [/gpt-oss/, { key: "openai", label: "OpenAI" }], [/wan/, { key: "alibaba", label: "Alibaba" }], [/flux/, { key: "flux", label: "Black Forest Labs" }], [/llava|minicpm|nomic/, { key: "community", label: "Community" }]];
 const makerInfo = (name, family) => { const t = String(name || family || "").toLowerCase(); for (const [re, info] of MAKER_MAP) if (re.test(t)) return info; return { key: family || "local", label: family ? family.charAt(0).toUpperCase() + family.slice(1) : "Community" }; };
+const capsList = (r, isMedia) => { const ucs = []; if (r.useCases && r.useCases.length) { ["image", "voice", "video"].forEach((u) => { if (r.useCases.includes(u)) ucs.push(u.charAt(0).toUpperCase() + u.slice(1)); }); } if (!ucs.length) { const c = localCaps(r.name || r.pullName) || {}; if (c.coding) ucs.push("Coding"); if (c.reasoning) ucs.push("Reasoning"); if (c.vision) ucs.push("Vision"); if (c.tools && !c.coding) ucs.push("Tools"); } if (!ucs.length) ucs.push(isMedia ? "Media" : "Chat"); return ucs; };
 const paramsOf = (n) => { const m = /(\d+(?:\.\d+)?)\s*x?\s*b\b/i.exec(String(n || "").toLowerCase()); return m ? m[1] + "B" : "—"; };
 const ctxOf = (n) => { const t = String(n || "").toLowerCase(); if (/llama-?3|llama3/.test(t)) return "128K"; if (/qwen-?2\.5|qwen2\.5|qwen-?3|qwen3/.test(t)) return "128K"; if (/gemma-?2|gemma2/.test(t)) return "8K"; if (/phi-?3\.5|phi3\.5|phi-?4|phi4/.test(t)) return "128K"; if (/mistral-?nemo/.test(t)) return "128K"; if (/codellama|code-?llama/.test(t)) return "16K"; if (/mistral/.test(t)) return "32K"; return "—"; };
 const ctxNum = (n) => { const c = ctxOf(n); const m = /(\d+(?:\.\d+)?)\s*([KM])?/.exec(c); if (!m) return 0; let v = parseFloat(m[1]); if (m[2] === "K") v *= 1e3; if (m[2] === "M") v *= 1e6; return v; };
@@ -87,6 +88,9 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState("desc");
   const toggleSort = (k) => { if (!k) return; if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc")); else { setSortKey(k); setSortDir(k === "model" ? "asc" : "desc"); } };
+  const [cmp, setCmp] = useState(() => new Map());   // pullName -> row data, for side-by-side compare (max 4)
+  const [cmpOpen, setCmpOpen] = useState(false);
+  const toggleCmp = (row) => setCmp((m) => { const n = new Map(m); if (n.has(row.pullName)) n.delete(row.pullName); else if (n.size < 4) n.set(row.pullName, row); return n; });
   const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
   const [goal, setGoal] = useState("all");            // active chat browse goal tile
   const [mediaGoal, setMediaGoal] = useState("all"); // active LocalAI capability tile (image/voice/video)
@@ -246,10 +250,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     const caps = localCaps(r.name || r.pullName) || {};
     const pr = pulls[id + "::" + r.pullName];
     const size = r.sizeLabel || (r.sizeGB ? "~" + r.sizeGB + " GB" : (r.sizeBytes ? fmtBytes(r.sizeBytes) : "—"));
-    const ucs = [];
-    if (r.useCases && r.useCases.length) { ["image", "voice", "video"].forEach((u) => { if (r.useCases.includes(u)) ucs.push(u.charAt(0).toUpperCase() + u.slice(1)); }); }
-    if (!ucs.length) { if (caps.coding) ucs.push("Coding"); if (caps.reasoning) ucs.push("Reasoning"); if (caps.vision) ucs.push("Vision"); if (caps.tools && !caps.coding) ucs.push("Tools"); }
-    if (!ucs.length) ucs.push(isMedia ? "Media" : "Chat");
+    const ucs = capsList(r, isMedia);
     const mk = makerInfo(r.name || r.pullName, r.family);
     const useIt = () => { const pkey = (providerForRuntime(id) || {}).runtime; const v = profIds[pkey] ? profIds[pkey] + "::" + r.name : null; if (v && onActivate) onActivate(v); };
     const _pk = (providerForRuntime(id) || {}).runtime;
@@ -261,6 +262,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     return (
       <Fragment key={r.pullName}>
         <tr className={(r.installed ? "lmt-on " : "") + "lmt-row"} onClick={() => setExpandedRow(open ? null : r.pullName)}>
+          <td className="lmt-ck" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="mo-cmpck" title="Compare (up to 4)" checked={cmp.has(r.pullName)} disabled={!cmp.has(r.pullName) && cmp.size >= 4} onChange={() => toggleCmp(r)} /></td>
           <td><div className="lmt-name">{r.installed ? <CheckCircle2 size={13} style={{ color: "#3fb950", flex: "none" }} /> : null}<ChevronRight size={12} className={"lmt-caret" + (open ? " open" : "")} /> {prettyLocalName(r.name || r.pullName)}</div><div className="lmt-maker"><MakerLogo maker={mk.key} /> {mk.label}</div><div className="lmt-sub">{r.pullName}</div></td>
           <td><div className="lmt-caps">{ucs.map((u) => { const M = UC_META[u] || { tone: "#9aa4b2" }; const I = M.icon; return <span key={u} className="lmt-cap" style={{ color: M.tone, borderColor: "color-mix(in srgb, " + M.tone + " 38%, transparent)" }}>{I ? <I size={11} /> : null} {u}</span>; })}</div></td>
           <td className="lmt-nowrap">{size}</td>
@@ -287,7 +289,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           </td>
         </tr>
         {open ? (
-          <tr className="lmt-detail"><td colSpan={9}>
+          <tr className="lmt-detail"><td colSpan={10}>
             <div className="lmt-detailbody">
               <div className="lmt-detaildesc">{r.description || "No description available for this model. Open its page below for full details."}</div>
               <div className="lmt-detailmeta">
@@ -403,12 +405,46 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           return (
             <div className="mo-tablewrap lmt-wrap">
               <table className="mo-table lmt-table">
-                <thead><tr><th className={sortKey === "model" ? "sorted" : ""} onClick={() => toggleSort("model")}>Model{sortKey === "model" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th>Capabilities</th><th className={sortKey === "size" ? "sorted" : ""} onClick={() => toggleSort("size")}>Size{sortKey === "size" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "context" ? "sorted" : ""} onClick={() => toggleSort("context")}>Context{sortKey === "context" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "params" ? "sorted" : ""} onClick={() => toggleSort("params")}>Params{sortKey === "params" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "ram" ? "sorted" : ""} onClick={() => toggleSort("ram")}>RAM compatibility{sortKey === "ram" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "downloads" ? "sorted" : ""} onClick={() => toggleSort("downloads")}>Downloads{sortKey === "downloads" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th>Cost</th><th></th></tr></thead>
+                <thead><tr><th className="lmt-ckh" title="Pick up to 4 models to compare side by side"><Scale size={13} /></th><th className={sortKey === "model" ? "sorted" : ""} onClick={() => toggleSort("model")}>Model{sortKey === "model" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th>Capabilities</th><th className={sortKey === "size" ? "sorted" : ""} onClick={() => toggleSort("size")}>Size{sortKey === "size" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "context" ? "sorted" : ""} onClick={() => toggleSort("context")}>Context{sortKey === "context" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "params" ? "sorted" : ""} onClick={() => toggleSort("params")}>Params{sortKey === "params" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "ram" ? "sorted" : ""} onClick={() => toggleSort("ram")}>RAM compatibility{sortKey === "ram" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th className={sortKey === "downloads" ? "sorted" : ""} onClick={() => toggleSort("downloads")}>Downloads{sortKey === "downloads" ? <span className="lmt-sortar">{sortDir === "asc" ? "▲" : "▼"}</span> : null}</th><th>Cost</th><th></th></tr></thead>
                 <tbody>{rows.map((r) => renderRow(r, id))}</tbody>
               </table>
             </div>
           );
         })()}
+        {cmp.size >= 2 && !cmpOpen ? (
+          <div className="mo-cmpbar"><Scale size={14} /> {cmp.size} models selected
+            <button className="btn primary" onClick={() => setCmpOpen(true)}>Compare side by side</button>
+            <button className="btn ghost" onClick={() => setCmp(new Map())}>Clear</button>
+          </div>
+        ) : null}
+        {cmpOpen ? (() => {
+          const picks = [...cmp.values()].slice(0, 4);
+          const metrics = [
+            { k: "Maker", v: (m) => makerInfo(m.name || m.pullName, m.family).label },
+            { k: "Capabilities", v: (m) => capsList(m, false).join(", ") },
+            { k: "Size", v: (m) => m.sizeLabel || (m.sizeGB ? "~" + m.sizeGB + " GB" : (m.sizeBytes ? fmtBytes(m.sizeBytes) : "—")) },
+            { k: "Params", v: (m) => paramsOf(m.name || m.pullName), n: (m) => paramNum(m.name || m.pullName), best: "max" },
+            { k: "Context", v: (m) => ctxOf(m.name || m.pullName), n: (m) => ctxNum(m.name || m.pullName), best: "max" },
+            { k: "RAM compatibility", v: (m) => { const f = fitForRam(m.sizeGB, sys.totalRamGB); return f === "good" ? "Compatible" : f === "tight" ? "Runs but slow" : f === "over" ? "Too big" : "—"; } },
+            { k: "Downloads", v: (m) => (m.downloads ? fmtCount(m.downloads) : "—"), n: (m) => m.downloads || 0, best: "max" },
+            { k: "Cost", v: () => "Free" },
+            { k: "Installed", v: (m) => (m.installed ? "Yes" : "No") },
+          ];
+          const bestIdx = (met) => { if (!met.best) return -1; const vals = picks.map(met.n); let bi = -1, bv = met.best === "max" ? -Infinity : Infinity; vals.forEach((x, i) => { if (x == null || x < 0) return; if (met.best === "max" ? x > bv : x < bv) { bv = x; bi = i; } }); return bi; };
+          return (
+            <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setCmpOpen(false); }}>
+              <div className="mo-cmpcard">
+                <div className="mo-card-head"><div className="mo-card-title"><Scale size={16} /> Compare models</div><button className="icon-btn" onClick={() => setCmpOpen(false)}><X size={16} /></button></div>
+                <div className="mo-cmpwrap">
+                  <table className="mo-cmptable">
+                    <thead><tr><th></th>{picks.map((m) => { const mk2 = makerInfo(m.name || m.pullName, m.family); return <th key={m.pullName}><div className="mo-name" style={{ fontSize: 13 }}>{prettyLocalName(m.name || m.pullName)}</div><div className="mo-sub"><MakerLogo maker={mk2.key} /> {mk2.label}</div></th>; })}</tr></thead>
+                    <tbody>{metrics.map((met) => { const bi = bestIdx(met); return <tr key={met.k}><td className="mo-cmpk">{met.k}</td>{picks.map((m, i) => <td key={m.pullName} className={i === bi ? "best" : ""}>{met.v(m)}{i === bi && <span className="mo-cmpbest">best</span>}</td>)}</tr>; })}</tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        })() : null}
       </div>
     );
   };
