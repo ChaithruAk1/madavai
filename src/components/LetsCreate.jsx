@@ -94,12 +94,12 @@ export default function LetsCreate({ onNavigate }) {
     setBusy(true);
     try {
       let r;
-      if (cap === "image") r = (attach && attach.kind === "image") ? await bridge.media.imageEdit({ model, prompt, srcB64: attach.b64, srcMime: attach.mime, size: "768x768" }) : await bridge.media.image({ model, prompt, size: "768x768" });
-      else if (cap === "voice") r = await bridge.media.speech({ model, input: prompt });
-      else if (cap === "video") r = await bridge.media.video({ model, prompt, seconds: 4, startImageB64: attach && attach.kind === "image" ? attach.b64 : undefined, startImageMime: attach && attach.mime });
+      if (cap === "image") r = (attach && attach.kind === "image") ? await bridge.media.imageEdit({ model, prompt, srcB64: attach.b64, srcMime: attach.mime, size: "768x768", outDir: folder }) : await bridge.media.image({ model, prompt, size: "768x768", outDir: folder });
+      else if (cap === "voice") r = await bridge.media.speech({ model, input: prompt, outDir: folder });
+      else if (cap === "video") r = await bridge.media.video({ model, prompt, seconds: 4, startImageB64: attach && attach.kind === "image" ? attach.b64 : undefined, startImageMime: attach && attach.mime, outDir: folder });
       else if (cap === "transcribe") r = await bridge.media.transcribe({ model, audioB64: attach && attach.b64, mime: attach && attach.mime, filename: attach && attach.name });
       else if (cap === "describe") r = await bridge.media.describe({ model, prompt, imageB64: attach && attach.b64, imageMime: attach && attach.mime });
-      else if (cap === "music") r = await bridge.media.music({ model, prompt });
+      else if (cap === "music") r = await bridge.media.music({ model, prompt, outDir: folder });
       const ok = r && !r.error;
       setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: ok ? "done" : "error", result: ok ? r : null, error: ok ? "" : ((r && r.error) || "Something went wrong.") } : x));
     } catch (e) {

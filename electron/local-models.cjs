@@ -101,10 +101,11 @@ async function installOllama(onProgress) {
 async function installLmStudio() { await shell.openExternal("https://lmstudio.ai/download"); return { ok: true, opened: true }; }
 
 function extFor(mime) { const m = String(mime || "").toLowerCase(); if (/png/.test(m)) return "png"; if (/jpe?g/.test(m)) return "jpg"; if (/webp/.test(m)) return "webp"; if (/gif/.test(m)) return "gif"; if (/mpeg|mp3/.test(m)) return "mp3"; if (/wav/.test(m)) return "wav"; if (/ogg/.test(m)) return "ogg"; if (/webm/.test(m)) return "webm"; if (/mp4/.test(m)) return "mp4"; return "bin"; }
-function saveMedia(prefix, b64, mime) {
+function saveMedia(prefix, b64, mime, outDir) {
   try {
-    const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir();
-    const dir = path.join(base, "Madav Media"); fs.mkdirSync(dir, { recursive: true });
+    let dir = outDir && String(outDir).trim();
+    if (!dir) { const base = (app && app.getPath && (app.getPath("pictures") || app.getPath("downloads"))) || os.tmpdir(); dir = path.join(base, "Madav Media"); }
+    fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, prefix + "_" + Date.now().toString(36) + "." + extFor(mime));
     fs.writeFileSync(file, Buffer.from(b64, "base64")); return file;
   } catch { return ""; }
@@ -153,7 +154,7 @@ function register(ipcMain, getWin) {
       if (!r || !r.generateImage) return { error: "LocalAI engine isn't available — set it up in Local Models." };
       if (!model) return { error: "Pick an image model first." };
       const img = await r.generateImage(String(model), String(prompt || ""), { size });
-      const file = saveMedia("image", img.b64, img.mime);
+      const file = saveMedia("image", img.b64, img.mime, req.outDir);
       return { b64: img.b64, mime: img.mime, file };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
@@ -167,7 +168,7 @@ function register(ipcMain, getWin) {
       if (!model) return { error: "Pick an image model first." };
       if (!srcB64) return { error: "No source image to edit." };
       const img = await r.editImage(String(model), String(prompt || ""), String(srcB64), String(srcMime || "image/png"), { size });
-      return { b64: img.b64, mime: img.mime, file: saveMedia("image", img.b64, img.mime) };
+      return { b64: img.b64, mime: img.mime, file: saveMedia("image", img.b64, img.mime, req.outDir) };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
 
@@ -191,7 +192,7 @@ function register(ipcMain, getWin) {
       if (!r || !r.generateSpeech) return { error: "LocalAI engine isn't available — set it up in Local Models." };
       if (!model) return { error: "Pick a voice model first." };
       const a = await r.generateSpeech(String(model), String(input || ""), { voice: voice || undefined });
-      const file = saveMedia("voice", a.b64, a.mime);
+      const file = saveMedia("voice", a.b64, a.mime, req.outDir);
       return { b64: a.b64, mime: a.mime, file };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
@@ -204,7 +205,7 @@ function register(ipcMain, getWin) {
       if (!r || !r.generateMusic) return { error: "LocalAI engine isn't available — set it up in Local Models." };
       if (!model) return { error: "Pick a music model first." };
       const a = await r.generateMusic(String(model), String(prompt || ""));
-      return { b64: a.b64, mime: a.mime, file: saveMedia("music", a.b64, a.mime) };
+      return { b64: a.b64, mime: a.mime, file: saveMedia("music", a.b64, a.mime, req.outDir) };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
 
@@ -229,7 +230,7 @@ function register(ipcMain, getWin) {
       if (!model) return { error: "Pick a video model first." };
       const startImage = startImageB64 ? ("data:" + (startImageMime || "image/png") + ";base64," + startImageB64) : undefined;
       const v = await r.generateVideo(String(model), String(prompt || ""), { seconds: seconds ? Number(seconds) : undefined, startImage });
-      const file = saveMedia("video", v.b64, v.mime);
+      const file = saveMedia("video", v.b64, v.mime, req.outDir);
       return { b64: v.b64, mime: v.mime, file };
     } catch (e) { return { error: String((e && e.message) || e) }; }
   });
