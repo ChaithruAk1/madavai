@@ -35,10 +35,12 @@ const STARTER_RE = {
 const isSTT = (n) => /(whisper|\bstt\b|\basr\b|transcrib)/i.test(String(n || ""));
 const isMusic = (n) => /(musicgen|audiocraft|\bmusic\b|stable-?audio)/i.test(String(n || ""));
 const capLabel = (c) => (c === "voice" ? "voice" : c === "video" ? "video" : c === "transcribe" ? "transcription" : "image");
+const AGENT_PLANNER = "You plan a small local creative studio. Tools: image (text->image), video (text->short video, can start from a previous image), voice (text->speech), music (text->instrumental music), describe (image->text). Given the user's request, reply with ONLY a JSON array of steps (no prose, no markdown fences). Each step = {\"cap\":\"image|video|voice|music|describe\",\"prompt\":\"concise prompt for this step\",\"from\": <0-based index of an earlier step whose generated image to feed in, or null>}. Rules: include only steps the user asked for; \"animate it\" or \"make a video of it\" => a video step whose from is the image step; \"describe it\" => a describe step whose from is the image step; keep it minimal, at most 6 steps.";
 
 export default function LetsCreate({ onNavigate }) {
   const [engine, setEngine] = useState(null);
   const [models, setModels] = useState([]);
+  const [gallery, setGallery] = useState([]);
   const [cap, setCap] = useState("image");
   const [prompt, setPrompt] = useState("");
   const [attach, setAttach] = useState(null);
@@ -62,6 +64,7 @@ export default function LetsCreate({ onNavigate }) {
   const refresh = useCallback(async () => {
     try { setEngine(await bridge.localModels.localaiStatus()); } catch { setEngine({ api: false }); }
     try { const l = await bridge.localModels.list("localai"); setModels(Array.isArray(l) ? l : []); } catch { setModels([]); }
+    try { const g = await bridge.localModels.browse("localai"); setGallery(Array.isArray(g) ? g : []); } catch {}
   }, []);
   useEffect(() => { refresh(); const t = setInterval(refresh, 5000); return () => clearInterval(t); }, [refresh]);
   useEffect(() => { Promise.resolve(bridge.getSettings && bridge.getSettings()).then((cfg) => { const a = (cfg && cfg.account) || {}; const nm = ((a.name || "").trim().split(" ")[0]) || ((a.email || "").split("@")[0]) || ""; setWho(nm ? nm.charAt(0).toUpperCase() + nm.slice(1) : ""); }).catch(() => {}); }, []);
@@ -78,21 +81,25 @@ export default function LetsCreate({ onNavigate }) {
     return () => { offI && offI(); offP && offP(); };
   }, [refresh]);
 
-  const modelsFor = (c) => {
-    if (c === "image") return models.filter((m) => localModality(m.name) === "image");
-    if (c === "video") return models.filter((m) => localModality(m.name) === "video");
-    if (c === "describe") return models.filter((m) => isVisionModel(m.name));
-    if (c === "music") return models.filter((m) => localModality(m.name) === "voice" && isMusic(m.name));
-    if (c === "transcribe") return models.filter((m) => localModality(m.name) === "voice" && isSTT(m.name));
-    return models.filter((m) => localModality(m.name) === "voice" && !isSTT(m.name) && !isMusic(m.name)); // voice = TTS
-  };
+  const baseOf = (n) => String(n || "").split("/").pop().split(":")[0].toLowerCase();
+  const ucFor = (name) => { const g = gallery.find((e) => baseOf(e.pullName) === baseOf(name) || baseOf(e.name || "") === baseOf(name)); return (g && g.useCases) || []; };
+  const modelsFor = (c) => models.filter((m) => {
+    const uc = ucFor(m.name); const mod = localModality(m.name);
+    const generic = uc.includes("general") || (!uc.length && mod === "text"); // an installed LocalAI model we can't classify -> let the user pick it for any capability
+    if (c === "image") return uc.includes("image") || mod === "image" || generic;
+    if (c === "video") return uc.includes("video") || mod === "video" || generic;
+    if (c === "describe") return uc.includes("image") || isVisionModel(m.name) || generic;
+    if (c === "music") return generic || ((uc.includes("voice") || mod === "voice") && isMusic(m.name));
+    if (c === "transcribe") return generic || ((uc.includes("voice") || mod === "voice") && isSTT(m.name));
+    return generic || ((uc.includes("voice") || mod === "voice") && !isSTT(m.name) && !isMusic(m.name)); // voice (TTS)
+  });
 
   const runTurn = async ({ cap, prompt, attach }) => {
     const avail = modelsFor(cap);
     const model = chosenModel(avail);
     const id = "t" + Date.now() + Math.random().toString(36).slice(2, 5);
     setTurns((t) => [...t, { id, cap, prompt, attach: attach || null, status: model ? "running" : "error", result: null, error: model ? "" : ("No " + capLabel(cap) + " model installed yet.") }]);
-    if (!model) return;
+    if (!model) return null;
     setBusy(true);
     try {
       let r;
@@ -104,13 +111,39 @@ export default function LetsCreate({ onNavigate }) {
       else if (cap === "music") r = await bridge.media.music({ model, prompt, outDir: folder });
       const ok = r && !r.error;
       setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: ok ? "done" : "error", result: ok ? r : null, error: ok ? "" : ((r && r.error) || "Something went wrong.") } : x));
+      return ok ? r : null;
     } catch (e) {
       setTurns((ts) => ts.map((x) => x.id === id ? { ...x, status: "error", error: String((e && e.message) || e) } : x));
+      return null;
     } finally { setBusy(false); }
+  };
+
+  const runAgent = async (userPrompt) => {
+    if (!bridge.completeOnce) return;
+    const planId = "a" + Date.now();
+    setTurns((t) => [...t, { id: planId, cap: "plan", prompt: userPrompt, status: "running", result: null, error: "" }]);
+    setBusy(true);
+    let steps = [];
+    try {
+      const r = await bridge.completeOnce([{ role: "system", content: AGENT_PLANNER }, { role: "user", content: userPrompt }]);
+      const mm = ((r && r.text) || "").match(/\[[\s\S]*\]/);
+      if (mm) steps = JSON.parse(mm[0]);
+    } catch {}
+    steps = Array.isArray(steps) ? steps.filter((x) => x && ["image", "video", "voice", "music", "describe"].includes(x.cap)).slice(0, 6) : [];
+    if (!steps.length) { setTurns((t) => t.map((x) => x.id === planId ? { ...x, status: "error", error: "Couldn't plan steps from that — try rephrasing, or turn Agents off for a single creation." } : x)); setBusy(false); return; }
+    setTurns((t) => t.map((x) => x.id === planId ? { ...x, status: "done", result: { plan: steps } } : x));
+    const outs = [];
+    for (let i = 0; i < steps.length; i++) {
+      const st = steps[i];
+      const src = (st.from != null && outs[st.from] && /image/.test((outs[st.from] || {}).mime || "")) ? outs[st.from] : null;
+      outs[i] = await runTurn({ cap: st.cap, prompt: st.prompt || userPrompt, attach: src ? { kind: "image", b64: src.b64, mime: src.mime, name: "step.png" } : null });
+    }
+    setBusy(false);
   };
 
   const onCreate = () => {
     if (busy) return;
+    if (agentsOn) { if (prompt.trim()) { runAgent(prompt.trim()); setPrompt(""); setAttach(null); } return; }
     if (cap === "transcribe") { if (attach) { runTurn({ cap, prompt: "", attach }); setAttach(null); } return; }
     if (cap === "describe") { if (attach && attach.kind === "image") { runTurn({ cap, prompt: prompt.trim(), attach }); setPrompt(""); setAttach(null); } return; }
     if (!prompt.trim()) return;
@@ -171,6 +204,15 @@ export default function LetsCreate({ onNavigate }) {
 
   const ResultCard = (turn) => {
     const r = turn.result;
+    if (turn.cap === "plan") {
+      const plan = (r && r.plan) || [];
+      return (
+        <div className="lc2-plan">
+          <div className="lc2-plan-h"><Bot size={14} /> Plan · {plan.length} step{plan.length === 1 ? "" : "s"}</div>
+          {plan.map((st, i) => <div key={i} className="lc2-plan-step"><span className="lc2-plan-n">{i + 1}</span> <b>{st.cap}</b> — {st.prompt}{st.from != null ? <span style={{ color: "var(--text-2)" }}> · uses step {st.from + 1}</span> : null}</div>)}
+        </div>
+      );
+    }
     if (turn.cap === "transcribe" || turn.cap === "describe") {
       return (
         <div className="lc2-transcript">
@@ -257,7 +299,7 @@ export default function LetsCreate({ onNavigate }) {
                 <div className="lc2-av"><Sparkles size={15} /></div>
                 <div className="lc2-result">
                   {turn.status === "running" ? (
-                    <div className={"lc2-gen lc2-gen-" + turn.cap}><div className="lc2-shim" /><div style={{ position: "relative", textAlign: "center" }}><div className="lc2-genlabel"><Loader2 size={14} className="spin" /> Madav is imagining…</div><div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 5 }}>{turn.cap === "video" ? "video can take a few minutes" : "first run loads the model — give it a moment"}</div></div></div>
+                    <div className={"lc2-gen lc2-gen-" + turn.cap}><div className="lc2-shim" /><div style={{ position: "relative", textAlign: "center" }}><div className="lc2-genlabel"><Loader2 size={14} className="spin" /> {turn.cap === "plan" ? "Madav is planning the steps…" : "Madav is imagining…"}</div><div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 5 }}>{turn.cap === "video" ? "video can take a few minutes" : "first run loads the model — give it a moment"}</div></div></div>
                   ) : turn.status === "error" ? (
                     <div className="lc2-errcard"><div><AlertCircle size={15} /> {turn.error}</div>
                       {/No .* model/.test(turn.error) ? <button className="lc2-mini" onClick={goModels}>Pull a model</button> : <button className="lc2-mini" onClick={() => vary(turn)}><RotateCcw size={12} /> Try again</button>}
