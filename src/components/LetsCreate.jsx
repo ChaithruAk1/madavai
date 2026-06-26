@@ -22,6 +22,14 @@ const STARTERS = [
   { cap: "video", text: "a paper boat drifting down a rainy street" },
   { cap: "voice", text: "Read aloud: the quiet hum of a city at midnight." },
 ];
+const STARTER_RE = {
+  image: /stable-?diffusion|sd-?1\.5|\bflux|dreamshaper/i,
+  voice: /piper|voice-en|en-us-/i,
+  video: /\bltx|\bwan|hunyuan/i,
+  music: /musicgen|audiocraft|stable-?audio/i,
+  describe: /llava|bakllava|qwen.*vl|minicpm-v|moondream/i,
+  transcribe: /whisper/i,
+};
 const isSTT = (n) => /(whisper|\bstt\b|\basr\b|transcrib)/i.test(String(n || ""));
 const isMusic = (n) => /(musicgen|audiocraft|\bmusic\b|stable-?audio)/i.test(String(n || ""));
 const capLabel = (c) => (c === "voice" ? "voice" : c === "video" ? "video" : c === "transcribe" ? "transcription" : "image");
@@ -35,6 +43,9 @@ export default function LetsCreate({ onNavigate }) {
   const [turns, setTurns] = useState([]);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState("");
+  const [setupProg, setSetupProg] = useState(null);
+  const [pullProg, setPullProg] = useState(null);
+  const [zoom, setZoom] = useState(null);
   const threadRef = useRef(null);
 
   const refresh = useCallback(async () => {
@@ -43,6 +54,17 @@ export default function LetsCreate({ onNavigate }) {
   }, []);
   useEffect(() => { refresh(); const t = setInterval(refresh, 5000); return () => clearInterval(t); }, [refresh]);
   useEffect(() => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }, [turns]);
+  useEffect(() => {
+    const offI = bridge.localModels.onInstallProgress((p) => { if (p && p.id === "localai") setSetupProg({ phase: p.phase, pct: p.pct, line: p.line }); });
+    const offP = bridge.localModels.onPullProgress((p) => {
+      if (!p || p.id !== "localai") return;
+      if (p.error || p.status === "error") { setPullProg({ error: p.error || "Pull failed" }); return; }
+      if (p.done) { setPullProg(null); refresh(); return; }
+      const pct = p.total ? Math.round((p.completed / p.total) * 100) : (p.completed || 0);
+      setPullProg((cur) => ({ ...(cur || {}), pct: isFinite(pct) ? pct : 0, status: p.status || "pulling", name: (cur && cur.name) || p.name }));
+    });
+    return () => { offI && offI(); offP && offP(); };
+  }, [refresh]);
 
   const modelsFor = (c) => {
     if (c === "image") return models.filter((m) => localModality(m.name) === "image");
@@ -96,6 +118,24 @@ export default function LetsCreate({ onNavigate }) {
     const rd = new FileReader(); rd.onload = () => setAttach({ kind: "image", b64: String(rd.result).split(",")[1] || "", mime: f.type || "image/png", name: f.name }); rd.readAsDataURL(f);
   };
   const copy = (id, text) => { try { navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(""), 1200); } catch {} };
+  const setupStudio = () => {
+    setSetupProg({ phase: "starting", pct: 0 });
+    Promise.resolve(bridge.localModels.install("localai")).then((r) => {
+      if (r && r.ok === false) setSetupProg({ done: true, note: r.note || r.error || "Couldn't finish setup — try Local Models." });
+      else setSetupProg(null);
+      setTimeout(refresh, 1000);
+    }).catch(() => setSetupProg(null));
+  };
+  const pullStarter = async (c) => {
+    setPullProg({ pct: 0, status: "finding" });
+    let list = [];
+    try { const r = await bridge.localModels.browse("localai"); list = Array.isArray(r) ? r : []; } catch {}
+    const re = STARTER_RE[c] || STARTER_RE.image;
+    const hit = list.find((e) => re.test(e.name || e.pullName));
+    if (!hit) { setPullProg({ error: "No recommended model found — open Local Models to browse." }); return; }
+    setPullProg({ pct: 0, status: "pulling", name: hit.name });
+    bridge.localModels.pull("localai", hit.pullName);
+  };
 
   const engineUp = !!(engine && engine.api);
   const active = CAPS.find((c) => c.id === cap) || CAPS[0];
@@ -119,7 +159,7 @@ export default function LetsCreate({ onNavigate }) {
     const url = dataUrl(r);
     return (
       <div className="lc2-card">
-        {turn.cap === "image" ? <img className="lc2-img" src={url} alt={turn.prompt} />
+        {turn.cap === "image" ? <img className="lc2-img" src={url} alt={turn.prompt} onClick={() => setZoom(url)} style={{ cursor: "zoom-in" }} />
           : turn.cap === "video" ? <video className="lc2-vid" src={url} controls />
           : <div className="lc2-audiowrap"><Volume2 size={16} /><audio src={url} controls /></div>}
         <div className="lc2-actions">
@@ -140,9 +180,34 @@ export default function LetsCreate({ onNavigate }) {
         {!engineUp ? (
           <div className="lc2-asleep">
             <div className="lc2-spark"><Sparkles size={26} /></div>
-            <h1>The studio is asleep</h1>
-            <p>Let's Create runs on the LocalAI engine. Wake it up in Local Models, then come back and make something.</p>
-            <button className="lc2-create" onClick={goModels}><Sparkles size={15} /> Open Local Models</button>
+            <h1>Let's set up your studio</h1>
+            <p>Let's Create runs a private engine right on your machine — offline, no API key. Two quick steps and you're making things.</p>
+            <div style={{ display: "flex", gap: 14, margin: "2px 0 18px", flexWrap: "wrap", justifyContent: "center" }}>
+              {[["1", "Start the engine"], ["2", "Pull a model"], ["3", "Create"]].map(([n, t], i) => (
+                <span key={n} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, color: i === 0 ? "var(--text-0)" : "var(--text-2)" }}>
+                  <span style={{ width: 20, height: 20, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: i === 0 ? "#fff" : "var(--text-2)", background: i === 0 ? "var(--accent)" : "var(--bg-2)", border: "1px solid var(--line)" }}>{n}</span>{t}
+                </span>
+              ))}
+            </div>
+            {setupProg ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-1)" }}><Loader2 size={14} className="spin" /> {setupProg.line || (setupProg.phase === "docker" ? "Starting Docker…" : setupProg.phase === "pulling" ? "Downloading engine… " + (setupProg.pct || 0) + "%" : setupProg.phase === "booting" ? "Starting engine…" : "Setting up…")}</div>
+            ) : (
+              <button className="lc2-create" onClick={setupStudio}><Sparkles size={15} /> Set up the studio</button>
+            )}
+            {setupProg && setupProg.note ? <div className="lc2-needmodel" style={{ marginTop: 10 }}>{setupProg.note}</div> : null}
+            <button className="lc2-link" style={{ marginTop: 12 }} onClick={goModels}>or do it in Local Models</button>
+          </div>
+        ) : models.length === 0 && turns.length === 0 ? (
+          <div className="lc2-hero">
+            <div className="lc2-spark"><Sparkles size={26} /></div>
+            <h1>One model away</h1>
+            <p>Your engine is running. Pull a starter model — a one-time download — and you're ready to create.</p>
+            {pullProg ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-1)" }}><Loader2 size={14} className="spin" /> {pullProg.error || ("Pulling " + (pullProg.name ? prettyLocalName(pullProg.name) : "a model") + "… " + (pullProg.pct || 0) + "%")}</div>
+            ) : (
+              <button className="lc2-create" onClick={() => pullStarter("image")}><Download size={15} /> Pull a starter image model</button>
+            )}
+            <button className="lc2-link" style={{ marginTop: 12 }} onClick={goModels}>or browse all models</button>
           </div>
         ) : turns.length === 0 ? (
           <div className="lc2-hero">
@@ -167,7 +232,7 @@ export default function LetsCreate({ onNavigate }) {
                 <div className="lc2-av"><Sparkles size={15} /></div>
                 <div className="lc2-result">
                   {turn.status === "running" ? (
-                    <div className={"lc2-gen lc2-gen-" + turn.cap}><div className="lc2-shim" /><div className="lc2-genlabel"><Loader2 size={14} className="spin" /> Madav is imagining…</div></div>
+                    <div className={"lc2-gen lc2-gen-" + turn.cap}><div className="lc2-shim" /><div style={{ position: "relative", textAlign: "center" }}><div className="lc2-genlabel"><Loader2 size={14} className="spin" /> Madav is imagining…</div><div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 5 }}>{turn.cap === "video" ? "video can take a few minutes" : "first run loads the model — give it a moment"}</div></div></div>
                   ) : turn.status === "error" ? (
                     <div className="lc2-errcard"><div><AlertCircle size={15} /> {turn.error}</div>
                       {/No .* model/.test(turn.error) ? <button className="lc2-mini" onClick={goModels}>Pull a model</button> : <button className="lc2-mini" onClick={() => vary(turn)}><RotateCcw size={12} /> Try again</button>}
@@ -199,8 +264,9 @@ export default function LetsCreate({ onNavigate }) {
             {busy ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />} <span>Create</span>
           </button>
         </div>
-        {!haveModel ? <div className="lc2-needmodel">No {capLabel(cap)} model yet — <button className="lc2-link" onClick={goModels}>pull one in Local Models</button> to use {active.label}.</div> : null}
+        {!haveModel ? (<div className="lc2-needmodel">No {capLabel(cap)} model yet — {pullProg ? <span><Loader2 size={12} className="spin" /> {pullProg.error || ("pulling " + (pullProg.name ? prettyLocalName(pullProg.name) : "a model") + "… " + (pullProg.pct || 0) + "%")}</span> : <><button className="lc2-link" onClick={() => pullStarter(cap)}>pull a starter one</button> or <button className="lc2-link" onClick={goModels}>browse in Local Models</button>.</>}</div>) : null}
       </div>
+      {zoom ? <div onClick={() => setZoom(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, cursor: "zoom-out", padding: 30 }}><img src={zoom} alt="" style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8 }} /></div> : null}
     </div>
   );
 }

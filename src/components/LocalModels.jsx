@@ -358,9 +358,11 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
                     </div>
                     <div className="lm-installed-actions">
                       {isRun ? <button className="btn ghost sm" onClick={() => doStop(id, m.name)} title="Unload from memory (free RAM/VRAM)"><Square size={12} /> Stop</button> : null}
-                      {isActive
-                        ? <span className="lm-chip ok"><CheckCircle2 size={12} /> Active</span>
-                        : <button className="btn primary sm" onClick={() => value && onActivate && onActivate(value)} disabled={!value} title={value ? "Use this model now" : "Syncing…"}><Zap size={13} /> Use</button>}
+                      {isMedia
+                        ? <span className="lm-chip ok sm" title="Use this model in the Let's Create tab"><CheckCircle2 size={12} /> Ready · Let's Create</span>
+                        : isActive
+                          ? <span className="lm-chip ok"><CheckCircle2 size={12} /> Active</span>
+                          : <button className="btn primary sm" onClick={() => value && onActivate && onActivate(value)} disabled={!value} title={value ? "Use this model now" : "Syncing…"}><Zap size={13} /> Use</button>}
                       <button className="btn ghost sm" onClick={() => doRemove(id, m.name)} title="Remove from disk"><Trash2 size={13} /></button>
                     </div>
                   </div>
