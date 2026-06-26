@@ -94,6 +94,8 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   const [cmp, setCmp] = useState(() => new Map());   // pullName -> row data, for side-by-side compare (max 4)
   const [cmpOpen, setCmpOpen] = useState(false);
   const [starting, setStarting] = useState({});   // id::name -> true while a model is loading into memory
+  const [serverOpen, setServerOpen] = useState(false);
+  const [serverData, setServerData] = useState({ system: {}, providers: [] });
   const toggleCmp = (row) => setCmp((m) => { const n = new Map(m); if (n.has(row.pullName)) n.delete(row.pullName); else if (n.size < 4) n.set(row.pullName, row); return n; });
   const [browseList, setBrowseList] = useState({});  // id -> ModelSearchResult[] (the default gallery)
   const [goals, setGoals] = useState(() => new Set(["all"]));  // selected filter tiles (multi-select)
@@ -238,6 +240,10 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     setStarting((s) => { const n = { ...s }; delete n[id + "::" + name]; return n; });
     refresh(id);                                        // re-poll running() so the button reflects reality
   };
+  const loadServer = useCallback(() => { Promise.resolve(bridge.localModels.serverStatus()).then((d) => d && setServerData(d)).catch(() => {}); }, []);
+  const stopServerModel = async (pid, name) => { try { await bridge.localModels.stop(pid, name); } catch {} setTimeout(loadServer, 500); refresh(pid); };
+  const setCtxModel = async (pid, name, val) => { const num = parseInt(val, 10); if (!num || num < 256) return; try { await bridge.localModels.load(pid, name, { numCtx: num }); } catch {} setTimeout(loadServer, 900); };
+  useEffect(() => { if (!serverOpen) return; loadServer(); const t = setInterval(loadServer, 4000); return () => clearInterval(t); }, [serverOpen, loadServer]);
   const doInstall = (id) => {
     setInstalling((m) => ({ ...m, [id]: { phase: "starting", pct: 0 } }));
     setInstallNote((m) => ({ ...m, [id]: "" }));
@@ -464,8 +470,11 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   return (
     <div className="local-models scroll">
       <div className="lm-head">
-        <h2><Cpu size={18} /> Local Models</h2>
-        <p className="lm-sub">Run models on your own machine — private, offline, no API key. Pick a provider, search, and pull. Anything you install becomes selectable everywhere in Madav.</p>
+        <div className="lm-head-text">
+          <h2><Cpu size={18} /> Local Models</h2>
+          <p className="lm-sub">Run models on your own machine — private, offline, no API key. Pick a provider, search, and pull. Anything you install becomes selectable everywhere in Madav.</p>
+        </div>
+        <button className="btn ghost lm-serverbtn" onClick={() => setServerOpen(true)} title="Live server status — running models, CPU / GPU usage"><Activity size={15} /> Server Status</button>
       </div>
       <div className="lm-pills">
         {PROVIDERS.map((p) => {
@@ -479,6 +488,54 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         })}
       </div>
       {PROVIDERS.filter((p) => p.id === active).map((p) => renderPanel(p))}
+      {serverOpen ? (() => {
+        const sysv = serverData.system || {};
+        const gpu = sysv.gpu;
+        const rows = (serverData.providers || []).flatMap((p) => (p.running || []).map((m) => ({ ...m, provider: p.label, providerId: p.id })));
+        const ctxLabel = (n) => (n ? (n >= 1024 ? Math.round(n / 1024) + "K" : String(n)) : "—");
+        const expIn = (iso) => { if (!iso) return "Stays loaded"; const d = new Date(iso).getTime() - Date.now(); if (isNaN(d)) return "—"; if (d <= 0) return "now"; const mn = Math.round(d / 60000); return mn >= 60 ? Math.round(mn / 60) + "h" : mn + "m"; };
+        return (
+          <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setServerOpen(false); }}>
+            <div className="lm-server-card">
+              <div className="mo-card-head">
+                <div className="mo-card-title"><Activity size={16} /> Server Status</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn ghost sm" onClick={loadServer} title="Refresh now"><RefreshCw size={13} /></button>
+                  <button className="icon-btn" onClick={() => setServerOpen(false)}><X size={16} /></button>
+                </div>
+              </div>
+              <div className="lm-server-body">
+                <div className="lm-gauges">
+                  <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><HardDrive size={13} /> Memory (RAM)</span><span className="lm-gauge-v">{sysv.usedRamGB ?? "—"} / {sysv.totalRamGB ?? "—"} GB</span></div><div className="lm-gbar"><span style={{ width: (sysv.ramPct || 0) + "%", background: "#5aa0ff" }} /></div></div>
+                  <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Cpu size={13} /> CPU</span><span className="lm-gauge-v">{sysv.cpuPct ?? "—"}%</span></div><div className="lm-gbar"><span style={{ width: (sysv.cpuPct || 0) + "%", background: "#3ecf8e" }} /></div></div>
+                  {gpu ? (
+                    <div className="lm-gauge"><div className="lm-gauge-top"><span className="lm-gauge-l"><Zap size={13} /> GPU</span><span className="lm-gauge-v">{gpu.utilPct}% · {gpu.vramUsedGB}/{gpu.vramTotalGB} GB · {gpu.tempC}°C</span></div><div className="lm-gbar"><span style={{ width: (gpu.utilPct || 0) + "%", background: "#b692f6" }} /></div><div className="lm-gauge-sub">{gpu.name}</div></div>
+                  ) : <div className="lm-gauge nodata"><Zap size={13} /> No NVIDIA GPU detected — models run on CPU/RAM</div>}
+                </div>
+                <div className="lm-section-label" style={{ marginTop: 6 }}><Activity size={13} /> Running models{rows.length ? " (" + rows.length + ")" : ""}</div>
+                {rows.length ? (
+                  <div className="mo-tablewrap"><table className="mo-table lm-server-table">
+                    <thead><tr><th>Model</th><th>Provider</th><th>In memory</th><th>Processor</th><th>Context</th><th>Expires</th><th></th></tr></thead>
+                    <tbody>{rows.map((m) => (
+                      <tr key={m.providerId + "::" + m.name}>
+                        <td><div className="lmt-name">{prettyLocalName(m.name)}</div><div className="lmt-sub">{m.name}</div></td>
+                        <td className="lmt-dim lmt-nowrap">{m.provider}</td>
+                        <td className="lmt-nowrap">{m.sizeBytes ? fmtBytes(m.sizeBytes) : "—"}{m.sizeVram ? <span className="lmt-dim"> · {fmtBytes(m.sizeVram)} VRAM</span> : null}</td>
+                        <td><span className="lm-chip sm">{m.processor || "—"}</span></td>
+                        <td className="lm-ctxcell"><span className="lmt-nowrap">{ctxLabel(m.context)}</span><input className="lm-ctxin" type="number" min="512" step="1024" placeholder="set" defaultValue={m.context || ""} onKeyDown={(e) => { if (e.key === "Enter") setCtxModel(m.providerId, m.name, e.currentTarget.value); }} title="Type a new context length and press Enter — Madav reloads the model with it" /></td>
+                        <td className="lmt-nowrap lmt-dim">{expIn(m.expiresAt)}</td>
+                        <td className="lmt-act"><button className="btn danger sm" onClick={() => stopServerModel(m.providerId, m.name)} title="Stop — unload from memory"><Square size={12} /> Stop</button></td>
+                      </tr>
+                    ))}</tbody>
+                  </table></div>
+                ) : <div className="lm-empty">No models loaded right now. Activate a model to load it into memory.</div>}
+                <div className="lm-server-engines">{(serverData.providers || []).map((p) => <span key={p.id} className={"lm-chip sm " + (p.available ? "ok" : "off")}>{p.label}: {p.available ? "ready" + (p.version ? " · v" + p.version : "") : "not running"}</span>)}</div>
+                <div className="lm-server-hint">Tip: changing context reloads the model. Bigger context uses more memory; if it exceeds your RAM/VRAM it may run slower or fail to load.</div>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
     </div>
   );
 }

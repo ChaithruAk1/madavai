@@ -15,6 +15,19 @@ const localaiDocker = require("./localai-docker.cjs");
 const DIST = path.join(__dirname, "..", "packages", "models", "dist", "src");
 const imp = (rel) => import(pathToFileURL(path.join(DIST, rel)).href);
 
+function cpuSnapshot() { const c = os.cpus() || []; let idle = 0, total = 0; for (const cpu of c) { for (const t in cpu.times) total += cpu.times[t]; idle += cpu.times.idle; } return { idle, total }; }
+let _cpuPrev = cpuSnapshot();
+function cpuPercent() { const cur = cpuSnapshot(); const di = cur.idle - _cpuPrev.idle, dt = cur.total - _cpuPrev.total; _cpuPrev = cur; if (dt <= 0) return 0; return Math.max(0, Math.min(100, Math.round((1 - di / dt) * 100))); }
+function gpuInfo() {
+  return new Promise((resolve) => {
+    try {
+      const p = spawn("nvidia-smi", ["--query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu", "--format=csv,noheader,nounits"], { windowsHide: true });
+      let out = ""; p.stdout.on("data", (d) => (out += d.toString())); p.on("error", () => resolve(null));
+      p.on("close", () => { try { const line = (out.trim().split("\n")[0] || ""); if (!line) return resolve(null); const f = line.split(",").map((x) => x.trim()); resolve({ name: f[0], utilPct: Number(f[1]) || 0, vramUsedGB: Math.round(Number(f[2]) / 1024 * 10) / 10, vramTotalGB: Math.round(Number(f[3]) / 1024 * 10) / 10, tempC: Number(f[4]) || 0 }); } catch { resolve(null); } });
+    } catch { resolve(null); }
+  });
+}
+
 function makeLmsCli() {
   const LMS = process.platform === "win32" ? "lms.exe" : "lms";
   return {
@@ -106,9 +119,15 @@ function register(ipcMain, getWin) {
   ipcMain.handle("localModels:running", async (_e, id) => { const r = await rt(id); try { return r ? await r.running() : []; } catch { return []; } });
   ipcMain.handle("localModels:remove", async (_e, id, name) => { const r = await rt(id); try { await r.remove(name); return { ok: true }; } catch (e) { return { ok: false, error: String((e && e.message) || e) }; } });
   ipcMain.handle("localModels:stop", async (_e, id, name) => { const r = await rt(id); try { await r.stop(name); return { ok: true }; } catch (e) { return { ok: false, error: String((e && e.message) || e) }; } });
-  ipcMain.handle("localModels:load", async (_e, id, name) => { const r = await rt(id); try { if (r && r.load) await r.load(name); return { ok: true }; } catch (e) { return { ok: false, error: String((e && e.message) || e) }; } });
+  ipcMain.handle("localModels:load", async (_e, id, name, opts) => { const r = await rt(id); try { if (r && r.load) await r.load(name, opts); return { ok: true }; } catch (e) { return { ok: false, error: String((e && e.message) || e) }; } });
   ipcMain.handle("localModels:browse", async (_e, id) => { const r = await rt(id); try { return r ? await r.browse() : []; } catch (e) { return { error: String((e && e.message) || e) }; } });
   ipcMain.handle("localModels:system", async () => { try { return { totalRamGB: Math.round(os.totalmem() / 1e9 * 10) / 10, freeRamGB: Math.round(os.freemem() / 1e9 * 10) / 10, platform: process.platform, arch: process.arch }; } catch { return { totalRamGB: 0 }; } });
+  ipcMain.handle("localModels:serverStatus", async () => {
+    const out = { system: {}, providers: [] };
+    try { const total = os.totalmem(), free = os.freemem(); out.system = { totalRamGB: Math.round(total / 1e9 * 10) / 10, freeRamGB: Math.round(free / 1e9 * 10) / 10, usedRamGB: Math.round((total - free) / 1e9 * 10) / 10, ramPct: Math.round((1 - free / total) * 100), cpuPct: cpuPercent(), gpu: await gpuInfo() }; } catch {}
+    try { const r = await runtimes(); out.providers = await Promise.all(Object.values(r).map(async (x) => { try { const det = await x.detect(); const run = det.available ? await x.running() : []; return { id: x.id, label: x.label, available: !!det.available, version: det.version, running: run }; } catch { return { id: x.id, label: x.label, available: false, running: [] }; } })); } catch {}
+    return out;
+  });
   ipcMain.handle("localModels:pull", async (_e, id, name) => {
     const r = await rt(id); if (!r) return { ok: false, error: "Unknown provider" };
     try { await r.pull(name, (p) => send("localModels:pullProgress", Object.assign({ id, name }, p))); send("localModels:pullProgress", { id, name, status: "success", done: true }); return { ok: true }; }

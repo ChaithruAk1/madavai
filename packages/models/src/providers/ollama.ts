@@ -30,8 +30,14 @@ export class OllamaRuntime implements LocalModelRuntime {
   }
 
   async running(): Promise<RunningModel[]> {
-    try { const r = await this.http.json('GET', '/api/ps'); return (r?.models ?? []).map((m: any) => ({ name: m.name, sizeBytes: m.size })); }
-    catch { return []; }
+    try {
+      const r = await this.http.json('GET', '/api/ps');
+      return (r?.models ?? []).map((m: any) => {
+        const size = m.size ?? 0, vram = m.size_vram ?? 0;
+        const proc = !size ? '' : vram >= size ? '100% GPU' : !vram ? '100% CPU' : `${Math.round((1 - vram / size) * 100)}% CPU / ${Math.round((vram / size) * 100)}% GPU`;
+        return { name: m.name, sizeBytes: size, sizeVram: vram, processor: proc, context: m.context_length ?? m.details?.context_length, expiresAt: m.expires_at, family: m.details?.family, params: m.details?.parameter_size };
+      });
+    } catch { return []; }
   }
 
   async pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void> {
@@ -44,7 +50,7 @@ export class OllamaRuntime implements LocalModelRuntime {
   async remove(name: string): Promise<void> { await this.http.json('DELETE', '/api/delete', { name }); }
 
   async stop(name: string): Promise<void> { await this.http.json('POST', '/api/generate', { model: name, keep_alive: 0, stream: false }); }
-  async load(name: string): Promise<void> { await this.http.json('POST', '/api/generate', { model: name, stream: false }); }
+  async load(name: string, opts?: { numCtx?: number }): Promise<void> { const body: any = { model: name, stream: false }; if (opts?.numCtx) body.options = { num_ctx: opts.numCtx }; await this.http.json('POST', '/api/generate', body); }
 
   async browse(): Promise<ModelSearchResult[]> {
     return OLLAMA_CATALOG.map((m) => ({ pullName: m.name, name: m.name, description: m.description, sizeLabel: m.sizeLabel, sizeGB: m.sizeGB, useCases: m.useCases, family: m.family, source: 'ollama' as const }));

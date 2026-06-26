@@ -50,7 +50,7 @@ export class LmStudioRuntime implements LocalModelRuntime {
 
   async remove(name: string): Promise<void> { await this.cli.run(['rm', name, '--yes']); }
   async stop(name: string): Promise<void> { await this.cli.run(['unload', name]); }
-  async load(name: string): Promise<void> { await this.cli.run(['load', name]); }
+  async load(name: string, opts?: { numCtx?: number }): Promise<void> { const args = ['load', name]; if (opts?.numCtx) args.push('--context-length', String(opts.numCtx)); await this.cli.run(args); }
 
   async browse(): Promise<ModelSearchResult[]> {
     const r = await this.hub.json('GET', '/api/models?filter=gguf&sort=downloads&direction=-1&limit=80');
