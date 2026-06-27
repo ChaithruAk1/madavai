@@ -43,8 +43,9 @@ function makeLmsCli() {
         } catch { resolve({ code: 127, stdout: "", stderr: "lms not found" }); }
       });
     },
-    async *stream(args) {
+    async *stream(args, signal) {
       const p = spawn(LMS, args, { windowsHide: true });
+      if (signal) { const onAbort = () => { try { p.kill(); } catch {} }; if (signal.aborted) onAbort(); else signal.addEventListener("abort", onAbort, { once: true }); }
       let buf = "", done = false, resolveNext = null;
       const queue = [];
       const push = (l) => { if (resolveNext) { const r = resolveNext; resolveNext = null; r(l); } else queue.push(l); };
@@ -129,11 +130,23 @@ function register(ipcMain, getWin) {
     try { const r = await runtimes(); out.providers = await Promise.all(Object.values(r).map(async (x) => { try { const det = await x.detect(); const run = det.available ? await x.running() : []; return { id: x.id, label: x.label, available: !!det.available, version: det.version, running: run }; } catch { return { id: x.id, label: x.label, available: false, running: [] }; } })); } catch {}
     return out;
   });
+  const _pulls = new Map();   // id::name -> AbortController, so an in-flight download can be cancelled mid-way
   ipcMain.handle("localModels:pull", async (_e, id, name) => {
     const r = await rt(id); if (!r) return { ok: false, error: "Unknown provider" };
-    try { await r.pull(name, (p) => send("localModels:pullProgress", Object.assign({ id, name }, p))); send("localModels:pullProgress", { id, name, status: "success", done: true }); return { ok: true }; }
-    catch (e) { send("localModels:pullProgress", { id, name, status: "error", error: String((e && e.message) || e), done: true }); return { ok: false, error: String((e && e.message) || e) }; }
+    const key = id + "::" + name;
+    const ctrl = new AbortController(); _pulls.set(key, ctrl);
+    try { await r.pull(name, (p) => send("localModels:pullProgress", Object.assign({ id, name }, p)), ctrl.signal); send("localModels:pullProgress", { id, name, status: "success", done: true }); return { ok: true }; }
+    catch (e) {
+      const msg = String((e && e.message) || e);
+      if (ctrl.signal.aborted || /abort|cancel/i.test(msg)) { send("localModels:pullProgress", { id, name, status: "cancelled", cancelled: true, done: true }); return { ok: false, cancelled: true }; }
+      send("localModels:pullProgress", { id, name, status: "error", error: msg, done: true }); return { ok: false, error: msg };
+    }
+    finally { _pulls.delete(key); }
   });
+  // Cancel an in-flight download. Aborts the client stream/process; a partial Ollama pull stays resumable.
+  ipcMain.handle("localModels:pullCancel", async (_e, id, name) => { const c = _pulls.get(id + "::" + name); if (!c) return { ok: false, error: "no active download" }; try { c.abort(); } catch {} return { ok: true }; });
+  // HuggingFace-ranked media recommendations for Let's Create (download-ranked + size-checked by pipeline_tag).
+  ipcMain.handle("localModels:recommendMedia", async () => { const r = await rt("localai"); try { return (r && r.recommend) ? await r.recommend() : []; } catch (e) { return { error: String((e && e.message) || e) }; } });
   ipcMain.handle("localModels:dockerStatus", async () => { try { return await localaiDocker.dockerStatus(); } catch (e) { return { installed: false, running: false, error: String((e && e.message) || e) }; } });
   ipcMain.handle("localModels:localaiStatus", async () => { try { return await localaiDocker.localaiStatus(); } catch { return { api: false, container: "absent" }; } });
   ipcMain.handle("localModels:localaiStop", async () => { try { return await localaiDocker.stopLocalAi(); } catch (e) { return { ok: false, error: String((e && e.message) || e) }; } });

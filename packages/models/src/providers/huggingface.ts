@@ -40,9 +40,9 @@ export class HuggingFaceRuntime implements LocalModelRuntime {
     return (await this.ollama.running()).filter((m) => /hf\.co[/]/i.test(m.name));
   }
 
-  async pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void> {
+  async pull(name: string, onProgress?: (p: PullProgress) => void, signal?: AbortSignal): Promise<void> {
     const repo = name.replace(/^https?:\/\/huggingface\.co\//i, '').replace(/^hf\.co\//i, '');
-    return this.ollama.pull('hf.co/' + repo, onProgress);
+    return this.ollama.pull('hf.co/' + repo, onProgress, signal);
   }
   async remove(name: string): Promise<void> { return this.ollama.remove(name); }
   async stop(name: string): Promise<void> { return this.ollama.stop(name); }

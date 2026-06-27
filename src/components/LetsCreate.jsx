@@ -9,6 +9,7 @@ import { localModality, prettyLocalName } from "../data/localModels.js";
 import { isVisionModel } from "../modelCost.js";
 import { PermissionPicker } from "./Topbar.jsx";
 import MadavMark from "./MadavMark.jsx";
+import HelpDot from "./HelpDot.jsx";
 
 const CAPS = [
   { id: "image", label: "Image", icon: ImageIcon, placeholder: "a neon koi gliding through glowing clouds, watercolor" },
@@ -328,7 +329,7 @@ export default function LetsCreate({ onNavigate }) {
 
       <div className="lc2-composer">
         <div className="lc2-caps">
-          {CAPS.map((c) => <button key={c.id} className={"lc2-cap " + (cap === c.id ? "on" : "")} onClick={() => { setCap(c.id); setAttach(null); }}><c.icon size={15} /> {c.label}</button>)}
+          {CAPS.map((c) => <button key={c.id} className={"lc2-cap " + (cap === c.id ? "on" : "")} onClick={() => { setCap(c.id); setAttach(null); }}><c.icon size={15} /> {c.label}</button>)}<HelpDot mode="letscreate" section="capabilities" />
         </div>
         <div className="lc2-inputrow">
           <div className="lc2-plus-wrap">
@@ -361,13 +362,13 @@ export default function LetsCreate({ onNavigate }) {
           </button>
         </div>
         <div className="lc2-dock">
-          <button className="lc2-dockchip" onClick={pickFolder} title="Pick a folder to manage and process files"><FolderGit2 size={13} /> {folder ? folder.split(/[\\/]/).pop() : "Select Folder"} <ChevronDown size={12} /></button>
+          <button className="lc2-dockchip" onClick={pickFolder} title="Pick a folder to manage and process files"><FolderGit2 size={13} /> {folder ? folder.split(/[\\/]/).pop() : "Select Folder"} <ChevronDown size={12} /></button><HelpDot mode="letscreate" section="folder" />
           <div className="lc2-mp">
             <button className="lc2-dockchip" onClick={() => setMpOpen((o) => !o)} disabled={!relModels.length} title="Model used for this creation">{relModels.length ? prettyLocalName(chosenModel(relModels)) : "No model"} <ChevronDown size={12} /></button>
             {mpOpen ? <div className="lc2-mp-menu" onMouseLeave={() => setMpOpen(false)}>{relModels.map((m) => { const sel = chosenModel(relModels) === m.name; return <div key={m.name} className={"lc2-mp-row" + (sel ? " sel" : "")} onClick={() => { setPickedModel(m.name); setMpOpen(false); }}><span>{prettyLocalName(m.name)} <span className="lc2-mp-hint">{capHint(m.name)}</span></span>{sel ? <Check size={14} /> : null}</div>; })}</div> : null}
           </div>
           <PermissionPicker value={perm} onChange={setPerm} />
-          <button className={"lc2-dockchip" + (agentsOn ? " on" : "")} onClick={() => setAgentsOn((a) => !a)} title="Let agents help (configured later)"><Bot size={13} /> Agents</button>
+          <button className={"lc2-dockchip" + (agentsOn ? " on" : "")} onClick={() => setAgentsOn((a) => !a)} title="Turn one prompt into an autonomous multi-step creation"><Bot size={13} /> Agents</button><HelpDot mode="letscreate" section="agents" />
         </div>
         {!haveModel ? (<div className="lc2-needmodel">No {capLabel(cap)} model yet — {pullProg ? <span><Loader2 size={12} className="spin" /> {pullProg.error || ("pulling " + (pullProg.name ? prettyLocalName(pullProg.name) : "a model") + "… " + (pullProg.pct || 0) + "%")}</span> : <><button className="lc2-link" onClick={() => pullStarter(cap)}>pull a starter one</button> or <button className="lc2-link" onClick={goModels}>browse in Local Models</button>.</>}</div>) : null}
       </div>

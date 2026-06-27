@@ -10,12 +10,13 @@ import { providerForRuntime } from "../data/localProviders.js";
 import { prettyLocalName, localCaps, fitForRam, goalMatches, isChatModel } from "../data/localModels.js";
 import { madavConfirm } from "../dialogs.jsx";
 import { MakerLogo } from "./ModelsOverview.jsx";
+import HelpDot from "./HelpDot.jsx";
 
 const PROVIDERS = [
   { id: "ollama", label: "Ollama", blurb: "The simplest way to run models locally. Search the built-in catalog or type any model name to pull." },
   { id: "huggingface", label: "HuggingFace", blurb: "Pull any GGUF model from the HuggingFace Hub. Runs through the Ollama engine under the hood." },
   { id: "lmstudio", label: "LM Studio", blurb: "Use models from LM Studio. Needs the LM Studio app with its command-line tool (lms) enabled." },
-  { id: "localai", label: "Local AI", blurb: "One engine for image, voice and video generation. Runs in Docker — Madav sets it up for you." },
+  { id: "localai", label: "Let's Create Models", blurb: "One engine for image, voice and video generation. Runs in Docker — Madav sets it up for you." },
 ];
 
 // Goal-first browse tiles — people know what they want to DO, not which model does it. Keys match the catalog's
@@ -73,6 +74,9 @@ const LC_CAPS = [
   { id: "transcribe", label: "Transcribe", icon: Mic },
   { id: "describe", label: "Describe", icon: Eye },
 ];
+const REC_TTL = 12 * 60 * 60 * 1000;   // refresh the HuggingFace-ranked media picks every 12h, in the background
+function readRecCache() { try { const j = JSON.parse(localStorage.getItem("madav.lmrec") || "null"); if (j && Array.isArray(j.recs) && (Date.now() - (j.t || 0) < REC_TTL)) return j.recs; } catch {} return null; }
+function writeRecCache(recs) { try { localStorage.setItem("madav.lmrec", JSON.stringify({ t: Date.now(), recs })); } catch {} }
 
 function fmtBytes(n) {
   if (!n || n <= 0) return "";
@@ -258,6 +262,17 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     setPulls((m) => ({ ...m, [id + "::" + name]: { pct: 0, status: "starting", done: false, error: "" } }));
     bridge.localModels.pull(id, name);
   };
+  const [mediaRecs, setMediaRecs] = useState(() => readRecCache() || []);
+  const [recsLoading, setRecsLoading] = useState(false);
+  const [recsTried, setRecsTried] = useState(false);
+  useEffect(() => {                                   // pull genuinely download-ranked media picks from HuggingFace, once the engine is up
+    if (recsTried || (mediaRecs && mediaRecs.length)) return;
+    const det = status["localai"]; if (!det || !det.available) return;
+    if (!bridge.localModels.recommendMedia) return;
+    setRecsTried(true); setRecsLoading(true);
+    Promise.resolve(bridge.localModels.recommendMedia()).then((r) => { const recs = Array.isArray(r) ? r : []; if (recs.length) { setMediaRecs(recs); writeRecCache(recs); } }).catch(() => {}).finally(() => setRecsLoading(false));
+  }, [status, recsTried, mediaRecs]);
+  const doCancelPull = (id, name) => { try { bridge.localModels.cancelPull && bridge.localModels.cancelPull(id, name); } catch {} setPulls((m) => { const c = { ...m }; delete c[id + "::" + name]; return c; }); };
   const doRemove = async (id, name) => {
     try { await bridge.localModels.remove(id, name); } catch {}
     refresh(id); onChanged && onChanged();
@@ -349,7 +364,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             ) : incompatible ? (
               <span className="lmt-incompat" title="Too large for your system's memory">Not compatible</span>
             ) : pr && !pr.done && !pr.error ? (
-              <span className="lmt-actrow"><span className="lm-bar small" style={{ width: 64 }}><span className="lm-bar-fill" style={{ width: (pr.pct || 0) + "%" }} /></span><span className="lm-pct">{pr.pct || 0}%</span></span>
+              <span className="lmt-actrow"><span className="lm-bar small" style={{ width: 64 }}><span className="lm-bar-fill" style={{ width: (pr.pct || 0) + "%" }} /></span><span className="lm-pct">{pr.pct || 0}%</span><button className="btn ghost xs lm-cancel" title="Cancel this download" onClick={() => doCancelPull(id, r.pullName)}><X size={12} /></button></span>
             ) : pr && pr.error ? (
               <button className="btn ghost sm" onClick={() => doPull(id, r.pullName, r.sizeGB)} title={pr.error}><AlertCircle size={12} /> Retry</button>
             ) : (
@@ -405,7 +420,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             <button className="btn ghost sm" onClick={() => refresh(id)} title="Re-check status"><RefreshCw size={14} /></button>
             {!det.available && (inst
               ? <span className="lm-installing"><Loader2 size={13} className="spin" /> {inst.line ? inst.line : (inst.phase === "downloading" ? "Downloading… " + (inst.pct || 0) + "%" : inst.phase === "docker" ? "Starting Docker…" : inst.phase === "pulling" ? "Downloading engine…" : inst.phase === "booting" || inst.phase === "starting" ? "Starting engine…" : inst.phase === "installing" ? "Installing…" : inst.phase === "ready" ? "Ready" : inst.phase === "opened" ? "Opened download page" : "Working…")}</span>
-              : <button className="btn primary" onClick={() => doInstall(id)}><Download size={14} /> {id === "localai" ? "Set up Local AI" : id === "lmstudio" ? "Get LM Studio" : id === "huggingface" ? "Install Ollama engine" : "Install Ollama"}</button>)}
+              : <button className="btn primary" onClick={() => doInstall(id)}><Download size={14} /> {id === "localai" ? "Set up Let's Create Models" : id === "lmstudio" ? "Get LM Studio" : id === "huggingface" ? "Install Ollama engine" : "Install Ollama"}</button>)}
           </div>
         </div>
         {inst && (inst.phase === "downloading" || inst.phase === "docker" || inst.phase === "pulling" || inst.phase === "booting") ? <div className="lm-bar"><div className="lm-bar-fill" style={{ width: (inst.pct || 0) + "%" }} /></div> : null}
@@ -414,7 +429,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
           <div className="lm-lai-strip">
             <span className={"lm-chip " + (dockerInfo && dockerInfo.running ? "ok" : "off")}>{dockerInfo ? (dockerInfo.running ? "Docker running" : dockerInfo.installed ? "Docker installed - not started" : "Docker not installed") : "Checking Docker…"}</span>
             <span className={"lm-chip " + (laiInfo && laiInfo.api ? "ok" : "off")}>{laiInfo ? (laiInfo.api ? "Engine running" : laiInfo.container === "stopped" ? "Engine stopped" : "Engine not started") : "Checking engine…"}</span>
-            {laiInfo && laiInfo.api ? <button className="btn ghost sm" onClick={() => { bridge.localModels.localaiStop(); setLaiInfo({ ...laiInfo, api: false }); }} title="Stop the Local AI engine"><Square size={12} /> Stop engine</button> : null}
+            {laiInfo && laiInfo.api ? <button className="btn ghost sm" onClick={() => { bridge.localModels.localaiStop(); setLaiInfo({ ...laiInfo, api: false }); }} title="Stop the Let's Create engine"><Square size={12} /> Stop engine</button> : null}
           </div>
         ) : null}
 
@@ -442,22 +457,39 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         ) : null}
         {isMedia && !showSearch && det.available ? (() => {
           const gal = browseList[id] || [];
+          const recByCap = {};
+          (mediaRecs || []).forEach((rc) => { if (rc && !recByCap[rc.cap]) recByCap[rc.cap] = rc; });
           return (
             <div className="lm-rec-create">
-              <div className="lm-section-label"><Star size={13} /> Recommended for Let's Create — a proven pick per capability</div>
+              <div className="lm-section-label"><Star size={13} /> Recommended for Let's Create — most-downloaded on HuggingFace, sized for your machine <HelpDot mode="localmodels" section="recommended" /></div>
               <div className="lm-rec-grid">
                 {LC_CAPS.map((lc) => {
+                  const rc = recByCap[lc.id];
                   const m = gal.find((e) => (RECOMMENDED_MEDIA[lc.id] || []).some((re) => re.test(e.name || e.pullName)));
                   const pr = m && pulls[id + "::" + m.pullName];
+                  const pulling = pr && !pr.done && !pr.error;
+                  const fit = rc ? fitForRam(rc.sizeGB, sys.totalRamGB) : "unknown";
+                  const dot = fit === "good" ? "#3fb950" : fit === "tight" ? "#f5a623" : fit === "over" ? "#ff6b6b" : "var(--text-2)";
+                  const action = m && isInstalled(id, m)
+                    ? <span className="lm-chip ok sm"><CheckCircle2 size={11} /> Installed</span>
+                    : pulling
+                    ? <span className="lmt-actrow"><span className="lm-pct">{pr.pct || 0}%</span><button className="btn ghost xs lm-cancel" title="Cancel this download" onClick={() => doCancelPull(id, m.pullName)}><X size={12} /></button></span>
+                    : m
+                    ? <button className="btn primary sm" onClick={() => doPull(id, m.pullName, m.sizeGB)} title={"Install " + prettyLocalName(m.name) + " — the closest match this engine can run"}><Download size={12} /> Pull</button>
+                    : rc
+                    ? <button className="btn ghost sm" onClick={() => openExt("https://huggingface.co/" + rc.repo)} title="Open this model on HuggingFace"><ExternalLink size={12} /> HuggingFace</button>
+                    : null;
                   return (
                     <div className="lm-rec-card" key={lc.id}>
                       <div className="lm-rec-cap"><lc.icon size={14} /> {lc.label}</div>
-                      {m ? (<>
+                      {rc ? (<>
+                        <div className="lm-rec-model" title={rc.repo}>{prettyLocalName(rc.name)}</div>
+                        <div className="lm-rec-meta"><span className="lm-rec-dl" title="HuggingFace downloads">{fmtCount(rc.downloads)} downloads</span><span className="lm-rec-size"><span className="lmt-dot" style={{ background: dot }} />{rc.sizeGB ? "~" + rc.sizeGB + " GB" : "size n/a"}</span></div>
+                        {action}
+                      </>) : m ? (<>
                         <div className="lm-rec-model" title={m.pullName}>{prettyLocalName(m.name)}</div>
-                        {isInstalled(id, m) ? <span className="lm-chip ok sm"><CheckCircle2 size={11} /> Installed</span>
-                          : pr && !pr.done && !pr.error ? <span className="lm-pct">{pr.pct || 0}%</span>
-                          : <button className="btn primary sm" onClick={() => doPull(id, m.pullName, m.sizeGB)}><Download size={12} /> Pull</button>}
-                      </>) : <div className="lmt-dim" style={{ fontSize: 12 }}>browse below to find one</div>}
+                        {action}
+                      </>) : <div className="lmt-dim" style={{ fontSize: 12 }}>{recsLoading ? "finding the best…" : "browse below to find one"}</div>}
                     </div>
                   );
                 })}
@@ -490,7 +522,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
             rows = [...rows].sort((a, b) => { const va = val(a), vb = val(b); const c = typeof va === "string" ? va.localeCompare(vb) : (va - vb); return sortDir === "asc" ? c : -c; });
           }
           if (!rows.length) {
-            return <div className="lm-empty">{searching[id] ? "Searching…" : showSearch ? ("No model available for local download matches “" + (query[id] || "") + "”. It may be cloud-only or not exist for local use — check the provider’s site.") : (isMedia && !det.available) ? "Start the Local AI engine above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
+            return <div className="lm-empty">{searching[id] ? "Searching…" : showSearch ? ("No model available for local download matches “" + (query[id] || "") + "”. It may be cloud-only or not exist for local use — check the provider’s site.") : (isMedia && !det.available) ? "Start the Let's Create engine above to see models." : ((browseList[id] && browseList[id].length) ? "No models match — try another goal or search." : "Loading…")}</div>;
           }
           return (
             <div className="mo-tablewrap lmt-wrap">
@@ -552,7 +584,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
     return (
       <div className="lm-panel lm-server-panel">
         <div className="lm-server-head">
-          <span className="lm-server-live"><Activity size={13} /> Live dashboard · auto-refreshing every 4s</span>
+          <span className="lm-server-live"><Activity size={13} /> Live dashboard · auto-refreshing every 4s</span><HelpDot mode="localmodels" section="server" />
           <button className="btn ghost sm" onClick={loadServer} title="Refresh the dashboard now"><RefreshCw size={13} /> Refresh</button>
         </div>
         <div className="lm-kpis">
@@ -585,7 +617,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
   return (
     <div className="local-models scroll">
       <div className="lm-head">
-        <h2><Cpu size={18} /> Local Models</h2>
+        <h2><Cpu size={18} /> Local Models <HelpDot mode="localmodels" /></h2>
         <p className="lm-sub">Run models on your own machine — private, offline, no API key. Pick a provider, search, and pull. Anything you install becomes selectable everywhere in Madav.{sys.totalRamGB ? <> Your machine has <b>{sys.totalRamGB} GB</b> RAM — models that run great on it are shown first.</> : null}</p>
       </div>
       <div className="lm-pills">

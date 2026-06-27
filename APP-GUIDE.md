@@ -19,6 +19,20 @@ provider runs. No per-seat fees, no lock-in.
 - **Let's Build** (code) — a coding-focused agent session over a folder or a connected
   GitHub repo: explore → edit → run, with file tools and terminal (desktop).
 
+## Let's Create (make media locally)
+A creative studio for making and understanding media on your own machine — images,
+speech (text-to-speech), music, video — plus transcribe (speech-to-text) and describe
+(understand an image). Conversational: each result can feed the next (an image can be
+animated into a video). It runs on the **Let's Create Models** engine (Docker, OpenAI-
+compatible) — nothing leaves the computer. Controls: a media model picker (only media
+models, each with a capability hint), capability tiles (Image · Voice · Video · Music ·
+Transcribe · Describe), **Select Folder** (creations save into it; you can also feed your
+own files from it), a "+" menu (Add files or photos · From your folder…), a Permission
+control, and a **Use Agents** toggle. With Use Agents on, a single prompt becomes an
+autonomous multi-step job: the Agent plans the steps from your request and carries them
+out with Let's Create, chaining each result into the next. Models are pulled on the Local
+Models page first (media models need no "activation").
+
 ## The model selector (top right)
 Every provider is always available; the model you pick decides which one runs. An
 online/offline dot shows provider reachability; a cloud/local tag shows where a model
@@ -72,6 +86,30 @@ finish OAuth/credentials per connector. (Connecting is desktop-only; web shows a
   benchmarks (SWE-bench/HumanEval where published), cost tiers, speed, provider logos,
   compare mode.
 - **Speed Check** — measure real tokens/sec and answer quality across models you pick.
+
+## Local Models (run AI on your own computer)
+Download and run models locally — no API key, no per-token cost, fully private/offline.
+Four engines across the top: **Ollama** and **HuggingFace** (text/chat GGUF models, run
+via the Ollama engine), **LM Studio** (GGUF via the LM Studio app), and **Let's Create
+Models** (the media engine for image/voice/video/music, in Docker; previously called
+"Local AI"). Plus a **Server Status** tab. Each engine shows one unified table: Model,
+Capabilities, Size, Context, Params, **RAM compatibility** (green Compatible / orange Runs
+but slow / red Too big — judged against this machine's memory), Downloads, Cost (always
+Free), and an action. A model must be **Pulled** (downloaded) once; pull shows live
+progress and can be **cancelled mid-way** with the ✕ (an Ollama partial stays resumable).
+Pull is blocked for models bigger than the machine's memory. **Activate** loads an
+installed model into memory so it actually runs (and appears in Server Status); **Stop**
+unloads it; **Delete** removes it from disk (with confirmation). Nine multi-select filter
+chips (All, Coding assistant, Deep reasoning, Sees images, Tiny & fast, Image, Voice,
+Video, Downloaded) are identical on every provider, and up to four models can be compared
+side by side. **Server Status** is a live dashboard (RAM/CPU/GPU gauges, KPI cards,
+auto-refresh every 4s) where each running model's context length (capped at the model's
+own max) and keep-alive (5m / 30m / 1h / Forever) can be changed and saved as its default.
+On the Let's Create Models tab, **Recommended for Let's Create** shows the genuinely
+most-downloaded HuggingFace model for each capability (Image, Voice, Video, Music,
+Transcribe, Describe) with its download count and size, refreshed every 12h and sized to
+this machine — Pull installs the closest match the engine can run, otherwise it links out
+to HuggingFace.
 
 ## Scheduler
 Run agents, teams, or tasks automatically — on an interval/daily/weekly schedule, or by

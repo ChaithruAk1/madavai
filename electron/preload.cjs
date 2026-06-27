@@ -214,6 +214,8 @@ contextBridge.exposeInMainWorld("madav", {
     list: (id) => ipcRenderer.invoke("localModels:list", id),
     running: (id) => ipcRenderer.invoke("localModels:running", id),
     pull: (id, name) => ipcRenderer.invoke("localModels:pull", id, name),
+    cancelPull: (id, name) => ipcRenderer.invoke("localModels:pullCancel", id, name),
+    recommendMedia: () => ipcRenderer.invoke("localModels:recommendMedia"),
     remove: (id, name) => ipcRenderer.invoke("localModels:remove", id, name),
     stop: (id, name) => ipcRenderer.invoke("localModels:stop", id, name),
     load: (id, name, opts) => ipcRenderer.invoke("localModels:load", id, name, opts),

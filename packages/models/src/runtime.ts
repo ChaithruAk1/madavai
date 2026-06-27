@@ -17,6 +17,9 @@ export interface ModelSearchResult {
 export interface RunningModel { name: string; sizeBytes?: number; sizeVram?: number; processor?: string; context?: number; expiresAt?: string; family?: string; params?: string; quant?: string }
 export interface DetectResult { available: boolean; version?: string; note?: string }
 
+/** A genuinely download-ranked, size-checked media model sourced from HuggingFace by task (pipeline_tag). */
+export interface MediaRecommendation { cap: string; pipelineTag: string; repo: string; name: string; author: string; downloads: number; likes: number; sizeGB?: number }
+
 export interface LocalModelRuntime {
   readonly id: RuntimeId;
   readonly label: string;
@@ -24,7 +27,7 @@ export interface LocalModelRuntime {
   search(query: string): Promise<ModelSearchResult[]>;
   list(): Promise<LocalModel[]>;
   running(): Promise<RunningModel[]>;
-  pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void>;
+  pull(name: string, onProgress?: (p: PullProgress) => void, signal?: AbortSignal): Promise<void>;
   remove(name: string): Promise<void>;
   stop(name: string): Promise<void>;  // unload a running model from memory
   load?(name: string, opts?: { numCtx?: number; keepAlive?: string }): Promise<void>;  // load a model into memory (so it actually runs)
@@ -32,25 +35,25 @@ export interface LocalModelRuntime {
 }
 
 export interface HttpClient {
-  json(method: string, path: string, body?: unknown): Promise<any>;
-  stream(method: string, path: string, body?: unknown): AsyncIterable<string>;
+  json(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<any>;
+  stream(method: string, path: string, body?: unknown, signal?: AbortSignal): AsyncIterable<string>;
 }
 
 export interface CliRunner {
   run(args: string[]): Promise<{ code: number; stdout: string; stderr: string }>;
-  stream(args: string[]): AsyncIterable<string>;
+  stream(args: string[], signal?: AbortSignal): AsyncIterable<string>;
 }
 
 export function fetchHttp(baseUrl: string): HttpClient {
   const f: any = (globalThis as any).fetch;
   return {
-    async json(method, path, body) {
-      const r = await f(baseUrl + path, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
+    async json(method, path, body, signal) {
+      const r = await f(baseUrl + path, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined, signal });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     },
-    async *stream(method, path, body) {
-      const r = await f(baseUrl + path, { method, body: body ? JSON.stringify(body) : undefined });
+    async *stream(method, path, body, signal) {
+      const r = await f(baseUrl + path, { method, body: body ? JSON.stringify(body) : undefined, signal });
       if (!r.ok || !r.body) throw new Error('HTTP ' + r.status);
       const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = '';
       for (;;) {

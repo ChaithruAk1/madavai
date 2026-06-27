@@ -1,4 +1,4 @@
-import type { LocalModelRuntime, LocalModel, PullProgress, HttpClient, ModelSearchResult, RunningModel, DetectResult } from '../runtime.js';
+import type { LocalModelRuntime, LocalModel, PullProgress, HttpClient, ModelSearchResult, RunningModel, DetectResult, MediaRecommendation } from '../runtime.js';
 import { fetchHttp } from '../runtime.js';
 
 // Map a LocalAI gallery entry to one of our browse "useCases" so media models slot into the goal tiles.
@@ -51,11 +51,12 @@ export class LocalAiRuntime implements LocalModelRuntime {
   }
   async running(): Promise<RunningModel[]> { return []; } // LocalAI loads/unloads backends on demand
 
-  async pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void> {
-    const j = await this.http.json('POST', '/models/apply', { id: name });
+  async pull(name: string, onProgress?: (p: PullProgress) => void, signal?: AbortSignal): Promise<void> {
+    const j = await this.http.json('POST', '/models/apply', { id: name }, signal);
     const uuid = j && (j.uuid || j.id);
     if (!uuid) throw new Error('LocalAI did not return a job id for the install');
     for (let i = 0; i < 3000; i++) {            // ~60 min ceiling at 1.2s/poll for large media models
+      if (signal?.aborted) throw new Error('cancelled');
       let s: any; try { s = await this.http.json('GET', '/models/jobs/' + uuid); } catch { await sleep(1200); continue; }
       if (s && s.error) throw new Error(String(s.error));
       const pct = typeof s.progress === 'number' ? Math.round(s.progress) : 0;
@@ -168,6 +169,45 @@ export class LocalAiRuntime implements LocalModelRuntime {
     const text = typeof c === 'string' ? c : (Array.isArray(c) ? c.map((x: any) => (x && x.text) || '').join('') : '');
     return { text };
   }
+  // Genuinely download-ranked, size-checked media recommendations sourced straight from HuggingFace by task
+  // (pipeline_tag), so we surface the real top image / voice / video / music / transcribe / describe models —
+  // not whatever happens to be in LocalAI's text-heavy gallery. The renderer maps each to a LocalAI-pullable
+  // gallery entry when one exists, else links out to HuggingFace.
+  async recommend(): Promise<MediaRecommendation[]> {
+    const hub = fetchHttp('https://huggingface.co');
+    const TAGS: Array<{ cap: string; tag: string }> = [
+      { cap: 'image', tag: 'text-to-image' },
+      { cap: 'voice', tag: 'text-to-speech' },
+      { cap: 'video', tag: 'text-to-video' },
+      { cap: 'music', tag: 'text-to-audio' },
+      { cap: 'transcribe', tag: 'automatic-speech-recognition' },
+      { cap: 'describe', tag: 'image-text-to-text' },
+    ];
+    const weightGB = (tree: any[]): number | undefined => {
+      if (!Array.isArray(tree)) return undefined;
+      const sizes = tree
+        .filter((file) => /\.(safetensors|bin|ckpt|gguf|pth|onnx)$/i.test((file && (file.path || file.rfilename)) || ''))
+        .map((file) => Number(file && file.size) || 0)
+        .filter((n) => n > 0);
+      if (!sizes.length) return undefined;
+      return Math.round(Math.max(...sizes) / 1e9 * 10) / 10;   // largest single weight file ~ memory footprint
+    };
+    const out: MediaRecommendation[] = [];
+    for (const { cap, tag } of TAGS) {
+      try {
+        const list = await hub.json('GET', '/api/models?pipeline_tag=' + tag + '&sort=downloads&direction=-1&limit=6');
+        const arr: any[] = Array.isArray(list) ? list : [];
+        const top = arr.find((m) => m && !m.gated && !m.private && !m.disabled) || arr[0];
+        if (!top) continue;
+        const id: string = top.id || top.modelId; if (!id) continue;
+        let sizeGB: number | undefined;
+        try { const tree = await hub.json('GET', '/api/models/' + id + '/tree/main?recursive=true'); sizeGB = weightGB(tree); } catch { /* size unknown is fine */ }
+        out.push({ cap, pipelineTag: tag, repo: id, name: id.split('/').pop() || id, author: id.split('/')[0] || '', downloads: Number(top.downloads) || 0, likes: Number(top.likes) || 0, sizeGB });
+      } catch { /* skip this capability */ }
+    }
+    return out;
+  }
+
   async stop(_name: string): Promise<void> { /* no per-model unload endpoint; LocalAI idles backends itself */ }
 }
 

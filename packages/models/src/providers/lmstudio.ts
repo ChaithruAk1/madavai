@@ -38,9 +38,9 @@ export class LmStudioRuntime implements LocalModelRuntime {
     } catch { return []; }
   }
 
-  async pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void> {
+  async pull(name: string, onProgress?: (p: PullProgress) => void, signal?: AbortSignal): Promise<void> {
     let last = 0;
-    for await (const line of this.cli.stream(['get', name, '--yes'])) {
+    for await (const line of this.cli.stream(['get', name, '--yes'], signal)) {
       const pct = /(\d{1,3})\s*%/.exec(line);
       if (pct) last = Math.min(100, parseInt(pct[1], 10));
       onProgress?.({ status: line.trim().slice(0, 80) || 'downloading', completed: last, total: 100, done: /(done|complete|success|finished)/i.test(line) });

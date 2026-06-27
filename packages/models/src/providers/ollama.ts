@@ -59,8 +59,8 @@ export class OllamaRuntime implements LocalModelRuntime {
     } catch { return []; }
   }
 
-  async pull(name: string, onProgress?: (p: PullProgress) => void): Promise<void> {
-    for await (const line of this.http.stream('POST', '/api/pull', { name })) {
+  async pull(name: string, onProgress?: (p: PullProgress) => void, signal?: AbortSignal): Promise<void> {
+    for await (const line of this.http.stream('POST', '/api/pull', { name }, signal)) {
       let o: any; try { o = JSON.parse(line); } catch { continue; }
       onProgress?.({ status: o.status ?? '', completed: o.completed, total: o.total, done: o.status === 'success' });
     }
