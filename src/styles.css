@@ -1545,7 +1545,7 @@ textarea.model-search { line-height: 1.5; }
 :root[data-theme="light"] .tn-name { background: none; -webkit-text-fill-color: var(--accent); color: var(--accent); animation: none; }
 /* Center the tab group over the chat/content area (right of the sidebar), not the whole window.
    Sidebar is 236px when open → shift the center by half that. Collapsed → true center. */
-.tn-tabs { position: absolute; left: calc(50% + 118px); transform: translateX(-50%); display: flex; justify-content: center; gap: 6px; }
+.tn-tabs { position: absolute; top: 50%; left: calc(50% + 118px); transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; gap: 6px; }
 .app-v.sb-collapsed .tn-tabs { left: 50%; }
 .tn-tab { position: relative; overflow: hidden; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-width: 172px; gap: 8px; padding: 9px clamp(10px, 1.4vw, 20px); border-radius: 11px; border: 1px solid var(--line-2); background: var(--bg-1); color: var(--text-0); font-size: clamp(12.5px, 1.05vw, 15.5px); font-weight: 500; transition: background .15s, color .15s, border-color .15s, transform .15s, box-shadow .15s; }
 .tn-tab span { white-space: nowrap; }
