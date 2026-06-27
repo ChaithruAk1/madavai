@@ -309,7 +309,7 @@ export default function LetsCreate({ onNavigate }) {
           </div>
         ) : turns.length === 0 ? (
           <div className="lc2-hero">
-            <MadavMark size={46} />
+            <MadavMark size={58} />
             <h1>{greeting}</h1>
             <p>What shall we create? Describe an image, a voice, or a short video — Madav imagines it right here.</p>
             <div className="lc2-starters">
@@ -327,7 +327,7 @@ export default function LetsCreate({ onNavigate }) {
                 <span>{turn.cap === "transcribe" ? ("Transcribe " + ((turn.attach && turn.attach.name) || "audio")) : turn.cap === "describe" ? (turn.prompt || "Describe this image") : turn.prompt}</span>
               </div>
               <div className="lc2-reply">
-                <div className="lc2-av"><MadavMark size={26} /></div>
+                <div className="lc2-av"><MadavMark size={32} /></div>
                 <div className="lc2-result">
                   {turn.status === "running" ? (
                     <div className={"lc2-gen lc2-gen-" + turn.cap}><div className="lc2-shim" /><div style={{ position: "relative", textAlign: "center" }}><div className="lc2-genlabel"><Loader2 size={14} className="spin" /> {turn.cap === "plan" ? "Madav is planning the steps…" : "Madav is imagining…"}</div><div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 5 }}>{turn.cap === "video" ? "video can take a few minutes" : "first run loads the model — give it a moment"}</div></div></div>

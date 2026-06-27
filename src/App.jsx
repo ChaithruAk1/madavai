@@ -1237,7 +1237,7 @@ export default function App() {
                         </div>
                       </div>
                     ) : (
-                      <div className="hero-greet"><MadavMark size={44} /><h1 className="greeting">{greeting}</h1></div>
+                      <div className="hero-greet"><MadavMark size={58} /><h1 className="greeting">{greeting}</h1></div>
                     )}
                     <Composer mode={mode} busy={busy || streaming || !!(soloRun && !soloRun.finished) || !!(teamRun && !teamRun.finished) || timeline.some((it) => it.type === "tool" && it.status === "run") || (!!sessionRef.current && runBusy.current.get(sessionRef.current) === true)} onSend={send} onStop={stop} onNavigate={switchMode} onNewChat={newSession} onPickFolder={pickFolder} onAddRepo={addRepo} cwd={cwd} controls={controlsRow} agent={isAgentMode} permissionMode={permissionMode} onPermissionChange={changePermission} />
                     {modelRow}
