@@ -40,6 +40,10 @@ const isMusic = (n) => /(musicgen|audiocraft|\bmusic\b|stable-?audio)/i.test(Str
 const capLabel = (c) => (c === "voice" ? "voice" : c === "video" ? "video" : c === "transcribe" ? "transcription" : "image");
 const AGENT_PLANNER = "You plan a small local creative studio. Tools: image (text->image), video (text->short video, can start from a previous image), voice (text->speech), music (text->instrumental music), describe (image->text). Given the user's request, reply with ONLY a JSON array of steps (no prose, no markdown fences). Each step = {\"cap\":\"image|video|voice|music|describe\",\"prompt\":\"concise prompt for this step\",\"from\": <0-based index of an earlier step whose generated image to feed in, or null>}. Rules: include only steps the user asked for; \"animate it\" or \"make a video of it\" => a video step whose from is the image step; \"describe it\" => a describe step whose from is the image step; keep it minimal, at most 6 steps.";
 
+// Stable compare so the engine poll only re-renders when the set of installed models actually CHANGES —
+// otherwise the model chip's default (models[0]) flickers as LocalAI returns the list in a different order each poll.
+const sameNames = (a, b) => { if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false; const sa = a.map((x) => x && x.name).sort().join("|"); const sb = b.map((x) => x && x.name).sort().join("|"); return sa === sb; };
+
 export default function LetsCreate({ onNavigate }) {
   const [engine, setEngine] = useState(null);
   const [models, setModels] = useState([]);
@@ -65,9 +69,9 @@ export default function LetsCreate({ onNavigate }) {
   const threadRef = useRef(null);
 
   const refresh = useCallback(async () => {
-    try { setEngine(await bridge.localModels.localaiStatus()); } catch { setEngine({ api: false }); }
-    try { const l = await bridge.localModels.list("localai"); setModels(Array.isArray(l) ? l : []); } catch { setModels([]); }
-    try { const g = await bridge.localModels.browse("localai"); setGallery(Array.isArray(g) ? g : []); } catch {}
+    try { const e = await bridge.localModels.localaiStatus(); setEngine((p) => (p && !!p.api === !!(e && e.api)) ? p : (e || { api: false })); } catch { setEngine((p) => (p && p.api === false) ? p : { api: false }); }
+    try { const l = await bridge.localModels.list("localai"); const arr = Array.isArray(l) ? l : []; setModels((p) => sameNames(p, arr) ? p : arr); } catch {}
+    try { const g = await bridge.localModels.browse("localai"); const arr = Array.isArray(g) ? g : []; setGallery((p) => sameNames(p, arr) ? p : arr); } catch {}
   }, []);
   useEffect(() => { refresh(); const t = setInterval(refresh, 5000); return () => clearInterval(t); }, [refresh]);
   useEffect(() => { Promise.resolve(bridge.getSettings && bridge.getSettings()).then((cfg) => { const a = (cfg && cfg.account) || {}; const nm = ((a.name || "").trim().split(" ")[0]) || ((a.email || "").split("@")[0]) || ""; setWho(nm ? nm.charAt(0).toUpperCase() + nm.slice(1) : ""); }).catch(() => {}); }, []);
@@ -96,7 +100,7 @@ export default function LetsCreate({ onNavigate }) {
     if (c === "music") return generic || ((uc.includes("voice") || mod === "voice") && isMusic(m.name));
     if (c === "transcribe") return generic || ((uc.includes("voice") || mod === "voice") && isSTT(m.name));
     return generic || ((uc.includes("voice") || mod === "voice") && !isSTT(m.name) && !isMusic(m.name)); // voice (TTS)
-  });
+  }).sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
   const friendlyErr = (c, modelName, err) => {
     const e = String(err || "");
@@ -346,11 +350,10 @@ export default function LetsCreate({ onNavigate }) {
         </div>
         {attach ? <div className="lc2-editchip"><ImageIcon size={13} /> {attach.kind === "audio" ? "Audio" : "Editing your image"} · {attach.name} <X size={12} style={{ cursor: "pointer" }} onClick={() => setAttach(null)} /></div> : null}
         <Composer mode="create" busy={busy} onSend={handleCreate} onStop={() => setBusy(false)} onPickFolder={pickFolder} cwd={folder} />
-        <div className="lc2-dock">
+        <div className="model-dock">
           <EnvPicker cwd={folder} onPickFolder={pickFolder} onUseFolder={() => {}} onAddRepoUrl={() => {}} github={false} />
-          <HelpDot mode="letscreate" section="folder" />
           <div className="lc2-mp">
-            <button className="lc2-dockchip" onClick={() => setMpOpen((o) => !o)} disabled={!relModels.length} title="Model used for this creation">{relModels.length ? prettyLocalName(chosenModel(relModels)) : "No model"} <ChevronDown size={12} /></button>
+            <button className="chip" onClick={() => setMpOpen((o) => !o)} disabled={!relModels.length} title="Model used for this creation" style={{ cursor: "pointer" }}>{relModels.length ? prettyLocalName(chosenModel(relModels)) : "No model"} <ChevronDown size={12} /></button>
             {mpOpen ? <div className="lc2-mp-menu" onMouseLeave={() => setMpOpen(false)}>{relModels.map((m) => { const sel = chosenModel(relModels) === m.name; return <div key={m.name} className={"lc2-mp-row" + (sel ? " sel" : "")} onClick={() => { setPickedModel(m.name); setMpOpen(false); }}><span>{prettyLocalName(m.name)} <span className="lc2-mp-hint">{capHint(m.name)}</span></span>{sel ? <Check size={14} /> : null}</div>; })}</div> : null}
           </div>
           <PermissionPicker value={perm} onChange={setPerm} />
