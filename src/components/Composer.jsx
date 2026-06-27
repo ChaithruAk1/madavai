@@ -127,6 +127,13 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
         r.readAsDataURL(f);
         return;
       }
+      // Let's Create needs raw audio (Transcribe) — keep it as a usable attachment, not a "binary" note.
+      if (mode === "create" && (((f.type || "").startsWith("audio/")) || /\.(mp3|wav|ogg|m4a|flac|aac|opus|webm)$/i.test(lower))) {
+        const r = new FileReader();
+        r.onload = () => setFiles((prev) => [...prev, { name: f.name || "audio", audio: true, dataUrl: String(r.result || "") }]);
+        r.readAsDataURL(f);
+        return;
+      }
       if (/\.(xlsx|xls)$/i.test(lower)) {
         // Real spreadsheet support: parse to CSV per sheet so the model can reason over it.
         const buf = await f.arrayBuffer();
@@ -206,7 +213,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
     const t = text.trim();
     if ((!t && files.length === 0 && !skill) || busy) return;
     const textFiles = files.filter((f) => !f.image);
-    const images = files.filter((f) => f.image).map((f) => ({ name: f.name, dataUrl: f.dataUrl }));
+    const images = files.filter((f) => f.image || (mode === "create" && f.audio)).map((f) => ({ name: f.name, dataUrl: f.dataUrl, kind: f.audio ? "audio" : "image" }));
     // Wrap each attached file in begin/end markers and place them AFTER the user's text.
     // The model still receives the full content; the chat bubble (Message.jsx) collapses
     // each marked block into a compact 📎 chip so the file body never floods the view.
@@ -292,7 +299,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
   };
   // Per-process "Use Agents" toggle. On → Madav may delegate to your agent roster (multi-agent
   // handoffs). Off → a direct plain-text answer. Default: on everywhere except plain chat.
-  const agentsOnHere = () => { const su = surfaceOf(); const v = agentSurfaces[su]; return v != null ? v !== false : su !== "chat"; };
+  const agentsOnHere = () => { const su = surfaceOf(); const v = agentSurfaces[su]; return v != null ? v !== false : (su !== "chat" && su !== "create"); };
   const toggleAgents = async () => {
     try { const su = surfaceOf(); const next = !agentsOnHere();
       const cfg = await bridge.getSettings(); const map = { ...(cfg.agentSurfaces || {}), [su]: next };
@@ -449,6 +456,7 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
             {menuOpen && (
               <div className="plus-menu">
                 <button className="plus-item" onClick={pickFiles}><Paperclip size={15} /> Add files or photos <span className="kbd">Ctrl+U</span></button>
+                {mode !== "create" && (<>
                 <button className="plus-item" onClick={() => { setMenuOpen(false); setText((v) => (v ? v + " @" : "@")); setAtOpen(true); setAtQuery(""); setAtIdx(0); loadConnectors(); ref.current && ref.current.focus(); }}><AtSign size={15} /> Mention file / connector <span className="kbd">@</span></button>
                 <button className="plus-item" onClick={() => { setMenuOpen(false); setGhOpen(true); }}><Github size={15} /> Add from GitHub</button>
                 <div className="plus-sep" />
@@ -501,6 +509,8 @@ export default function Composer({ mode, busy, onSend, onStop, onNavigate, onNew
                   </button>
                   <HelpDot mode="chat" section="deepresearch" />
                 </div>
+                </>)}
+                {mode === "create" && <div className="plus-sep" />}
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <button className="plus-item" style={{ flex: 1 }} onClick={toggleAgents} title="Use Agents — let Madav delegate to your agent roster (multi-agent handoffs). Off = a direct plain-text answer for this process.">
                     <Users size={15} /> Use Agents

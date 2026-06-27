@@ -10,6 +10,8 @@ import { isVisionModel } from "../modelCost.js";
 import { PermissionPicker } from "./Topbar.jsx";
 import MadavMark from "./MadavMark.jsx";
 import HelpDot from "./HelpDot.jsx";
+import Composer from "./Composer.jsx";
+import EnvPicker from "./EnvPicker.jsx";
 
 const CAPS = [
   { id: "image", label: "Image", icon: ImageIcon, placeholder: "a neon koi gliding through glowing clouds, watercolor" },
@@ -153,13 +155,24 @@ export default function LetsCreate({ onNavigate }) {
     setBusy(false);
   };
 
-  const onCreate = () => {
+  // The shared Composer owns the input + attachments and calls this on send. Route by the active capability
+  // tile; programmatic edits (the "Edit" result action) arrive via the `attach` fallback. Agents = the +-menu toggle.
+  const handleCreate = async (text, images) => {
     if (busy) return;
-    if (agentsOn) { if (prompt.trim()) { runAgent(prompt.trim()); setPrompt(""); setAttach(null); } return; }
-    if (cap === "transcribe") { if (attach) { runTurn({ cap, prompt: "", attach }); setAttach(null); } return; }
-    if (cap === "describe") { if (attach && attach.kind === "image") { runTurn({ cap, prompt: prompt.trim(), attach }); setPrompt(""); setAttach(null); } return; }
-    if (!prompt.trim()) return;
-    runTurn({ cap, prompt: prompt.trim(), attach }); setPrompt(""); setAttach(null);
+    const list = images || [];
+    const ci = list.find((a) => a.kind !== "audio");
+    const ca = list.find((a) => a.kind === "audio");
+    const toAtt = (a, kind) => { const m = /^data:([^;]+);base64,(.*)$/.exec((a && a.dataUrl) || ""); return m ? { kind, b64: m[2], mime: m[1], name: a.name } : null; };
+    const imgAtt = (ci && toAtt(ci, "image")) || (attach && attach.kind === "image" ? attach : null);
+    const audAtt = (ca && toAtt(ca, "audio")) || (attach && attach.kind === "audio" ? attach : null);
+    let useAgents = false; try { const cfg = await bridge.getSettings(); useAgents = !!(cfg && cfg.agentSurfaces && cfg.agentSurfaces.create); } catch {}
+    setAttach(null);
+    if (useAgents) { if (text.trim()) runAgent(text.trim()); return; }
+    if (cap === "transcribe") { if (audAtt) runTurn({ cap, prompt: "", attach: audAtt }); return; }
+    if (cap === "describe") { if (imgAtt) runTurn({ cap, prompt: text.trim(), attach: imgAtt }); return; }
+    if (cap === "image" && imgAtt) { runTurn({ cap, prompt: text.trim(), attach: imgAtt }); return; }
+    if (!text.trim()) return;
+    runTurn({ cap, prompt: text.trim(), attach: null });
   };
   const runStarter = (s) => { setCap(s.cap); runTurn({ cap: s.cap, prompt: s.text }); };
   const animate = (turn) => runTurn({ cap: "video", prompt: (turn.prompt || "this scene") + ", gentle natural motion", attach: { kind: "image", b64: turn.result.b64, mime: turn.result.mime, name: "frame.png" } });
@@ -331,44 +344,16 @@ export default function LetsCreate({ onNavigate }) {
         <div className="lc2-caps">
           {CAPS.map((c) => <button key={c.id} className={"lc2-cap " + (cap === c.id ? "on" : "")} onClick={() => { setCap(c.id); setAttach(null); }}><c.icon size={15} /> {c.label}</button>)}<HelpDot mode="letscreate" section="capabilities" />
         </div>
-        <div className="lc2-inputrow">
-          <div className="lc2-plus-wrap">
-            <button className="lc2-plus" onClick={() => setPlusOpen((o) => !o)} title="Add files or photos"><Plus size={18} /></button>
-            {plusOpen ? (
-              <div className="lc2-plus-menu" onMouseLeave={() => setPlusOpen(false)}>
-                <label className="lc2-plus-item"><ImageIcon size={15} /> Add files or photos<input type="file" accept="image/*" hidden onChange={(e) => { onPickImage(e); setPlusOpen(false); }} /></label>
-                {folder && (cap === "transcribe" || cap === "describe" || cap === "image") ? <button className="lc2-plus-item" onClick={() => { setPlusOpen(false); openFolderFiles(); }}><FolderGit2 size={15} /> From your folder…</button> : null}
-                <button className="lc2-plus-item" onClick={() => { setAgentsOn((a) => !a); setPlusOpen(false); }}><Bot size={15} /> {agentsOn ? "Agents · on" : "Use Agents"}</button>
-              </div>
-            ) : null}
-            {ffOpen ? (
-              <div className="lc2-plus-menu" style={{ maxHeight: 300, overflowY: "auto" }} onMouseLeave={() => setFfOpen(false)}>
-                {folderFiles.length ? folderFiles.map((f) => <button key={f.name} className="lc2-plus-item" onClick={() => pickFromFolder(f.name)}>{f.name}</button>) : <div style={{ padding: "8px 10px", fontSize: 12, color: "var(--text-2)" }}>No {cap === "transcribe" ? "audio" : "image"} files in this folder.</div>}
-              </div>
-            ) : null}
-          </div>
-          {attach ? <span className="lc2-attachchip"><ImageIcon size={13} /> {attach.name} <X size={12} onClick={() => setAttach(null)} /></span> : null}
-          {cap === "transcribe" ? (
-            <label className="lc2-filebtn"><Upload size={15} /> {attach ? attach.name : "Choose an audio file…"}<input type="file" accept="audio/*" hidden onChange={onPickAudio} /></label>
-          ) : (
-            <>
-              {(cap === "image" || cap === "describe") ? <label title={cap === "describe" ? "Pick an image to describe" : "Edit an image"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 9, border: "1px solid var(--line)", color: "var(--text-1)", cursor: "pointer", flex: "none", alignSelf: "flex-end" }}><ImageIcon size={16} /><input type="file" accept="image/*" hidden onChange={onPickImage} /></label> : null}
-              <textarea className="lc2-prompt" rows={2} placeholder={cap === "image" && attach && attach.kind === "image" ? "describe the change — e.g. make it sunset colours, add snow" : active.placeholder} value={prompt}
-                onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onCreate(); } }} />
-            </>
-          )}
-          <button className="lc2-create" onClick={onCreate} disabled={busy || (cap === "transcribe" || cap === "describe" ? !attach : !prompt.trim())}>
-            {busy ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />} <span>Create</span>
-          </button>
-        </div>
+        {attach ? <div className="lc2-editchip"><ImageIcon size={13} /> {attach.kind === "audio" ? "Audio" : "Editing your image"} · {attach.name} <X size={12} style={{ cursor: "pointer" }} onClick={() => setAttach(null)} /></div> : null}
+        <Composer mode="create" busy={busy} onSend={handleCreate} onStop={() => setBusy(false)} onPickFolder={pickFolder} cwd={folder} />
         <div className="lc2-dock">
-          <button className="lc2-dockchip" onClick={pickFolder} title="Pick a folder to manage and process files"><FolderGit2 size={13} /> {folder ? folder.split(/[\\/]/).pop() : "Select Folder"} <ChevronDown size={12} /></button><HelpDot mode="letscreate" section="folder" />
+          <EnvPicker cwd={folder} onPickFolder={pickFolder} onUseFolder={() => {}} onAddRepoUrl={() => {}} github={false} />
+          <HelpDot mode="letscreate" section="folder" />
           <div className="lc2-mp">
             <button className="lc2-dockchip" onClick={() => setMpOpen((o) => !o)} disabled={!relModels.length} title="Model used for this creation">{relModels.length ? prettyLocalName(chosenModel(relModels)) : "No model"} <ChevronDown size={12} /></button>
             {mpOpen ? <div className="lc2-mp-menu" onMouseLeave={() => setMpOpen(false)}>{relModels.map((m) => { const sel = chosenModel(relModels) === m.name; return <div key={m.name} className={"lc2-mp-row" + (sel ? " sel" : "")} onClick={() => { setPickedModel(m.name); setMpOpen(false); }}><span>{prettyLocalName(m.name)} <span className="lc2-mp-hint">{capHint(m.name)}</span></span>{sel ? <Check size={14} /> : null}</div>; })}</div> : null}
           </div>
           <PermissionPicker value={perm} onChange={setPerm} />
-          <button className={"lc2-dockchip" + (agentsOn ? " on" : "")} onClick={() => setAgentsOn((a) => !a)} title="Turn one prompt into an autonomous multi-step creation"><Bot size={13} /> Agents</button><HelpDot mode="letscreate" section="agents" />
         </div>
         {!haveModel ? (<div className="lc2-needmodel">No {capLabel(cap)} model yet — {pullProg ? <span><Loader2 size={12} className="spin" /> {pullProg.error || ("pulling " + (pullProg.name ? prettyLocalName(pullProg.name) : "a model") + "… " + (pullProg.pct || 0) + "%")}</span> : <><button className="lc2-link" onClick={() => pullStarter(cap)}>pull a starter one</button> or <button className="lc2-link" onClick={goModels}>browse in Local Models</button>.</>}</div>) : null}
       </div>
