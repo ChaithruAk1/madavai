@@ -3465,7 +3465,7 @@ textarea.model-search { border-radius: 14px; }
 .lc2-errcard svg { color: var(--danger); vertical-align: -2px; }
 
 .lc2-composer { padding: 6px 0 14px; background: transparent; }
-.lc2-composer .composer-wrap { max-width: 720px; margin: 0 auto; padding-left: 0; padding-right: 0; }
+.lc2-composer .composer-wrap { max-width: 720px; margin: 0 auto; }
 .lc2-caps { display: flex; justify-content: center; flex-wrap: wrap; gap: 7px; margin: 0 auto 10px; max-width: 720px; }
 .lc2-editchip { display: flex; align-items: center; gap: 6px; width: max-content; max-width: 720px; margin: 0 auto 6px; font-size: 12px; color: var(--text-1); background: var(--bg-1); border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; }
 .lc2-cap { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg-1); color: var(--text-1); font-size: 13px; cursor: pointer; transition: border-color .14s, color .14s, background .14s; }
