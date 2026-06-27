@@ -37,6 +37,7 @@ const STARTER_RE = {
 };
 const isSTT = (n) => /(whisper|\bstt\b|\basr\b|transcrib)/i.test(String(n || ""));
 const isMusic = (n) => /(musicgen|audiocraft|\bmusic\b|stable-?audio)/i.test(String(n || ""));
+const isTTS = (n) => /(\btts\b|text-?to-?speech|piper|xtts|\bbark\b|kokoro|parler|\bvits\b|tacotron|speecht5|coqui)/i.test(String(n || ""));
 const capLabel = (c) => (c === "voice" ? "voice" : c === "video" ? "video" : c === "transcribe" ? "transcription" : "image");
 const AGENT_PLANNER = "You plan a small local creative studio. Tools: image (text->image), video (text->short video, can start from a previous image), voice (text->speech), music (text->instrumental music), describe (image->text). Given the user's request, reply with ONLY a JSON array of steps (no prose, no markdown fences). Each step = {\"cap\":\"image|video|voice|music|describe\",\"prompt\":\"concise prompt for this step\",\"from\": <0-based index of an earlier step whose generated image to feed in, or null>}. Rules: include only steps the user asked for; \"animate it\" or \"make a video of it\" => a video step whose from is the image step; \"describe it\" => a describe step whose from is the image step; keep it minimal, at most 6 steps.";
 
@@ -93,13 +94,14 @@ export default function LetsCreate({ onNavigate }) {
   const capHint = (name) => { const uc = ucFor(name).filter((u) => u !== "general"); if (uc.length) return uc.join(" · "); const mod = localModality(name); return mod === "text" ? "media" : mod; };
   const modelsFor = (c) => models.filter((m) => {
     const uc = ucFor(m.name); const mod = localModality(m.name);
-    const generic = uc.includes("general") || (!uc.length && mod === "text"); // an installed LocalAI model we can't classify -> let the user pick it for any capability
-    if (c === "image") return uc.includes("image") || mod === "image" || generic;
-    if (c === "video") return uc.includes("video") || mod === "video" || generic;
-    if (c === "describe") return uc.includes("image") || isVisionModel(m.name) || generic;
-    if (c === "music") return generic || ((uc.includes("voice") || mod === "voice") && isMusic(m.name));
-    if (c === "transcribe") return generic || ((uc.includes("voice") || mod === "voice") && isSTT(m.name));
-    return generic || ((uc.includes("voice") || mod === "voice") && !isSTT(m.name) && !isMusic(m.name)); // voice (TTS)
+    // Only POSITIVELY-classified media models per tile — NO generic text-model fallback. That fallback let every
+    // unclassified chat model through, so a tile could default to e.g. "Gemmable", which can't generate media.
+    if (c === "image") return uc.includes("image") || mod === "image";
+    if (c === "video") return uc.includes("video") || mod === "video";
+    if (c === "describe") return isVisionModel(m.name);
+    if (c === "music") return isMusic(m.name);
+    if (c === "transcribe") return isSTT(m.name);
+    return (isTTS(m.name) || uc.includes("voice") || mod === "voice") && !isSTT(m.name) && !isMusic(m.name); // voice (TTS)
   }).sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
   const friendlyErr = (c, modelName, err) => {
@@ -325,7 +327,7 @@ export default function LetsCreate({ onNavigate }) {
                 <span>{turn.cap === "transcribe" ? ("Transcribe " + ((turn.attach && turn.attach.name) || "audio")) : turn.cap === "describe" ? (turn.prompt || "Describe this image") : turn.prompt}</span>
               </div>
               <div className="lc2-reply">
-                <div className="lc2-av"><Sparkles size={15} /></div>
+                <div className="lc2-av"><MadavMark size={26} /></div>
                 <div className="lc2-result">
                   {turn.status === "running" ? (
                     <div className={"lc2-gen lc2-gen-" + turn.cap}><div className="lc2-shim" /><div style={{ position: "relative", textAlign: "center" }}><div className="lc2-genlabel"><Loader2 size={14} className="spin" /> {turn.cap === "plan" ? "Madav is planning the steps…" : "Madav is imagining…"}</div><div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 5 }}>{turn.cap === "video" ? "video can take a few minutes" : "first run loads the model — give it a moment"}</div></div></div>
