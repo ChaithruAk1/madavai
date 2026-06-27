@@ -24,7 +24,7 @@ export function PermissionPicker({ value, onChange }) {
   const Icon = cur.icon;
   return (
     <div className="model-picker perm-picker" ref={ref}>
-      <button className="model-btn" onClick={() => setOpen((o) => !o)} title={`Permission mode — currently: ${cur.label} (${cur.desc})`}>
+      <button className="model-btn tipbtn" onClick={() => setOpen((o) => !o)} data-tip={`Permission: ${cur.label}`} aria-label={`Permission mode: ${cur.label}`}>
         <Icon size={14} /> <ChevronDown size={13} />
       </button>
       {open && (

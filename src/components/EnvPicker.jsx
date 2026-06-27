@@ -78,8 +78,8 @@ export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl
 
   return (
     <div className="env-picker">
-      <button className="chip" onClick={() => setOpen((o) => !o)} title={cwd ? "Folder: " + cwd.split(/[\\/]/).pop() : "Select Folder"}>
-        <FolderGit2 size={14} /> <ChevronDown size={12} />
+      <button className="chip tipbtn" onClick={() => (github ? setOpen((o) => !o) : onPickFolder())} data-tip={cwd ? "Folder: " + cwd.split(/[\\/]/).pop() : "Select Folder"} aria-label="Select folder">
+        <FolderGit2 size={14} />{github ? <ChevronDown size={12} /> : null}
       </button>
       <HelpDot mode="cowork" section="folder" />
       {open && (
