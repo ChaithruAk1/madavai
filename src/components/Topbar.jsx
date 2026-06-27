@@ -25,7 +25,7 @@ export function PermissionPicker({ value, onChange }) {
   return (
     <div className="model-picker perm-picker" ref={ref}>
       <button className="model-btn" onClick={() => setOpen((o) => !o)} title={`Permission mode — currently: ${cur.label} (${cur.desc})`}>
-        <Icon size={13} /> Permission <ChevronDown size={14} />
+        <Icon size={14} /> <ChevronDown size={13} />
       </button>
       {open && (
         <div className="model-menu" style={{ width: 280 }}>

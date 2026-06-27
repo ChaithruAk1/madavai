@@ -78,8 +78,8 @@ export default function EnvPicker({ cwd, onPickFolder, onUseFolder, onAddRepoUrl
 
   return (
     <div className="env-picker">
-      <button className="chip" onClick={() => setOpen((o) => !o)} title="Select the folder (or repo) to work in">
-        <FolderGit2 size={13} /> {cwd ? cwd.split(/[\\/]/).pop() : "Select Folder"} <ChevronDown size={12} />
+      <button className="chip" onClick={() => setOpen((o) => !o)} title={cwd ? "Folder: " + cwd.split(/[\\/]/).pop() : "Select Folder"}>
+        <FolderGit2 size={14} /> <ChevronDown size={12} />
       </button>
       <HelpDot mode="cowork" section="folder" />
       {open && (
