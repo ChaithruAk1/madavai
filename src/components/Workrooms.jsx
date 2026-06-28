@@ -9,7 +9,7 @@
 // Engine contract: project.{identity,agentIds} (projects-store), assign/unassign IPC,
 // runs tagged projectId, getProjectAgentHistory for the room record.
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Trash2, Pencil, FileText, FileUp, MessageSquare, Github, FolderInput, RefreshCw, Search, ArrowUpDown, ArrowLeft, Users, UserPlus, Hammer, BookOpen, Sparkles, Share2, Upload, X, Maximize2, LayoutGrid, List, Plug, GraduationCap, Play, BookOpen as BookIcon, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check, Archive, ListChecks, Copy, FileStack } from "lucide-react";
+import { Plus, Trash2, Pencil, FileText, FileUp, MessageSquare, Github, FolderInput, RefreshCw, Search, ArrowUpDown, ArrowLeft, Users, UserPlus, Hammer, BookOpen, Sparkles, Share2, Upload, X, Maximize2, LayoutGrid, List, Plug, GraduationCap, Play, BookOpen as BookIcon, Compass, Target, ShieldCheck, ShieldAlert, ArrowRight, Check, Archive, ListChecks, Copy, FileStack, Loader2, AlertTriangle} from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
 import { bridge } from "../bridge/index.js";
 import { madavAlert, madavConfirm, madavPrompt } from "../dialogs.jsx";
@@ -206,6 +206,8 @@ function moodFor(agentId, roomHist) {
 
 export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTask, onPutToWork, onPutTeamToWork, openId, groups, activeValue, onSelectModel, onRefresh }) {
   const [rooms, setRooms] = useState([]);
+  const [roomsLoading, setRoomsLoading] = useState(true);
+  const [roomsErr, setRoomsErr] = useState(false);
   const [agents, setAgents] = useState([]);      // full roster from settings
   const [teams, setTeams] = useState([]);        // saved teams from settings
   const [layout, setLayout] = useState(lsGet("be.wr.layout", "rows")); // rows | tiles
@@ -246,7 +248,7 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
       setSessions([...(a || []), ...(b || []), ...(c || [])]);
     } catch { setSessions([]); }
   };
-  const loadList = async () => setRooms(await bridge.listProjects());
+  const loadList = async () => { setRoomsErr(false); try { setRooms(await bridge.listProjects()); } catch { setRoomsErr(true); } finally { setRoomsLoading(false); } };
   useEffect(() => {
     loadList(); loadSessions();
     bridge.getSettings().then((s) => { setAgents(s.agents || []); setTeams(s.teams || []); }).catch(() => {});
@@ -1137,7 +1139,11 @@ export default function Workrooms({ onOpen, onStartChat, onStartCowork, onOpenTa
         </div>
       )}
 
-      {shown.length === 0 ? (
+      {roomsLoading ? (
+        <div className="surface-msg"><Loader2 size={16} className="spin" /> Loading…</div>
+      ) : roomsErr ? (
+        <div className="surface-msg err"><AlertTriangle size={15} /> Could not load your workrooms. <button className="btn ghost" onClick={loadList}>Try again</button></div>
+      ) : shown.length === 0 ? (
         <div className="pjd-files-empty" style={{ marginTop: 20 }}>No workrooms yet. Open one, brief it, shelve some knowledge, and staff a crew.</div>
       ) : (
         <div className={`wr-shelf ${layout === "tiles" ? "tiles" : ""}`}>

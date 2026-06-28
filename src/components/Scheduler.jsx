@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer, Webhook, Copy, Check, LayoutGrid, List, Folder, FolderPlus } from "lucide-react";
+import { Plus, Trash2, Play, Clock, FolderInput, Loader2, Search, ArrowUpDown, ChevronDown, X, Sparkles, Settings2, Coffee, ListChecks, Timer, Webhook, Copy, Check, LayoutGrid, List, Folder, FolderPlus, AlertTriangle} from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
 import { madavConfirm } from "../dialogs.jsx";
 import { bridge } from "../bridge/index.js";
@@ -45,6 +45,8 @@ const BLANK = { name: "", description: "", prompt: "", target: { type: "chat" },
 
 export default function Scheduler() {
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(false);
   const [projects, setProjects] = useState([]);
   const [agents, setAgents] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -87,7 +89,7 @@ export default function Scheduler() {
     setRunsFor({ task: t, runs });
   };
 
-  const load = async () => setTasks(await bridge.listTasks());
+  const load = async () => { setErr(false); try { setTasks(await bridge.listTasks()); } catch { setErr(true); } finally { setLoading(false); } };
   useEffect(() => {
     load();
     bridge.listProjects().then(setProjects);
@@ -211,7 +213,11 @@ export default function Scheduler() {
       </div>
 
       <div style={{ maxWidth: 1000 }}>
-        {shown.length === 0 ? (
+        {loading ? (
+          <div className="surface-msg"><Loader2 size={16} className="spin" /> Loading…</div>
+        ) : err ? (
+          <div className="surface-msg err"><AlertTriangle size={15} /> Could not load your scheduled tasks. <button className="btn ghost" onClick={load}>Try again</button></div>
+        ) : shown.length === 0 ? (
           <div className="sched-empty">
             <Timer size={56} strokeWidth={1.2} style={{ color: "var(--text-2)" }} />
             <div className="sched-empty-title">Create your first scheduled task</div>

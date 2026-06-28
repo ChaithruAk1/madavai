@@ -3646,3 +3646,8 @@ h1, h2, h3 { letter-spacing: var(--tr-head); }
 /* ---- Selection + keyboard focus use the distinct blue --selected (not the brand accent) ---- */
 ::selection { background: rgba(var(--selected-rgb), 0.28); }
 :focus-visible { outline: 2px solid var(--selected); outline-offset: 2px; }
+
+/* ---- Reusable data-surface states (loading / error) — one consistent look app-wide ---- */
+.surface-msg { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 44px 20px; color: var(--text-2); font-size: 13.5px; }
+.surface-msg.err { color: var(--danger); }
+.surface-msg .btn { margin-left: 4px; }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MessageSquare, Hash, Layers, CalendarDays, Flame, Clock, Cpu, Award, TrendingUp, DollarSign } from "lucide-react";
+import { MessageSquare, Hash, Layers, CalendarDays, Flame, Clock, Cpu, Award, TrendingUp, DollarSign, AlertTriangle } from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
 import Activity from "./Activity.jsx";
 import { bridge } from "../bridge/index.js";
@@ -12,8 +12,10 @@ const DONUT_COLORS = ["#13c2d6", "#6e7bff", "#22a06b", "#e8893a", "#d6597b", "#b
 export default function Consumption({ onOpenSession, onNavigate } = {}) {
   const [days, setDays] = useState(7);
   const [d, setD] = useState(null);
+  const [err, setErr] = useState(false);
+  const [nonce, setNonce] = useState(0);
   const [prices, setPrices] = useState(null); // model id -> { prompt, completion } USD per token (OpenRouter catalog)
-  useEffect(() => { let live = true; bridge.getUsage(days).then((x) => { if (live) setD(x); }); return () => { live = false; }; }, [days]);
+  useEffect(() => { let live = true; setErr(false); bridge.getUsage(days).then((x) => { if (live) setD(x); }).catch(() => { if (live) setErr(true); }); return () => { live = false; }; }, [days, nonce]);
   useEffect(() => { let live = true; bridge.getOpenRouterCatalog?.().then((c) => { if (live) setPrices(c || {}); }).catch(() => {}); return () => { live = false; }; }, []);
 
   // Estimated spend: tokens × blended per-token price for models we have real pricing on.
@@ -30,6 +32,10 @@ export default function Consumption({ onOpenSession, onNavigate } = {}) {
     }
     return { usd, pct: total ? Math.round((covered / total) * 100) : 0 };
   }, [d, prices]);
+
+  if (err) return (
+    <div className="surface-msg err"><AlertTriangle size={15} /> Couldn\u2019t load your usage. <button className="btn ghost" onClick={() => setNonce((n) => n + 1)}>Try again</button></div>
+  );
 
   if (!d) return (
     <div className="skel-page">

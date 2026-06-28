@@ -4,7 +4,7 @@
 // run on the model from the model selector (optionally pinned per agent — never an API key).
 // Backend contract unchanged: settings.agents store, bridge.completeOnce, onLaunch(agent, prompt).
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare, Minus, Smile, AppWindow } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Rocket, FolderOpen, TerminalSquare, Plug, Puzzle, Check, Loader2, ArrowUp, Cpu, Send, RotateCcw, Wand2, FlaskConical, Hammer, Users, User, Zap, GitMerge, BookOpen, ArrowRight, Play, Brain, History, Download, Upload, Layers, X, BadgeCheck, Clock, MessageCircleQuestion, Globe, Target, ShieldCheck, ShieldAlert, GraduationCap, Compass, LayoutGrid, List, Folder, FolderPlus, Radar, Moon, UserPlus, MessagesSquare, Minus, Smile, AppWindow, AlertTriangle} from "lucide-react";
 import HelpDot from "./HelpDot.jsx";
 import Portrait from "./Portrait.jsx";
 import { SAGE_IMG_LOOKS, loadCustomLooks } from "./sageImageLooks.js";
@@ -589,6 +589,8 @@ const SOURCE_LABEL = { chat: "chat", team: "team", schedule: "scheduled", webhoo
 
 export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, activeValue, onSelectModel, onRefresh, openAgentId, onOpenedAgent }) {
   const [agents, setAgents] = useState([]);
+  const [agentsLoading, setAgentsLoading] = useState(true);
+  const [agentsErr, setAgentsErr] = useState(false);
   const [teams, setTeams] = useState([]);
   const [recentRuns, setRecentRuns] = useState([]); // past agent/team conversations (scoped to this screen)
   const [browserOn, setBrowserOn] = useState(true); // admin master switch for the Agent Browser feature
@@ -983,14 +985,14 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
           try { const cur = await bridge.getSettings(); await bridge.saveSettings({ ...cur, agentGroups: groupsArr, agents: agentsArr }); } catch {}
         })();
       }
-      setAgents(agentsArr);
+      setAgents(agentsArr); setAgentsLoading(false);
       setTeams((s && s.teams) || []);
       setAgentGroups(groupsArr);
       const admin = !!(me && me.admin) || !!(s && s.account && s.account.admin);
       setIsCreator(admin);
       // Admins always keep the Browser capability; others lose it when the master switch is off.
       setBrowserOn(admin || !s || !s.agentBrowser || s.agentBrowser.enabled !== false);
-    }).catch(() => {});
+    }).catch(() => { setAgentsErr(true); setAgentsLoading(false); });
   }, []);
   // Track record: per-agent mission stats power the "12 missions · 92% clean" line.
   const loadStats = () => { if (bridge.getAgentStats) bridge.getAgentStats().then((x) => setStats(x || {})).catch(() => {}); };
@@ -2260,7 +2262,9 @@ export default function Agents({ onLaunch, onLaunchTeam, onOpenSession, groups, 
 
         {swarmAgent && <SwarmModal agent={swarmAgent} onClose={() => { setSwarmAgent(null); loadStats(); }} />}
 
-        {tab === "agents" && agents.length === 0 && (
+        {tab === "agents" && agentsLoading && (<div className="surface-msg"><Loader2 size={16} className="spin" /> Loading…</div>)}
+        {tab === "agents" && agentsErr && (<div className="surface-msg err"><AlertTriangle size={15} /> Could not load your agents. <button className="btn ghost" onClick={() => location.reload()}>Try again</button></div>)}
+        {tab === "agents" && !agentsLoading && !agentsErr && agents.length === 0 && (
           <div className="ags-crew">
             <div className="ags-crew-head">…or hire from the crew</div>
             {PERSONA_CATS.map((cat) => (
