@@ -349,7 +349,7 @@ export default function LocalModels({ onChanged, onRefresh, onActivate, activeVa
         <tr className={(r.installed ? "lmt-on " : "") + "lmt-row"} onClick={() => setExpandedRow(open ? null : r.pullName)}>
           <td className="lmt-ck" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="mo-cmpck" title="Compare (up to 4)" checked={cmp.has(r.pullName)} disabled={!cmp.has(r.pullName) && cmp.size >= 4} onChange={() => toggleCmp(r)} /></td>
           <td><div className="lmt-name">{r.installed ? <CheckCircle2 size={13} style={{ color: "#3fb950", flex: "none" }} /> : null}<ChevronRight size={12} className={"lmt-caret" + (open ? " open" : "")} /> {prettyLocalName(r.name || r.pullName)}</div><div className="lmt-maker"><MakerLogo maker={mk.key} /> {mk.label}</div></td>
-          <td><div className="lmt-caps">{ucs.map((u) => { const M = UC_META[u] || { tone: "#9aa4b2" }; const I = M.icon; return <span key={u} className="lmt-cap" style={{ color: M.tone }}>{I ? <I size={11} /> : null} {u}</span>; })}</div></td>
+          <td><div className="lmt-caps">{ucs.map((u) => { const M = UC_META[u] || { tone: "#9aa4b2" }; const I = M.icon; return <span key={u} className="lmt-cap">{I ? <I size={11} style={{ color: M.tone }} /> : null} {u}</span>; })}</div></td>
           <td className="lmt-nowrap">{size}</td>
           <td className="lmt-nowrap lmt-dim">{ctxOf(r.name || r.pullName)}</td>
           <td className="lmt-nowrap lmt-dim">{paramsOf(r.name || r.pullName)}</td>

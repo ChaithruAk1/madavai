@@ -7,7 +7,7 @@ import { bridge } from "../bridge/index.js";
 const RANGES = [{ label: "7 days", days: 7 }, { label: "30 days", days: 30 }, { label: "All time", days: 0 }];
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(Math.round(n || 0)));
 const shortModel = (s) => { const x = String(s || ""); const i = x.lastIndexOf("/"); return i >= 0 ? x.slice(i + 1) : x; };
-const DONUT_COLORS = ["#13c2d6", "#6e7bff", "#22a06b", "#e8893a", "#d6597b", "#b88cff", "#2b8fd6", "#e0433f"];
+const DONUT_COLORS = ["#d97a56", "#6e7bff", "#22a06b", "#e8893a", "#d6597b", "#b88cff", "#2b8fd6", "#e0433f"];
 
 export default function Consumption({ onOpenSession, onNavigate } = {}) {
   const [days, setDays] = useState(7);

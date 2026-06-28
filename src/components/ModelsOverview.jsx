@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, Fragment } from "react";
-import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench, Scale, Gauge, Gift, Cpu, Layers, ChevronRight, Code2, Cloud, HardDrive } from "lucide-react";
+import { Check, X, Search, ChevronUp, ChevronDown, Download, Brain, Image as ImageIcon, ScrollText, Bot, Wrench, Scale, Gauge, Gift, Cpu, Layers, ChevronRight, Code2, Cloud, HardDrive, AlertTriangle} from "lucide-react";
 import { MODELS, CATEGORIES, freeInfo } from "../data/modelCatalog.js";
 import { classifyProvider, isModelFree, classify } from "../data/providerRules.js";
 import { benchFor, AGENTIC_RANK, agenticTone, thinkingTone } from "../data/benchmarks.js";
@@ -260,6 +260,8 @@ export default function ModelsOverview({ activeModel }) {
   const [expanded, setExpanded] = useState(null); // row name expanded inline (learn without leaving the screen)
   const [cmp, setCmp] = useState(() => new Set()); // models picked for side-by-side compare (max 4)
   const [cmpOpen, setCmpOpen] = useState(false);
+  const [cfgErr, setCfgErr] = useState(false);
+  const [cfgNonce, setCfgNonce] = useState(0);
   const toggleCmp = (name) => setCmp((s) => { const n = new Set(s); if (n.has(name)) n.delete(name); else if (n.size < 4) n.add(name); return n; });
   const copy = (text, label) => { try { navigator.clipboard.writeText(text); setCopied(label); setTimeout(() => setCopied(""), 1400); } catch {} };
 
@@ -290,7 +292,7 @@ export default function ModelsOverview({ activeModel }) {
     return () => { document.removeEventListener("click", close); document.removeEventListener("keydown", onKey); };
   }, [dlMenu]);
 
-  useEffect(() => { bridge.getSettings().then(setCfg).catch(() => {}); }, []);
+  useEffect(() => { setCfgErr(false); bridge.getSettings().then(setCfg).catch(() => setCfgErr(true)); }, [cfgNonce]);
   useEffect(() => {
     if (cfg && Object.values(cfg.profiles || {}).some((p) => /openrouter/i.test(p.baseUrl || "")) && bridge.getOpenRouterCatalog) {
       bridge.getOpenRouterCatalog().then(setOrCat).catch(() => {});
@@ -443,6 +445,12 @@ export default function ModelsOverview({ activeModel }) {
           </p>
         </div>
       </div>
+
+      {cfgErr && (
+        <div className="surface-msg err" style={{ padding: "12px 14px", justifyContent: "flex-start", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", margin: "0 0 14px" }}>
+          <AlertTriangle size={15} /> Could not load your providers — showing built-in models only. <button className="btn ghost" onClick={() => setCfgNonce((n) => n + 1)}>Try again</button>
+        </div>
+      )}
 
       {/* Insight band — every tile is a live stat AND a one-click filter */}
       <div className="mo-tiles">
