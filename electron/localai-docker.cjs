@@ -68,40 +68,61 @@ async function localaiStatus() {
 
 async function installDocker() { await shell.openExternal("https://www.docker.com/products/docker-desktop/"); return { ok: true, opened: true }; }
 
+// Create the engine container (with an auto-restart policy) and stream image-pull progress.
+function createContainer(prog) {
+  return new Promise((res) => {
+    prog("pulling", 0, "preparing the engine image (a few GB, one time)…");
+    let total = 0, done = 0;
+    const p = spawn("docker", ["run", "-d", "--restart", "unless-stopped", "--name", CONTAINER, "-p", PORT + ":" + PORT, "-v", "madav_localai_models:/models", IMAGE], { windowsHide: true });
+    const onData = (buf) => String(buf).split(/\r?\n/).forEach((line) => {
+      if (/Pulling fs layer/i.test(line)) total++;
+      if (/Pull complete/i.test(line)) done++;
+      const pct = total ? Math.min(99, Math.round((done / total) * 100)) : 0;
+      if (line.trim()) prog("pulling", pct, line.trim().slice(0, 90));
+    });
+    p.stderr.on("data", onData); p.stdout.on("data", onData);
+    p.on("error", () => res()); p.on("close", () => res());
+  });
+}
+
+// ONE button does everything. Ensure Docker is up, then bring the engine container up no matter its prior
+// state (running, stopped, crashed/exited, or missing): start or create it, give it an auto-restart policy so a
+// reboot/Docker restart never leaves it down again (covers pre-existing containers too), and if it exits right
+// after starting (a bad boot), rebuild it ONCE — the model volume is kept, so nothing is lost. The user just
+// clicks Set up and waits; no terminal, no docker commands.
 async function startLocalAi(onProgress) {
   const prog = (phase, pct, line) => { try { onProgress && onProgress({ phase, pct, line }); } catch {} };
   const ds = await dockerStatus();
-  if (!ds.installed) { await installDocker(); return { ok: false, needsDocker: true, opened: true, note: "Install Docker Desktop (we opened the page), then click Start again." }; }
+  if (!ds.installed) { await installDocker(); return { ok: false, needsDocker: true, opened: true, note: "Install Docker Desktop (we opened the page), then click Set up again." }; }
   if (!ds.running) {
     prog("docker", 5, "Starting Docker Desktop…");
     launchDocker();
     let up = false;
-    for (let i = 0; i < 45; i++) { const s = await dockerStatus(); if (s.running) { up = true; break; } prog("docker", Math.min(40, 5 + i), "Waiting for Docker to start… (the first start can take a minute)"); await sleep(2000); }
-    if (!up) return { ok: false, dockerNotRunning: true, note: "Docker Desktop is starting up — give it a minute to finish, then click Set up LocalAI again." };
+    for (let i = 0; i < 60; i++) { const s = await dockerStatus(); if (s.running) { up = true; break; } prog("docker", Math.min(40, 5 + i), "Waiting for Docker to start… (the first start can take a minute)"); await sleep(2000); }
+    if (!up) return { ok: false, dockerNotRunning: true, note: "Docker Desktop is still starting — give it a minute, then click Set up again." };
   }
   if (await apiUp("/readyz")) { prog("ready", 100); return { ok: true, already: true }; }
 
   const st = await localaiStatus();
-  if (st.container === "stopped") { prog("starting", 50); await run("docker", ["start", CONTAINER]); }
-  else if (st.container === "absent") {
-    prog("pulling", 0, "preparing the engine image (a few GB, one time)…");
-    let total = 0, done = 0;
-    await new Promise((res) => {
-      const p = spawn("docker", ["run", "-d", "--name", CONTAINER, "-p", PORT + ":" + PORT, "-v", "madav_localai_models:/models", IMAGE], { windowsHide: true });
-      const onData = (buf) => String(buf).split(/\r?\n/).forEach((line) => {
-        if (/Pulling fs layer/i.test(line)) total++;
-        if (/Pull complete/i.test(line)) done++;
-        const pct = total ? Math.min(99, Math.round((done / total) * 100)) : 0;
-        if (line.trim()) prog("pulling", pct, line.trim().slice(0, 90));
-      });
-      p.stderr.on("data", onData); p.stdout.on("data", onData);
-      p.on("error", () => res()); p.on("close", () => res());
-    });
-  }
+  if (st.container === "stopped") { prog("starting", 45, "Starting the media engine…"); await run("docker", ["start", CONTAINER]); }
+  else if (st.container === "absent") { await createContainer(prog); }
+  await run("docker", ["update", "--restart", "unless-stopped", CONTAINER]); // survive reboots, incl. pre-existing containers
+
+  let recreated = false;
   for (let i = 0; i < 90; i++) { // first boot pulls the image + backends; can take a while
     if (await apiUp("/readyz")) { prog("ready", 100); return { ok: true }; }
+    if (!recreated && i >= 3 && (i % 4 === 0)) {            // exited again right after start = bad boot → rebuild once
+      const st2 = await localaiStatus();
+      if (st2.container === "stopped") {
+        recreated = true;
+        prog("repairing", 35, "Engine didn't start cleanly — rebuilding it (your models are kept)…");
+        await run("docker", ["rm", "-f", CONTAINER]);
+        await createContainer(prog);
+        await run("docker", ["update", "--restart", "unless-stopped", CONTAINER]);
+      }
+    }
     prog("booting", Math.min(95, 40 + i));
-    await new Promise((r) => setTimeout(r, 2000));
+    await sleep(2000);
   }
   return { ok: true, note: "LocalAI started; it may still be initializing in the background." };
 }
