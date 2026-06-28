@@ -3,7 +3,7 @@
 // Used where a square mark fits better than the full wordmark (hero greeting).
 // Animation (.mm in styles.css): soft fade-in, then a gentle breathing float.
 // prefers-reduced-motion renders it static.
-import mUrl from "../../madav-m2.png";
+import mUrl from "../../Logo/M1.png";
 
 export default function MadavMark({ size = 40, title = "Madav" }) {
   return (
