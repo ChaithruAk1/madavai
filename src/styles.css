@@ -26,7 +26,8 @@
   --selected-rgb: 37,99,235;
   --user: rgba(232,228,220,0.05);
   /* type scale (~1.25 ratio) + 3-weight system + tracking */
-  --fs-display: 50px; --fs-h1: 32px; --fs-h2: 23px; --fs-h3: 19px; --fs-body: 13.5px; --fs-small: 11.5px; --fs-caption: 10.5px;
+  --fs-scale: 1.05; /* global type-scale multiplier — change THIS one number to grow/shrink every font proportionally */
+  --fs-display: calc(50px * var(--fs-scale)); --fs-h1: calc(32px * var(--fs-scale)); --fs-h2: calc(23px * var(--fs-scale)); --fs-h3: calc(19px * var(--fs-scale)); --fs-body: calc(13.5px * var(--fs-scale)); --fs-small: calc(11.5px * var(--fs-scale)); --fs-caption: calc(10.5px * var(--fs-scale));
   --fw-body: 450; --fw-ui: 510; --fw-strong: 590;
   --tr-display: -0.03em; --tr-head: -0.02em; --tr-caps: 0.06em; --tr-small: 0.01em;
   --lh-tight: 1.12; --lh-body: 1.5;
