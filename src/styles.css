@@ -1539,9 +1539,10 @@ textarea.model-search { line-height: 1.5; }
 .app-body.sb-collapsed .sb-acct-menu { left: 64px; right: auto; bottom: 8px; width: 232px; }
 .sb-expand { display: flex; flex-direction: column; }
 
-.topnav { position: relative; height: 64px; flex: 0 0 64px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid transparent; background: transparent; backdrop-filter: none; }
-.tn-collapse { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg-1); color: var(--text-1); cursor: pointer; flex: 0 0 auto; transition: background .14s, color .14s; }
-.tn-collapse:hover { background: var(--bg-2); color: var(--text-0); }
+.topnav { position: relative; height: 74px; flex: 0 0 74px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid transparent; background: transparent; backdrop-filter: none; }
+.tn-collapse { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: none; background: transparent; color: var(--text-1); cursor: pointer; flex: 0 0 auto; transition: color .14s; }
+.tn-collapse:hover { color: var(--text-0); }
+.tn-left .mm { animation: none; opacity: 1; }
 /* Toggle + brand grouped on the far left. Brand hides when the sidebar is collapsed. */
 .tn-left { display: flex; align-items: center; gap: 10px; padding-left: 14px; flex: 0 0 auto; }
 /* When the sidebar is open, center the toggle + logo + wordmark as one unit within the 252px sidebar column. */
@@ -2966,7 +2967,7 @@ html, body { height: 100%; overflow: hidden; }
    Multi-line textareas keep their soft corners. (Appended via sandbox.) */
 input.model-search, select.model-search { border-radius: 999px; padding-left: var(--sp-4); padding-right: var(--sp-4); }
 textarea.model-search { border-radius: 14px; }
-.sb-search, .pj-search, .env-search, .mo-search, .ug-search, .spx-search, .ag-tpl-search, .ags-searchwrap, .ags-search { border-radius: 999px; }
+.sb-search, .pj-search, .env-search, .mo-search, .ug-search, .spx-search, .ag-tpl-search, .ags-searchwrap, .ags-search, .sc-search, .lm-search-in { border-radius: 999px; }
 .sk-create input.model-search { border-radius: 999px; }
 
 /* Light theme: no ambient accent glow behind the chat bar — the bar itself carries a
@@ -3344,7 +3345,7 @@ textarea.model-search { border-radius: 14px; }
 .lm-chip.sm { padding: 1px 6px; font-size: 10px; }
 .lm-search { display: flex; align-items: center; gap: var(--sp-2); position: relative; }
 .lm-search-ico { position: absolute; left: 11px; color: var(--text-2); pointer-events: none; }
-.lm-search-in { flex: 1; padding: 9px 12px 9px 34px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-1); color: var(--text-0); font-size: var(--fs-small); }
+.lm-search-in { flex: 1; padding: 9px 18px 9px 36px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-1); color: var(--text-0); font-size: var(--fs-small); }
 .lm-search-in:focus { outline: none; border-color: var(--accent); }
 .lm-err { display: flex; align-items: center; gap: 6px; color: var(--danger); font-size: var(--fs-small); }
 .lm-hint { color: var(--text-2); font-size: var(--fs-caption); }
@@ -3652,3 +3653,7 @@ h1, h2, h3 { letter-spacing: var(--tr-head); }
 .surface-msg { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 44px 20px; color: var(--text-2); font-size: var(--fs-small); }
 .surface-msg.err { color: var(--danger); }
 .surface-msg .btn { margin-left: var(--sp-1); }
+
+/* Collapsed rail: profile avatar shows bare (no box) */
+.app-body.sb-collapsed .sb-profile { border: none; background: transparent; padding: 0; justify-content: center; }
+.app-body.sb-collapsed .sb-profile:hover { background: transparent; }

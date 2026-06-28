@@ -130,7 +130,7 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
       <div className="tn-left">
         {sidebarOpen
           ? <div className="tn-brand"><div className="tn-brandtext"><MadavLogo height={52} /></div></div>
-          : <MadavMark size={34} />}
+          : <MadavMark size={42} />}
         <button className="tn-collapse" onClick={onToggleSidebar} title={(sidebarOpen ? "Collapse" : "Expand") + " sidebar (Ctrl+B)"}><PanelLeft size={18} /></button>
       </div>
 
