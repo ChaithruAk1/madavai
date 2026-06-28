@@ -12,6 +12,7 @@ import MadavMark from "./MadavMark.jsx";
 import HelpDot from "./HelpDot.jsx";
 import Composer from "./Composer.jsx";
 import EnvPicker from "./EnvPicker.jsx";
+import ModelPicker from "./ModelPicker.jsx";
 
 const CAPS = [
   { id: "image", label: "Image", icon: ImageIcon, placeholder: "a neon koi gliding through glowing clouds, watercolor" },
@@ -218,6 +219,8 @@ export default function LetsCreate({ onNavigate }) {
   const goModels = () => onNavigate && onNavigate("models-local");
   const haveModel = modelsFor(cap).length > 0;
   const relModels = modelsFor(cap);
+  // Feed the SHARED ModelPicker the media models relevant to the active capability tile (id = model name).
+  const mediaGroups = [{ group: "Let's Create Models · local", items: relModels.map((m) => ({ id: m.name, name: m.name, prov: "Let's Create Models", badge: "local", baseUrl: "http://localhost:8080/v1", kind: "openai", free: true })) }];
   const _h = new Date().getHours(); const _part = _h < 12 ? "morning" : _h < 18 ? "afternoon" : "evening";
   const greeting = who ? "Good " + _part + ", " + who : "Good " + _part;
   const pickFolder = async () => { try { const d = await bridge.chooseFolder(); const f = typeof d === "string" ? d : (d && (d.folder || d.path)); if (f) setFolder(f); } catch {} };
@@ -354,10 +357,7 @@ export default function LetsCreate({ onNavigate }) {
         <Composer mode="create" busy={busy} onSend={handleCreate} onStop={() => setBusy(false)} onPickFolder={pickFolder} cwd={folder} />
         <div className="model-dock">
           <EnvPicker cwd={folder} onPickFolder={pickFolder} onUseFolder={() => {}} onAddRepoUrl={() => {}} github={false} />
-          <div className="lc2-mp">
-            <button className="chip" onClick={() => setMpOpen((o) => !o)} disabled={!relModels.length} title="Model used for this creation" style={{ cursor: "pointer" }}>{relModels.length ? prettyLocalName(chosenModel(relModels)) : "No model"} <ChevronDown size={12} /></button>
-            {mpOpen ? <div className="lc2-mp-menu" onMouseLeave={() => setMpOpen(false)}>{relModels.map((m) => { const sel = chosenModel(relModels) === m.name; return <div key={m.name} className={"lc2-mp-row" + (sel ? " sel" : "")} onClick={() => { setPickedModel(m.name); setMpOpen(false); }}><span>{prettyLocalName(m.name)} <span className="lc2-mp-hint">{capHint(m.name)}</span></span>{sel ? <Check size={14} /> : null}</div>; })}</div> : null}
-          </div>
+          <ModelPicker compact value={chosenModel(relModels) || ""} groups={mediaGroups} onChange={(v) => setPickedModel(v === "auto" ? "" : v)} placeholder="No model" />
           <PermissionPicker value={perm} onChange={setPerm} />
         </div>
         {!haveModel ? (<div className="lc2-needmodel">No {capLabel(cap)} model yet — {pullProg ? <span><Loader2 size={12} className="spin" /> {pullProg.error || ("pulling " + (pullProg.name ? prettyLocalName(pullProg.name) : "a model") + "… " + (pullProg.pct || 0) + "%")}</span> : <><button className="lc2-link" onClick={() => pullStarter(cap)}>pull a starter one</button> or <button className="lc2-link" onClick={goModels}>browse in Local Models</button>.</>}</div>) : null}

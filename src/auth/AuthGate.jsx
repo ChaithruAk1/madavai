@@ -5,7 +5,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { LogIn, Wifi, ShieldX, RefreshCw, LogOut, Sparkles, CreditCard } from "lucide-react";
 import { bridge } from "../bridge/index.js";
-import MadavLogo from "../components/MadavLogo.jsx";
+import MadavMark from "../components/MadavMark.jsx";
 
 export default function AuthGate({ children }) {
   const [phase, setPhase] = useState("loading"); // loading|needLogin|offline|suspended|expired|ok
@@ -81,9 +81,8 @@ export default function AuthGate({ children }) {
     <div className="auth-screen">
       <div className="auth-card">
         <div className="auth-brand">
-          <div className="mm" style={{ textAlign: "center" }}>
-            <MadavLogo height={150} />
-          </div>
+          <MadavMark size={180} />
+          <div className="madav-tagline">built to think with you</div>
         </div>
 
         {phase === "loading" && <div className="auth-msg"><RefreshCw className="spin" size={18} /> Checking your account…</div>}
