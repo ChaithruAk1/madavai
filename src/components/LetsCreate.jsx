@@ -39,6 +39,8 @@ const STARTER_RE = {
 const isSTT = (n) => /(whisper|\bstt\b|\basr\b|transcrib)/i.test(String(n || ""));
 const isMusic = (n) => /(musicgen|audiocraft|\bmusic\b|stable-?audio)/i.test(String(n || ""));
 const isTTS = (n) => /(\btts\b|text-?to-?speech|piper|xtts|\bbark\b|kokoro|parler|\bvits\b|tacotron|speecht5|coqui)/i.test(String(n || ""));
+const isImageGen = (n) => /(stable-?diffusion|\bsdxl\b|\bsd-?xl\b|\bsd-?[0-9]|\bsd3\b|\bflux\b|dreamshaper|realvis|juggernaut|kandinsky|pixart|playground-v|lumina|\bsana\b|auraflow|wuerstchen|hidream|kolors|deepfloyd|\bdall-?e\b|text-?to-?image)/i.test(String(n || ""));
+const isVideoGen = (n) => /(\bwan2?\b|wan-?2|\bt2v\b|\bi2v\b|text-?to-?video|\bltx\b|ltxv|hunyuan|cogvideo|\bmochi\b|\bsvd\b|stable-?video|opensora|easyanimate|animatediff|\bveo\b|\bsora\b|sulphur|ltx-?video)/i.test(String(n || ""));
 const capLabel = (c) => (c === "voice" ? "voice" : c === "video" ? "video" : c === "transcribe" ? "transcription" : "image");
 const AGENT_PLANNER = "You plan a small local creative studio. Tools: image (text->image), video (text->short video, can start from a previous image), voice (text->speech), music (text->instrumental music), describe (image->text). Given the user's request, reply with ONLY a JSON array of steps (no prose, no markdown fences). Each step = {\"cap\":\"image|video|voice|music|describe\",\"prompt\":\"concise prompt for this step\",\"from\": <0-based index of an earlier step whose generated image to feed in, or null>}. Rules: include only steps the user asked for; \"animate it\" or \"make a video of it\" => a video step whose from is the image step; \"describe it\" => a describe step whose from is the image step; keep it minimal, at most 6 steps.";
 
@@ -94,15 +96,16 @@ export default function LetsCreate({ onNavigate }) {
   const ucFor = (name) => { const g = gallery.find((e) => baseOf(e.pullName) === baseOf(name) || baseOf(e.name || "") === baseOf(name)); return (g && g.useCases) || []; };
   const capHint = (name) => { const uc = ucFor(name).filter((u) => u !== "general"); if (uc.length) return uc.join(" · "); const mod = localModality(name); return mod === "text" ? "media" : mod; };
   const modelsFor = (c) => models.filter((m) => {
-    const uc = ucFor(m.name); const mod = localModality(m.name);
-    // Only POSITIVELY-classified media models per tile — NO generic text-model fallback. That fallback let every
-    // unclassified chat model through, so a tile could default to e.g. "Gemmable", which can't generate media.
-    if (c === "image") return uc.includes("image") || mod === "image";
-    if (c === "video") return uc.includes("video") || mod === "video";
-    if (c === "describe") return isVisionModel(m.name);
-    if (c === "music") return isMusic(m.name);
-    if (c === "transcribe") return isSTT(m.name);
-    return (isTTS(m.name) || uc.includes("voice") || mod === "voice") && !isSTT(m.name) && !isMusic(m.name); // voice (TTS)
+    const n = m.name;
+    // Match ONLY real GENERATORS per capability, by NAME. The old loose "useCases" came from a model's
+    // description, so understanding/omni models (e.g. Nemotron, whose card mentions image/voice/video) got
+    // tagged as generators and the default landed on a model that can't actually generate. Name-only avoids that.
+    if (c === "image") return isImageGen(n);
+    if (c === "video") return isVideoGen(n);
+    if (c === "describe") return isVisionModel(n);
+    if (c === "music") return isMusic(n);
+    if (c === "transcribe") return isSTT(n);
+    return isTTS(n); // voice (TTS)
   }).sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
   const friendlyErr = (c, modelName, err) => {
@@ -214,7 +217,7 @@ export default function LetsCreate({ onNavigate }) {
     bridge.localModels.pull("localai", hit.pullName);
   };
 
-  const engineUp = !!(engine && engine.api);
+  const engineUp = !!(engine && (engine.api || engine.container === "running")); // stable: don't flip to the setup screen on a brief /readyz timeout while the container is up
   const active = CAPS.find((c) => c.id === cap) || CAPS[0];
   const goModels = () => onNavigate && onNavigate("models-local");
   const haveModel = modelsFor(cap).length > 0;
