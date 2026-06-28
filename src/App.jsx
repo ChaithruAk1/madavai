@@ -15,6 +15,7 @@ import Plugins from "./components/Plugins.jsx";
 import Workrooms from "./components/Workrooms.jsx";
 import { pickModel, routeReason } from "./modelRouter.js";
 import { startOverlayGuard } from "./overlayGuard.js";
+import { startTooltips } from "./tooltip.js";
 import Consumption from "./components/Consumption.jsx";
 import ModelsSection from "./components/ModelsSection.jsx";
 import LetsCreate from "./components/LetsCreate.jsx";
@@ -940,7 +941,7 @@ export default function App() {
   }, [activeProfile && activeProfile.id, activeProfile && activeProfile.baseUrl]);
 
   // App-wide: keep every floating menu/flyout/popover inside the viewport (never past any edge).
-  useEffect(() => { startOverlayGuard(); }, []);
+  useEffect(() => { startOverlayGuard(); startTooltips(); }, []);
   // Step 4 — on a project's detail page (no chat open), show THAT project's model in the picker.
   useEffect(() => {
     if (!projOpenId || projectCtx) return;

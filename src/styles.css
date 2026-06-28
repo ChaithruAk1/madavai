@@ -3597,8 +3597,9 @@ textarea.model-search { border-radius: 14px; }
 .env-picker .chip:hover, .perm-picker .model-btn:hover { background: var(--bg-2); border-color: var(--line); }
 /* Instant hover label — replaces the ~1s native title delay with a quick fade */
 .tipbtn { position: relative; }
-.tipbtn[data-tip]::after { content: attr(data-tip); position: absolute; top: calc(100% + 7px); left: 50%; transform: translateX(-50%); background: var(--bg-0); color: var(--text-0); border: 1px solid var(--line); box-shadow: 0 6px 16px rgba(0,0,0,0.20); padding: 4px 9px; border-radius: 7px; font-size: 11.5px; line-height: 1.3; white-space: nowrap; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .12s ease; }
-.tipbtn[data-tip]:hover::after { opacity: 1; }
+/* The global tooltip engine (src/tooltip.js) renders this single element for EVERY title/data-tip. */
+.mad-tip { position: fixed; z-index: 9999; display: none; max-width: 280px; padding: 5px 9px; background: var(--bg-0); color: var(--text-0); border: 1px solid var(--line); border-radius: 7px; box-shadow: var(--shadow-pop); font-size: 11.5px; line-height: 1.35; letter-spacing: 0.01em; pointer-events: none; opacity: 0; transform: translateY(-2px); transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.mad-tip.on { opacity: 1; transform: translateY(0); }
 .lc2-plan { background: var(--bg-1); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .lc2-plan-h { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--text-0); font-size: 13px; margin-bottom: 8px; }
 .lc2-plan-step { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--text-1); padding: 3px 0; line-height: 1.5; }
@@ -3641,3 +3642,7 @@ h1, h2, h3 { letter-spacing: var(--tr-head); }
 .pj-title, .pjd-title, .mo-card-title, .cons-head h2, .sk-detail-head h2, .ag-title,
 .agg-right-head h2, .local-models .lm-head h2, .pj-create h2, .build-empty h1,
 .ag-hero h1, .studio-head h1 { letter-spacing: var(--tr-head); }
+
+/* ---- Selection + keyboard focus use the distinct blue --selected (not the brand accent) ---- */
+::selection { background: rgba(var(--selected-rgb), 0.28); }
+:focus-visible { outline: 2px solid var(--selected); outline-offset: 2px; }
