@@ -1546,7 +1546,7 @@ textarea.model-search { line-height: 1.5; }
 .tn-left { display: flex; align-items: center; gap: 10px; padding-left: 14px; flex: 0 0 auto; }
 /* When the sidebar is open, center the toggle + logo + wordmark as one unit within the 252px sidebar column. */
 .app-v:not(.sb-collapsed) .tn-left { position: relative; width: 252px; justify-content: flex-start; padding-left: 10px; } /* collapse button hugs the left edge */
-.app-v:not(.sb-collapsed) .tn-brand { margin-left: var(--sp-3); } /* clean left lockup beside the toggle, vertically centered with it (was absolute-centered: overlapped the toggle and sat too high) */
+.app-v:not(.sb-collapsed) .tn-brand { margin-left: 0; } /* brand hugs the left now (logo-left / toggle-right) */
 .tn-brandtext { align-items: center; } /* tagline centered under the wordmark */
 .tn-brand { display: flex; align-items: center; gap: 10px; }
 .tn-brand .mark.tea { width: 44px; height: 44px; border-radius: 12px; }

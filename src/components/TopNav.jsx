@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import MadavLogo from "./MadavLogo.jsx";
+import MadavMark from "./MadavMark.jsx";
 import { MessageCircle, Users, Hammer, Sparkles, PanelLeft, CircleDot, Globe, AppWindow, Square } from "lucide-react";
 import { MODES } from "../bridge/contract.js";
 import { bridge, isWeb } from "../bridge/index.js";
@@ -127,12 +128,10 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
   return (
     <header className="topnav glass">
       <div className="tn-left">
+        {sidebarOpen
+          ? <div className="tn-brand"><div className="tn-brandtext"><MadavLogo height={52} /></div></div>
+          : <MadavMark size={34} />}
         <button className="tn-collapse" onClick={onToggleSidebar} title={(sidebarOpen ? "Collapse" : "Expand") + " sidebar (Ctrl+B)"}><PanelLeft size={18} /></button>
-        <div className="tn-brand">
-          <div className="tn-brandtext">
-            <MadavLogo height={44} />
-          </div>
-        </div>
       </div>
 
       <nav className="tn-tabs">
