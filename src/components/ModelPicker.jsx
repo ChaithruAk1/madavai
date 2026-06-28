@@ -50,7 +50,6 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const source = groupsProp && groupsProp.length ? groupsProp : MODELS;
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false); // bottom half of the screen → the menu opens upward
-  const [maxH, setMaxH] = useState(520); // measured height cap so the menu never overruns the window (set after render)
   const menuRef = useRef(null);
   // Per-edge resize that works in EVERY placement (top-bar, composer, Projects, Agents, model-dock). The
   // handles are CHILDREN of the menu (CSS-pinned to its real edges), so they sit on the real border wherever
@@ -99,18 +98,36 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
   const [orCat, setOrCat] = useState(null);
   const [maker, setMaker] = useState("all"); // filter by model maker (nvidia, meta, qwen…) within a router
   const ref = useRef(null);
-  // After the menu renders, measure where it ACTUALLY sits and clamp its height so the search
-  // header stays on-screen below the top tabs — regardless of window size or which ancestor the
-  // menu anchors to. Placed after the filter state it reads (deps run during render → no TDZ).
+  // Position the menu in JS so it NEVER depends on which container holds it: position:fixed, anchored to
+  // this picker's own button, flipped up/down by available space, height-capped to fit, and clamped fully
+  // on-screen (incl. away from the left edge / sidebar). Inline styles beat any placement CSS. Re-runs on
+  // open, filter changes (height changes), drag-resize, window resize and scroll.
   useLayoutEffect(() => {
     if (!open) return;
-    const el = menuRef.current; if (!el) return;
-    const r = el.getBoundingClientRect();
-    const topSafe = 92, botSafe = 10; // clear the mode tabs (top) / window edge (bottom)
-    const avail = openUp ? (r.bottom - topSafe) : (window.innerHeight - r.top - botSafe);
-    const v = Math.max(220, Math.min(560, Math.floor(avail)));
-    if (Math.abs(v - r.height) > 2) setMaxH(v);
-  }, [open, openUp, q, maker, cost, host, caps]);
+    const trigger = ref.current, el = menuRef.current;
+    if (!trigger || !el) return;
+    const place = () => {
+      const t = trigger.getBoundingClientRect();
+      const vw = window.innerWidth, vh = window.innerHeight, M = 8;
+      el.style.position = "fixed"; el.style.right = "auto"; el.style.bottom = "auto"; el.style.margin = "0";
+      el.style.left = "0px"; el.style.top = "0px";                       // probe the fixed origin first…
+      const o = el.getBoundingClientRect(); const dx = o.left, dy = o.top; // …so a transformed ancestor can't offset us
+      const mw = el.offsetWidth || 720;
+      const below = vh - t.bottom, above = t.top;
+      const up = below < 300 && above > below;                           // open upward only when cramped below
+      if (!box) el.style.maxHeight = Math.max(220, Math.floor((up ? above : below) - 6 - M)) + "px";
+      const mh = el.offsetHeight;                                        // real height after the cap
+      const cx = (t.left + t.right) / 2;                                 // center the menu on the button…
+      const left = Math.max(M, Math.min(Math.round(cx - mw / 2), vw - mw - M)); // …then clamp fully on-screen
+      const top = up ? Math.max(M, t.top - 6 - mh) : (t.bottom + 6);     // flip up/down by available space
+      el.style.left = Math.round(left - dx) + "px";
+      el.style.top = Math.round(top - dy) + "px";
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => { window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
+  }, [open, q, maker, cost, host, caps, box]);
   const isFree = (it) => isModelFree({ ...it, orFree: ormOf(it) ? !!ormOf(it).free : undefined }); // per-model: ":free" suffix + OpenRouter $0 catalog flag (orCat), through the ONE shared classifier
   const makerOf = (it, group) => String(it.prov || (group || "").split(" · ")[0] || "").toLowerCase().trim(); // group by PROVIDER profile (OpenRouter/Anthropic/NIM), not model maker
   const ormOf = (it) => { if (!orCat) return null; const id = it.id && it.id.includes("::") ? it.id.split("::")[1] : it.name; return orCat[id] || null; };
@@ -201,7 +218,7 @@ export default function ModelPicker({ value, onChange, groups: groupsProp, onRef
         </button>
       )}
       {open && (
-        <div ref={menuRef} className="model-menu mp-menu" style={openUp ? { top: "auto", bottom: 46 } : undefined}>
+        <div ref={menuRef} className="model-menu mp-menu">
           {/* Header — fixed at the top; only the model list below it scrolls (flex column layout). */}
           <div className="mp-head" style={{ flex: "none", background: "var(--bg-1)", borderBottom: "1px solid var(--line)", paddingBottom: 8, marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
