@@ -115,7 +115,8 @@ function ServerRow({ m, gpu, maxCtx, onStop, onApply }) {
 }
 
 export default function LocalModels({ onChanged, onRefresh, onActivate, activeValue }) {
-  const [active, setActive] = useState("ollama");
+  const [active, setActive] = useState(() => { try { const v = localStorage.getItem("madav.lmtab"); if (v) { localStorage.removeItem("madav.lmtab"); return v; } } catch {} return "ollama"; });
+  useEffect(() => { const h = (e) => { if (e && e.detail) setActive(e.detail); }; window.addEventListener("madav:lmtab", h); return () => window.removeEventListener("madav:lmtab", h); }, []);
   const [status, setStatus] = useState({});       // id -> detect result
   const [installed, setInstalled] = useState({});  // id -> LocalModel[]
   const [running, setRunning] = useState({});      // id -> Set(name)

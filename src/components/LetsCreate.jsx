@@ -48,10 +48,14 @@ const AGENT_PLANNER = "You plan a small local creative studio. Tools: image (tex
 // otherwise the model chip's default (models[0]) flickers as LocalAI returns the list in a different order each poll.
 const sameNames = (a, b) => { if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false; const sa = a.map((x) => x && x.name).sort().join("|"); const sb = b.map((x) => x && x.name).sort().join("|"); return sa === sb; };
 
+// Survive remounts: remember the last engine/models/gallery so navigating away and back shows the correct
+// screen INSTANTLY instead of flashing the "set up your studio" / "one model away" screen for a frame.
+let _engineCache = null, _modelsCache = [], _galleryCache = [];
+
 export default function LetsCreate({ onNavigate }) {
-  const [engine, setEngine] = useState(null);
-  const [models, setModels] = useState([]);
-  const [gallery, setGallery] = useState([]);
+  const [engine, setEngine] = useState(_engineCache);
+  const [models, setModels] = useState(_modelsCache);
+  const [gallery, setGallery] = useState(_galleryCache);
   const [cap, setCap] = useState("image");
   const [prompt, setPrompt] = useState("");
   const [attach, setAttach] = useState(null);
@@ -67,14 +71,16 @@ export default function LetsCreate({ onNavigate }) {
   const [perm, setPerm] = useState("default");
   const [agentsOn, setAgentsOn] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
-  const [mpOpen, setMpOpen] = useState(false);
   const [folderFiles, setFolderFiles] = useState([]);
   const [ffOpen, setFfOpen] = useState(false);
   const threadRef = useRef(null);
+  useEffect(() => { _engineCache = engine; }, [engine]);
+  useEffect(() => { _modelsCache = models; }, [models]);
+  useEffect(() => { _galleryCache = gallery; }, [gallery]);
 
   const refresh = useCallback(async () => {
     try { const e = await bridge.localModels.localaiStatus(); setEngine((p) => (p && !!p.api === !!(e && e.api)) ? p : (e || { api: false })); } catch { setEngine((p) => (p && p.api === false) ? p : { api: false }); }
-    try { const l = await bridge.localModels.list("localai"); const arr = Array.isArray(l) ? l : []; setModels((p) => sameNames(p, arr) ? p : arr); } catch {}
+    try { const l = await bridge.localModels.list("localai"); const arr = Array.isArray(l) ? l : []; setModels((p) => (arr.length === 0 && p.length > 0) ? p : (sameNames(p, arr) ? p : arr)); } catch {}
     try { const g = await bridge.localModels.browse("localai"); const arr = Array.isArray(g) ? g : []; setGallery((p) => sameNames(p, arr) ? p : arr); } catch {}
   }, []);
   useEffect(() => { refresh(); const t = setInterval(refresh, 5000); return () => clearInterval(t); }, [refresh]);
@@ -94,7 +100,6 @@ export default function LetsCreate({ onNavigate }) {
 
   const baseOf = (n) => String(n || "").split("/").pop().split(":")[0].toLowerCase();
   const ucFor = (name) => { const g = gallery.find((e) => baseOf(e.pullName) === baseOf(name) || baseOf(e.name || "") === baseOf(name)); return (g && g.useCases) || []; };
-  const capHint = (name) => { const uc = ucFor(name).filter((u) => u !== "general"); if (uc.length) return uc.join(" · "); const mod = localModality(name); return mod === "text" ? "media" : mod; };
   const modelsFor = (c) => models.filter((m) => {
     const n = m.name;
     // Match ONLY real GENERATORS per capability, by NAME. The old loose "useCases" came from a model's
@@ -217,9 +222,9 @@ export default function LetsCreate({ onNavigate }) {
     bridge.localModels.pull("localai", hit.pullName);
   };
 
-  const engineUp = !!(engine && (engine.api || engine.container === "running")); // stable: don't flip to the setup screen on a brief /readyz timeout while the container is up
+  const engineUp = !!(engine && (engine.api || engine.container === "running"));
   const active = CAPS.find((c) => c.id === cap) || CAPS[0];
-  const goModels = () => onNavigate && onNavigate("models-local");
+  const goModels = () => { try { localStorage.setItem("madav.lmtab", "localai"); window.dispatchEvent(new CustomEvent("madav:lmtab", { detail: "localai" })); } catch {} onNavigate && onNavigate("models-local"); };
   const haveModel = modelsFor(cap).length > 0;
   const relModels = modelsFor(cap);
   // Feed the SHARED ModelPicker the media models relevant to the active capability tile (id = model name).
