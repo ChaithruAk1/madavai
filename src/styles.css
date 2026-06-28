@@ -11,10 +11,10 @@
   --text-0: #e8e4dc;          /* primary (warm off-white) */
   --text-1: #c4c0b8;          /* secondary (derived) */
   --text-2: #9a9690;          /* muted */
-  --accent: #d97a56;          /* DEFAULT accent = warm terracotta; a Settings pick overrides via App.jsx */
-  --accent-rgb: 217,122,86;
-  --accent-2: #e89a78;        /* terracotta, sparing */
-  --accent2-rgb: 232,154,120;
+  --accent: #06AEFE;          /* DEFAULT accent (both themes); a Settings custom pick overrides via App.jsx */
+  --accent-rgb: 6,174,254;
+  --accent-2: #4dc4ff;        /* lighter azure, sparing */
+  --accent2-rgb: 77,196,255;
   --accent-weak: rgba(var(--accent-rgb),0.14);
   --accent-line: rgba(var(--accent-rgb),0.55);
   --ok: #4caf72;              /* success */
@@ -70,14 +70,14 @@
   --shadow-2: 0 15px 35px rgba(23,23,23,0.08);
   --shadow-pop: 0 18px 50px rgba(62,55,42,0.16);
 }
-/* Default accent in light = terracotta #c96442; a custom user accent still wins. */
+/* Default accent = #06AEFE (azure), both themes; a custom user accent still wins. */
 :root[data-theme="light"][data-accent="default"] {
-  --accent: #c96442;
-  --accent-rgb: 201,100,66;
-  --accent-2: #d97a56;
-  --accent2-rgb: 217,122,86;
-  --accent-weak: rgba(201,100,66,0.12);
-  --accent-line: rgba(201,100,66,0.5);
+  --accent: #06AEFE;
+  --accent-rgb: 6,174,254;
+  --accent-2: #4dc4ff;
+  --accent2-rgb: 77,196,255;
+  --accent-weak: rgba(6,174,254,0.12);
+  --accent-line: rgba(6,174,254,0.5);
 }
 :root[data-theme="light"] body {
   /* one barely-there warm wash — no teal glow in light */
@@ -981,9 +981,7 @@ input, textarea, select { font-family: inherit; }
   padding: 7px 12px; display: flex; flex-direction: column; gap: 6px; transition: border-color .14s, box-shadow .14s, border-radius .14s;
 }
 /* Wide ambient ACCENT GLOW spreading behind the window (the Gemini deep-blue field). */
-.composer::before { content: ""; position: absolute; inset: -110px -160px; z-index: -1; pointer-events: none;
-  background: radial-gradient(55% 65% at 50% 50%, rgba(var(--accent-rgb),0.20), rgba(var(--accent-rgb),0.07) 55%, transparent 75%);
-  filter: blur(14px); }
+.composer::before { display: none; } /* ambient accent glow behind the input window removed */
 .composer:focus-within { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-weak); }
 /* Attachment chips relax the full pill into a rounded card. */
 .composer:has(.composer-files) { border-radius: 26px; }
