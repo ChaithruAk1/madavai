@@ -1218,6 +1218,7 @@ app.whenReady().then(() => {
   if (features.builtIn("scheduler")) reconcileWebhooks();
   else console.log("[scheduler] not included in this build — webhook server not started.");
   setTimeout(autoEnableCli, 3000);
+  setTimeout(() => { try { require("./local-models.cjs").autoStartEngines(); } catch {} }, 1500); // start local engines on every launch
   setTimeout(() => { try { require("./workspace-sync.cjs").pull(); } catch {} try { require("./chat-sync.cjs").launchSync(); } catch {} }, 2500); // account workspace → this device
 });
 app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });

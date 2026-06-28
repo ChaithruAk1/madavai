@@ -7,6 +7,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 const os = require("node:os");
 const https = require("node:https");
+const http = require("node:http");
 const { spawn } = require("node:child_process");
 const { pathToFileURL } = require("node:url");
 const { shell, app } = require("electron");
@@ -112,6 +113,16 @@ function saveMedia(prefix, b64, mime, outDir) {
   } catch { return ""; }
 }
 
+// ---- Local-engine auto-start: install once, then Madav runs them itself on every launch (no manual steps after a reboot) ----
+const LOCALAI_FLAG = () => { try { return path.join(app.getPath("userData"), "localai-enabled.flag"); } catch { return ""; } };
+function ollamaRunning() { return new Promise((r) => { const req = http.get({ host: "127.0.0.1", port: 11434, path: "/api/version", timeout: 1200 }, (res) => { res.resume(); r(true); }); req.on("error", () => r(false)); req.on("timeout", () => { req.destroy(); r(false); }); }); }
+function ollamaInstalled() { return new Promise((r) => { try { const c = spawn("ollama", ["--version"], { windowsHide: true }); c.on("error", () => r(false)); c.on("close", (code) => r(code === 0)); } catch { r(false); } }); }
+function ollamaServe() { try { spawn("ollama", ["serve"], { detached: true, stdio: "ignore", windowsHide: true }).unref(); } catch {} }
+async function autoStartEngines() {
+  try { if (!(await ollamaRunning()) && (await ollamaInstalled())) ollamaServe(); } catch {}          // Ollama: installed but down -> start it
+  try { const f = LOCALAI_FLAG(); if (f && fs.existsSync(f)) localaiDocker.startLocalAi(() => {}).catch(() => {}); } catch {} // LocalAI: only if set up before -> Docker + container up silently
+}
+
 function register(ipcMain, getWin) {
   const send = (ch, payload) => { try { const w = getWin && getWin(); if (w && w.webContents) w.webContents.send(ch, payload); } catch {} };
   ipcMain.handle("localModels:providers", async () => { const r = await runtimes(); return Object.values(r).map((x) => ({ id: x.id, label: x.label })); });
@@ -154,7 +165,7 @@ function register(ipcMain, getWin) {
     try {
       if (id === "ollama" || id === "huggingface") return await installOllama((p) => send("localModels:installProgress", Object.assign({ id }, p)));
       if (id === "lmstudio") return await installLmStudio();
-      if (id === "localai") return await localaiDocker.startLocalAi((p) => send("localModels:installProgress", Object.assign({ id }, p)));
+      if (id === "localai") { const _r = await localaiDocker.startLocalAi((p) => send("localModels:installProgress", Object.assign({ id }, p))); try { if (_r && _r.ok) { const _f = LOCALAI_FLAG(); if (_f) fs.writeFileSync(_f, "1"); } } catch {} return _r; }
       return { ok: false, error: "Unknown provider" };
     } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
   });
@@ -249,4 +260,4 @@ function register(ipcMain, getWin) {
   });
 }
 
-module.exports = { register };
+module.exports = { register, autoStartEngines };
