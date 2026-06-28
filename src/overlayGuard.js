@@ -24,6 +24,7 @@ function clampInViewport(el) {
       el.style.top = el.dataset.ogTop || ""; el.style.left = el.dataset.ogLeft || "";
       el.style.right = el.dataset.ogRight || ""; el.style.bottom = el.dataset.ogBottom || "";
       el.style.maxHeight = el.dataset.ogMaxh || ""; el.style.maxWidth = el.dataset.ogMaxw || "";
+      el.style.margin = el.dataset.ogMargin || "";
       delete el.dataset.ogClamped;
     }
     // 1) cap size to the viewport (so it scrolls instead of overflowing)
@@ -48,10 +49,11 @@ function clampInViewport(el) {
     el.dataset.ogTop = el.style.top; el.dataset.ogLeft = el.style.left;
     el.dataset.ogRight = el.style.right; el.dataset.ogBottom = el.style.bottom;
     el.dataset.ogMaxh = el.dataset.ogMaxh || el.style.maxHeight; el.dataset.ogMaxw = el.dataset.ogMaxw || el.style.maxWidth;
+    el.dataset.ogMargin = el.style.margin;
     el.dataset.ogClamped = "1";
     el.style.top = Math.round(vTop - opr.top) + "px";
     el.style.left = Math.round(vLeft - opr.left) + "px";
-    el.style.bottom = "auto"; el.style.right = "auto";
+    el.style.bottom = "auto"; el.style.right = "auto"; el.style.margin = "0"; // margins would otherwise drag the clamped menu back off-screen
   } catch { /* never let a clamp throw into the app */ }
 }
 

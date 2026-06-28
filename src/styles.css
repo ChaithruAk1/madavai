@@ -2885,7 +2885,7 @@ svg.lucide { color: var(--accent); }
    The folder + Permission pickers keep anchoring their own small menus. */
 .model-dock .model-picker { position: static; }
 .model-dock .perm-picker, .model-dock .env-picker { position: relative; }
-.model-dock .mp-menu { left: 50%; right: auto; margin-left: calc(min(94vw, 720px) / -2); }
+.model-dock .mp-menu { left: auto; right: 0; margin-left: 0; } /* anchor to the trigger; overlayGuard clamps if it would run off-screen */
 .model-dock .perm-picker .model-menu { left: 0; right: auto; }
 
 /* Skills list: hard viewport bound + always-visible scrollbar.
