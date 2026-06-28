@@ -26,7 +26,7 @@
   --selected-rgb: 37,99,235;
   --user: rgba(232,228,220,0.05);
   /* type scale (~1.25 ratio) + 3-weight system + tracking */
-  --fs-display: 56px; --fs-h1: 36px; --fs-h2: 26px; --fs-h3: 21px; --fs-body: 15px; --fs-small: 13px; --fs-caption: 11.5px;
+  --fs-display: 50px; --fs-h1: 32px; --fs-h2: 23px; --fs-h3: 19px; --fs-body: 13.5px; --fs-small: 11.5px; --fs-caption: 10.5px;
   --fw-body: 450; --fw-ui: 510; --fw-strong: 590;
   --tr-display: -0.03em; --tr-head: -0.02em; --tr-caps: 0.06em; --tr-small: 0.01em;
   --lh-tight: 1.12; --lh-body: 1.5;
@@ -1519,7 +1519,7 @@ textarea.model-search { line-height: 1.5; }
 /* ---------- top nav layout ---------- */
 .app-v { display: flex; flex-direction: column; height: 100%; }
 .app-body { flex: 1; display: flex; min-height: 0; }
-.app-body .sidebar { flex: 0 0 var(--sb-w, 236px); transition: opacity .18s ease; }
+.app-body .sidebar { flex: 0 0 var(--sb-w, 236px); transition: flex-basis .22s var(--ease), width .22s var(--ease), padding .22s var(--ease), opacity .18s ease; }
 .app-body .main { flex: 1; min-width: 0; }
 /* collapsible sidebar (toggled by the top-bar button / Ctrl+B) */
 /* Collapsed = a thin icon rail, not fully hidden. */
@@ -1539,7 +1539,7 @@ textarea.model-search { line-height: 1.5; }
 .app-body.sb-collapsed .sb-acct-menu { left: 64px; right: auto; bottom: 8px; width: 232px; }
 .sb-expand { display: flex; flex-direction: column; }
 
-.topnav { position: relative; height: 74px; flex: 0 0 74px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid transparent; background: transparent; backdrop-filter: none; }
+.topnav { position: relative; height: 56px; flex: 0 0 56px; display: flex; align-items: center; gap: 14px; padding: 0; border-bottom: 1px solid transparent; background: transparent; backdrop-filter: none; }
 .tn-collapse { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: none; background: transparent; color: var(--text-1); cursor: pointer; flex: 0 0 auto; transition: color .14s; }
 .tn-collapse:hover { color: var(--text-0); }
 .tn-left .mm { animation: none; opacity: 1; }
@@ -1596,7 +1596,7 @@ textarea.model-search { line-height: 1.5; }
 .tn-tab:hover .tn-tabicon { transform: translateY(-1px) scale(1.05); filter: none; }
 .tn-tab.active .tn-tabicon { color: var(--accent); animation: tabpulse 2.6s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(var(--accent-rgb),0.6)); }
 @keyframes tabpulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: 0.75; } }
-.tn-right { position: absolute; right: 16px; top: 0; height: 64px; display: flex; align-items: center; gap: 10px; }
+.tn-right { position: absolute; right: 16px; top: 0; height: 56px; display: flex; align-items: center; gap: 10px; }
 /* Top-bar controls sit raised like the sidebar panel; the logo + tagline stay flat. */
 .topnav .tn-collapse, .topnav .tn-tab:not(.active), .topnav .chip { box-shadow: 0 1px 2px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.10); }
 .tn-status { gap: 7px; }
