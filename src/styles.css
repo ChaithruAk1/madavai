@@ -1,27 +1,45 @@
 /* © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE. */
-/* Madav — "Aurora Noir": original futuristic-minimal dark theme. */
+/* Madav — warm theme adapted from open-design tokens; accent stays user-driven (Settings). */
 :root {
-  --bg-0: #07080b;            /* app canvas (near-black, cool) */
-  --bg-1: #0d0f14;            /* panels */
-  --bg-2: #14171e;            /* raised / hover */
-  --bg-3: #1b1f28;            /* inputs */
-  --line: rgba(255,255,255,0.07);   /* hairline */
-  --line-2: rgba(255,255,255,0.13);
-  --text-0: #eef1f7;          /* primary */
-  --text-1: #a7b0c0;          /* secondary */
-  --text-2: #8f99aa;          /* "muted" — brighter than before, a hair dimmer than secondary */
-  --accent: #13c2d6;          /* cyan (user-themeable) */
-  --accent-rgb: 19,194,214;   /* same as --accent, as an rgb triplet for rgba() */
-  --accent-2: #38e8d0;        /* cyan, sparing */
-  --accent2-rgb: 56,232,208;
+  /* surfaces — warm near-black; elevate by luminance stepping (Linear-style), not heavy shadow */
+  --bg-0: #1a1917;            /* app canvas */
+  --bg-1: #222120;            /* panels / cards */
+  --bg-2: #2a2825;            /* raised / popovers */
+  --bg-3: #322f2b;            /* inputs (derived) */
+  --line: #333128;            /* hairline */
+  --line-2: #46423b;
+  --text-0: #e8e4dc;          /* primary (warm off-white) */
+  --text-1: #c4c0b8;          /* secondary (derived) */
+  --text-2: #9a9690;          /* muted */
+  --accent: #d97a56;          /* DEFAULT accent = warm terracotta; a Settings pick overrides via App.jsx */
+  --accent-rgb: 217,122,86;
+  --accent-2: #e89a78;        /* terracotta, sparing */
+  --accent2-rgb: 232,154,120;
   --accent-weak: rgba(var(--accent-rgb),0.14);
   --accent-line: rgba(var(--accent-rgb),0.55);
-  --user: rgba(255,255,255,0.045);
-  --ok: #46d39a;
-  --warn: #f5c451;
-  --danger: #ff6b6b;
-  --radius: 14px;
-  --radius-sm: 10px;
+  --ok: #4caf72;              /* success */
+  --warn: #e09a40;            /* warning */
+  --danger: #e06b65;          /* danger */
+  --blue: #6b8fe8;            /* info */
+  --purple: #a87dd4;          /* beta */
+  --selected: #2563eb;        /* active / focus — distinct from brand accent */
+  --selected-rgb: 37,99,235;
+  --user: rgba(232,228,220,0.05);
+  /* type scale (~1.25 ratio) + 3-weight system + tracking */
+  --fs-display: 56px; --fs-h1: 36px; --fs-h2: 26px; --fs-h3: 21px; --fs-body: 15px; --fs-small: 13px; --fs-caption: 11.5px;
+  --fw-body: 450; --fw-ui: 510; --fw-strong: 590;
+  --tr-display: -0.03em; --tr-head: -0.02em; --tr-caps: 0.06em; --tr-small: 0.01em;
+  --lh-tight: 1.12; --lh-body: 1.5;
+  /* spacing (8px base) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+  /* radius */
+  --radius: 14px; --radius-sm: 10px; --radius-xs: 6px; --radius-2: 8px; --radius-pill: 9999px;
+  /* motion */
+  --dur-fast: 100ms; --dur: 150ms; --dur-enter: 220ms; --ease: cubic-bezier(0.2, 0, 0, 1);
+  /* elevation (dark — subtle; light theme overrides below) */
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-2: 0 8px 24px rgba(0,0,0,0.45);
+  --shadow-pop: 0 18px 50px rgba(0,0,0,0.5);
   --mono: "SFMono-Regular", ui-monospace, "JetBrains Mono", "Menlo", "Consolas", monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
 }
@@ -30,28 +48,36 @@
 /* Warm-paper light mode: warm neutrals, quiet chrome, terracotta as the DEFAULT
    accent (a custom user accent still wins — the terracotta is gated below). */
 :root[data-theme="light"] {
-  --bg-0: #f6f5f1;
+  --bg-0: #faf9f7;
   --bg-1: #fdfcfa;
-  --bg-2: #efede7;
-  --bg-3: #e9e6de;
-  --line: rgba(62,55,42,0.12);
-  --line-2: rgba(62,55,42,0.20);
-  --text-0: #20201d;
-  --text-1: #54514a;
-  --text-2: #6f6c64;
+  --bg-2: #fffefc;
+  --bg-3: #f3f1ec;
+  --line: #e1e5eb;
+  --line-2: #d2d5db;
+  --text-0: #1a1916;
+  --text-1: #44423d;
+  --text-2: #74716b;
   --user: rgba(62,55,42,0.05);
-  --ok: #15803d;
-  --warn: #b45309;
-  --danger: #dc2626;
+  --ok: #1f7a3a;
+  --warn: #b26200;
+  --danger: #9c2a25;
+  --blue: #2348b8;
+  --purple: #6c3aa6;
+  --selected: #2563eb;
+  --selected-rgb: 37,99,235;
+  /* light elevation — Stripe-style layered, subtle */
+  --shadow-1: 0 3px 6px rgba(23,23,23,0.06);
+  --shadow-2: 0 15px 35px rgba(23,23,23,0.08);
+  --shadow-pop: 0 18px 50px rgba(62,55,42,0.16);
 }
-/* Default accent in light = azure rgb(0,167,250); a custom user accent still wins. */
+/* Default accent in light = terracotta #c96442; a custom user accent still wins. */
 :root[data-theme="light"][data-accent="default"] {
-  --accent: #00a7fa;
-  --accent-rgb: 0,167,250;
-  --accent-2: #2eb8ff;
-  --accent2-rgb: 46,184,255;
-  --accent-weak: rgba(0,167,250,0.12);
-  --accent-line: rgba(0,167,250,0.5);
+  --accent: #c96442;
+  --accent-rgb: 201,100,66;
+  --accent-2: #d97a56;
+  --accent2-rgb: 217,122,86;
+  --accent-weak: rgba(201,100,66,0.12);
+  --accent-line: rgba(201,100,66,0.5);
 }
 :root[data-theme="light"] body {
   /* one barely-there warm wash — no teal glow in light */
@@ -1342,7 +1368,7 @@ input, textarea, select { font-family: inherit; }
 .composer-row { gap: 8px; }
 
 /* ---------- Buttons ---------- */
-.btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--bg-2); color: var(--text-0); font-size: 13px; transition: background .14s, border-color .14s, transform .1s; }
+.btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--bg-2); color: var(--text-0); font-size: 13px; transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform 90ms var(--ease); }
 .btn:hover { background: var(--bg-3); border-color: var(--line-2); }
 .btn:active { transform: scale(0.98); }
 .btn.primary { background: rgba(var(--accent-rgb),0.16); border-color: var(--accent-line); color: var(--text-0); box-shadow: none; }
@@ -3589,3 +3615,13 @@ textarea.model-search { border-radius: 14px; }
 .btn.xs { padding: 2px 6px; font-size: 11px; line-height: 1; min-height: 0; height: auto; }
 .lm-cancel { margin-left: 4px; color: var(--text-2); }
 .lm-cancel:hover { color: #ff6b6b; border-color: #ff6b6b; }
+
+/* ---- GLOBAL reduced-motion guard — one rule covers every transition/animation app-wide (a11y baseline) ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
