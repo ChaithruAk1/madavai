@@ -1966,7 +1966,7 @@ textarea.model-search { line-height: 1.5; }
   width: 100%; margin-left: auto; margin-right: auto;
 }
 /* Settings-style pages (Connectors / ViaMobile / Plugins / Settings) — same discipline. */
-.settings { width: 100%; max-width: 1280px; margin: 0 auto; }
+.settings { width: 100%; max-width: 1280px; margin: 0; } /* left-align so the nav hugs the (collapsed or open) sidebar — no centered gap */
 
 /* --- the 200ms rule: every interactive element acknowledges touch INSTANTLY --- */
 button, .chip, .nav-item, .sb-rec, .model-row, .ags-card, .ags-persona, .agg-sim, .ob-choice, .ag-tool, .ags-mode, .ags-tab, .agg-rail-item, .sk-item, .tn-tab {
