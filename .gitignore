@@ -58,3 +58,6 @@ packages/*/node_modules/
 packages/*/dist-test/
 packages/*/package-lock.json
 Chat1.md
+
+# Local test data for the deterministic Projects engine (not part of the app)
+_test-data/

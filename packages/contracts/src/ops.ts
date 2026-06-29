@@ -33,7 +33,10 @@ export const DeriveOp = z.object({
   right: DeriveArg,
 });
 
-export const DataOp = z.discriminatedUnion('op', [FilterOp, SortOp, SelectOp, LimitOp, AggregateOp, DeriveOp]);
+/** Rename one column (alias) — lets differently-named keys line up before a join. */
+export const RenameOp = z.object({ op: z.literal('rename'), from: z.string().min(1), to: z.string().min(1) });
+
+export const DataOp = z.discriminatedUnion('op', [FilterOp, SortOp, SelectOp, LimitOp, AggregateOp, DeriveOp, RenameOp]);
 
 /** A named pipeline step over a source table OR a prior step's result. */
 export const Step = z.object({
@@ -64,6 +67,7 @@ export const DataPlan = z.object({ source: z.string().optional(), ops: z.array(D
 export const SimplePlan = DataPlan;
 
 export type DeriveArg = z.infer<typeof DeriveArg>;
+export type RenameOp = z.infer<typeof RenameOp>;
 export type DataOp = z.infer<typeof DataOp>;
 export type Step = z.infer<typeof Step>;
 export type JoinStep = z.infer<typeof JoinStep>;

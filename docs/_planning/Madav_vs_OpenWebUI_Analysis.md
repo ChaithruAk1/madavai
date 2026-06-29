@@ -7,6 +7,42 @@
 
 ---
 
+## 📊 CURRENT STATE vs OPEN WEBUI — updated 2026-06-25
+
+The comparison below was the *initial* analysis. This banner updates it to what Madav has actually BUILT. Short version: **the "boring infrastructure" gap this document flagged as Madav's core weakness is now built** — but it is *code-complete in the repo*, not yet *deployed + hardened in production*. That distinction still favors Open WebUI until you ship.
+
+### The original gap — now closed (in code)
+This document's verdict was: "Madav has a clever document engine but skipped the boring infrastructure (types, structured errors, sandboxing, observability) — exactly the layer that buys stability." Status now:
+
+| Gap originally flagged | Built? |
+|---|---|
+| Typed payloads / schemas | ✅ Zod typed API contracts (client = server) + typed document specs |
+| Structured logging, no silent catches | ✅ `@madav/insight` + crash-reporting |
+| Real sandboxed execution | ✅ compute sandbox (Pyodide-first + microVM pool) |
+| Observability | ✅ gateway health/ready probes + structured request log |
+| Deterministic IO | ✅ deterministic ingestors + xlsx writer (golden-file tested) |
+| Migrations / canonical store | ✅ Postgres + Drizzle migrations |
+| Stable agent engine | ✅ one native agent loop (no third-party SDK), parity-tested helpers |
+
+### Where Madav stands now
+- **Its pre-existing win, now on a solid base:** the native **document engine** (styled xlsx/docx/pdf/pptx) — Open WebUI has **no** native equivalent (OWUI users bolt on third-party MCP plugins). Plus mono-language `core/` shared across desktop+web+cloud, and one clean agent loop.
+- **New parity:** the infra layer OWUI had and Madav lacked (types, logging, sandbox, observability, durable jobs, RBAC seam, RAG) is now present.
+- **OWUI's standing lead:** it is a *shipping product at scale with a large community*; Madav's spine is *built but not yet deployed/hardened*. Paper architecture loses to production software until you deploy.
+
+### What was deliberately NOT adapted from Open WebUI (and why)
+Per the "native, not copied" doctrine, Madav reimplemented **patterns**, never copied code (the provenance scan confirmed zero OWUI code in Madav). Intentionally **skipped**:
+1. **Separate-language backend (Python + Svelte).** Madav stays **mono-JS** so `core/` is shared everywhere. The single most important "don't" — adopting it would destroy Madav's moat.
+2. **9 vector databases.** Madav uses **pgvector + a few Ingestors**. Breadth not needed.
+3. **6+ OCR/extraction engines** (Tika, Docling, Marker, MinerU, Mistral OCR, PaddleOCR, Azure DI). Madav ships a few ingestors — heavy-OCR users still prefer OWUI, **by choice**.
+4. **SCIM 2.0 / LDAP directory.** Deferred to an optional later module (not built). Correct for consumer focus.
+5. **Jupyter-server dependency.** Madav uses **Pyodide-first + a microVM sandbox** instead — lighter, safer, no external server.
+6. **Self-host-first distribution + the public model/prompt/tool hub + plugin ecosystem.** Different product model; not adapted.
+7. **OWUI's nouns/UX.** Everything borrowed is expressed in **Madav's vocabulary** (Workrooms, Projects, Agents, Teams, Skills, Connectors, Ingestors, Compute, Knowledge).
+
+The one thing Madav has that OWUI does **not** (so it couldn't be "adapted" — it's a Madav original): the **native officedoc/deckjs document-generation engine**.
+
+---
+
 ## 0. How to read this document
 
 This is written so you can read the top of each section in plain English, then hand the deeper parts to a developer or to another Claude session as a work list. Every claim is tagged with a **confidence level** (high / moderate / low) and, where it matters, the exact file and function so it can be verified or actioned. The prioritized backlog in Section 9 is the "what to do" list, sorted **Critical → High → Medium → Nice-to-have**.

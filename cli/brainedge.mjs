@@ -2,7 +2,7 @@
 // © 2026 Samskruthi Harish. Madav — Proprietary. All rights reserved. See LICENSE.
 //
 // Madav CLI — a terminal coding agent on ANY provider.
-// Run inside the folder you want to work in:  madav   (or: node cli/brainedge.mjs)
+// Run inside the folder you want to work in:  madav   (or: node cli/madav.mjs)
 //
 // Config (first match wins): env vars, ./madav.config.json, ~/.madav/config.json
 //   MADAV_BASE_URL · MADAV_API_KEY · MADAV_MODEL · MADAV_KIND ("openai" | "anthropic")

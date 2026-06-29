@@ -70,6 +70,7 @@ while ($true) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Mil
 let active = null; // { proc, steps }
 
 function start() {
+  if (process.platform !== "win32") return { error: "Desktop recording is only available on Windows." };
   if (active) return { already: true, recording: true };
   const proc = spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Sta", "-Command", PS_SCRIPT], { windowsHide: true });
   const steps = [];

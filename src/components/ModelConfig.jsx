@@ -207,19 +207,20 @@ export default function ModelConfig({ onChanged }) {
     <div className="mo scroll">
       <div className="mc-wrap">
       {view === "grid" && <>
-      {/* Top toolbar — backup/restore as icon-only buttons (hover shows the description). */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginBottom: 10 }}>
-        <button className="btn ghost" style={{ padding: "6px 9px" }} aria-label="Download backup"
-          title="Download backup — saves your providers, agents, teams & preferences (including API keys) to one JSON file. Keep it private." onClick={backupAll}><Download size={16} /></button>
-        <button className="btn ghost" style={{ padding: "6px 9px" }} aria-label="Restore from backup"
-          title="Restore from backup — replaces your current providers, agents, teams & preferences from a backup JSON file." onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={16} /></button>
-        <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
-      </div>
-      {/* Default model — compact card at the top */}
-      <div className="mc-card mc-default">
-        <div className="nav-label" style={{ paddingLeft: 0 }}>Default model<HelpDot mode="models" section="defaultmodel" /></div>
-        <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
-        {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
+      {/* Head row — Default model (left) + backup/restore (right) on ONE line */}
+      <div className="mc-headrow">
+        <div className="mc-default">
+          <span className="mc-default-lbl">Default model<HelpDot mode="models" section="defaultmodel" /></span>
+          <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
+          {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12 }}>{status}</span>}
+        </div>
+        <div className="mc-tools">
+          <button className="btn ghost" style={{ padding: "6px 9px" }} aria-label="Download backup"
+            title="Download backup — saves your providers, agents, teams & preferences (including API keys) to one JSON file. Keep it private." onClick={backupAll}><Download size={16} /></button>
+          <button className="btn ghost" style={{ padding: "6px 9px" }} aria-label="Restore from backup"
+            title="Restore from backup — replaces your current providers, agents, teams & preferences from a backup JSON file." onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={16} /></button>
+          <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
+        </div>
       </div>
       <div className="nav-label" style={{ paddingLeft: 0 }}>Model Providers<HelpDot mode="models" section="provider" /></div>
       <p style={{ color: "var(--text-2)", fontSize: 12.5, margin: "2px 0 10px" }}>

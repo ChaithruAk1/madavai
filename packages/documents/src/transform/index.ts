@@ -74,6 +74,11 @@ export function applyOps(table: Table, ops: DataOp[]): { table: Table; issues: I
         rows.push([...head, ...meas]);
       }
       t = mk(t.name, [...op.groupBy, ...measureNames], rows);
+    } else if (op.op === 'rename') {
+      const i = idxOf(t, op.from);
+      if (i < 0) { issues.push(err('COLUMN_MISSING', `rename: no column "${op.from}"`, op.from)); continue; }
+      const nm = names(); nm[i] = op.to;
+      t = mk(t.name, nm, t.rows);
     } else if (op.op === 'derive') {
       const need: string[] = [];
       if ('col' in op.left && idxOf(t, op.left.col) < 0) need.push(op.left.col);

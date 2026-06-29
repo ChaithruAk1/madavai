@@ -28,3 +28,5 @@ export function createLogger(opts: { sink?: Sink; base?: Record<string, unknown>
 export function guarded<T>(log: Logger, event: string, fn: () => T, fallback: T): T {
   try { return fn(); } catch (e) { log.error(event, { error: e instanceof Error ? e.message : String(e) }); return fallback; }
 }
+
+export { formatCrash, CrashBuffer, type CrashReport } from './crash.js';

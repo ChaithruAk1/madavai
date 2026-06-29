@@ -7,6 +7,32 @@
 
 ---
 
+## ✅ BUILD STATUS — updated 2026-06-25 (what is complete vs the plan below)
+
+This banner is the TRUTH of where the code stands now; the plan that follows is the original blueprint. Legend: ✅ built (code-complete in the repo, verified as far as a non-Mac / non-prod sandbox allows) · 🟡 partial / flag-guarded OFF · ⏳ deferred / parked · 🧪 needs your run (deploy/test) to certify.
+
+### Phased roadmap — status
+| Phase | Scope | Status |
+|---|---|---|
+| **0 — Foundations** | deterministic ingestors, xlsx writer, compute executor, structured logging (insight), verify gate, no-model preview | ✅ built |
+| **1 — Cloud spine** | storage-custody envelope, typed API contracts (Zod, client=server), gateway (auth/rate-limit/proxy/realtime on Redis), Postgres+Drizzle, object storage, server-readable sync + multi-device, local-model tier | ✅ built (code) · 🧪 deploy to certify |
+| **2 — Jobs & workers** | durable job/worker tier, runners-as-cloud-jobs, encrypted connector vault (KMS), server-side remote MCP, cloud scheduled tasks, compute sandbox (Pyodide + microVM) | ✅ built (code) · 🧪 deploy to certify |
+| **3 — Knowledge & enterprise** | RAG (chunking, hybrid retrieval, pgvector, OpenAI+local embedder), RBAC policy + gateway enforcement + per-user workspaces, crash-reporting, scale-out (health/ready probes + request log) | ✅ built · 🟡 RBAC/RAG/crash flags OFF by default (enablement gated on your review) |
+| **4 — E2EE Private mode** | seal/open (AES-256-GCM + PBKDF2) + custody policy | 🟡 foundation only · ⏳ **parked** (full feature needs approval + external crypto review) |
+
+### Built in the last 2 days (agent-engine + product-hardening pass)
+- ✅ **Madav's OWN native agent engine** — the third-party **Claude Agent SDK is fully removed** (file, dependency, and all branches). Every model (Anthropic included) now runs **one clean agent loop**. This realizes the "one strong loop" principle (the Open WebUI concept).
+- ✅ **Projects de-hacked** — the keyword "lane router" + the prompt-hijacking deterministic report engine were **deleted from the codebase**; capable models follow the prompt directly; weak models are steered to a Recommended model instead of a hidden pipeline.
+- ✅ **Document engine single-sourced** — one office rule + capability gate, guarded by a parity test across all 3 copies. xlsx/docx/pdf = deterministic templates; pptx = bespoke `deckjs` for strong models.
+- ✅ **Branding + UI** — new MADAV wordmark + M everywhere (incl. desktop icon), theme-aware tagline, default accent `#00aabd`, Sage bottom-right + minimized.
+- ✅ **Repo hygiene** — orphaned old-engine/runner/SDK files removed; comprehensive `.gitignore`.
+- ✅ **macOS build wired** — mac/dmg config + `.icns` + hardened-runtime entitlements (incl. the JIT keys the doc engine needs) + the one platform guard; signing/notarization runbook (`MAC-DESKTOP-BUILD-SCOPE.md`). Build/sign/test still needs a Mac or CI.
+
+### Not done (your court)
+🧪 Deploy the cloud tier + turn Phase-3 flags ON in prod · 🧪 run the whole-app E2E certification (`E2E-CERTIFICATION-CHECKLIST.md`) · ⏳ SSO/SCIM (designed, not built) · ⏳ E2EE Phase 4 (parked) · 🧪 macOS build + Apple sign/notarize on a Mac/CI.
+
+---
+
 ## 0. How to read this
 
 Each major claim carries a **confidence tag** (high / moderate / low). Section 1 challenges your stated goal before accepting it — that is deliberate, not contrarian. Sections 6–7 are the architecture. Section 10 is the "Madav = or > Open WebUI on every row" table you asked for, built honestly. Section 11 is the phased roadmap you would execute. Section 13 lists the genuine decisions only you can make.
