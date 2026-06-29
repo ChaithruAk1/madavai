@@ -144,7 +144,7 @@ function SettingsControl({ theme, onSetTheme, onSelect }) {
     <div className="tn-setwrap" ref={wrapRef}>
       <button className="tn-iconbtn" onClick={toggle} title="Quick settings — theme & language" aria-label="Quick settings"><SettingsIcon size={17} /></button>
       {open && createPortal(
-        <div ref={menuRef} className="plus-menu tn-setmenu mad-pop" style={{ position: "fixed", top: (pos && pos.top) || 56, right: (pos && pos.right) || 16, left: "auto", bottom: "auto", zIndex: 9999, animation: "none" }}>
+        <div ref={menuRef} className="tn-setmenu mad-pop" style={{ position: "fixed", top: (pos && pos.top) || 56, right: (pos && pos.right) || 16, left: "auto", bottom: "auto", zIndex: 9999, animation: "none" }}>
           <div className="tn-set-h">Appearance</div>
           {THEMES.map(([id, label, Icon]) => (
             <button key={id} className={`tn-set-row ${theme === id ? "on" : ""}`} onClick={() => pick(id)}>

@@ -3669,7 +3669,7 @@ h1, h2, h3 { letter-spacing: var(--tr-head); }
 
 /* quick-settings popover (theme + language) */
 .tn-setwrap { position: relative; display: inline-flex; }
-.tn-setmenu { min-width: 190px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-1); box-shadow: var(--shadow-pop); display: flex; flex-direction: column; gap: 2px; }
+.tn-setmenu { width: max-content; min-width: 168px; max-width: 260px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-1); box-shadow: var(--shadow-pop); display: flex; flex-direction: column; gap: 2px; }
 .tn-set-h { font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); padding: 8px 8px 4px; }
 .tn-set-row { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 9px; border: none; border-radius: 8px; background: transparent; color: var(--text-0); font: inherit; font-size: var(--fs-small); cursor: pointer; text-align: left; transition: background .12s; }
 .tn-set-row:hover { background: var(--bg-2); }
