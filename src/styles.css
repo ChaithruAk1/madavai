@@ -253,6 +253,7 @@ input, textarea, select { font-family: inherit; }
 .mc-card { background: var(--bg-1); border: 1px solid var(--line); border-radius: 14px; padding: 13px 16px; }
 .mc-providers { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: start; margin-top: 14px; }
 /* Provider gallery cards (Onyx-style: chip · name/sub · action). */
+.mc-default { max-width: 460px; margin-bottom: 14px; }
 .mc-pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: var(--sp-3); margin-top: 6px; grid-auto-rows: 1fr; }
 .mc-pcard { display: flex; align-items: center; gap: var(--sp-3); text-align: left; cursor: pointer;
   background: var(--bg-1); border: 1px solid var(--line); border-radius: 12px; padding: 9px 14px;
@@ -260,8 +261,7 @@ input, textarea, select { font-family: inherit; }
 .mc-pcard:hover { border-color: var(--line-2); background: var(--bg-2); transform: translateY(-1px); }
 .mc-pcard.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .mc-pchip { width: 30px; height: 30px; display: grid; place-items: center; font-size: var(--fs-body); font-weight: 700; flex: none; background: transparent; }
-.mc-brandimg { filter: brightness(0) invert(1); }            /* dark: force any brand mark (incl. black ones) to white */
-:root[data-theme="light"] .mc-brandimg { filter: none; }     /* light: keep official brand colors */
+.mc-brandimg { background: #fff; border-radius: 6px; padding: 4px; box-sizing: content-box; }  /* NATURAL brand colours, never recoloured; white tile keeps the dark marks (Anthropic, X, Ollama…) visible */
 .mc-pmain { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .mc-pmain b { font-size: var(--fs-body); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mc-pmain small { font-size: var(--fs-caption); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

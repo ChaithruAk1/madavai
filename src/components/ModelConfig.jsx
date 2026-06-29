@@ -215,8 +215,12 @@ export default function ModelConfig({ onChanged }) {
           title="Restore from backup — replaces your current providers, agents, teams & preferences from a backup JSON file." onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={16} /></button>
         <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
       </div>
-      {/* Search Engine Settings — which web-search provider powers web_search / Deep Research / agents.
-          Leave on "Madav default" to use the built-in house-key search; or bring your own provider key. */}
+      {/* Default model — compact card at the top */}
+      <div className="mc-card mc-default">
+        <div className="nav-label" style={{ paddingLeft: 0 }}>Default model<HelpDot mode="models" section="defaultmodel" /></div>
+        <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
+        {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
+      </div>
       <div className="nav-label" style={{ paddingLeft: 0 }}>Model Providers<HelpDot mode="models" section="provider" /></div>
       <p style={{ color: "var(--text-2)", fontSize: 12.5, margin: "2px 0 10px" }}>
         <b style={{ color: "var(--text-1)" }}>Madav Starter (free)</b> works the moment you sign in — no API key needed, with a daily limit on free models.
@@ -261,26 +265,6 @@ export default function ModelConfig({ onChanged }) {
             <span className="mc-pact">Connect</span>
           </button>
         ))}
-      </div>
-
-      {/* top: default model + proxy as responsive side-by-side cards */}
-      <div className="mc-top">
-        <div className="mc-card">
-          <div className="nav-label" style={{ paddingLeft: 0 }}>Default model<HelpDot mode="models" section="defaultmodel" /></div>
-          <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
-            Applied every time the app starts. You can still switch models live in the top bar during a session — it resets to this on next launch.
-          </p>
-          <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
-          {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
-        </div>
-        <div className="mc-card">
-          <div className="nav-label" style={{ paddingLeft: 0 }}>Corporate proxy (optional)<HelpDot mode="models" section="proxy" /></div>
-          <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
-            Route all LLM, MCP, and Telegram traffic through your company's approved proxy/gateway. Local models bypass it automatically. <b>Restart the app</b> after changing this.
-          </p>
-          <Field label="Proxy URL"><input className="model-search" value={s.proxyUrl || ""} onChange={(e) => setField("proxyUrl", e.target.value)} placeholder="http://proxy.corp:8080" /></Field>
-          <Field label="Bypass hosts (no-proxy)"><input className="model-search" value={s.noProxy || ""} onChange={(e) => setField("noProxy", e.target.value)} placeholder="localhost,127.0.0.1,.corp.internal" /></Field>
-        </div>
       </div>
 
       </>}
