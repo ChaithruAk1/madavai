@@ -1538,7 +1538,7 @@ textarea.model-search { line-height: 1.5; }
 /* Toggle + brand grouped on the far left. Brand hides when the sidebar is collapsed. */
 .tn-left { display: flex; align-items: center; gap: 10px; padding-left: 14px; flex: 0 0 auto; }
 /* When the sidebar is open, center the toggle + logo + wordmark as one unit within the 252px sidebar column. */
-.app-v:not(.sb-collapsed) .tn-left { position: relative; width: var(--sb-w, 236px); justify-content: flex-start; padding-left: 10px; padding-right: var(--sp-2); } /* width = sidebar column so the toggle can sit at its right edge */
+.app-v:not(.sb-collapsed) .tn-left { position: relative; width: calc(var(--sb-w, 236px) + var(--sp-2)); justify-content: flex-start; padding-left: 10px; padding-right: 0; } /* span = sidebar column + its 8px left margin, no right pad, so the toggle (margin-left:auto) lands exactly on the panel right edge */
 .app-v:not(.sb-collapsed) .tn-collapse { margin-left: auto; } /* push the toggle to the sidebar panel's right edge */
 .app-v:not(.sb-collapsed) .tn-brand { margin-left: 0; } /* brand hugs the left now (logo-left / toggle-right) */
 .tn-brandtext { align-items: center; } /* tagline centered under the wordmark */
