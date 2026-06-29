@@ -185,7 +185,7 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
       <div className="tn-right">
         <RecordControl onSelect={onSelect} />
         <span className="tn-status-icon" title={`Active model is ${online === null ? "checking…" : online ? "online" : "offline"}`}>
-          <span className="tn-statusdot" style={{ background: dot, boxShadow: online ? "0 0 7px var(--ok)" : "none" }} />
+          <span className="tn-statusdot" style={{ background: dot }} />
         </span>
         <SettingsControl theme={theme} onSetTheme={onSetTheme} onSelect={onSelect} />
       </div>

@@ -96,15 +96,7 @@
 :root[data-theme="light"] .model-menu { background: rgba(253,252,250,0.98); box-shadow: 0 18px 50px rgba(62,55,42,0.18); }
 :root[data-theme="light"] .sidebar.glass { background: linear-gradient(180deg, rgba(62,55,42,0.025), rgba(62,55,42,0) 22%), var(--bg-1); }
 :root[data-theme="light"] *::-webkit-scrollbar-thumb { background: rgba(62,55,42,0.20); }
-/* Quiet chrome: selected nav reads as warm grey; the accent is saved for actions. */
-:root[data-theme="light"] .tn-tab.active,
-:root[data-theme="light"] .nav-item.active,
-:root[data-theme="light"] .sk-item.active,
-:root[data-theme="light"] .sb-rec.active,
-:root[data-theme="light"] .hist-item.active {
-  background: var(--bg-2); box-shadow: none; border-color: transparent; color: var(--text-0);
-}
-:root[data-theme="light"] .nav-item.active svg { color: var(--text-0); filter: none; animation: none; }
+/* Selection is identical in both themes (see canonical rule): selected = accent text + accent icon, no fill; nav has no border, tabs keep an accent border. */
 :root[data-theme="light"] .tn-tab.active .tn-tabicon { color: var(--accent); filter: none; animation: none; }
 :root[data-theme="light"] .tn-tab { background: var(--bg-1); border-color: var(--line); }
 :root[data-theme="light"] .tn-tab:hover { background: var(--bg-2); border-color: var(--line-2); box-shadow: none; }
@@ -180,7 +172,7 @@ input, textarea, select { font-family: inherit; }
 /* ===== Canonical selection style — every selected list/nav object app-wide ===== */
 .nav-item.active, .sk-item.active, .sb-rec.active, .hist-item.active {
   background: transparent;
-  color: var(--accent); border-color: var(--accent);
+  color: var(--accent); border-color: transparent;
   box-shadow: none;
 }
 .nav-item.active svg, .sk-item.active svg { color: var(--accent); }
@@ -3663,8 +3655,8 @@ h1, h2, h3 { letter-spacing: var(--tr-head); }
 /* ── Top-bar icon-only controls (Record · status · quick-settings) — labels via global tooltip ── */
 .tn-iconbtn { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: none; background: transparent; color: var(--text-1); cursor: pointer; flex: 0 0 auto; transition: color .14s, background .14s; }
 .tn-iconbtn:hover { color: var(--text-0); background: var(--bg-2); }
-.tn-rec-idle { color: var(--accent); }
-.tn-rec-idle:hover { color: var(--accent); background: var(--accent-weak); }
+.tn-rec-idle { color: var(--text-1); }
+.tn-rec-idle:hover { color: var(--text-0); background: var(--bg-2); }
 .tn-status-icon { display: grid; place-items: center; width: 26px; height: 34px; cursor: default; }
 .tn-status-icon .tn-statusdot { width: 9px; height: 9px; border-radius: 50%; }
 
