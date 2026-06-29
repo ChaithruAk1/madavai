@@ -73,10 +73,9 @@ function PChip({ name }) {
   if (slug && !broken) {
     // Dark theme: many brand marks are black (OpenAI, xAI…) and disappear — render them
     // white there; light theme keeps the official brand colors. Never dimmed either way.
-    const light = typeof document !== "undefined" && document.documentElement.dataset.theme === "light";
     return (
       <span className="mc-pchip">
-        <img src={`https://cdn.simpleicons.org/${slug}${light ? "" : "/white"}`} alt="" style={{ width: 20, height: 20 }} onError={() => setBroken(true)} />
+        <img className="mc-brandimg" src={`https://cdn.simpleicons.org/${slug}`} alt="" style={{ width: 20, height: 20 }} onError={() => setBroken(true)} />
       </span>
     );
   }
@@ -216,26 +215,6 @@ export default function ModelConfig({ onChanged }) {
           title="Restore from backup — replaces your current providers, agents, teams & preferences from a backup JSON file." onClick={() => restoreRef.current && restoreRef.current.click()}><Upload size={16} /></button>
         <input ref={restoreRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { restoreAll(e.target.files && e.target.files[0]); e.target.value = ""; }} />
       </div>
-      {/* top: default model + proxy as responsive side-by-side cards */}
-      <div className="mc-top">
-        <div className="mc-card">
-          <div className="nav-label" style={{ paddingLeft: 0 }}>Default model<HelpDot mode="models" section="defaultmodel" /></div>
-          <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
-            Applied every time the app starts. You can still switch models live in the top bar during a session — it resets to this on next launch.
-          </p>
-          <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
-          {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
-        </div>
-        <div className="mc-card">
-          <div className="nav-label" style={{ paddingLeft: 0 }}>Corporate proxy (optional)<HelpDot mode="models" section="proxy" /></div>
-          <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
-            Route all LLM, MCP, and Telegram traffic through your company's approved proxy/gateway. Local models bypass it automatically. <b>Restart the app</b> after changing this.
-          </p>
-          <Field label="Proxy URL"><input className="model-search" value={s.proxyUrl || ""} onChange={(e) => setField("proxyUrl", e.target.value)} placeholder="http://proxy.corp:8080" /></Field>
-          <Field label="Bypass hosts (no-proxy)"><input className="model-search" value={s.noProxy || ""} onChange={(e) => setField("noProxy", e.target.value)} placeholder="localhost,127.0.0.1,.corp.internal" /></Field>
-        </div>
-      </div>
-
       {/* Search Engine Settings — which web-search provider powers web_search / Deep Research / agents.
           Leave on "Madav default" to use the built-in house-key search; or bring your own provider key. */}
       <div className="nav-label" style={{ paddingLeft: 0 }}>Model Providers<HelpDot mode="models" section="provider" /></div>
@@ -255,11 +234,10 @@ export default function ModelConfig({ onChanged }) {
           <PChip name="+" />
           <span className="mc-pmain">
             <b>Custom provider</b>
-            <small>Add your own OpenAI/Anthropic endpoint</small>
           </span>
           <span className="mc-pact">Set up</span>
         </button>
-        {profiles.filter((p) => (isPriv || p.kind !== "anthropic") && !(/\/starter\b/.test(p.baseUrl || "") && acctStatus && acctStatus !== "trialing" && !isPriv)).slice().sort((a, b) => readyOf(b) - readyOf(a)).map((p) => {
+        {profiles.filter((p) => (isPriv || p.kind !== "anthropic") && !(/\/starter\b/.test(p.baseUrl || "") && acctStatus && acctStatus !== "trialing" && !isPriv) && !(p.name === "New provider" && !((p.apiKey || "").trim()) && !((p.model || "").trim()))).slice().sort((a, b) => readyOf(b) - readyOf(a)).map((p) => {
           const local = /localhost|127\.0\.0\.1/i.test(p.baseUrl || "");
           const starter = /\/starter\b/.test(p.baseUrl || "");
           const subMode = p.kind === "anthropic" && p.useSubscription;
@@ -269,7 +247,6 @@ export default function ModelConfig({ onChanged }) {
               <PChip name={p.name} />
               <span className="mc-pmain">
                 <b>{p.name}</b>
-                <small>{starter ? "free · no key needed" : local ? "runs on this computer" : subMode ? "Claude subscription" : p.kind === "anthropic" ? "Anthropic API" : "OpenAI-compatible"}</small>
               </span>
               <span className={`mc-pact ${ready ? "ok" : ""}`}>{ready ? <><Check size={13} /> {subMode ? "Subscription" : "Connected"}</> : "Add key"}</span>
             </button>
@@ -280,11 +257,30 @@ export default function ModelConfig({ onChanged }) {
             <PChip name={pr.name} />
             <span className="mc-pmain">
               <b>{pr.name}</b>
-              <small>{/localhost/.test(pr.baseUrl) ? "runs on this computer" : pr.kind === "anthropic" ? "Anthropic API" : "OpenAI-compatible"}</small>
             </span>
             <span className="mc-pact">Connect</span>
           </button>
         ))}
+      </div>
+
+      {/* top: default model + proxy as responsive side-by-side cards */}
+      <div className="mc-top">
+        <div className="mc-card">
+          <div className="nav-label" style={{ paddingLeft: 0 }}>Default model<HelpDot mode="models" section="defaultmodel" /></div>
+          <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
+            Applied every time the app starts. You can still switch models live in the top bar during a session — it resets to this on next launch.
+          </p>
+          <ModelPicker value={s.defaultModel || ""} groups={modelGroups} onChange={(v) => { setField("defaultModel", v); setStatus("Default model saved ✓"); }} />
+          {status.startsWith("Default") && <span style={{ color: "var(--ok)", fontSize: 12, marginLeft: 10 }}>{status}</span>}
+        </div>
+        <div className="mc-card">
+          <div className="nav-label" style={{ paddingLeft: 0 }}>Corporate proxy (optional)<HelpDot mode="models" section="proxy" /></div>
+          <p style={{ color: "var(--text-2)", fontSize: 12, margin: "0 0 8px" }}>
+            Route all LLM, MCP, and Telegram traffic through your company's approved proxy/gateway. Local models bypass it automatically. <b>Restart the app</b> after changing this.
+          </p>
+          <Field label="Proxy URL"><input className="model-search" value={s.proxyUrl || ""} onChange={(e) => setField("proxyUrl", e.target.value)} placeholder="http://proxy.corp:8080" /></Field>
+          <Field label="Bypass hosts (no-proxy)"><input className="model-search" value={s.noProxy || ""} onChange={(e) => setField("noProxy", e.target.value)} placeholder="localhost,127.0.0.1,.corp.internal" /></Field>
+        </div>
       </div>
 
       </>}
