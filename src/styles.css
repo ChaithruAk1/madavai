@@ -1555,7 +1555,6 @@ textarea.model-search { line-height: 1.5; }
 :root[data-accent="default"] .tn-name {
   background: none; color: var(--accent); -webkit-text-fill-color: var(--accent);
 }
-:root[data-accent="default"]:not([data-theme="light"]) .tn-tabicon { color: var(--text-2); } /* neutral unless the tab is selected */
 
 .tn-name {
   font-weight: 700; letter-spacing: .4px; font-size: var(--fs-h2);
