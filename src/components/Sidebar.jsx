@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Puzzle, Plug, Send, BarChart3, FolderKanban, Cpu, Trash2, Search, Settings as SettingsIcon, Blocks, LayoutGrid, ChevronDown, ChevronRight, SlidersHorizontal, List, Gauge, Clock, Sparkles, Globe, CreditCard, LogOut, HelpCircle, Shapes, TerminalSquare, Bot, Download, FlaskConical, BookOpen, Share2, Pencil } from "lucide-react";
 import { bridge } from "../bridge/index.js";
 
@@ -30,7 +31,7 @@ const TAIL = [
 const TERMINAL_ITEM = { id: "terminal", label: "Terminal", icon: TerminalSquare };
 const ADMIN_ITEM = { id: "testcenter", label: "Test Center", icon: FlaskConical };
 
-export default function Sidebar({ active, onSelect, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, onRenameSession, extras = {}, soloRun, teamRun, onOpenRun, onResize }) {
+export default function Sidebar({ active, onSelect, collapsed = false, historyMode, activeConvId, refreshKey, onNew, onOpenSession, onDeleteSession, onRenameSession, extras = {}, soloRun, teamRun, onOpenRun, onResize }) {
   const [recents, setRecents] = useState([]);
   const [q, setQ] = useState("");
   const [shareState, setShareState] = useState({}); // { [id]: "sharing" | "copied" | "error" }
@@ -39,6 +40,11 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   const commitRename = (it) => { const v = editVal.trim(); setEditId(null); if (v && v !== (it.title || "")) onRenameSession && onRenameSession(it.id, v); };
   const [ifaceOpen, setIfaceOpen] = useState(false);
   const [modelsOpen, setModelsOpen] = useState(false);
+  const [flyout, setFlyout] = useState(null); // collapsed-sidebar group flyout: { items, top, left }
+  const flyRef = useRef(null);
+  useEffect(() => { if (!flyout) return; const close = (e) => { if (flyRef.current && flyRef.current.contains(e.target)) return; setFlyout(null); }; document.addEventListener("mousedown", close); return () => document.removeEventListener("mousedown", close); }, [flyout]);
+  useEffect(() => { setFlyout(null); }, [active, collapsed]); // close on navigate or expand
+  const onGroupClick = (e, items, toggle) => { if (collapsed) { const r = e.currentTarget.getBoundingClientRect(); setFlyout({ items, top: Math.max(8, r.top), left: r.right + 8 }); } else { setFlyout(null); toggle(); } };
   // Extras switchboard (Settings → Extras): an entry whose feature is switched off
   // disappears from the nav. Absent flag = ON; only an explicit false hides it.
   const extraOff = (id) => extras && extras[id] === false;
@@ -119,10 +125,11 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
   const isCreator = role === "creator";
   // Treat Creator/Complimentary like a settled paid account: no trial/upgrade nags.
   const paidSub = isCreator || (acct && acct.subscription && acct.subscription.active && !isComp);
+  const navTip = (label) => (collapsed ? label : undefined); // labels show inline when open, so only tip when collapsed
   const navBtn = (t) => {
     const I = t.icon;
     return (
-      <button key={t.id} className={`nav-item ${active === t.id ? "active" : ""}`} title={t.label} onClick={() => onSelect(t.id)}>
+      <button key={t.id} className={`nav-item ${active === t.id ? "active" : ""}`} title={navTip(t.label)} onClick={() => onSelect(t.id)}>
         <I size={16} /> <span className="sb-t">{t.label}</span>
       </button>
     );
@@ -179,17 +186,25 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
 
   return (
     <aside className="sidebar glass">
+      {flyout && createPortal(
+        <div className="sb-flyout mad-pop" ref={flyRef} style={{ position: "fixed", top: flyout.top, left: flyout.left, zIndex: 9999 }}>
+          {flyout.items.map((t) => { const I = t.icon; return (
+            <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} onClick={() => { onSelect(t.id); setFlyout(null); }}>
+              <I size={15} /> <span>{t.label}</span>
+            </button>
+          ); })}
+        </div>, document.body)}
       <div className="sb-scroll">
-      <button className="sb-new" title={newLabel} onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
+      <button className="sb-new" title={navTip(newLabel)} onClick={onNew}><Plus size={16} /> <span className="sb-t">{newLabel}</span></button>
 
-      <button className={`nav-item nav-group ${MODELS.some((t) => t.id === active) ? "active-within" : ""}`} title="Models" onClick={() => setModelsOpen((o) => !o)}>
+      <button className={`nav-item nav-group ${MODELS.some((t) => t.id === active) ? "active-within" : ""}`} title={navTip("Models")} onClick={(e) => onGroupClick(e, MODELS, () => setModelsOpen((o) => !o))}>
         <Cpu size={16} /> <span className="sb-t">Models</span>
         <span className="nav-caret sb-t">{modelsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
       </button>
-      {modelsOpen && MODELS.map((t) => {
+      {!collapsed && modelsOpen && MODELS.map((t) => {
         const I = t.icon;
         return (
-          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} title={t.label} onClick={() => onSelect(t.id)}>
+          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} title={navTip(t.label)} onClick={() => onSelect(t.id)}>
             <I size={15} /> <span className="sb-t">{t.label}</span>
           </button>
         );
@@ -197,14 +212,14 @@ export default function Sidebar({ active, onSelect, historyMode, activeConvId, r
 
       {MAIN.filter((t) => !extraOff(t.id)).map(navBtn)}
 
-      <button className={`nav-item nav-group ${INTERFACE.some((t) => t.id === active) ? "active-within" : ""}`} title="Interface" onClick={() => setIfaceOpen((o) => !o)}>
+      <button className={`nav-item nav-group ${INTERFACE.some((t) => t.id === active) ? "active-within" : ""}`} title={navTip("Interface")} onClick={(e) => onGroupClick(e, INTERFACE.filter((t) => !extraOff(t.id)), () => setIfaceOpen((o) => !o))}>
         <LayoutGrid size={16} /> <span className="sb-t">Interface</span>
         <span className="nav-caret sb-t">{ifaceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
       </button>
-      {ifaceOpen && INTERFACE.filter((t) => !extraOff(t.id)).map((t) => {
+      {!collapsed && ifaceOpen && INTERFACE.filter((t) => !extraOff(t.id)).map((t) => {
         const I = t.icon;
         return (
-          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} title={t.label} onClick={() => onSelect(t.id)}>
+          <button key={t.id} className={`nav-item nav-sub ${active === t.id ? "active" : ""}`} title={navTip(t.label)} onClick={() => onSelect(t.id)}>
             <I size={15} /> <span className="sb-t">{t.label}</span>
           </button>
         );

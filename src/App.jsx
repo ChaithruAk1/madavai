@@ -380,11 +380,10 @@ export default function App() {
       const acc = ((settings && settings.accent) || "").trim();
       const onDefault = !acc || acc === "default" || acc === MADAV_ACCENT; // user hasn't chosen a custom accent
       const light = theme === "system" ? !!(mq && mq.matches) : theme === "light";
-      let raw = acc || MADAV_ACCENT;
-      if (raw === "default") raw = MADAV_ACCENT; // previous default retired — Madav is the default now
-      // Default app colour for BOTH themes: teal #00aabd (rgb 0,170,189).
-      // An explicit custom accent is always honoured on both themes.
-      if (onDefault) raw = "#00aabd";
+      // DEFAULT accent is defined in ONE place — the --accent token in styles.css (#06AEFE).
+      // On default, drop any inline override so that single CSS source rules.
+      if (onDefault) { root.dataset.accent = "default"; clearVars(); return; }
+      let raw = acc;
       if (raw.startsWith("grad:")) {
         const stops = raw.slice(5).split(":").map((x) => (/^#?([0-9a-f]{6})$/i.exec(x.trim()) || [])[1]).filter(Boolean);
         if (stops.length >= 2) { apply(stops[Math.floor((stops.length - 1) / 2)], stops[stops.length - 1], stops); return; }
@@ -960,6 +959,7 @@ export default function App() {
     setSettings(next); await bridge.saveSettings(next);
   };
   const refreshModels = () => loadModelsFor(settings);
+  const setTheme = async (t) => { const cur = await bridge.getSettings(); const next = { ...cur, theme: t }; setSettings(next); await bridge.saveSettings(next); }; // single-source theme write for the top-bar gear
   // Step 4 — the Workrooms project-page model picker saves to THAT project (projOpenId), not globally.
   const onSelectProjectModel = async (value) => {
     await selectModel(value);
@@ -1098,7 +1098,7 @@ export default function App() {
   const disclaimer = <div className="app-foot">Madav is AI and can make mistakes. Please double-check responses.</div>;
 
   return (
-    <div className={`app-v ${sidebarOpen ? "" : "sb-collapsed"}`}>
+    <div className={`app-v ${sidebarOpen ? "" : "sb-collapsed"}`} style={{ "--sb-w": sidebarW + "px" }}>
       {needsOnboarding && <Onboarding onDone={async () => { try { const s2 = await bridge.getSettings(); setSettings(s2); loadModelsFor(s2); } catch {} }} />}
       <TopNav
         mode={mode}
@@ -1113,6 +1113,8 @@ export default function App() {
         loc={activeLoc}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        theme={(settings && settings.theme) || "dark"}
+        onSetTheme={setTheme}
       />
       {repo.open && (
         <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget && !repo.busy) setRepo({ open: false, url: "", busy: false, err: "" }); }}>
@@ -1130,7 +1132,7 @@ export default function App() {
         </div>
       )}
       <div ref={appBodyRef} className={`app-body ${sidebarOpen ? "" : "sb-collapsed"}`} style={{ "--sb-w": sidebarW + "px", "--art-w": artifactW + "px" }}>
-      <Sidebar active={mode} onSelect={switchMode} onResize={startSidebarResize}
+      <Sidebar collapsed={!sidebarOpen} active={mode} onSelect={switchMode} onResize={startSidebarResize}
         historyMode={chatMode} activeConvId={activeConvId} refreshKey={histRefresh}
         onNew={newSession} onOpenSession={openSession} onDeleteSession={removeSession} onRenameSession={renameSession}
         soloRun={soloRun} teamRun={teamRun} onOpenRun={() => switchMode(chatMode)}

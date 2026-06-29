@@ -17,6 +17,7 @@
   --accent2-rgb: 77,196,255;
   --accent-weak: rgba(var(--accent-rgb),0.14);
   --accent-line: rgba(var(--accent-rgb),0.55);
+  --accent-ink: #ffffff;      /* text/icons on accent fills — default azure reads with white */
   --ok: #4caf72;              /* success */
   --warn: #e09a40;            /* warning */
   --danger: #e06b65;          /* danger */
@@ -1518,7 +1519,7 @@ textarea.model-search { line-height: 1.5; }
 /* ---------- top nav layout ---------- */
 .app-v { display: flex; flex-direction: column; height: 100%; }
 .app-body { flex: 1; display: flex; min-height: 0; }
-.app-body .sidebar { flex: 0 0 var(--sb-w, 236px); transition: flex-basis .22s var(--ease), width .22s var(--ease), padding .22s var(--ease), opacity .18s ease; }
+.app-body .sidebar { flex: 0 0 var(--sb-w, 236px); transition: flex-basis .42s cubic-bezier(0.4,0,0.2,1), width .42s cubic-bezier(0.4,0,0.2,1), padding .42s cubic-bezier(0.4,0,0.2,1), opacity .36s ease; }
 .app-body .main { flex: 1; min-width: 0; }
 /* collapsible sidebar (toggled by the top-bar button / Ctrl+B) */
 /* Collapsed = a thin icon rail, not fully hidden. */
@@ -1545,7 +1546,8 @@ textarea.model-search { line-height: 1.5; }
 /* Toggle + brand grouped on the far left. Brand hides when the sidebar is collapsed. */
 .tn-left { display: flex; align-items: center; gap: 10px; padding-left: 14px; flex: 0 0 auto; }
 /* When the sidebar is open, center the toggle + logo + wordmark as one unit within the 252px sidebar column. */
-.app-v:not(.sb-collapsed) .tn-left { position: relative; width: 252px; justify-content: flex-start; padding-left: 10px; } /* collapse button hugs the left edge */
+.app-v:not(.sb-collapsed) .tn-left { position: relative; width: var(--sb-w, 236px); justify-content: flex-start; padding-left: 10px; padding-right: var(--sp-2); } /* width = sidebar column so the toggle can sit at its right edge */
+.app-v:not(.sb-collapsed) .tn-collapse { margin-left: auto; } /* push the toggle to the sidebar panel's right edge */
 .app-v:not(.sb-collapsed) .tn-brand { margin-left: 0; } /* brand hugs the left now (logo-left / toggle-right) */
 .tn-brandtext { align-items: center; } /* tagline centered under the wordmark */
 .tn-brand { display: flex; align-items: center; gap: 10px; }
@@ -1561,7 +1563,7 @@ textarea.model-search { line-height: 1.5; }
 :root[data-accent="default"] .tn-name {
   background: none; color: var(--accent); -webkit-text-fill-color: var(--accent);
 }
-:root[data-accent="default"]:not([data-theme="light"]) .tn-tabicon { color: #38e8d0; }
+:root[data-accent="default"]:not([data-theme="light"]) .tn-tabicon { color: var(--accent-2); } /* follows the azure default (and any custom accent) */
 
 .tn-name {
   font-weight: 700; letter-spacing: .4px; font-size: var(--fs-h2);
@@ -3656,3 +3658,29 @@ h1, h2, h3 { letter-spacing: var(--tr-head); }
 /* Collapsed rail: profile avatar shows bare (no box) */
 .app-body.sb-collapsed .sb-profile { border: none; background: transparent; padding: 0; justify-content: center; }
 .app-body.sb-collapsed .sb-profile:hover { background: transparent; }
+
+/* ── Top-bar icon-only controls (Record · status · quick-settings) — labels via global tooltip ── */
+.tn-iconbtn { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: none; background: transparent; color: var(--text-1); cursor: pointer; flex: 0 0 auto; transition: color .14s, background .14s; }
+.tn-iconbtn:hover { color: var(--text-0); background: var(--bg-2); }
+.tn-rec-idle { color: var(--accent); }
+.tn-rec-idle:hover { color: var(--accent); background: var(--accent-weak); }
+.tn-status-icon { display: grid; place-items: center; width: 26px; height: 34px; cursor: default; }
+.tn-status-icon .tn-statusdot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* quick-settings popover (theme + language) */
+.tn-setwrap { position: relative; display: inline-flex; }
+.tn-setmenu { min-width: 190px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-1); box-shadow: var(--shadow-pop); display: flex; flex-direction: column; gap: 2px; }
+.tn-set-h { font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); padding: 8px 8px 4px; }
+.tn-set-row { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 9px; border: none; border-radius: 8px; background: transparent; color: var(--text-0); font: inherit; font-size: var(--fs-small); cursor: pointer; text-align: left; transition: background .12s; }
+.tn-set-row:hover { background: var(--bg-2); }
+.tn-set-row.on { color: var(--accent); }
+.tn-set-row .tn-set-chk { margin-left: auto; color: var(--accent); }
+.tn-set-lang { display: flex; align-items: center; gap: 9px; padding: 7px 9px; color: var(--text-1); font-size: var(--fs-small); }
+.tn-set-more { margin-top: 4px; width: 100%; padding: 9px; border: none; border-top: 1px solid var(--line); background: transparent; color: var(--accent); font: inherit; font-size: var(--fs-small); cursor: pointer; text-align: left; border-radius: 0 0 8px 8px; }
+.tn-set-more:hover { background: var(--bg-2); }
+
+/* collapsed-sidebar group flyout — child tabs with labels */
+.sb-flyout { min-width: 186px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-1); box-shadow: var(--shadow-pop); display: flex; flex-direction: column; gap: 2px; }
+.sb-flyout .nav-item { width: 100%; }
+.sb-flyout .nav-sub { padding-left: 10px; }
+.sb-flyout .nav-sub span { display: inline; }

@@ -223,6 +223,14 @@ export default function LetsCreate({ onNavigate }) {
   };
 
   const engineUp = !!(engine && (engine.api || engine.container === "running"));
+  const studioSetUp = !!(engine && engine.container && engine.container !== "absent");
+  const studioBooting = !engineUp && studioSetUp; // set up before — engine just needs to boot; never re-prompt setup
+  const setupBusy = !!(setupProg && !setupProg.done);
+  const bootKickRef = useRef(false);
+  useEffect(() => {
+    if (engineUp) { bootKickRef.current = false; return; }
+    if (studioBooting && !setupBusy && !bootKickRef.current) { bootKickRef.current = true; setupStudio(); } // auto bring-up (startLocalAi is idempotent)
+  }, [studioBooting, engineUp, setupBusy]); // eslint-disable-line react-hooks/exhaustive-deps
   const active = CAPS.find((c) => c.id === cap) || CAPS[0];
   const goModels = () => { try { localStorage.setItem("madav.lmtab", "localai"); window.dispatchEvent(new CustomEvent("madav:lmtab", { detail: "localai" })); } catch {} onNavigate && onNavigate("models-local"); };
   const haveModel = modelsFor(cap).length > 0;
@@ -288,18 +296,18 @@ export default function LetsCreate({ onNavigate }) {
       <div className="lc2-thread scroll" ref={threadRef}>
         {!engineUp ? (
           <div className="lc2-asleep">
-            <div className="lc2-spark"><Sparkles size={26} /></div>
-            <h1>Let's set up your studio</h1>
-            <p>Let's Create runs a private engine right on your machine — offline, no API key. Two quick steps and you're making things.</p>
-            <div style={{ display: "flex", gap: 14, margin: "2px 0 18px", flexWrap: "wrap", justifyContent: "center" }}>
+            <MadavMark size={58} />
+            <h1>{studioBooting ? "Starting your studio…" : "Let's set up your studio"}</h1>
+            <p>{studioBooting ? "Your engine is already set up — Madav is bringing it up in the background. This can take a minute after a restart." : "Let's Create runs a private engine right on your machine — offline, no API key. Two quick steps and you're making things."}</p>
+            {!studioBooting && <div style={{ display: "flex", gap: 14, margin: "2px 0 18px", flexWrap: "wrap", justifyContent: "center" }}>
               {[["1", "Start the engine"], ["2", "Pull a model"], ["3", "Create"]].map(([n, t], i) => (
                 <span key={n} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, color: i === 0 ? "var(--text-0)" : "var(--text-2)" }}>
                   <span style={{ width: 20, height: 20, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: i === 0 ? "#fff" : "var(--text-2)", background: i === 0 ? "var(--accent)" : "var(--bg-2)", border: "1px solid var(--line)" }}>{n}</span>{t}
                 </span>
               ))}
-            </div>
-            {setupProg ? (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-1)" }}><Loader2 size={14} className="spin" /> {setupProg.line || (setupProg.phase === "docker" ? "Starting Docker…" : setupProg.phase === "pulling" ? "Downloading engine… " + (setupProg.pct || 0) + "%" : setupProg.phase === "booting" ? "Starting engine…" : "Setting up…")}</div>
+            </div>}
+            {(setupBusy || studioBooting) ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-1)" }}><Loader2 size={14} className="spin" /> {setupBusy ? (setupProg.line || (setupProg.phase === "docker" ? "Starting Docker…" : setupProg.phase === "pulling" ? "Downloading engine… " + (setupProg.pct || 0) + "%" : setupProg.phase === "booting" ? "Starting engine…" : "Setting up…")) : "Starting the engine…"}</div>
             ) : (
               <button className="lc2-create" onClick={setupStudio}><Sparkles size={15} /> Set up the studio</button>
             )}
@@ -308,7 +316,7 @@ export default function LetsCreate({ onNavigate }) {
           </div>
         ) : models.length === 0 && turns.length === 0 ? (
           <div className="lc2-hero">
-            <div className="lc2-spark"><Sparkles size={26} /></div>
+            <MadavMark size={58} />
             <h1>One model away</h1>
             <p>Your engine is running. Pull a starter model — a one-time download — and you're ready to create.</p>
             {pullProg ? (

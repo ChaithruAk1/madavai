@@ -124,19 +124,19 @@ export default function Settings({ onChanged }) {
               </Field>
               <Field label="Accent color" help={<HelpDot mode="settings" section="accent" />}>
                 {(() => {
-                  const MADAV = "grad:#0ad0f5:#2196f8:#8b50f5"; // measured from the Madav logo (cyan → azure → violet)
-                  let acc = s.accent || MADAV;
-                  if (acc === "default") acc = MADAV; // previous default accent retired — Madav is the default
-                  const isGrad = acc.startsWith("grad:");
+                  const MADAV = "grad:#0ad0f5:#2196f8:#8b50f5"; // legacy logo gradient — still honoured as "default"
+                  let acc = s.accent || "default";
+                  const isDefault = acc === "default" || acc === "#06AEFE" || acc === MADAV; // #06AEFE is the single-source default
+                  const isGrad = !isDefault && acc.startsWith("grad:");
                   const isTerracotta = acc === "#d97757";
-                  const isSolid = !isGrad && !isTerracotta;
+                  const isSolid = !isGrad && !isTerracotta && !isDefault;
                   const stops = isGrad ? acc.slice(5).split(":") : ["#0ad0f5", "#8b50f5"];
                   const gradCss = (st) => `linear-gradient(110deg, ${st.join(", ")})`;
                   const setStop = (i, v) => { const st = isGrad ? acc.slice(5).split(":") : ["#0ad0f5", "#8b50f5"]; st[i === 0 ? 0 : st.length - 1] = v; setField("accent", "grad:" + st.join(":")); };
                   return (
                     <div className="prof-accents">
-                      <button className={`prof-acc ${acc === MADAV ? "on" : ""}`} onClick={() => setField("accent", MADAV)} title="The Madav logo's own colors — cyan → azure → violet">
-                        <span className="prof-acc-dot" style={{ background: gradCss(["#0ad0f5", "#2196f8", "#8b50f5"]) }} /> Madav
+                      <button className={`prof-acc ${isDefault ? "on" : ""}`} onClick={() => setField("accent", "default")} title="Madav default — azure #06AEFE">
+                        <span className="prof-acc-dot" style={{ background: "#06AEFE" }} /> Default
                       </button>
                       <button className={`prof-acc ${acc === "#d97757" ? "on" : ""}`} onClick={() => setField("accent", "#d97757")} title="Warm terracotta accent">
                         <span className="prof-acc-dot" style={{ background: "#d97757" }} /> Terracotta

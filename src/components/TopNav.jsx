@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import MadavLogo from "./MadavLogo.jsx";
 import MadavMark from "./MadavMark.jsx";
-import { MessageCircle, Users, Hammer, Sparkles, PanelLeft, CircleDot, Globe, AppWindow, Square } from "lucide-react";
+import { MessageCircle, Users, Hammer, Sparkles, PanelLeft, CircleDot, Globe, AppWindow, Square, Settings as SettingsIcon, Sun, Moon, Monitor, Check } from "lucide-react";
 import { MODES } from "../bridge/contract.js";
 import { bridge, isWeb } from "../bridge/index.js";
 import { madavAlert } from "../dialogs.jsx";
@@ -99,8 +99,8 @@ function RecordControl({ onSelect }) {
           <span className="tn-recdot" /> Recording {rec === "desktop" ? "desktop" : "web"} · <Square size={10} style={{ verticalAlign: "-1px" }} /> Stop
         </button>
       ) : (
-        <button className="chip tn-rec" onClick={toggleMenu} style={{ borderColor: "var(--accent)", color: "var(--accent)", fontWeight: 600 }} title="Record a workflow once — Madav turns what it watched into a skill draft you approve">
-          <CircleDot size={13} /> Record
+        <button className="tn-iconbtn tn-rec-idle" onClick={toggleMenu} title="Record a workflow once — Madav turns what it watched into a skill draft you approve" aria-label="Record a workflow">
+          <CircleDot size={17} />
         </button>
       )}
       {open && !rec && createPortal(
@@ -122,7 +122,44 @@ function RecordControl({ onSelect }) {
   );
 }
 
-export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onToggleSidebar }) {
+// Quick-settings popover (open-design style) — theme switch + language. Theme is written
+// through App's onSetTheme (settings.theme), the SAME single source the full Settings panel uses.
+function SettingsControl({ theme, onSetTheme, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(null);
+  const wrapRef = useRef(null), menuRef = useRef(null);
+  useEffect(() => {
+    const close = (e) => { if (wrapRef.current && wrapRef.current.contains(e.target)) return; if (menuRef.current && menuRef.current.contains(e.target)) return; setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+  const toggle = () => {
+    if (open) { setOpen(false); return; }
+    try { const r = wrapRef.current.getBoundingClientRect(); setPos({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) }); } catch {}
+    setOpen(true);
+  };
+  const THEMES = [["dark", "Dark", Moon], ["light", "Light", Sun], ["system", "System", Monitor]];
+  const pick = (t) => { setOpen(false); onSetTheme && onSetTheme(t); };
+  return (
+    <div className="tn-setwrap" ref={wrapRef}>
+      <button className="tn-iconbtn" onClick={toggle} title="Quick settings — theme & language" aria-label="Quick settings"><SettingsIcon size={17} /></button>
+      {open && createPortal(
+        <div ref={menuRef} className="plus-menu tn-setmenu mad-pop" style={{ position: "fixed", top: (pos && pos.top) || 56, right: (pos && pos.right) || 16, left: "auto", bottom: "auto", zIndex: 9999, animation: "none" }}>
+          <div className="tn-set-h">Appearance</div>
+          {THEMES.map(([id, label, Icon]) => (
+            <button key={id} className={`tn-set-row ${theme === id ? "on" : ""}`} onClick={() => pick(id)}>
+              <Icon size={15} /> <span>{label}</span>{theme === id ? <Check size={14} className="tn-set-chk" /> : null}
+            </button>
+          ))}
+          <div className="tn-set-h">Language</div>
+          <div className="tn-set-lang"><Globe size={14} /> English</div>
+          <button className="tn-set-more" onClick={() => { setOpen(false); onSelect && onSelect("settings"); }}>Open all settings →</button>
+        </div>, document.body)}
+    </div>
+  );
+}
+
+export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onToggleSidebar, theme, onSetTheme }) {
   const tabs = ORDER.map((id) => MODES.find((m) => m.id === id)).filter(Boolean);
   const dot = online === null ? "var(--text-2)" : online ? "var(--ok)" : "var(--danger)";
   return (
@@ -147,11 +184,10 @@ export default function TopNav({ mode, onSelect, online, loc, sidebarOpen, onTog
 
       <div className="tn-right">
         <RecordControl onSelect={onSelect} />
-        <span className="chip tn-status" title={`Active model is ${online === null ? "checking…" : online ? "online" : "offline"}`}
-          style={{ color: online === false ? "var(--danger)" : undefined }}>
+        <span className="tn-status-icon" title={`Active model is ${online === null ? "checking…" : online ? "online" : "offline"}`}>
           <span className="tn-statusdot" style={{ background: dot, boxShadow: online ? "0 0 7px var(--ok)" : "none" }} />
-          {online === null ? "checking…" : online ? "online" : "offline"}
         </span>
+        <SettingsControl theme={theme} onSetTheme={onSetTheme} onSelect={onSelect} />
       </div>
     </header>
   );
