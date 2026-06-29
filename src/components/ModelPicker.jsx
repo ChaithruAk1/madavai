@@ -17,7 +17,7 @@ const pill = (color) => ({ fontSize: 10, padding: "1px 7px", borderRadius: 999, 
 const FIT_COLOR = { good: "#3fb950", recipe: "#7c83ff", weak: "#ff7b72" }; // green = recommended; indigo = needs a recipe; coral = may struggle
 const fitPill = (fit) => { const c = FIT_COLOR[fit] || "var(--accent)"; return { fontSize: 10, padding: "1px 8px", borderRadius: 999, background: `color-mix(in srgb, ${c} 68%, #000 32%)`, color: "#fff", border: `1px solid color-mix(in srgb, ${c} 85%, #000 15%)`, whiteSpace: "nowrap", lineHeight: 1.6, fontWeight: 700 }; };
 const legendDot = { display: "inline-block", width: 9, height: 9, borderRadius: 999, marginRight: 6, verticalAlign: "middle" };
-const shortName = (n) => { const s = String(n || ""); const i = s.indexOf("/"); return i >= 0 ? s.slice(i + 1) : s; }; // display only — drop the provider prefix (e.g. "nvidia/"); selection/search still use the full id
+const shortName = (n) => { const s = String(n || "").replace(/\x1b\[[0-9;]*[A-Za-z]/g, "").replace(/\s*\(\d+\s*variants?\)\s*/gi, " ").replace(/\s{2,}/g, " ").trim(); const i = s.indexOf("/"); return i >= 0 ? s.slice(i + 1) : s; }; // display only — strip lms ANSI/(N variants) junk, drop provider prefix; selection/search still use the full id
 
 // Provider → domain, for real logos (site favicons).
 const DOMAIN = {
