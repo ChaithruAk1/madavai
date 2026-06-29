@@ -31,27 +31,31 @@ function gpuInfo() {
 
 function makeLmsCli() {
   const LMS = process.platform === "win32" ? "lms.exe" : "lms";
+  // The lms CLI emits ANSI colour codes that leak into parsed model names (e.g. "[2m (1 variant)[22m").
+  // Disable colour at the source AND strip any escape sequences defensively.
+  const NOCOLOR_ENV = { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0", CLICOLOR: "0", CLICOLOR_FORCE: "0", TERM: "dumb" };
+  const stripAnsi = (x) => String(x).replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
   return {
     run(args) {
       return new Promise((resolve) => {
         let out = "", err = "";
         try {
-          const p = spawn(LMS, args, { windowsHide: true });
+          const p = spawn(LMS, args, { windowsHide: true, env: NOCOLOR_ENV });
           p.stdout.on("data", (d) => (out += d.toString()));
           p.stderr.on("data", (d) => (err += d.toString()));
           p.on("error", () => resolve({ code: 127, stdout: "", stderr: "lms not found" }));
-          p.on("close", (code) => resolve({ code: code == null ? 0 : code, stdout: out, stderr: err }));
+          p.on("close", (code) => resolve({ code: code == null ? 0 : code, stdout: stripAnsi(out), stderr: stripAnsi(err) }));
         } catch { resolve({ code: 127, stdout: "", stderr: "lms not found" }); }
       });
     },
     async *stream(args, signal) {
-      const p = spawn(LMS, args, { windowsHide: true });
+      const p = spawn(LMS, args, { windowsHide: true, env: NOCOLOR_ENV });
       if (signal) { const onAbort = () => { try { p.kill(); } catch {} }; if (signal.aborted) onAbort(); else signal.addEventListener("abort", onAbort, { once: true }); }
       let buf = "", done = false, resolveNext = null;
       const queue = [];
       const push = (l) => { if (resolveNext) { const r = resolveNext; resolveNext = null; r(l); } else queue.push(l); };
-      p.stdout.on("data", (d) => { buf += d.toString(); let nl; while ((nl = buf.indexOf("\n")) >= 0) { push(buf.slice(0, nl)); buf = buf.slice(nl + 1); } });
-      const end = () => { if (buf.trim()) push(buf.trim()); done = true; if (resolveNext) { const r = resolveNext; resolveNext = null; r(null); } };
+      p.stdout.on("data", (d) => { buf += d.toString(); let nl; while ((nl = buf.indexOf("\n")) >= 0) { push(stripAnsi(buf.slice(0, nl))); buf = buf.slice(nl + 1); } });
+      const end = () => { if (buf.trim()) push(stripAnsi(buf.trim())); done = true; if (resolveNext) { const r = resolveNext; resolveNext = null; r(null); } };
       p.on("close", end); p.on("error", end);
       for (;;) {
         if (queue.length) { yield queue.shift(); continue; }
